@@ -2,6 +2,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import Database from "better-sqlite3";
 import path from "path";
+import nodemailer from "nodemailer";
 
 const db = new Database("tickets.db");
 
@@ -20,7 +21,12 @@ db.exec(`
     status TEXT DEFAULT 'Pending',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     responded_at DATETIME,
-    resolved_at DATETIME
+    resolved_at DATETIME,
+    photo TEXT,
+    ip_address TEXT,
+    user_agent TEXT,
+    latitude REAL,
+    longitude REAL
   );
 
   CREATE TABLE IF NOT EXISTS users (
@@ -34,7 +40,41 @@ db.exec(`
     key TEXT PRIMARY KEY,
     value TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS it_personnel (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS departments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS categories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL
+  );
 `);
+
+// Initialize default data if tables are empty
+const itCount = db.prepare("SELECT COUNT(*) as count FROM it_personnel").get() as { count: number };
+if (itCount.count === 0) {
+  const insert = db.prepare("INSERT INTO it_personnel (name) VALUES (?)");
+  ['Yudha', 'Bayu', 'Dita'].forEach(name => insert.run(name));
+}
+
+const deptCount = db.prepare("SELECT COUNT(*) as count FROM departments").get() as { count: number };
+if (deptCount.count === 0) {
+  const insert = db.prepare("INSERT INTO departments (name) VALUES (?)");
+  ['HRGA', 'CE Business', 'Fleet Business', 'Accounting', 'Treasury & Financing', 'Store Retail', 'Supply Chain', 'Other Retail', 'OSS', 'PT DKU'].forEach(name => insert.run(name));
+}
+
+const catCount = db.prepare("SELECT COUNT(*) as count FROM categories").get() as { count: number };
+if (catCount.count === 0) {
+  const insert = db.prepare("INSERT INTO categories (name) VALUES (?)");
+  ['Synergi', 'SCM', 'MKT', 'Hardware', 'Jaringan'].forEach(name => insert.run(name));
+}
 
 // Add new columns if they don't exist (for existing databases)
 try {
@@ -64,13 +104,69 @@ try {
   db.exec("ALTER TABLE tickets ADD COLUMN responded_at DATETIME");
 } catch (e) {}
 try {
-  db.exec("ALTER TABLE tickets ADD COLUMN resolved_at DATETIME");
+  db.exec("ALTER TABLE tickets ADD COLUMN ip_address TEXT");
+} catch (e) {}
+try {
+  db.exec("ALTER TABLE tickets ADD COLUMN latitude REAL");
+} catch (e) {}
+try {
+  db.exec("ALTER TABLE tickets ADD COLUMN longitude REAL");
 } catch (e) {}
 
 // Initialize default settings
 const initSettings = db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)");
 initSettings.run('app_name', 'IT Helpdesk Pro');
 initSettings.run('logo_type', 'ShieldCheck');
+initSettings.run('notification_emails', '[]');
+
+// Email Transporter Setup
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT || '587'),
+  secure: process.env.SMTP_PORT === '465',
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+async function sendNotificationEmail(ticket: any, emails: string[]) {
+  if (!emails || emails.length === 0 || !process.env.SMTP_HOST) {
+    console.log('Skipping email notification: No emails or SMTP not configured');
+    return;
+  }
+  
+  const mailOptions = {
+    from: process.env.SMTP_FROM || 'noreply@helpdesk.com',
+    to: emails.join(','),
+    subject: `[New Ticket] ${ticket.ticket_no} - ${ticket.category}`,
+    text: `Ada tiket baru masuk!\n\nNo Tiket: ${ticket.ticket_no}\nNama: ${ticket.name}\nDepartemen: ${ticket.department}\nKategori: ${ticket.category}\nDeskripsi: ${ticket.description}\n\nSilakan cek portal admin untuk detail lebih lanjut.`,
+    html: `
+      <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; color: #333;">
+        <h2 style="color: #10b981; margin-top: 0;">Ada tiket baru masuk!</h2>
+        <p>Halo Admin, ada laporan baru yang memerlukan perhatian Anda.</p>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr><td style="padding: 8px 0; font-weight: bold; width: 120px;">No Tiket:</td><td>${ticket.ticket_no}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold;">Nama:</td><td>${ticket.name}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold;">Departemen:</td><td>${ticket.department}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold;">Kategori:</td><td>${ticket.category}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: bold;">Deskripsi:</td><td>${ticket.description}</td></tr>
+        </table>
+        <div style="margin-top: 30px;">
+          <a href="${process.env.APP_URL || '#'}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Buka Portal Admin</a>
+        </div>
+      </div>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('Notification email sent to:', emails);
+  } catch (error) {
+    console.error('Error sending notification email:', error);
+  }
+}
 
 // Create default admin if not exists
 const rootExists = db.prepare("SELECT * FROM users WHERE username = 'root'").get();
@@ -95,9 +191,11 @@ async function startServer() {
   });
 
   app.patch("/api/settings", (req, res) => {
-    const { app_name, logo_type } = req.body;
-    if (app_name) db.prepare("UPDATE settings SET value = ? WHERE key = 'app_name'").run(app_name);
-    if (logo_type) db.prepare("UPDATE settings SET value = ? WHERE key = 'logo_type'").run(logo_type);
+    const body = req.body;
+    const update = db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)");
+    Object.entries(body).forEach(([key, value]) => {
+      update.run(key, String(value));
+    });
     res.json({ success: true });
   });
 
@@ -117,6 +215,58 @@ async function startServer() {
     res.json({ success: true });
   });
 
+  app.delete("/api/tickets/:id", (req, res) => {
+    const { id } = req.params;
+    db.prepare("DELETE FROM tickets WHERE id = ?").run(id);
+    res.json({ success: true });
+  });
+
+  // Management Routes
+  app.get("/api/it-personnel", (req, res) => {
+    res.json(db.prepare("SELECT * FROM it_personnel ORDER BY name ASC").all());
+  });
+  app.post("/api/it-personnel", (req, res) => {
+    const { name } = req.body;
+    try {
+      db.prepare("INSERT INTO it_personnel (name) VALUES (?)").run(name);
+      res.json({ success: true });
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+  app.delete("/api/it-personnel/:id", (req, res) => {
+    db.prepare("DELETE FROM it_personnel WHERE id = ?").run(req.params.id);
+    res.json({ success: true });
+  });
+
+  app.get("/api/departments", (req, res) => {
+    res.json(db.prepare("SELECT * FROM departments ORDER BY name ASC").all());
+  });
+  app.post("/api/departments", (req, res) => {
+    const { name } = req.body;
+    try {
+      db.prepare("INSERT INTO departments (name) VALUES (?)").run(name);
+      res.json({ success: true });
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+  app.delete("/api/departments/:id", (req, res) => {
+    db.prepare("DELETE FROM departments WHERE id = ?").run(req.params.id);
+    res.json({ success: true });
+  });
+
+  app.get("/api/categories", (req, res) => {
+    res.json(db.prepare("SELECT * FROM categories ORDER BY name ASC").all());
+  });
+  app.post("/api/categories", (req, res) => {
+    const { name } = req.body;
+    try {
+      db.prepare("INSERT INTO categories (name) VALUES (?)").run(name);
+      res.json({ success: true });
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+  app.delete("/api/categories/:id", (req, res) => {
+    db.prepare("DELETE FROM categories WHERE id = ?").run(req.params.id);
+    res.json({ success: true });
+  });
+
   app.get("/api/tickets", (req, res) => {
     try {
       const tickets = db.prepare("SELECT * FROM tickets ORDER BY created_at DESC").all();
@@ -129,8 +279,8 @@ async function startServer() {
 
   app.post("/api/tickets", (req, res) => {
     try {
-      const { name, department, phone, category, description, photo } = req.body;
-      console.log('Incoming ticket data:', { name, department, phone, category, hasPhoto: !!photo });
+      const { name, department, phone, category, description, photo, latitude, longitude } = req.body;
+      console.log('Incoming ticket data:', { name, department, phone, category, hasPhoto: !!photo, lat: latitude, lng: longitude });
       
       if (!name || !department || !phone || !category) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -158,11 +308,27 @@ async function startServer() {
       const ticketNo = `${datePrefix}${sequence.toString().padStart(3, '0')}`;
       console.log('Generated ticketNo:', ticketNo);
 
+      const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+      const userAgent = req.headers['user-agent'];
+
       const info = db.prepare(
-        "INSERT INTO tickets (ticket_no, name, department, phone, category, description, photo, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-      ).run(ticketNo, name, department, phone, category, description || "", photo || null, now.toISOString());
+        "INSERT INTO tickets (ticket_no, name, department, phone, category, description, photo, created_at, ip_address, user_agent, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      ).run(ticketNo, name, department, phone, category, description || "", photo || null, now.toISOString(), String(ip), String(userAgent), latitude || null, longitude || null);
       
-      const newTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(info.lastInsertRowid);
+      const newTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(info.lastInsertRowid) as any;
+      
+      // Send Email Notification
+      const notificationEmailsRaw = db.prepare("SELECT value FROM settings WHERE key = 'notification_emails'").get() as { value: string } | undefined;
+      if (notificationEmailsRaw) {
+        try {
+          const emails = JSON.parse(notificationEmailsRaw.value);
+          // Always include the test email if requested or just send to the list
+          sendNotificationEmail(newTicket, emails);
+        } catch (e) {
+          console.error('Error parsing notification emails:', e);
+        }
+      }
+
       res.status(201).json(newTicket);
     } catch (err: any) {
       console.error('Error creating ticket:', err);
