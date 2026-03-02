@@ -131,8 +131,15 @@ const transporter = nodemailer.createTransport({
 });
 
 async function sendNotificationEmail(ticket: any, emails: string[]) {
-  if (!emails || emails.length === 0 || !process.env.SMTP_HOST) {
-    console.log('Skipping email notification: No emails or SMTP not configured');
+  console.log('Attempting to send email notification to:', emails);
+  
+  if (!emails || emails.length === 0) {
+    console.log('Skipping email notification: No target emails provided');
+    return;
+  }
+
+  if (!process.env.SMTP_HOST) {
+    console.log('Skipping email notification: SMTP_HOST is not configured in environment variables');
     return;
   }
   

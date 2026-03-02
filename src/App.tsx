@@ -39,7 +39,8 @@ import {
   MapPin,
   Bell,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  SlidersHorizontal
 } from 'lucide-react';
 
 interface ITicket {
@@ -126,6 +127,9 @@ export default function App() {
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [gpsError, setGpsError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'today' | 'all'>('today');
+  const [showMobileFilter, setShowMobileFilter] = useState(false);
+  const [tempFilters, setTempFilters] = useState({ dept: '', status: '', date: '' });
   const [appSettings, setAppSettings] = useState({ 
     app_name: 'IT Helpdesk Pro', 
     logo_type: 'ShieldCheck',
@@ -619,43 +623,43 @@ export default function App() {
       <header className={`sticky top-0 z-40 w-full border-b backdrop-blur-md transition-colors ${
         appSettings.theme_mode === 'dark' ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200'
       }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-all"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shadow-lg transition-all shrink-0"
               style={{ backgroundColor: appSettings.primary_color, boxShadow: `0 10px 15px -3px ${appSettings.primary_color}40` }}
             >
-              <CurrentLogo className="text-white w-6 h-6" />
+              <CurrentLogo className="text-white w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div>
-              <h1 className={`text-lg font-bold tracking-tight leading-none ${appSettings.theme_mode === 'dark' ? 'text-white' : 'text-slate-900'}`}>{appSettings.app_name}</h1>
-              <p className="text-xs font-medium text-slate-500 mt-1">Enterprise Support System</p>
+            <div className="min-w-0 flex-1">
+              <h1 className={`text-sm sm:text-lg font-bold tracking-tight leading-tight truncate whitespace-nowrap ${appSettings.theme_mode === 'dark' ? 'text-white' : 'text-slate-900'}`}>{appSettings.app_name}</h1>
+              <p className="hidden sm:block text-[10px] sm:text-xs font-medium text-slate-500 mt-0.5">Enterprise Support System</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
             {adminUser ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 sm:gap-3">
                 <button 
                   onClick={() => setShowSettings(true)}
-                  className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-all"
+                  className="p-1.5 sm:p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-all"
                   title="Settings"
                 >
-                  <Settings2 className="w-5 h-5" />
+                  <Settings2 className="w-4 h-4 sm:w-5 h-5" />
                 </button>
                 <button 
                   onClick={() => setShowResetConfirm(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 transition-all"
+                  className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 transition-all"
                 >
-                  <Trash2 className="w-4 h-4" />
-                  Reset Data
+                  <Trash2 className="w-3.5 h-3.5 sm:w-4 h-4" />
+                  <span className="hidden md:inline">Reset</span>
                 </button>
                 <button 
                   onClick={handleLogout}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-500 hover:bg-slate-100 transition-all relative"
+                  className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold text-slate-500 hover:bg-slate-100 transition-all relative"
                 >
-                  <LogOut className="w-4 h-4" />
-                  Logout
+                  <LogOut className="w-3.5 h-3.5 sm:w-4 h-4" />
+                  <span className="hidden md:inline">Logout</span>
                   {tickets.filter(t => t.status === 'Pending').length > 0 && (
                     <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white animate-pulse" />
                   )}
@@ -664,39 +668,40 @@ export default function App() {
             ) : (
               <button 
                 onClick={() => setShowLogin(true)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-500 hover:bg-slate-100 transition-all"
+                className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold text-slate-500 hover:bg-slate-100 transition-all"
               >
-                <LogIn className="w-4 h-4" />
-                Admin Login
+                <LogIn className="w-3.5 h-3.5 sm:w-4 h-4" />
+                <span className="hidden xs:inline">Login</span>
               </button>
             )}
             <button 
               onClick={() => setShowForm(true)}
               style={{ backgroundColor: appSettings.primary_color, boxShadow: `0 10px 15px -3px ${appSettings.primary_color}40` }}
-              className="hover:opacity-90 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg transition-all duration-200 flex items-center gap-2 active:scale-95"
+              className="hover:opacity-90 text-white px-3 sm:px-4 py-2 rounded-xl text-[10px] sm:text-sm font-semibold shadow-lg transition-all duration-200 flex items-center gap-1.5 sm:gap-2 active:scale-95"
             >
-              <Plus className="w-4 h-4" />
-              New Ticket
+              <Plus className="w-3.5 h-3.5 sm:w-4 h-4" />
+              <span className="hidden xs:inline">New Ticket</span>
+              <span className="xs:hidden">New</span>
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
           {/* --- SIDEBAR: STATS & INFO --- */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="lg:col-span-1 space-y-4 lg:space-y-6">
             {/* Admin Notifications */}
             {adminUser && (
               <motion.section 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm overflow-hidden relative"
+                className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-6 shadow-sm overflow-hidden relative"
               >
                 <div className="absolute top-0 right-0 p-6 opacity-5">
                   <Bell className="w-24 h-24 text-slate-900" />
                 </div>
-                <div className="flex items-center gap-3 mb-6">
+                <div className="flex items-center gap-3 mb-4 sm:mb-6">
                   <div className="w-10 h-10 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 border border-rose-100">
                     <Bell className="w-5 h-5" />
                   </div>
@@ -752,33 +757,33 @@ export default function App() {
             )}
 
             {/* Queue Statistics */}
-            <section className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-6">
+            <section className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <h2 className="text-sm font-bold text-slate-900 tracking-wider">Status Antrian</h2>
                 <BarChart3 className="w-4 h-4 text-slate-300" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-slate-200 transition-all">
-                  <p className="text-2xl font-black text-slate-900 leading-none mb-1">{tickets.length}</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</p>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-slate-200 transition-all">
+                  <p className="text-xl sm:text-2xl font-black text-slate-900 leading-none mb-1">{tickets.length}</p>
+                  <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</p>
                 </div>
-                <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 hover:border-amber-200 transition-all">
-                  <p className="text-2xl font-black text-amber-600 leading-none mb-1">
+                <div className="p-3 sm:p-4 bg-amber-50 rounded-2xl border border-amber-100 hover:border-amber-200 transition-all">
+                  <p className="text-xl sm:text-2xl font-black text-amber-600 leading-none mb-1">
                     {tickets.filter(t => t.status === 'Pending').length}
                   </p>
-                  <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Waiting</p>
+                  <p className="text-[9px] sm:text-[10px] font-bold text-amber-500 uppercase tracking-widest">Waiting</p>
                 </div>
-                <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 hover:border-blue-200 transition-all">
-                  <p className="text-2xl font-black text-blue-600 leading-none mb-1">
+                <div className="p-3 sm:p-4 bg-blue-50 rounded-2xl border border-blue-100 hover:border-blue-200 transition-all">
+                  <p className="text-xl sm:text-2xl font-black text-blue-600 leading-none mb-1">
                     {tickets.filter(t => t.status === 'In Progress').length}
                   </p>
-                  <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Active</p>
+                  <p className="text-[9px] sm:text-[10px] font-bold text-blue-500 uppercase tracking-widest">Active</p>
                 </div>
-                <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 hover:border-emerald-200 transition-all">
-                  <p className="text-2xl font-black text-emerald-600 leading-none mb-1">
+                <div className="p-3 sm:p-4 bg-emerald-50 rounded-2xl border border-emerald-100 hover:border-emerald-200 transition-all">
+                  <p className="text-xl sm:text-2xl font-black text-emerald-600 leading-none mb-1">
                     {tickets.filter(t => t.status === 'Resolved').length}
                   </p>
-                  <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Done</p>
+                  <p className="text-[9px] sm:text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Done</p>
                 </div>
               </div>
             </section>
@@ -788,11 +793,11 @@ export default function App() {
               <motion.section 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm"
+                className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-6 shadow-sm"
               >
-                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-6">Distribusi Masalah</h2>
-                <div className="h-48 w-full min-w-0">
-                  <ResponsiveContainer width="100%" height="100%">
+                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 sm:mb-6">Distribusi Masalah</h2>
+                <div className="h-48 w-full min-w-0" style={{ minHeight: '192px' }}>
+                  <ResponsiveContainer width="100%" height="100%" minHeight={192}>
                     <PieChart>
                       <Pie
                         data={categoryStats}
@@ -824,9 +829,9 @@ export default function App() {
               </motion.section>
             )}
 
-            {/* Help CTA */}
+            {/* Help CTA - Hidden on mobile, moved to bottom */}
             <section 
-              className="rounded-3xl p-8 text-white shadow-xl relative overflow-hidden group transition-all"
+              className="hidden lg:block rounded-3xl p-8 text-white shadow-xl relative overflow-hidden group transition-all"
               style={{ backgroundColor: appSettings.primary_color, boxShadow: `0 20px 25px -5px ${appSettings.primary_color}30` }}
             >
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
@@ -848,18 +853,57 @@ export default function App() {
           </div>
 
           {/* --- MAIN CONTENT: TICKET LIST --- */}
-          <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-xl font-bold text-slate-900">Daftar Antrian</h2>
+          <div className="lg:col-span-2 space-y-3 sm:space-y-4">
+            <div className="flex items-center justify-between gap-2 mb-2 sm:mb-4 border-b border-slate-100 pb-1">
+              <div className="flex items-center gap-3 sm:gap-6">
+                <button 
+                  onClick={() => setViewMode('today')}
+                  className={`relative pb-2 text-[11px] sm:text-sm font-black uppercase tracking-wider transition-all ${
+                    viewMode === 'today' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  Antrian Hari Ini
+                  {viewMode === 'today' && (
+                    <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full" />
+                  )}
+                </button>
+                <button 
+                  onClick={() => setViewMode('all')}
+                  className={`relative pb-2 text-[11px] sm:text-sm font-black uppercase tracking-wider transition-all ${
+                    viewMode === 'all' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  Semua Antrian
+                  {viewMode === 'all' && (
+                    <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full" />
+                  )}
+                </button>
+              </div>
+              
               {/* Filter Controls */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <button 
+                  onClick={() => {
+                    setTempFilters({ dept: filterDept, status: filterStatus, date: filterDate });
+                    setShowMobileFilter(true);
+                  }}
+                  className={`sm:hidden flex items-center gap-1 px-2 py-1 border rounded-lg text-[9px] font-black uppercase tracking-tighter shadow-sm active:scale-95 transition-all ${
+                    (filterDept || filterStatus || filterDate)
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                    : 'bg-white border-slate-200 text-slate-500'
+                  }`}
+                >
+                  <SlidersHorizontal className="w-3 h-3" />
+                  Filter
+                </button>
+
                 <button 
                   onClick={() => {
                     setFilterDept('');
                     setFilterStatus('');
                     setFilterDate('');
                   }}
-                  className="text-[10px] font-bold text-slate-400 hover:text-emerald-600 uppercase tracking-wider"
+                  className="hidden sm:block text-[10px] font-bold text-slate-400 hover:text-emerald-600 uppercase tracking-wider"
                 >
                   Atur Ulang Filter
                 </button>
@@ -873,16 +917,16 @@ export default function App() {
               </div>
             </div>
 
-            {/* Filters */}
-            <div className={`flex flex-col sm:flex-row gap-3 mb-6 p-4 rounded-2xl border shadow-sm transition-colors ${
+            {/* Filters - Hidden on mobile, replaced by modal */}
+            <div className={`hidden sm:flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6 p-2 sm:p-4 rounded-2xl border shadow-sm transition-colors ${
               appSettings.theme_mode === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200'
             }`}>
               <div className="flex-1 relative">
-                <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                 <select 
                   value={filterDept}
                   onChange={(e) => setFilterDept(e.target.value)}
-                  className={`w-full border rounded-xl py-2.5 pl-10 pr-4 text-xs font-bold outline-none appearance-none cursor-pointer transition-all ${
+                  className={`w-full border rounded-xl py-2 pl-8 pr-4 text-[10px] sm:text-xs font-bold outline-none appearance-none cursor-pointer transition-all ${
                     appSettings.theme_mode === 'dark' 
                     ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-750' 
                     : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -895,11 +939,11 @@ export default function App() {
                 </select>
               </div>
               <div className="flex-1 relative">
-                <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                 <select 
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className={`w-full border rounded-xl py-2.5 pl-10 pr-4 text-xs font-bold outline-none appearance-none cursor-pointer transition-all ${
+                  className={`w-full border rounded-xl py-2 pl-8 pr-4 text-[10px] sm:text-xs font-bold outline-none appearance-none cursor-pointer transition-all ${
                     appSettings.theme_mode === 'dark' 
                     ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-750' 
                     : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -912,12 +956,12 @@ export default function App() {
                 </select>
               </div>
               <div className="flex-1 relative">
-                <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                 <input 
                   type="date"
                   value={filterDate}
                   onChange={(e) => setFilterDate(e.target.value)}
-                  className={`w-full border rounded-xl py-2.5 pl-10 pr-4 text-xs font-bold outline-none cursor-pointer transition-all ${
+                  className={`w-full border rounded-xl py-2 pl-8 pr-4 text-[10px] sm:text-xs font-bold outline-none cursor-pointer transition-all ${
                     appSettings.theme_mode === 'dark' 
                     ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-750' 
                     : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -947,6 +991,13 @@ export default function App() {
                 <AnimatePresence mode="popLayout">
                   {(() => {
                     const filtered = tickets.filter(ticket => {
+                      // View Mode Filter (Today vs All)
+                      if (viewMode === 'today') {
+                        const ticketDate = new Date(ticket.created_at).toLocaleDateString('en-CA'); // YYYY-MM-DD
+                        const today = new Date().toLocaleDateString('en-CA');
+                        if (ticketDate !== today) return false;
+                      }
+
                       const matchDept = filterDept ? ticket.department === filterDept : true;
                       const matchStatus = filterStatus ? ticket.status === filterStatus : true;
                       const matchDate = filterDate ? ticket.created_at.startsWith(filterDate) : true;
@@ -995,96 +1046,111 @@ export default function App() {
                       );
                     }
 
-                    return filtered.map((ticket) => (
-                      <motion.div
-                        key={ticket.id}
-                        layout
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-xl hover:border-emerald-100 transition-all group cursor-pointer relative overflow-hidden"
-                        onClick={() => setSelectedTicket(ticket)}
-                      >
-                        <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div className="flex items-start gap-4 min-w-0">
-                            <div className="flex-shrink-0 mt-1">
-                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
-                                ticket.status === 'Resolved' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
-                                ticket.status === 'Pending' ? 'bg-amber-50 border-amber-100 text-amber-600' :
-                                'bg-blue-50 border-blue-100 text-blue-600'
-                              }`}>
-                                {getStatusIcon(ticket.status)}
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                        {filtered.map((ticket) => (
+                          <motion.div
+                            key={ticket.id}
+                            layout
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-white rounded-2xl border border-slate-100 p-3 shadow-sm hover:shadow-md hover:border-emerald-100 transition-all group cursor-pointer relative overflow-hidden flex flex-col"
+                            onClick={() => setSelectedTicket(ticket)}
+                          >
+                            <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            
+                            <div className="flex items-start gap-3 min-w-0">
+                              <div className="flex-shrink-0">
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${
+                                  ticket.status === 'Resolved' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
+                                  ticket.status === 'Pending' ? 'bg-amber-50 border-amber-100 text-amber-600' :
+                                  'bg-blue-50 border-blue-100 text-blue-600'
+                                }`}>
+                                  {getStatusIcon(ticket.status)}
+                                </div>
                               </div>
-                            </div>
-                            <div className="min-w-0">
-                              <div className="flex items-center flex-wrap gap-2 mb-1">
-                                <span className="text-[10px] font-black text-slate-400 tracking-tighter">#{ticket.ticket_no || ticket.id.toString().padStart(4, '0')}</span>
-                                <h3 className="text-sm font-black text-slate-900 truncate group-hover:text-emerald-600 transition-colors">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-2 mb-0.5">
+                                  <span className="text-[9px] font-black text-slate-400 tracking-tighter">#{ticket.ticket_no || ticket.id.toString().padStart(4, '0')}</span>
+                                  <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${getStatusColor(ticket.status)}`}>
+                                    {ticket.status}
+                                  </span>
+                                </div>
+                                <h3 className="text-xs font-black text-slate-900 truncate group-hover:text-emerald-600 transition-colors mb-1.5">
                                   {ticket.category} Request
                                 </h3>
-                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${getStatusColor(ticket.status)}`}>
-                                  {ticket.status}
-                                </span>
-                              </div>
-                              <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500 font-medium">
-                                <span className="flex items-center gap-1.5">
-                                  <User className="w-3 h-3 text-slate-400" /> {ticket.name}
-                                </span>
-                                <span className="flex items-center gap-1.5">
-                                  <Building2 className="w-3 h-3 text-slate-400" /> {ticket.department}
-                                </span>
-                                <span className="flex items-center gap-1.5">
-                                  <Calendar className="w-3 h-3 text-slate-400" /> {formatDate(ticket.created_at)}
-                                </span>
+                                
+                                <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px] text-slate-500 font-medium">
+                                  <span className="flex items-center gap-1 truncate">
+                                    <User className="w-2.5 h-2.5 text-slate-400 shrink-0" /> {ticket.name}
+                                  </span>
+                                  <span className="flex items-center gap-1 truncate">
+                                    <Building2 className="w-2.5 h-2.5 text-slate-400 shrink-0" /> {ticket.department}
+                                  </span>
+                                  
+                                  <div className="flex items-center justify-between col-span-2 mt-1 pt-1 border-t border-slate-50">
+                                    <span className="flex items-center gap-1 text-[9px] text-slate-400">
+                                      <Calendar className="w-2.5 h-2.5 shrink-0" /> {formatDate(ticket.created_at)}
+                                    </span>
+                                    <div className="flex items-center gap-0.5">
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedTicket(ticket);
+                                        }}
+                                        className="p-1 text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-all"
+                                        title="View Details"
+                                      >
+                                        <Eye className="w-3.5 h-3.5" />
+                                      </button>
+                                      {adminUser && (
+                                        <button 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteTicket(ticket.id);
+                                          }}
+                                          className="p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all"
+                                          title="Delete Ticket"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          
-                          <div className="flex items-center justify-end gap-2 sm:border-l sm:border-slate-100 sm:pl-4">
-                            {adminUser && ticket.status === 'Pending' && (
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedTicket(ticket);
-                                  // Auto focus on IT assignment in modal
-                                }}
-                                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-emerald-700 transition-all shadow-sm shadow-emerald-100"
-                              >
-                                <Zap className="w-3 h-3" /> Quick Action
-                              </button>
-                            )}
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedTicket(ticket);
-                              }}
-                              className="p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all border border-transparent hover:border-emerald-100"
-                              title="View Details"
-                            >
-                              <Eye className="w-5 h-5" />
-                            </button>
-                            {adminUser && (
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteTicket(ticket.id);
-                                }}
-                                className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all border border-transparent hover:border-rose-100"
-                                title="Delete Ticket"
-                              >
-                                <Trash2 className="w-5 h-5" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </motion.div>
-                    ));
+                          </motion.div>
+                        ))}
+                      </div>
+                    );
                   })()}
                 </AnimatePresence>
               </div>
             )}
+
+            {/* Help CTA - Visible on mobile at the bottom */}
+            <section 
+              className="lg:hidden rounded-3xl p-5 sm:p-6 text-white shadow-xl relative overflow-hidden group transition-all mt-6 sm:mt-8"
+              style={{ backgroundColor: appSettings.primary_color, boxShadow: `0 20px 25px -5px ${appSettings.primary_color}30` }}
+            >
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+                <Zap className="w-16 h-16" />
+              </div>
+              <h3 className="font-black text-lg mb-2">Butuh Bantuan?</h3>
+              <p className="text-white/80 text-xs leading-relaxed mb-4 font-medium">
+                Kirim tiket untuk masalah teknis. Tim IT kami akan memproses permintaan Anda sesegera mungkin.
+              </p>
+              <button 
+                onClick={() => setShowForm(true)}
+                className={`w-full font-bold py-3 rounded-2xl text-xs transition-all shadow-lg active:scale-95 ${
+                  appSettings.theme_mode === 'dark' ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-white text-slate-900 hover:bg-slate-50'
+                }`}
+              >
+                Buat Tiket Sekarang
+              </button>
+            </section>
           </div>
         </div>
       </main>
@@ -1391,26 +1457,26 @@ export default function App() {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="relative w-full max-w-4xl bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[95vh]"
             >
-              <div className="p-4 sm:p-6 border-b border-slate-100 shrink-0">
+              <div className="p-3 sm:p-4 border-b border-slate-100 shrink-0">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Tiket Baru</h2>
-                    <p className="text-[10px] text-slate-400 mt-0.5 font-medium uppercase tracking-widest">Beri tahu kami masalah Anda</p>
+                    <h2 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">Tiket Baru</h2>
+                    <p className="text-[9px] sm:text-[10px] text-slate-400 mt-0.5 font-medium uppercase tracking-widest">Beri tahu kami masalah Anda</p>
                   </div>
                   <button 
                     onClick={() => setShowForm(false)}
-                    className="p-2 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all border border-slate-100"
+                    className="p-1.5 sm:p-2 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all border border-slate-100"
                   >
-                    <X className="w-5 h-5 text-slate-400" />
+                    <X className="w-4 h-4 sm:w-5 h-5 text-slate-400" />
                   </button>
                 </div>
               </div>
 
-              <div className="p-4 sm:p-6 overflow-y-auto custom-scrollbar">
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="p-3 sm:p-6 overflow-y-auto custom-scrollbar">
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
                   {/* Left Column: Form Fields */}
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-3 sm:space-y-4">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
                       <div className="space-y-1.5">
                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Lengkap</label>
                         <div className="relative">
@@ -1485,7 +1551,7 @@ export default function App() {
                         <textarea 
                           required
                           placeholder="Jelaskan masalah Anda secara detail..."
-                          rows={3}
+                          rows={2}
                           className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 pl-10 pr-4 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all resize-none"
                           value={formData.description}
                           onChange={e => setFormData({...formData, description: e.target.value})}
@@ -1545,7 +1611,7 @@ export default function App() {
                   </div>
 
                   {/* Right Column: Photo Upload */}
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div className="space-y-1.5">
                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
                         Lampiran Foto (Opsional)
@@ -1560,7 +1626,7 @@ export default function App() {
                         />
                         <label 
                           htmlFor="photo-upload"
-                          className={`w-full flex flex-col items-center justify-center gap-4 py-10 px-4 border-2 border-dashed rounded-[2rem] cursor-pointer transition-all ${
+                          className={`w-full flex flex-col items-center justify-center gap-3 sm:gap-4 py-6 sm:py-10 px-4 border-2 border-dashed rounded-[1.5rem] sm:rounded-[2rem] cursor-pointer transition-all ${
                             formData.photo 
                             ? 'bg-emerald-50 border-emerald-200 text-emerald-600' 
                             : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100 hover:border-slate-200'
@@ -1568,19 +1634,19 @@ export default function App() {
                         >
                           {photoLoading ? (
                             <>
-                              <RefreshCcw className="w-8 h-8 animate-spin text-emerald-600" />
-                              <span className="text-[10px] font-bold uppercase tracking-widest">Processing...</span>
+                              <RefreshCcw className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-emerald-600" />
+                              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">Processing...</span>
                             </>
                           ) : formData.photo ? (
                             <>
-                              <div className="relative w-32 h-32 rounded-2xl overflow-hidden border-2 border-white shadow-xl">
+                              <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-white shadow-xl">
                                 <img src={formData.photo} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                 <div className="absolute inset-0 bg-emerald-600/40 flex items-center justify-center">
-                                  <CheckCircle2 className="w-8 h-8 text-white" />
+                                  <CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                                 </div>
                               </div>
                               <div className="text-center">
-                                <p className="text-[10px] font-black uppercase tracking-widest">Foto Terlampir</p>
+                                <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Foto Terlampir</p>
                                 <button 
                                   type="button"
                                   onClick={(e) => {
@@ -1588,7 +1654,7 @@ export default function App() {
                                     e.stopPropagation();
                                     setFormData(prev => ({ ...prev, photo: '' }));
                                   }}
-                                  className="text-[10px] font-bold text-emerald-600 underline mt-1"
+                                  className="text-[8px] sm:text-[9px] font-bold text-rose-500 uppercase tracking-widest hover:underline mt-1"
                                 >
                                   Hapus Foto
                                 </button>
@@ -1596,12 +1662,12 @@ export default function App() {
                             </>
                           ) : (
                             <>
-                              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-100">
-                                <Camera className="w-6 h-6" />
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-100">
+                                <Camera className="w-5 h-5 sm:w-6 sm:h-6" />
                               </div>
                               <div className="text-center">
-                                <p className="text-[10px] font-black uppercase tracking-widest">Klik untuk Upload</p>
-                                <p className="text-[9px] font-medium text-slate-400 mt-1">Maksimal 5MB (JPG, PNG)</p>
+                                <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Klik untuk Upload</p>
+                                <p className="text-[8px] sm:text-[9px] font-medium text-slate-400 mt-1">Maksimal 5MB (JPG, PNG)</p>
                               </div>
                             </>
                           )}
@@ -1622,6 +1688,167 @@ export default function App() {
                     </button>
                   </div>
                 </form>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* --- MODAL: MOBILE FILTER --- */}
+      <AnimatePresence>
+        {showMobileFilter && (
+          <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowMobileFilter(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className={`relative w-full max-w-lg rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${
+                appSettings.theme_mode === 'dark' ? 'bg-slate-900' : 'bg-white'
+              }`}
+            >
+              <div className={`p-6 border-b shrink-0 flex items-center justify-between ${
+                appSettings.theme_mode === 'dark' ? 'border-slate-800' : 'border-slate-100'
+              }`}>
+                <div>
+                  <h2 className={`text-xl font-black tracking-tight ${appSettings.theme_mode === 'dark' ? 'text-white' : 'text-slate-900'}`}>Filter Antrian</h2>
+                  <p className="text-[10px] text-slate-400 mt-0.5 font-medium uppercase tracking-widest">Sesuaikan tampilan antrian</p>
+                </div>
+                <button 
+                  onClick={() => setShowMobileFilter(false)}
+                  className={`p-2 rounded-xl transition-all border ${
+                    appSettings.theme_mode === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-750' : 'bg-slate-50 border-slate-100 hover:bg-slate-100'
+                  }`}
+                >
+                  <X className="w-5 h-5 text-slate-400" />
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
+                {/* Department Filter */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Bagian / Departemen</label>
+                  <div className="flex flex-wrap gap-2">
+                    <button 
+                      onClick={() => setTempFilters({ ...tempFilters, dept: '' })}
+                      className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${
+                        tempFilters.dept === '' 
+                        ? 'bg-emerald-600 border-emerald-600 text-white' 
+                        : appSettings.theme_mode === 'dark' 
+                          ? 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750' 
+                          : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'
+                      }`}
+                    >
+                      Semua
+                    </button>
+                    {departments.map(dept => (
+                      <button 
+                        key={dept.id}
+                        onClick={() => setTempFilters({ ...tempFilters, dept: dept.name })}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${
+                          tempFilters.dept === dept.name 
+                          ? 'bg-emerald-600 border-emerald-600 text-white' 
+                          : appSettings.theme_mode === 'dark' 
+                            ? 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750' 
+                            : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'
+                        }`}
+                      >
+                        {dept.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Status Filter */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Status Tiket</label>
+                  <div className="flex flex-wrap gap-2">
+                    <button 
+                      onClick={() => setTempFilters({ ...tempFilters, status: '' })}
+                      className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${
+                        tempFilters.status === '' 
+                        ? 'bg-emerald-600 border-emerald-600 text-white' 
+                        : appSettings.theme_mode === 'dark' 
+                          ? 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750' 
+                          : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'
+                      }`}
+                    >
+                      Semua
+                    </button>
+                    {STATUSES.map(status => (
+                      <button 
+                        key={status}
+                        onClick={() => setTempFilters({ ...tempFilters, status: status })}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${
+                          tempFilters.status === status 
+                          ? 'bg-emerald-600 border-emerald-600 text-white' 
+                          : appSettings.theme_mode === 'dark' 
+                            ? 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750' 
+                            : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'
+                        }`}
+                      >
+                        {status}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Date Filter */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tanggal Spesifik</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input 
+                      type="date"
+                      value={tempFilters.date}
+                      onChange={(e) => setTempFilters({ ...tempFilters, date: e.target.value })}
+                      className={`w-full border rounded-xl py-3 pl-12 pr-4 text-xs font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all ${
+                        appSettings.theme_mode === 'dark' 
+                        ? 'bg-slate-800 border-slate-700 text-slate-200' 
+                        : 'bg-slate-50 border-slate-100 text-slate-700'
+                      }`}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className={`p-6 border-t shrink-0 flex gap-3 ${
+                appSettings.theme_mode === 'dark' ? 'border-slate-800' : 'border-slate-100'
+              }`}>
+                <button 
+                  onClick={() => {
+                    setFilterDept('');
+                    setFilterStatus('');
+                    setFilterDate('');
+                    setTempFilters({ dept: '', status: '', date: '' });
+                    setShowMobileFilter(false);
+                  }}
+                  className={`flex-1 py-4 font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all ${
+                    appSettings.theme_mode === 'dark' ? 'bg-slate-800 text-slate-400 hover:bg-slate-750' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  Reset
+                </button>
+                <button 
+                  onClick={() => {
+                    setFilterDept(tempFilters.dept);
+                    setFilterStatus(tempFilters.status);
+                    setFilterDate(tempFilters.date);
+                    setShowMobileFilter(false);
+                  }}
+                  className={`flex-[2] py-4 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-lg transition-all active:scale-[0.98] ${
+                    appSettings.theme_mode === 'dark' ? 'bg-emerald-500 shadow-emerald-900/40 hover:bg-emerald-400' : 'bg-emerald-600 shadow-emerald-900/20 hover:opacity-90'
+                  }`}
+                >
+                  Apply Filters
+                </button>
               </div>
             </motion.div>
           </div>
