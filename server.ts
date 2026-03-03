@@ -294,11 +294,12 @@ async function startServer() {
       }
 
       // Generate ticket_no: YYMMDDNNN
-      const now = new Date();
+      const utcNow = new Date();
+      const jakartaNow = new Date(utcNow.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
       // Use local time for the ticket number prefix as requested by user format
-      const year = now.getFullYear().toString().slice(-2);
-      const month = (now.getMonth() + 1).toString().padStart(2, '0');
-      const day = now.getDate().toString().padStart(2, '0');
+      const year = jakartaNow.getFullYear().toString().slice(-2);
+      const month = (jakartaNow.getMonth() + 1).toString().padStart(2, '0');
+      const day = jakartaNow.getDate().toString().padStart(2, '0');
       const datePrefix = `${year}${month}${day}`;
 
       // Find the latest ticket number for today
@@ -320,7 +321,7 @@ async function startServer() {
 
       const info = db.prepare(
         "INSERT INTO tickets (ticket_no, name, department, phone, category, description, photo, created_at, ip_address, user_agent, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-      ).run(ticketNo, name, department, phone, category, description || "", photo || null, now.toISOString(), String(ip), String(userAgent), latitude || null, longitude || null);
+      ).run(ticketNo, name, department, phone, category, description || "", photo || null, utcNow.toISOString(), String(ip), String(userAgent), latitude || null, longitude || null);
       
       const newTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(info.lastInsertRowid) as any;
       

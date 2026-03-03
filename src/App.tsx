@@ -294,7 +294,8 @@ export default function App() {
   /**
    * Mengambil data tiket dari server
    */
-  const fetchTickets = async () => {
+  const fetchTickets = async (showLoading = false) => {
+    if (showLoading) setLoading(true);
     try {
       const res = await fetch('/api/tickets');
       const data = await res.json();
@@ -733,8 +734,8 @@ export default function App() {
                   )}
 
                   {(() => {
-                    const today = new Date().toISOString().split('T')[0];
-                    const newToday = tickets.filter(t => t.created_at.startsWith(today)).length;
+                    const today = new Date().toLocaleDateString('en-CA');
+                    const newToday = tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === today).length;
                     if (newToday > 0) {
                       return (
                         <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 group hover:bg-blue-50 transition-all">
@@ -858,7 +859,7 @@ export default function App() {
               <div className="flex items-center gap-3 sm:gap-6">
                 <button 
                   onClick={() => setViewMode('today')}
-                  className={`relative pb-2 text-[11px] sm:text-sm font-black uppercase tracking-wider transition-all ${
+                  className={`relative pb-2 text-[12px] sm:text-sm font-bold transition-all ${
                     viewMode === 'today' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'
                   }`}
                 >
@@ -869,7 +870,7 @@ export default function App() {
                 </button>
                 <button 
                   onClick={() => setViewMode('all')}
-                  className={`relative pb-2 text-[11px] sm:text-sm font-black uppercase tracking-wider transition-all ${
+                  className={`relative pb-2 text-[12px] sm:text-sm font-bold transition-all ${
                     viewMode === 'all' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'
                   }`}
                 >
@@ -908,7 +909,7 @@ export default function App() {
                   Atur Ulang Filter
                 </button>
                 <button 
-                  onClick={fetchTickets}
+                  onClick={() => fetchTickets(true)}
                   className="p-2 text-slate-400 hover:text-emerald-600 transition-colors"
                   title="Segarkan Antrian"
                 >
@@ -1000,15 +1001,17 @@ export default function App() {
 
                       const matchDept = filterDept ? ticket.department === filterDept : true;
                       const matchStatus = filterStatus ? ticket.status === filterStatus : true;
-                      const matchDate = filterDate ? ticket.created_at.startsWith(filterDate) : true;
+                      const matchDate = filterDate ? new Date(ticket.created_at).toLocaleDateString('en-CA') === filterDate : true;
                       return matchDept && matchStatus && matchDate;
                     });
 
                     if (tickets.length === 0) {
                       return (
                         <motion.div 
+                          key="empty"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
                           className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-200 border-dashed"
                         >
                           <CurrentLogo className="w-12 h-12 text-slate-200 mb-4" />
@@ -1026,8 +1029,10 @@ export default function App() {
                     if (filtered.length === 0) {
                       return (
                         <motion.div 
+                          key="no-match"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
                           className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-200 border-dashed"
                         >
                           <Filter className="w-12 h-12 text-slate-200 mb-4" />
@@ -1047,20 +1052,27 @@ export default function App() {
                     }
 
                     return (
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                      <motion.div 
+                        key={viewMode}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex flex-col gap-3"
+                      >
                         {filtered.map((ticket) => (
                           <motion.div
                             key={ticket.id}
                             layout
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="bg-white rounded-2xl border border-slate-100 p-3 shadow-sm hover:shadow-md hover:border-emerald-100 transition-all group cursor-pointer relative overflow-hidden flex flex-col"
+                            className="bg-white rounded-2xl border border-slate-100 p-3 shadow-sm hover:shadow-md hover:border-emerald-100 transition-all group cursor-pointer relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between"
                             onClick={() => setSelectedTicket(ticket)}
                           >
                             <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                             
-                            <div className="flex items-start gap-3 min-w-0">
+                            <div className="flex items-start gap-3 min-w-0 sm:w-1/2">
                               <div className="flex-shrink-0">
                                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${
                                   ticket.status === 'Resolved' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
@@ -1073,57 +1085,64 @@ export default function App() {
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center justify-between gap-2 mb-0.5">
                                   <span className="text-[9px] font-black text-slate-400 tracking-tighter">#{ticket.ticket_no || ticket.id.toString().padStart(4, '0')}</span>
-                                  <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${getStatusColor(ticket.status)}`}>
-                                    {ticket.status}
-                                  </span>
                                 </div>
                                 <h3 className="text-xs font-black text-slate-900 truncate group-hover:text-emerald-600 transition-colors mb-1.5">
                                   {ticket.category} Request
                                 </h3>
                                 
-                                <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px] text-slate-500 font-medium">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-1 text-[10px] text-slate-500 font-medium">
                                   <span className="flex items-center gap-1 truncate">
                                     <User className="w-2.5 h-2.5 text-slate-400 shrink-0" /> {ticket.name}
                                   </span>
-                                  <span className="flex items-center gap-1 truncate">
-                                    <Building2 className="w-2.5 h-2.5 text-slate-400 shrink-0" /> {ticket.department}
-                                  </span>
-                                  
-                                  <div className="flex items-center justify-between col-span-2 mt-1 pt-1 border-t border-slate-50">
-                                    <span className="flex items-center gap-1 text-[9px] text-slate-400">
-                                      <Calendar className="w-2.5 h-2.5 shrink-0" /> {formatDate(ticket.created_at)}
+                                  <div className="flex items-center gap-2">
+                                    <span className="flex items-center gap-1 truncate">
+                                      <Building2 className="w-2.5 h-2.5 text-slate-400 shrink-0" /> {ticket.department}
                                     </span>
-                                    <div className="flex items-center gap-0.5">
-                                      <button 
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setSelectedTicket(ticket);
-                                        }}
-                                        className="p-1 text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-all"
-                                        title="View Details"
-                                      >
-                                        <Eye className="w-3.5 h-3.5" />
-                                      </button>
-                                      {adminUser && (
-                                        <button 
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteTicket(ticket.id);
-                                          }}
-                                          className="p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all"
-                                          title="Delete Ticket"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                      )}
-                                    </div>
+                                    <span className={`sm:hidden px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${getStatusColor(ticket.status)}`}>
+                                      {ticket.status}
+                                    </span>
                                   </div>
                                 </div>
                               </div>
                             </div>
+
+                            <div className="mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 sm:border-l border-slate-50 sm:pl-4 flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 sm:w-1/3">
+                              <div className="flex flex-col items-start sm:items-end gap-1">
+                                <span className={`hidden sm:inline-block px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${getStatusColor(ticket.status)}`}>
+                                  {ticket.status}
+                                </span>
+                                <span className="flex items-center gap-1 text-[9px] text-slate-400">
+                                  <Calendar className="w-2.5 h-2.5 shrink-0" /> {formatDate(ticket.created_at)}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedTicket(ticket);
+                                  }}
+                                  className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-all border border-transparent hover:border-emerald-100"
+                                  title="View Details"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                                {adminUser && (
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteTicket(ticket.id);
+                                    }}
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all border border-transparent hover:border-rose-100"
+                                    title="Delete Ticket"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           </motion.div>
                         ))}
-                      </div>
+                      </motion.div>
                     );
                   })()}
                 </AnimatePresence>
