@@ -159,7 +159,7 @@ async function sendNotificationEmail(ticket: any, emails: string[]) {
             <tr><td style="padding: 8px 0; font-weight: bold;">Deskripsi:</td><td>${ticket.description}</td></tr>
           </table>
           <div style="margin-top: 30px;">
-            <a href="${process.env.APP_URL || '#'}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Buka Portal Admin</a>
+            <a href="https://www.itk3dk.my.id/" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Buka Portal Admin</a>
           </div>
         </div>
       `
