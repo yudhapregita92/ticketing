@@ -6,121 +6,6 @@ import nodemailer from "nodemailer";
 
 const db = new Database("tickets.db");
 
-// Initialize database
-db.exec(`
-  CREATE TABLE IF NOT EXISTS tickets (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    ticket_no TEXT UNIQUE,
-    name TEXT NOT NULL,
-    department TEXT NOT NULL,
-    phone TEXT NOT NULL,
-    category TEXT NOT NULL,
-    description TEXT,
-    assigned_to TEXT,
-    admin_reply TEXT,
-    status TEXT DEFAULT 'Pending',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    responded_at DATETIME,
-    resolved_at DATETIME,
-    photo TEXT,
-    ip_address TEXT,
-    user_agent TEXT,
-    latitude REAL,
-    longitude REAL
-  );
-
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    role TEXT DEFAULT 'admin'
-  );
-
-  CREATE TABLE IF NOT EXISTS settings (
-    key TEXT PRIMARY KEY,
-    value TEXT
-  );
-
-  CREATE TABLE IF NOT EXISTS it_personnel (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE NOT NULL
-  );
-
-  CREATE TABLE IF NOT EXISTS departments (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE NOT NULL
-  );
-
-  CREATE TABLE IF NOT EXISTS categories (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE NOT NULL
-  );
-`);
-
-// Initialize default data if tables are empty
-const itCount = db.prepare("SELECT COUNT(*) as count FROM it_personnel").get() as { count: number };
-if (itCount.count === 0) {
-  const insert = db.prepare("INSERT INTO it_personnel (name) VALUES (?)");
-  ['Yudha', 'Bayu', 'Dita'].forEach(name => insert.run(name));
-}
-
-const deptCount = db.prepare("SELECT COUNT(*) as count FROM departments").get() as { count: number };
-if (deptCount.count === 0) {
-  const insert = db.prepare("INSERT INTO departments (name) VALUES (?)");
-  ['HRGA', 'CE Business', 'Fleet Business', 'Accounting', 'Treasury & Financing', 'Store Retail', 'Supply Chain', 'Other Retail', 'OSS', 'PT DKU'].forEach(name => insert.run(name));
-}
-
-const catCount = db.prepare("SELECT COUNT(*) as count FROM categories").get() as { count: number };
-if (catCount.count === 0) {
-  const insert = db.prepare("INSERT INTO categories (name) VALUES (?)");
-  ['Synergi', 'SCM', 'MKT', 'Hardware', 'Jaringan'].forEach(name => insert.run(name));
-}
-
-// Add new columns if they don't exist (for existing databases)
-try {
-  db.exec("ALTER TABLE tickets ADD COLUMN ticket_no TEXT");
-  console.log("Added ticket_no column");
-} catch (e: any) {
-  console.log("ticket_no column check:", e.message);
-}
-try {
-  db.exec("ALTER TABLE tickets ADD COLUMN description TEXT");
-} catch (e) {}
-
-try {
-  db.exec("ALTER TABLE tickets ADD COLUMN photo TEXT");
-} catch (e) {}
-
-// Log current columns for debugging
-const tableInfo = db.prepare("PRAGMA table_info(tickets)").all();
-console.log("Tickets table columns:", tableInfo.map((c: any) => c.name).join(", "));
-try {
-  db.exec("ALTER TABLE tickets ADD COLUMN assigned_to TEXT");
-} catch (e) {}
-try {
-  db.exec("ALTER TABLE tickets ADD COLUMN admin_reply TEXT");
-} catch (e) {}
-try {
-  db.exec("ALTER TABLE tickets ADD COLUMN responded_at DATETIME");
-} catch (e) {}
-try {
-  db.exec("ALTER TABLE tickets ADD COLUMN ip_address TEXT");
-} catch (e) {}
-try {
-  db.exec("ALTER TABLE tickets ADD COLUMN latitude REAL");
-} catch (e) {}
-try {
-  db.exec("ALTER TABLE tickets ADD COLUMN longitude REAL");
-} catch (e) {}
-
-// Initialize default settings
-const initSettings = db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)");
-initSettings.run('app_name', 'IT Helpdesk Pro');
-initSettings.run('logo_type', 'ShieldCheck');
-initSettings.run('notification_emails', '[]');
-initSettings.run('telegram_bot_token', '');
-initSettings.run('telegram_chat_ids', '[]');
-
 // Email Transporter Setup
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -177,7 +62,11 @@ async function sendNotificationEmail(ticket: any, emails: string[]) {
 }
 
 async function sendTelegramNotification(ticket: any, botToken: string, chatIds: string[]) {
-  if (!botToken || !chatIds || chatIds.length === 0) return;
+  const trimmedToken = botToken.trim();
+  if (!trimmedToken || !chatIds || chatIds.length === 0) {
+    console.log('Skipping Telegram notification: Missing token or chat IDs');
+    return;
+  }
 
   const message = `
 <b>Ada Tiket Baru Masuk!</b>
@@ -193,7 +82,8 @@ async function sendTelegramNotification(ticket: any, botToken: string, chatIds: 
 
   for (const chatId of chatIds) {
     try {
-      const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      console.log(`Sending Telegram notification to ${chatId}...`);
+      const response = await fetch(`https://api.telegram.org/bot${trimmedToken}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -206,7 +96,7 @@ async function sendTelegramNotification(ticket: any, botToken: string, chatIds: 
       
       if (!response.ok) {
         const errorData = await response.json();
-        console.error(`Error sending Telegram notification to ${chatId}:`, errorData);
+        console.error(`Telegram API error for ${chatId}:`, errorData);
       } else {
         console.log(`Telegram notification sent successfully to: ${chatId}`);
       }
@@ -216,17 +106,161 @@ async function sendTelegramNotification(ticket: any, botToken: string, chatIds: 
   }
 }
 
-// Create default admin if not exists
-const rootExists = db.prepare("SELECT * FROM users WHERE username = 'root'").get();
-if (!rootExists) {
-  db.prepare("INSERT INTO users (username, password) VALUES (?, ?)").run('root', 'root');
-}
+// Create default users if not exists
+// (Moved inside startServer)
 
 async function startServer() {
+  console.log("Starting server initialization...");
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  // Add health check ASAP
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", time: new Date().toISOString() });
+  });
+
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+  console.log("Initializing database tables...");
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS tickets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ticket_no TEXT UNIQUE,
+        name TEXT NOT NULL,
+        department TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        category TEXT NOT NULL,
+        description TEXT,
+        assigned_to TEXT,
+        admin_reply TEXT,
+        status TEXT DEFAULT 'New',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        responded_at DATETIME,
+        resolved_at DATETIME,
+        photo TEXT,
+        ip_address TEXT,
+        user_agent TEXT,
+        latitude REAL,
+        longitude REAL,
+        internal_notes TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        role TEXT DEFAULT 'staff',
+        full_name TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS it_personnel (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS departments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL
+      );
+    `);
+    console.log("Database tables checked/created.");
+  } catch (err) {
+    console.error("Database initialization error:", err);
+  }
+
+  // Initialize default data if tables are empty
+  try {
+    const itCount = db.prepare("SELECT COUNT(*) as count FROM it_personnel").get() as { count: number };
+    if (itCount.count === 0) {
+      const insert = db.prepare("INSERT INTO it_personnel (name) VALUES (?)");
+      ['Yudha', 'Bayu', 'Dita'].forEach(name => insert.run(name));
+    }
+
+    const deptCount = db.prepare("SELECT COUNT(*) as count FROM departments").get() as { count: number };
+    if (deptCount.count === 0) {
+      const insert = db.prepare("INSERT INTO departments (name) VALUES (?)");
+      ['HRGA', 'CE Business', 'Fleet Business', 'Accounting', 'Treasury & Financing', 'Store Retail', 'Supply Chain', 'Other Retail', 'OSS', 'PT DKU'].forEach(name => insert.run(name));
+    }
+
+    const catCount = db.prepare("SELECT COUNT(*) as count FROM categories").get() as { count: number };
+    if (catCount.count === 0) {
+      const insert = db.prepare("INSERT INTO categories (name) VALUES (?)");
+      ['Synergi', 'SCM', 'MKT', 'Hardware', 'Jaringan'].forEach(name => insert.run(name));
+    }
+
+    // Add new columns if they don't exist (for existing databases)
+    const columnsToEnsure = [
+      "ticket_no TEXT", "description TEXT", "photo TEXT", "assigned_to TEXT", 
+      "admin_reply TEXT", "internal_notes TEXT", "responded_at DATETIME", 
+      "resolved_at DATETIME", "updated_at DATETIME DEFAULT CURRENT_TIMESTAMP",
+      "ip_address TEXT", "user_agent TEXT", "latitude REAL", "longitude REAL"
+    ];
+    columnsToEnsure.forEach(col => {
+      try { db.exec(`ALTER TABLE tickets ADD COLUMN ${col}`); } catch (e) {}
+    });
+
+    const userColumnsToEnsure = ["role TEXT DEFAULT 'staff'", "full_name TEXT"];
+    userColumnsToEnsure.forEach(col => {
+      try { db.exec(`ALTER TABLE users ADD COLUMN ${col}`); } catch (e) {}
+    });
+
+    // Initialize default settings
+    const initSettings = db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)");
+    initSettings.run('app_name', 'IT Helpdesk Pro');
+    initSettings.run('logo_type', 'ShieldCheck');
+    initSettings.run('notification_emails', '[]');
+    initSettings.run('telegram_bot_token', '');
+    initSettings.run('telegram_chat_ids', '[]');
+
+    // Create or update default users
+    const usersToCreate = [
+      { username: 'yudha', password: 'root', role: 'Super Admin', full_name: 'Yudha' },
+      { username: 'bayu', password: 'root', role: 'Staff IT Support', full_name: 'Bayu' },
+      { username: 'dita', password: 'root', role: 'Staff App Support', full_name: 'Dita' }
+    ];
+    usersToCreate.forEach(u => {
+      const exists = db.prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(?)").get(u.username) as any;
+      if (!exists) {
+        db.prepare("INSERT INTO users (username, password, role, full_name) VALUES (?, ?, ?, ?)").run(u.username, u.password, u.role, u.full_name);
+      } else {
+        // Force update password to 'root' for prototype consistency
+        db.prepare("UPDATE users SET password = ?, role = ?, full_name = ? WHERE id = ?").run(u.password, u.role, u.full_name, exists.id);
+      }
+    });
+    // Create default users or update them
+    // ... (already done)
+
+    // Add sample tickets if table is empty
+    const ticketCount = db.prepare("SELECT COUNT(*) as count FROM tickets").get() as { count: number };
+    if (ticketCount.count === 0) {
+      const insert = db.prepare(`
+        INSERT INTO tickets (ticket_no, name, department, phone, category, description, assigned_to, status) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      insert.run('TKT-0001', 'Budi', 'HRGA', '08123456789', 'Hardware', 'Laptop tidak bisa nyala', 'bayu', 'In Progress');
+      insert.run('TKT-0002', 'Siti', 'CE Business', '08123456788', 'SCM', 'Akses SCM ditolak', 'dita', 'New');
+      insert.run('TKT-0003', 'Andi', 'Fleet Business', '08123456787', 'Jaringan', 'Wifi lemot di lantai 2', 'bayu', 'New');
+    }
+    
+    const allUsers = db.prepare("SELECT * FROM users").all();
+    console.log("Current users in DB:", allUsers);
+    console.log("Database data initialized.");
+  } catch (err) {
+    console.error("Database data init error:", err);
+  }
 
   // API Routes
   app.get("/api/settings", (req, res) => {
@@ -249,11 +283,27 @@ async function startServer() {
 
   app.post("/api/login", (req, res) => {
     const { username, password } = req.body;
-    const user = db.prepare("SELECT * FROM users WHERE username = ? AND password = ?").get(username, password);
+    const cleanUsername = String(username || '').trim();
+    const cleanPassword = String(password || '').trim();
+    
+    console.log(`Login attempt for: ${cleanUsername}`);
+    
+    // For prototype, we allow case-insensitive password too to avoid frustration
+    const user = db.prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND LOWER(password) = LOWER(?)").get(cleanUsername, cleanPassword) as any;
+    
     if (user) {
-      res.json({ success: true, user: { username: user.username, role: user.role } });
+      console.log(`Login success for: ${user.username}, Role: ${user.role}`);
+      res.json({ 
+        success: true, 
+        user: { 
+          username: user.username, 
+          role: user.role, 
+          full_name: user.full_name 
+        } 
+      });
     } else {
-      res.status(401).json({ error: "Invalid credentials" });
+      console.log(`Login failed for: ${cleanUsername}`);
+      res.status(401).json({ error: "Username atau Password salah" });
     }
   });
 
@@ -317,10 +367,29 @@ async function startServer() {
 
   app.get("/api/tickets", (req, res) => {
     try {
-      const tickets = db.prepare("SELECT * FROM tickets ORDER BY created_at DESC").all();
+      const { username, role } = req.query;
+      // Exclude 'photo' from the list to keep payload small
+      const columns = "id, ticket_no, name, department, phone, category, description, assigned_to, admin_reply, status, created_at, updated_at, responded_at, resolved_at, ip_address, user_agent, latitude, longitude, internal_notes";
+      let tickets;
+      if (role === 'Super Admin' || !username) {
+        tickets = db.prepare(`SELECT ${columns} FROM tickets ORDER BY created_at DESC`).all();
+      } else {
+        tickets = db.prepare(`SELECT ${columns} FROM tickets WHERE assigned_to = ? ORDER BY created_at DESC`).all(username);
+      }
       res.json(tickets);
     } catch (err: any) {
       console.error('Error fetching tickets:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/tickets/:id/photo", (req, res) => {
+    try {
+      const { id } = req.params;
+      const ticket = db.prepare("SELECT photo FROM tickets WHERE id = ?").get(id) as { photo: string } | undefined;
+      if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+      res.json({ photo: ticket.photo });
+    } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
@@ -360,11 +429,22 @@ async function startServer() {
       const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
       const userAgent = req.headers['user-agent'];
 
+      // Auto-mapping logic
+      let assignedTo = 'yudha'; // Default
+      if (['Hardware', 'Jaringan', 'MKT'].includes(category)) {
+        assignedTo = 'bayu';
+      } else if (['SCM', 'Synergi'].includes(category)) {
+        assignedTo = 'dita';
+      }
+
       const info = db.prepare(
-        "INSERT INTO tickets (ticket_no, name, department, phone, category, description, photo, created_at, ip_address, user_agent, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-      ).run(ticketNo, name, department, phone, category, description || "", photo || null, utcNow.toISOString(), String(ip), String(userAgent), latitude || null, longitude || null);
+        "INSERT INTO tickets (ticket_no, name, department, phone, category, description, photo, created_at, ip_address, user_agent, latitude, longitude, assigned_to, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      ).run(ticketNo, name, department, phone, category, description || "", photo || null, utcNow.toISOString(), String(ip), String(userAgent), latitude || null, longitude || null, assignedTo, 'New');
       
       const newTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(info.lastInsertRowid) as any;
+      
+      // Targeted Telegram Notification simulation
+      console.log(`[TELEGRAM] Targeted Notification for ${assignedTo.toUpperCase()}: New ticket ${ticketNo} in category ${category}`);
       
       // Send Email Notification
       const notificationEmailsRaw = db.prepare("SELECT value FROM settings WHERE key = 'notification_emails'").get() as { value: string } | undefined;
@@ -400,43 +480,56 @@ async function startServer() {
 
   app.patch("/api/tickets/:id", (req, res) => {
     const { id } = req.params;
-    const { status, assigned_to, admin_reply } = req.body;
+    const { status, assigned_to, admin_reply, internal_notes, takeover_by, reassign_to } = req.body;
     
-    if (!status) {
-      return res.status(400).json({ error: "Status is required" });
-    }
-
     const currentTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(id) as any;
     if (!currentTicket) return res.status(404).json({ error: "Ticket not found" });
 
     let respondedAt = currentTicket.responded_at;
     let resolvedAt = currentTicket.resolved_at;
+    let newStatus = status || currentTicket.status;
+    let newAssignedTo = assigned_to || currentTicket.assigned_to;
 
-    // Set responded_at if it's the first time admin replies or changes status from Pending
-    if (!respondedAt && (admin_reply || status !== 'Pending')) {
+    // Intervention logic for Yudha
+    if (takeover_by) {
+      newAssignedTo = takeover_by;
+      console.log(`[INTERVENTION] Ticket ${currentTicket.ticket_no} taken over by ${takeover_by}`);
+    } else if (reassign_to) {
+      newAssignedTo = reassign_to;
+      console.log(`[INTERVENTION] Ticket ${currentTicket.ticket_no} reassigned to ${reassign_to}`);
+    }
+
+    // Set responded_at if it's the first time admin replies or changes status from New
+    if (!respondedAt && (admin_reply || newStatus !== 'New')) {
       respondedAt = new Date().toISOString();
     }
 
-    // Set resolved_at if status is changed to Resolved
-    if (status === 'Resolved' && !resolvedAt) {
+    // Set resolved_at if status is changed to Completed
+    if (newStatus === 'Completed' && !resolvedAt) {
       resolvedAt = new Date().toISOString();
-    } else if (status !== 'Resolved') {
+    } else if (newStatus !== 'Completed') {
       resolvedAt = null; // Reset if reopened
     }
 
-    db.prepare("UPDATE tickets SET status = ?, assigned_to = ?, admin_reply = ?, responded_at = ?, resolved_at = ? WHERE id = ?")
-      .run(status, assigned_to || null, admin_reply || null, respondedAt, resolvedAt, id);
+    db.prepare("UPDATE tickets SET status = ?, assigned_to = ?, admin_reply = ?, internal_notes = ?, responded_at = ?, resolved_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+      .run(newStatus, newAssignedTo, admin_reply || currentTicket.admin_reply, internal_notes || currentTicket.internal_notes, respondedAt, resolvedAt, id);
     
     res.json({ success: true });
   });
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
+    console.log("Starting Vite in middleware mode...");
+    try {
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
+      });
+      app.use(vite.middlewares);
+      console.log("Vite middleware attached.");
+    } catch (err) {
+      console.error("Vite initialization error:", err);
+    }
   } else {
     app.use(express.static(path.join(process.cwd(), "dist")));
     app.get("*", (req, res) => {
@@ -445,7 +538,8 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server is listening on 0.0.0.0:${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   });
 }
 

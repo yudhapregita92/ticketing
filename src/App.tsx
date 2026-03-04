@@ -56,6 +56,7 @@ interface ITicket {
   admin_reply: string | null;
   status: string;
   created_at: string;
+  updated_at: string;
   responded_at?: string | null;
   resolved_at?: string | null;
   photo?: string | null;
@@ -63,9 +64,10 @@ interface ITicket {
   user_agent?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  internal_notes?: string | null;
 }
 
-const STATUSES = ['Pending', 'In Progress', 'Resolved', 'Cancelled'];
+const STATUSES = ['New', 'In Progress', 'Completed', 'Cancelled'];
 const LOGO_OPTIONS = [
   { id: 'ShieldCheck', icon: ShieldCheck },
   { id: 'Cpu', icon: Cpu },
@@ -115,13 +117,26 @@ export default function App() {
   const [categories, setCategories] = useState<{id: number, name: string}[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<ITicket | null>(null); // Tiket yang sedang dilihat detailnya
   const [modalStatus, setModalStatus] = useState<string>(''); // Status sementara di modal detail
+
+  const handleSelectTicket = async (ticket: ITicket) => {
+    setSelectedTicket(ticket);
+    try {
+      const res = await fetch(`/api/tickets/${ticket.id}/photo`);
+      const data = await res.json();
+      if (data.photo) {
+        setSelectedTicket(prev => prev && prev.id === ticket.id ? { ...prev, photo: data.photo } : prev);
+      }
+    } catch (err) {
+      console.error('Failed to fetch ticket photo:', err);
+    }
+  };
   const [loading, setLoading] = useState(true); // Loading state untuk fetch data awal
   const [adminUser, setAdminUser] = useState<any>(null); // Data login admin
   const [showForm, setShowForm] = useState(false); // Toggle modal buat tiket baru
   const [showLogin, setShowLogin] = useState(false); // Toggle modal login admin
   const [showSettings, setShowSettings] = useState(false); // Toggle modal pengaturan aplikasi
   const [showResetConfirm, setShowResetConfirm] = useState(false); // Toggle konfirmasi reset data
-  const [pendingUpdate, setPendingUpdate] = useState<{id: number, status: string, assigned_to: string | null, admin_reply: string | null} | null>(null); // Data update yang menunggu konfirmasi
+  const [pendingUpdate, setPendingUpdate] = useState<{id: number, status: string, assigned_to: string | null, admin_reply: string | null, internal_notes: string | null} | null>(null); // Data update yang menunggu konfirmasi
   const [addingType, setAddingType] = useState<'it' | 'dept' | 'cat' | null>(null);
   const [newItemName, setNewItemName] = useState('');
   const [newEmailInput, setNewEmailInput] = useState('');
@@ -156,6 +171,28 @@ export default function App() {
   const [filterStatus, setFilterStatus] = useState<string>(''); // Filter status
   const [filterDate, setFilterDate] = useState<string>(''); // Filter tanggal
   const [photoLoading, setPhotoLoading] = useState(false); // Loading state saat proses watermark foto
+
+  const getSLAColor = (createdAt: string, status: string) => {
+    if (status !== 'New') return '';
+    const created = new Date(createdAt).getTime();
+    const now = new Date().getTime();
+    const diffHours = (now - created) / (1000 * 60 * 60);
+
+    if (diffHours > 5) return 'bg-rose-500/10 border-rose-500/20 text-rose-600 animate-pulse';
+    if (diffHours > 2) return 'bg-amber-500/10 border-amber-500/20 text-amber-600';
+    return '';
+  };
+
+  const getSLALabel = (createdAt: string, status: string) => {
+    if (status !== 'New') return null;
+    const created = new Date(createdAt).getTime();
+    const now = new Date().getTime();
+    const diffHours = (now - created) / (1000 * 60 * 60);
+
+    if (diffHours > 5) return 'CRITICAL (>5h)';
+    if (diffHours > 2) return 'DELAYED (>2h)';
+    return null;
+  };
 
   /**
    * Menghitung statistik kategori untuk Pie Chart
@@ -300,9 +337,17 @@ export default function App() {
   const fetchTickets = async (showLoading = false) => {
     if (showLoading) setLoading(true);
     try {
-      const res = await fetch('/api/tickets');
+      const url = adminUser 
+        ? `/api/tickets?username=${adminUser.username}&role=${adminUser.role}`
+        : '/api/tickets';
+      const res = await fetch(url);
       const data = await res.json();
-      setTickets(data);
+      if (Array.isArray(data)) {
+        setTickets(data);
+      } else {
+        console.error('API returned non-array data:', data);
+        setTickets([]);
+      }
     } catch (err) {
       console.error('Failed to fetch tickets:', err);
     } finally {
@@ -364,14 +409,17 @@ export default function App() {
    * Inisialisasi data dan polling setiap 10 detik
    */
   useEffect(() => {
+    const savedAdmin = localStorage.getItem('adminUser');
+    if (savedAdmin) setAdminUser(JSON.parse(savedAdmin));
+  }, []);
+
+  useEffect(() => {
     fetchTickets();
     fetchSettings();
     fetchManagementData();
     const interval = setInterval(fetchTickets, 10000);
-    const savedAdmin = localStorage.getItem('adminUser');
-    if (savedAdmin) setAdminUser(JSON.parse(savedAdmin));
     return () => clearInterval(interval);
-  }, []);
+  }, [adminUser]);
 
   useEffect(() => {
     if (showForm) {
@@ -396,11 +444,42 @@ export default function App() {
         localStorage.setItem('adminUser', JSON.stringify(data.user));
         setShowLogin(false);
         setLoginData({ username: '', password: '' });
+        
+        // Re-fetch tickets with user context
+        const url = `/api/tickets?username=${data.user.username}&role=${data.user.role}`;
+        const ticketRes = await fetch(url);
+        const ticketData = await ticketRes.json();
+        setTickets(ticketData);
       } else {
         alert('Login failed: ' + data.error);
       }
     } catch (err) {
       alert('Login error');
+    }
+  };
+
+  const handleIntervention = async (ticketId: number, type: 'takeover' | 'reassign', targetUser?: string) => {
+    if (!adminUser || adminUser.role !== 'Super Admin') return;
+    
+    try {
+      const body: any = {};
+      if (type === 'takeover') body.takeover_by = adminUser.username;
+      if (type === 'reassign') body.reassign_to = targetUser;
+
+      const res = await fetch(`/api/tickets/${ticketId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      
+      if (res.ok) {
+        fetchTickets();
+        if (selectedTicket && selectedTicket.id === ticketId) {
+          setSelectedTicket(null);
+        }
+      }
+    } catch (err) {
+      alert('Intervention failed');
     }
   };
 
@@ -538,12 +617,12 @@ export default function App() {
   /**
    * Membuka konfirmasi update tiket (Hanya Admin)
    */
-  const handleUpdateClick = (id: number, status: string, assigned_to: string | null, admin_reply: string | null) => {
+  const handleUpdateClick = (id: number, status: string, assigned_to: string | null, admin_reply: string | null, internal_notes: string | null) => {
     if (!assigned_to) {
       alert('Silakan pilih IT yang menangani terlebih dahulu.');
       return;
     }
-    setPendingUpdate({ id, status, assigned_to, admin_reply });
+    setPendingUpdate({ id, status, assigned_to, admin_reply, internal_notes });
   };
 
   /**
@@ -558,7 +637,8 @@ export default function App() {
         body: JSON.stringify({ 
           status: pendingUpdate.status, 
           assigned_to: pendingUpdate.assigned_to, 
-          admin_reply: pendingUpdate.admin_reply 
+          admin_reply: pendingUpdate.admin_reply,
+          internal_notes: pendingUpdate.internal_notes
         })
       });
       if (res.ok) {
@@ -570,9 +650,9 @@ export default function App() {
     }
   };
 
-  const updateTicket = async (id: number, status: string, assigned_to: string | null, admin_reply: string | null) => {
+  const updateTicket = async (id: number, status: string, assigned_to: string | null, admin_reply: string | null, internal_notes: string | null) => {
     // This is now handled by handleUpdateClick and confirmUpdate
-    handleUpdateClick(id, status, assigned_to, admin_reply);
+    handleUpdateClick(id, status, assigned_to, admin_reply, internal_notes);
   };
 
   /**
@@ -599,9 +679,9 @@ export default function App() {
    */
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Pending': return 'bg-amber-100 text-amber-700 border-amber-200';
+      case 'New': return 'bg-amber-100 text-amber-700 border-amber-200';
       case 'In Progress': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'Resolved': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      case 'Completed': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
       case 'Cancelled': return 'bg-rose-100 text-rose-700 border-rose-200';
       default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
@@ -612,9 +692,9 @@ export default function App() {
    */
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'Pending': return <Clock className="w-4 h-4" />;
+      case 'New': return <Clock className="w-4 h-4" />;
       case 'In Progress': return <RefreshCcw className="w-4 h-4 animate-spin-slow" />;
-      case 'Resolved': return <CheckCircle2 className="w-4 h-4" />;
+      case 'Completed': return <CheckCircle2 className="w-4 h-4" />;
       case 'Cancelled': return <AlertCircle className="w-4 h-4" />;
       default: return null;
     }
@@ -645,22 +725,32 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
+            {adminUser && (
+              <div className="hidden lg:flex flex-col items-end mr-2">
+                <p className="text-[10px] font-black text-slate-900 leading-none">{adminUser.full_name}</p>
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{adminUser.role}</p>
+              </div>
+            )}
             {adminUser ? (
               <div className="flex items-center gap-1 sm:gap-3">
-                <button 
-                  onClick={() => setShowSettings(true)}
-                  className="p-1.5 sm:p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-all"
-                  title="Settings"
-                >
-                  <Settings2 className="w-4 h-4 sm:w-5 h-5" />
-                </button>
-                <button 
-                  onClick={() => setShowResetConfirm(true)}
-                  className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 transition-all"
-                >
-                  <Trash2 className="w-3.5 h-3.5 sm:w-4 h-4" />
-                  <span className="hidden md:inline">Reset</span>
-                </button>
+                {adminUser.role === 'Super Admin' && (
+                  <>
+                    <button 
+                      onClick={() => setShowSettings(true)}
+                      className="p-1.5 sm:p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-all"
+                      title="Settings"
+                    >
+                      <Settings2 className="w-4 h-4 sm:w-5 h-5" />
+                    </button>
+                    <button 
+                      onClick={() => setShowResetConfirm(true)}
+                      className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 transition-all"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 sm:w-4 h-4" />
+                      <span className="hidden md:inline">Reset</span>
+                    </button>
+                  </>
+                )}
                 <button 
                   onClick={handleLogout}
                   className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold text-slate-500 hover:bg-slate-100 transition-all relative"
@@ -1069,20 +1159,21 @@ export default function App() {
                         {filtered.map((ticket) => (
                           <motion.div
                             key={ticket.id}
-                            layout
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="bg-white rounded-2xl border border-slate-100 p-3 shadow-sm hover:shadow-md hover:border-emerald-100 transition-all group cursor-pointer relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between"
-                            onClick={() => setSelectedTicket(ticket)}
+                            className={`bg-white rounded-2xl border p-3 shadow-sm hover:shadow-md transition-all group cursor-pointer relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between ${
+                              getSLAColor(ticket.created_at, ticket.status) || 'border-slate-100 hover:border-emerald-100'
+                            }`}
+                            onClick={() => handleSelectTicket(ticket)}
                           >
                             <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                             
                             <div className="flex items-start gap-3 min-w-0 sm:w-1/2">
                               <div className="flex-shrink-0">
                                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${
-                                  ticket.status === 'Resolved' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
-                                  ticket.status === 'Pending' ? 'bg-amber-50 border-amber-100 text-amber-600' :
+                                  ticket.status === 'Completed' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
+                                  ticket.status === 'New' ? 'bg-amber-50 border-amber-100 text-amber-600' :
                                   'bg-blue-50 border-blue-100 text-blue-600'
                                 }`}>
                                   {getStatusIcon(ticket.status)}
@@ -1090,7 +1181,15 @@ export default function App() {
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center justify-between gap-2 mb-0.5">
-                                  <span className="text-[9px] font-black text-slate-400 tracking-tighter">#{ticket.ticket_no || ticket.id.toString().padStart(4, '0')}</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[9px] font-black text-slate-400 tracking-tighter">#{ticket.ticket_no || ticket.id.toString().padStart(4, '0')}</span>
+                                    {adminUser?.role === 'Super Admin' && ticket.assigned_to && (
+                                      <span className="text-[8px] font-black bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded uppercase">[{ticket.assigned_to}]</span>
+                                    )}
+                                    {getSLALabel(ticket.created_at, ticket.status) && (
+                                      <span className="text-[8px] font-black px-1.5 py-0.5 rounded uppercase bg-rose-500 text-white">{getSLALabel(ticket.created_at, ticket.status)}</span>
+                                    )}
+                                  </div>
                                 </div>
                                 <h3 className="text-xs font-black text-slate-900 truncate group-hover:text-emerald-600 transition-colors mb-1.5">
                                   {ticket.category} Request
@@ -1122,10 +1221,33 @@ export default function App() {
                                 </span>
                               </div>
                               <div className="flex items-center gap-1">
+                                {adminUser?.role === 'Super Admin' && (
+                                  <div className="flex items-center gap-1">
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleIntervention(ticket.id, 'takeover');
+                                      }}
+                                      className="px-2 py-1 bg-emerald-500 text-white text-[8px] font-black uppercase rounded hover:bg-emerald-600"
+                                    >
+                                      Ambil Alih
+                                    </button>
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const target = prompt('Pindahkan ke siapa? (bayu/dita/yudha)');
+                                        if (target) handleIntervention(ticket.id, 'reassign', target);
+                                      }}
+                                      className="px-2 py-1 bg-blue-500 text-white text-[8px] font-black uppercase rounded hover:bg-blue-600"
+                                    >
+                                      Pindahkan
+                                    </button>
+                                  </div>
+                                )}
                                 <button 
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setSelectedTicket(ticket);
+                                    handleSelectTicket(ticket);
                                   }}
                                   className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-all border border-transparent hover:border-emerald-100"
                                   title="View Details"
@@ -1431,13 +1553,24 @@ export default function App() {
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Balasan Resolusi</label>
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Balasan Resolusi (Publik)</label>
                           <textarea 
                             id={`modal-reply-${selectedTicket.id}`}
                             className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl py-3 px-4 text-xs outline-none focus:ring-2 focus:ring-emerald-500 resize-none transition-all font-medium placeholder:text-slate-600"
                             placeholder="Tulis solusi di sini..."
-                            rows={3}
+                            rows={2}
                             defaultValue={selectedTicket.admin_reply || ''}
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Catatan Internal (Private)</label>
+                          <textarea 
+                            id={`modal-internal-${selectedTicket.id}`}
+                            className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl py-3 px-4 text-xs outline-none focus:ring-2 focus:ring-blue-500 resize-none transition-all font-medium placeholder:text-slate-600"
+                            placeholder="Catatan rahasia tim IT..."
+                            rows={2}
+                            defaultValue={selectedTicket.internal_notes || ''}
                           />
                         </div>
 
@@ -1445,8 +1578,9 @@ export default function App() {
                           onClick={() => {
                             const assignee = (document.getElementById(`modal-assignee-${selectedTicket.id}`) as HTMLSelectElement).value;
                             const reply = (document.getElementById(`modal-reply-${selectedTicket.id}`) as HTMLTextAreaElement).value;
+                            const internal = (document.getElementById(`modal-internal-${selectedTicket.id}`) as HTMLTextAreaElement).value;
                             const status = modalStatus || selectedTicket.status;
-                            handleUpdateClick(selectedTicket.id, status, assignee, reply);
+                            handleUpdateClick(selectedTicket.id, status, assignee, reply, internal);
                             setSelectedTicket(null);
                             setModalStatus('');
                           }}
@@ -1907,6 +2041,29 @@ export default function App() {
                 </div>
 
                 <form onSubmit={handleLogin} className="space-y-6">
+                  {/* Quick Login for Prototype */}
+                  <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-center">Quick Access (Prototype)</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { u: 'yudha', l: 'Yudha' },
+                        { u: 'bayu', l: 'Bayu' },
+                        { u: 'dita', l: 'Dita' }
+                      ].map(acc => (
+                        <button
+                          key={acc.u}
+                          type="button"
+                          onClick={() => {
+                            setLoginData({ username: acc.u, password: '' });
+                          }}
+                          className="py-2 px-1 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-600 hover:border-slate-900 hover:text-slate-900 transition-all"
+                        >
+                          {acc.l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Username</label>
                     <div className="relative">
