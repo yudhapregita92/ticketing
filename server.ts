@@ -118,6 +118,8 @@ const initSettings = db.prepare("INSERT OR IGNORE INTO settings (key, value) VAL
 initSettings.run('app_name', 'IT Helpdesk Pro');
 initSettings.run('logo_type', 'ShieldCheck');
 initSettings.run('notification_emails', '[]');
+initSettings.run('telegram_bot_token', '');
+initSettings.run('telegram_chat_ids', '[]');
 
 // Email Transporter Setup
 const transporter = nodemailer.createTransport({
@@ -170,6 +172,46 @@ async function sendNotificationEmail(ticket: any, emails: string[]) {
       console.log(`Notification email sent successfully to: ${email}`);
     } catch (error) {
       console.error(`Error sending notification email to ${email}:`, error);
+    }
+  }
+}
+
+async function sendTelegramNotification(ticket: any, botToken: string, chatIds: string[]) {
+  if (!botToken || !chatIds || chatIds.length === 0) return;
+
+  const message = `
+<b>Ada Tiket Baru Masuk!</b>
+
+<b>No Tiket:</b> ${ticket.ticket_no}
+<b>Nama:</b> ${ticket.name}
+<b>Departemen:</b> ${ticket.department}
+<b>Kategori:</b> ${ticket.category}
+<b>Deskripsi:</b> ${ticket.description || '-'}
+
+<a href="https://www.itk3dk.my.id/">Buka Portal Admin</a>
+  `.trim();
+
+  for (const chatId of chatIds) {
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: message,
+          parse_mode: 'HTML',
+          disable_web_page_preview: false
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error(`Error sending Telegram notification to ${chatId}:`, errorData);
+      } else {
+        console.log(`Telegram notification sent successfully to: ${chatId}`);
+      }
+    } catch (error) {
+      console.error(`Error sending Telegram notification to ${chatId}:`, error);
     }
   }
 }
@@ -333,6 +375,19 @@ async function startServer() {
           sendNotificationEmail(newTicket, emails);
         } catch (e) {
           console.error('Error parsing notification emails:', e);
+        }
+      }
+
+      // Send Telegram Notification
+      const telegramTokenRaw = db.prepare("SELECT value FROM settings WHERE key = 'telegram_bot_token'").get() as { value: string } | undefined;
+      const telegramChatIdsRaw = db.prepare("SELECT value FROM settings WHERE key = 'telegram_chat_ids'").get() as { value: string } | undefined;
+      
+      if (telegramTokenRaw?.value && telegramChatIdsRaw?.value) {
+        try {
+          const chatIds = JSON.parse(telegramChatIdsRaw.value);
+          sendTelegramNotification(newTicket, telegramTokenRaw.value, chatIds);
+        } catch (e) {
+          console.error('Error parsing telegram settings:', e);
         }
       }
 

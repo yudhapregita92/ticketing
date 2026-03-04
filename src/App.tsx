@@ -28,6 +28,7 @@ import {
   Globe,
   Zap,
   Ticket,
+  Send,
   MessageSquare,
   Calendar,
   MessageCircle,
@@ -135,7 +136,9 @@ export default function App() {
     logo_type: 'ShieldCheck',
     theme_mode: 'light', // 'light' or 'dark'
     primary_color: '#10b981', // emerald-600
-    notification_emails: [] as string[]
+    notification_emails: [] as string[],
+    telegram_bot_token: '',
+    telegram_chat_ids: [] as string[]
   }); // Pengaturan nama & logo app
   const [loginData, setLoginData] = useState({ username: '', password: '' }); // Form data login
   const [formData, setFormData] = useState({ // Form data tiket baru
@@ -347,7 +350,9 @@ export default function App() {
           ...data,
           theme_mode: data.theme_mode || 'light',
           primary_color: data.primary_color || '#10b981',
-          notification_emails: data.notification_emails ? JSON.parse(data.notification_emails) : []
+          notification_emails: data.notification_emails ? JSON.parse(data.notification_emails) : [],
+          telegram_bot_token: data.telegram_bot_token || '',
+          telegram_chat_ids: data.telegram_chat_ids ? JSON.parse(data.telegram_chat_ids) : []
         }));
       }
     } catch (err) {
@@ -482,7 +487,8 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...appSettings,
-          notification_emails: JSON.stringify(appSettings.notification_emails)
+          notification_emails: JSON.stringify(appSettings.notification_emails),
+          telegram_chat_ids: JSON.stringify(appSettings.telegram_chat_ids)
         })
       });
       if (res.ok) {
@@ -2178,6 +2184,80 @@ export default function App() {
                         </div>
                       ))
                     )}
+                  </div>
+                </section>
+
+                {/* Telegram Notifications */}
+                <section className="space-y-6 pt-8 border-t border-slate-800">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-widest text-blue-400">Telegram Notifications</h3>
+                      <p className="text-[10px] opacity-60 mt-1">Gunakan Bot Telegram untuk menerima notifikasi</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold opacity-60 uppercase tracking-wider ml-1">Bot Token</label>
+                      <input 
+                        type="password"
+                        placeholder="Masukkan Bot Token (dari @BotFather)..."
+                        className={`w-full border rounded-xl py-2.5 px-4 text-xs outline-none transition-all ${
+                          appSettings.theme_mode === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
+                        }`}
+                        value={appSettings.telegram_bot_token}
+                        onChange={e => setAppSettings({...appSettings, telegram_bot_token: e.target.value})}
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-bold opacity-60 uppercase tracking-wider ml-1">Chat IDs</label>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const chatId = prompt('Masukkan Chat ID Telegram (bisa didapat dari @userinfobot):');
+                            if (chatId && chatId.trim()) {
+                              setAppSettings({
+                                ...appSettings,
+                                telegram_chat_ids: [...appSettings.telegram_chat_ids, chatId.trim()]
+                              });
+                            }
+                          }}
+                          className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
+                        >
+                          + Tambah Chat ID
+                        </button>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        {appSettings.telegram_chat_ids.length === 0 ? (
+                          <p className="text-[10px] italic opacity-40">Belum ada Chat ID yang didaftarkan.</p>
+                        ) : (
+                          appSettings.telegram_chat_ids.map((id, idx) => (
+                            <div key={idx} className="flex items-center justify-between bg-slate-800/50 border border-slate-700 p-2.5 rounded-xl group">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 bg-slate-700 rounded-lg flex items-center justify-center text-slate-400">
+                                  <Send className="w-3 h-3" />
+                                </div>
+                                <span className="text-xs font-mono">{id}</span>
+                              </div>
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  const newIds = [...appSettings.telegram_chat_ids];
+                                  newIds.splice(idx, 1);
+                                  setAppSettings({ ...appSettings, telegram_chat_ids: newIds });
+                                }}
+                                className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </section>
 
