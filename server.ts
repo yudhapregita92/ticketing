@@ -121,12 +121,12 @@ initSettings.run('notification_emails', '[]');
 
 // Email Transporter Setup
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: process.env.SMTP_PORT === '465',
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.SMTP_PORT || '465'),
+  secure: true, // 465 requires secure: true
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: process.env.SMTP_USER || 'itk3dk2026@gmail.com',
+    pass: process.env.SMTP_PASS || 'wkizhrimtufuderw',
   },
 });
 
@@ -138,40 +138,39 @@ async function sendNotificationEmail(ticket: any, emails: string[]) {
     return;
   }
 
-  if (!process.env.SMTP_HOST) {
-    console.log('Skipping email notification: SMTP_HOST is not configured in environment variables');
-    return;
-  }
+  // Check removed since we hardcoded the fallback values
   
-  const mailOptions = {
-    from: process.env.SMTP_FROM || 'noreply@helpdesk.com',
-    to: emails.join(','),
-    subject: `[New Ticket] ${ticket.ticket_no} - ${ticket.category}`,
-    text: `Ada tiket baru masuk!\n\nNo Tiket: ${ticket.ticket_no}\nNama: ${ticket.name}\nDepartemen: ${ticket.department}\nKategori: ${ticket.category}\nDeskripsi: ${ticket.description}\n\nSilakan cek portal admin untuk detail lebih lanjut.`,
-    html: `
-      <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; color: #333;">
-        <h2 style="color: #10b981; margin-top: 0;">Ada tiket baru masuk!</h2>
-        <p>Halo Admin, ada laporan baru yang memerlukan perhatian Anda.</p>
-        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr><td style="padding: 8px 0; font-weight: bold; width: 120px;">No Tiket:</td><td>${ticket.ticket_no}</td></tr>
-          <tr><td style="padding: 8px 0; font-weight: bold;">Nama:</td><td>${ticket.name}</td></tr>
-          <tr><td style="padding: 8px 0; font-weight: bold;">Departemen:</td><td>${ticket.department}</td></tr>
-          <tr><td style="padding: 8px 0; font-weight: bold;">Kategori:</td><td>${ticket.category}</td></tr>
-          <tr><td style="padding: 8px 0; font-weight: bold;">Deskripsi:</td><td>${ticket.description}</td></tr>
-        </table>
-        <div style="margin-top: 30px;">
-          <a href="${process.env.APP_URL || '#'}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Buka Portal Admin</a>
+  for (const email of emails) {
+    const mailOptions = {
+      from: process.env.SMTP_FROM || 'itk3dk2026@gmail.com',
+      to: email,
+      subject: `[New Ticket] ${ticket.ticket_no} - ${ticket.category}`,
+      text: `Ada tiket baru masuk!\n\nNo Tiket: ${ticket.ticket_no}\nNama: ${ticket.name}\nDepartemen: ${ticket.department}\nKategori: ${ticket.category}\nDeskripsi: ${ticket.description}\n\nSilakan cek portal admin untuk detail lebih lanjut.`,
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; color: #333;">
+          <h2 style="color: #10b981; margin-top: 0;">Ada tiket baru masuk!</h2>
+          <p>Halo Admin, ada laporan baru yang memerlukan perhatian Anda.</p>
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0; font-weight: bold; width: 120px;">No Tiket:</td><td>${ticket.ticket_no}</td></tr>
+            <tr><td style="padding: 8px 0; font-weight: bold;">Nama:</td><td>${ticket.name}</td></tr>
+            <tr><td style="padding: 8px 0; font-weight: bold;">Departemen:</td><td>${ticket.department}</td></tr>
+            <tr><td style="padding: 8px 0; font-weight: bold;">Kategori:</td><td>${ticket.category}</td></tr>
+            <tr><td style="padding: 8px 0; font-weight: bold;">Deskripsi:</td><td>${ticket.description}</td></tr>
+          </table>
+          <div style="margin-top: 30px;">
+            <a href="${process.env.APP_URL || '#'}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Buka Portal Admin</a>
+          </div>
         </div>
-      </div>
-    `
-  };
+      `
+    };
 
-  try {
-    await transporter.sendMail(mailOptions);
-    console.log('Notification email sent to:', emails);
-  } catch (error) {
-    console.error('Error sending notification email:', error);
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log(`Notification email sent successfully to: ${email}`);
+    } catch (error) {
+      console.error(`Error sending notification email to ${email}:`, error);
+    }
   }
 }
 
