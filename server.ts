@@ -342,6 +342,16 @@ async function startServer() {
   });
 
   // Management Routes
+  app.get("/api/users", (req, res) => {
+    try {
+      // Return users who are not Super Admin (for assignment)
+      const users = db.prepare("SELECT id, username, full_name, role FROM users WHERE role != 'Super Admin'").all();
+      res.json(users);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.get("/api/it-personnel", (req, res) => {
     res.json(db.prepare("SELECT * FROM it_personnel ORDER BY name ASC").all());
   });
@@ -396,7 +406,19 @@ async function startServer() {
       if (role === 'Super Admin' || !username) {
         tickets = db.prepare(`SELECT ${columns} FROM tickets ORDER BY created_at DESC`).all();
       } else {
-        tickets = db.prepare(`SELECT ${columns} FROM tickets WHERE assigned_to = ? ORDER BY created_at DESC`).all(username);
+        // Staff can see tickets assigned to them OR unassigned tickets (New)
+        // We check both username and full_name to be safe during transition
+        const user = db.prepare("SELECT full_name FROM users WHERE username = ?").get(username) as any;
+        const fullName = user?.full_name || '';
+        
+        tickets = db.prepare(`
+          SELECT ${columns} FROM tickets 
+          WHERE assigned_to = ? 
+          OR assigned_to = ? 
+          OR assigned_to IS NULL 
+          OR assigned_to = '' 
+          ORDER BY created_at DESC
+        `).all(username, fullName);
       }
       res.json(tickets);
     } catch (err: any) {

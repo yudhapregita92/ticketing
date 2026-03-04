@@ -113,6 +113,7 @@ export default function App() {
   // --- State Management ---
   const [tickets, setTickets] = useState<ITicket[]>([]); // Daftar semua tiket
   const [itPersonnel, setItPersonnel] = useState<{id: number, name: string}[]>([]);
+  const [users, setUsers] = useState<{id: number, username: string, full_name: string, role: string}[]>([]);
   const [departments, setDepartments] = useState<{id: number, name: string}[]>([]);
   const [categories, setCategories] = useState<{id: number, name: string}[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<ITicket | null>(null); // Tiket yang sedang dilihat detailnya
@@ -358,25 +359,28 @@ export default function App() {
   const fetchManagementData = async () => {
     try {
       console.log('Fetching management data...');
-      const [itRes, deptRes, catRes] = await Promise.all([
+      const [itRes, deptRes, catRes, usersRes] = await Promise.all([
         fetch('/api/it-personnel'),
         fetch('/api/departments'),
-        fetch('/api/categories')
+        fetch('/api/categories'),
+        fetch('/api/users')
       ]);
       
-      if (!itRes.ok || !deptRes.ok || !catRes.ok) {
+      if (!itRes.ok || !deptRes.ok || !catRes.ok || !usersRes.ok) {
         throw new Error('Gagal mengambil data manajemen');
       }
 
       const its = await itRes.json();
       const depts = await deptRes.json();
       const cats = await catRes.json();
+      const usersData = await usersRes.json();
       
-      console.log('Management data fetched:', { its, depts, cats });
+      console.log('Management data fetched:', { its, depts, cats, usersData });
       
       setItPersonnel(its);
       setDepartments(depts);
       setCategories(cats);
+      setUsers(usersData);
     } catch (err) {
       console.error('Failed to fetch management data:', err);
     }
@@ -1521,16 +1525,31 @@ export default function App() {
                         <div className="grid grid-cols-1 gap-4">
                           <div className="space-y-1.5">
                             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Tugaskan IT</label>
-                            <select 
-                              id={`modal-assignee-${selectedTicket.id}`}
-                              className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl py-2.5 px-3 text-xs outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-bold"
-                              defaultValue={selectedTicket.assigned_to || ''}
-                            >
-                              <option value="">Pilih IT...</option>
-                              {itPersonnel.map(it => (
-                                <option key={it.id} value={it.name}>{it.name}</option>
-                              ))}
-                            </select>
+                            {adminUser.role === 'Super Admin' ? (
+                              <select 
+                                id={`modal-assignee-${selectedTicket.id}`}
+                                className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl py-2.5 px-3 text-xs outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-bold"
+                                defaultValue={selectedTicket.assigned_to || ''}
+                              >
+                                <option value="">Pilih IT...</option>
+                                {users.map(u => (
+                                  <option key={u.id} value={u.username}>{u.full_name || u.username}</option>
+                                ))}
+                              </select>
+                            ) : (
+                              <div className="relative">
+                                <input 
+                                  id={`modal-assignee-${selectedTicket.id}`}
+                                  type="text"
+                                  readOnly
+                                  className="w-full bg-slate-800 border border-slate-700 text-slate-300 rounded-xl py-2.5 px-3 text-xs outline-none font-bold"
+                                  value={selectedTicket.assigned_to || adminUser.username}
+                                />
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                  <Lock className="w-3 h-3 text-slate-500" />
+                                </div>
+                              </div>
+                            )}
                           </div>
                           <div className="space-y-1.5">
                             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
@@ -1576,7 +1595,9 @@ export default function App() {
 
                         <button
                           onClick={() => {
-                            const assignee = (document.getElementById(`modal-assignee-${selectedTicket.id}`) as HTMLSelectElement).value;
+                            const assignee = adminUser.role === 'Super Admin' 
+                              ? (document.getElementById(`modal-assignee-${selectedTicket.id}`) as HTMLSelectElement).value 
+                              : (selectedTicket.assigned_to || adminUser.username);
                             const reply = (document.getElementById(`modal-reply-${selectedTicket.id}`) as HTMLTextAreaElement).value;
                             const internal = (document.getElementById(`modal-internal-${selectedTicket.id}`) as HTMLTextAreaElement).value;
                             const status = modalStatus || selectedTicket.status;
