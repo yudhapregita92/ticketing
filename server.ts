@@ -176,6 +176,28 @@ async function startServer() {
         name TEXT UNIQUE NOT NULL
       );
     `);
+
+    // Migration: Check for missing columns in tickets table
+    const tableInfo = db.prepare("PRAGMA table_info(tickets)").all() as any[];
+    const columns = tableInfo.map(c => c.name);
+    
+    if (!columns.includes('updated_at')) {
+      console.log("Adding missing column: updated_at");
+      db.exec("ALTER TABLE tickets ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP");
+    }
+    if (!columns.includes('internal_notes')) {
+      console.log("Adding missing column: internal_notes");
+      db.exec("ALTER TABLE tickets ADD COLUMN internal_notes TEXT");
+    }
+    if (!columns.includes('responded_at')) {
+      console.log("Adding missing column: responded_at");
+      db.exec("ALTER TABLE tickets ADD COLUMN responded_at DATETIME");
+    }
+    if (!columns.includes('resolved_at')) {
+      console.log("Adding missing column: resolved_at");
+      db.exec("ALTER TABLE tickets ADD COLUMN resolved_at DATETIME");
+    }
+
     console.log("Database tables checked/created.");
   } catch (err) {
     console.error("Database initialization error:", err);
