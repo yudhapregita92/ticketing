@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   PieChart, 
@@ -152,10 +152,13 @@ export default function App() {
     logo_type: 'ShieldCheck',
     theme_mode: 'light', // 'light' or 'dark'
     primary_color: '#10b981', // emerald-600
+    admin_theme_mode: 'light', // 'light' or 'dark'
+    admin_primary_color: '#8b5cf6', // violet-500
     notification_emails: [] as string[],
     telegram_bot_token: '',
     telegram_chat_ids: [] as string[]
   }); // Pengaturan nama & logo app
+
   const [loginData, setLoginData] = useState({ username: '', password: '' }); // Form data login
   const [formData, setFormData] = useState({ // Form data tiket baru
     name: '',
@@ -172,6 +175,26 @@ export default function App() {
   const [filterStatus, setFilterStatus] = useState<string>(''); // Filter status
   const [filterDate, setFilterDate] = useState<string>(''); // Filter tanggal
   const [photoLoading, setPhotoLoading] = useState(false); // Loading state saat proses watermark foto
+  const lastTicketIdRef = useRef<number | null>(null);
+
+  /**
+   * Menghitung tiket yang difilter
+   */
+  const filteredTickets = useMemo(() => {
+    return tickets.filter(ticket => {
+      // View Mode Filter (Today vs All)
+      if (viewMode === 'today') {
+        const ticketDate = new Date(ticket.created_at).toLocaleDateString('en-CA'); // YYYY-MM-DD
+        const today = new Date().toLocaleDateString('en-CA');
+        if (ticketDate !== today) return false;
+      }
+
+      const matchDept = filterDept ? ticket.department === filterDept : true;
+      const matchStatus = filterStatus ? ticket.status === filterStatus : true;
+      const matchDate = filterDate ? new Date(ticket.created_at).toLocaleDateString('en-CA') === filterDate : true;
+      return matchDept && matchStatus && matchDate;
+    });
+  }, [tickets, viewMode, filterDept, filterStatus, filterDate]);
 
   const getSLAColor = (createdAt: string, status: string) => {
     if (status !== 'New') return '';
@@ -344,6 +367,36 @@ export default function App() {
       const res = await fetch(url);
       const data = await res.json();
       if (Array.isArray(data)) {
+        // Notification logic for Admin
+        if (adminUser && lastTicketIdRef.current !== null && data.length > 0) {
+          const newTickets = data.filter(t => t.id > lastTicketIdRef.current!);
+          if (newTickets.length > 0) {
+            newTickets.forEach(ticket => {
+              if (Notification.permission === "granted") {
+                try {
+                  new Notification(`Tiket Baru: ${ticket.ticket_no}`, {
+                    body: `${ticket.name} - ${ticket.category}\n${ticket.description}`,
+                    icon: "https://cdn-icons-png.flaticon.com/512/2906/2906274.png",
+                    badge: "https://cdn-icons-png.flaticon.com/512/2906/2906274.png"
+                  });
+                } catch (e) {
+                  console.error('Notification error:', e);
+                }
+              }
+            });
+          }
+        }
+
+        // Update last seen ID
+        if (data.length > 0) {
+          const maxId = Math.max(...data.map(t => t.id));
+          if (lastTicketIdRef.current === null || maxId > lastTicketIdRef.current) {
+            lastTicketIdRef.current = maxId;
+          }
+        } else if (lastTicketIdRef.current === null) {
+          lastTicketIdRef.current = 0;
+        }
+
         setTickets(data);
       } else {
         console.error('API returned non-array data:', data);
@@ -399,6 +452,8 @@ export default function App() {
           ...data,
           theme_mode: data.theme_mode || 'light',
           primary_color: data.primary_color || '#10b981',
+          admin_theme_mode: data.admin_theme_mode || 'dark',
+          admin_primary_color: data.admin_primary_color || '#6366f1',
           notification_emails: data.notification_emails ? JSON.parse(data.notification_emails) : [],
           telegram_bot_token: data.telegram_bot_token || '',
           telegram_chat_ids: data.telegram_chat_ids ? JSON.parse(data.telegram_chat_ids) : []
@@ -448,6 +503,11 @@ export default function App() {
         localStorage.setItem('adminUser', JSON.stringify(data.user));
         setShowLogin(false);
         setLoginData({ username: '', password: '' });
+        
+        // Request Notification Permission
+        if ("Notification" in window && Notification.permission === "default") {
+          Notification.requestPermission();
+        }
         
         // Re-fetch tickets with user context
         const url = `/api/tickets?username=${data.user.username}&role=${data.user.role}`;
@@ -705,25 +765,54 @@ export default function App() {
   };
 
   const CurrentLogo = LOGO_OPTIONS.find(l => l.id === appSettings.logo_type)?.icon || ShieldCheck;
+  
+  // Dynamic theme based on user role
+  const isDark = adminUser ? appSettings.admin_theme_mode === 'dark' : appSettings.theme_mode === 'dark';
+  const primaryColor = adminUser ? appSettings.admin_primary_color : appSettings.primary_color;
+
+  // Theme-aware color variables
+  const themeClasses = {
+    bg: adminUser 
+      ? (isDark ? 'bg-zinc-950 text-zinc-100' : 'bg-zinc-50 text-zinc-900')
+      : (isDark ? 'bg-slate-950 text-slate-100' : 'bg-[#F8FAFC] text-slate-900'),
+    header: adminUser
+      ? (isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-zinc-100/80 border-zinc-200')
+      : (isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200'),
+    card: adminUser
+      ? (isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200')
+      : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'),
+    text: adminUser
+      ? (isDark ? 'text-zinc-100' : 'text-zinc-900')
+      : (isDark ? 'text-slate-100' : 'text-slate-900'),
+    textMuted: adminUser
+      ? (isDark ? 'text-zinc-400' : 'text-zinc-500')
+      : (isDark ? 'text-slate-400' : 'text-slate-500'),
+    border: adminUser
+      ? (isDark ? 'border-zinc-800' : 'border-zinc-200')
+      : (isDark ? 'border-slate-800' : 'border-slate-200'),
+    bgSecondary: adminUser
+      ? (isDark ? 'bg-zinc-800' : 'bg-zinc-100')
+      : (isDark ? 'bg-slate-800' : 'bg-slate-100'),
+    input: adminUser
+      ? (isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-750' : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50')
+      : (isDark ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-750' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'),
+    selection: adminUser ? 'selection:bg-violet-500/30' : 'selection:bg-emerald-500/30'
+  };
 
   return (
-    <div className={`min-h-screen font-sans selection:bg-emerald-100 selection:text-emerald-900 transition-colors duration-300 ${
-      appSettings.theme_mode === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-[#F8FAFC] text-slate-900'
-    }`} style={{ '--primary': appSettings.primary_color } as any}>
+    <div className={`min-h-screen font-sans transition-colors duration-300 ${themeClasses.bg} ${themeClasses.selection}`} style={{ '--primary': primaryColor } as any}>
       {/* --- HEADER SECTION --- */}
-      <header className={`sticky top-0 z-40 w-full border-b backdrop-blur-md transition-colors ${
-        appSettings.theme_mode === 'dark' ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200'
-      }`}>
+      <header className={`sticky top-0 z-40 w-full border-b backdrop-blur-md transition-colors ${themeClasses.header}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div 
               className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shadow-lg transition-all shrink-0"
-              style={{ backgroundColor: appSettings.primary_color, boxShadow: `0 10px 15px -3px ${appSettings.primary_color}40` }}
+              style={{ backgroundColor: primaryColor, boxShadow: `0 10px 15px -3px ${primaryColor}40` }}
             >
               <CurrentLogo className="text-white w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className={`text-sm sm:text-lg font-bold tracking-tight leading-tight truncate whitespace-nowrap ${appSettings.theme_mode === 'dark' ? 'text-white' : 'text-slate-900'}`}>{appSettings.app_name}</h1>
+              <h1 className={`text-sm sm:text-lg font-bold tracking-tight leading-tight truncate whitespace-nowrap ${isDark ? 'text-white' : 'text-slate-900'}`}>{appSettings.app_name}</h1>
               <p className="hidden sm:block text-[10px] sm:text-xs font-medium text-slate-500 mt-0.5">Enterprise Support System</p>
             </div>
           </div>
@@ -731,7 +820,7 @@ export default function App() {
           <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
             {adminUser && (
               <div className="hidden lg:flex flex-col items-end mr-2">
-                <p className="text-[10px] font-black text-slate-900 leading-none">{adminUser.full_name}</p>
+                <p className={`text-[10px] font-black leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>{adminUser.full_name}</p>
                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{adminUser.role}</p>
               </div>
             )}
@@ -741,7 +830,7 @@ export default function App() {
                   <>
                     <button 
                       onClick={() => setShowSettings(true)}
-                      className="p-1.5 sm:p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-all"
+                      className={`p-1.5 sm:p-2 rounded-lg transition-all ${isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
                       title="Settings"
                     >
                       <Settings2 className="w-4 h-4 sm:w-5 h-5" />
@@ -757,11 +846,11 @@ export default function App() {
                 )}
                 <button 
                   onClick={handleLogout}
-                  className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold text-slate-500 hover:bg-slate-100 transition-all relative"
+                  className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-all relative ${isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
                 >
                   <LogOut className="w-3.5 h-3.5 sm:w-4 h-4" />
                   <span className="hidden md:inline">Logout</span>
-                  {tickets.filter(t => t.status === 'Pending').length > 0 && (
+                  {tickets.filter(t => t.status === 'New').length > 0 && (
                     <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white animate-pulse" />
                   )}
                 </button>
@@ -769,7 +858,7 @@ export default function App() {
             ) : (
               <button 
                 onClick={() => setShowLogin(true)}
-                className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold text-slate-500 hover:bg-slate-100 transition-all"
+                className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-all ${isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
               >
                 <LogIn className="w-3.5 h-3.5 sm:w-4 h-4" />
                 <span className="hidden xs:inline">Login</span>
@@ -777,7 +866,7 @@ export default function App() {
             )}
             <button 
               onClick={() => setShowForm(true)}
-              style={{ backgroundColor: appSettings.primary_color, boxShadow: `0 10px 15px -3px ${appSettings.primary_color}40` }}
+              style={{ backgroundColor: primaryColor, boxShadow: `0 10px 15px -3px ${primaryColor}40` }}
               className="hover:opacity-90 text-white px-3 sm:px-4 py-2 rounded-xl text-[10px] sm:text-sm font-semibold shadow-lg transition-all duration-200 flex items-center gap-1.5 sm:gap-2 active:scale-95"
             >
               <Plus className="w-3.5 h-3.5 sm:w-4 h-4" />
@@ -797,30 +886,42 @@ export default function App() {
               <motion.section 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-6 shadow-sm overflow-hidden relative"
+                className={`${themeClasses.card} rounded-3xl border p-4 sm:p-6 shadow-sm overflow-hidden relative`}
               >
                 <div className="absolute top-0 right-0 p-6 opacity-5">
-                  <Bell className="w-24 h-24 text-slate-900" />
+                  <Bell className={`w-24 h-24 ${isDark ? 'text-white' : 'text-slate-900'}`} />
                 </div>
-                <div className="flex items-center gap-3 mb-4 sm:mb-6">
-                  <div className="w-10 h-10 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 border border-rose-100">
-                    <Bell className="w-5 h-5" />
+                <div className="flex items-center justify-between mb-4 sm:mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border ${isDark ? 'bg-rose-900/30 text-rose-400 border-rose-800' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                      <Bell className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className={`text-sm font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>Smart Notifications</h2>
+                      <p className="text-[10px] text-slate-400 font-medium">Real-time system alerts</p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Smart Notifications</h2>
-                    <p className="text-[10px] text-slate-400 font-medium">Real-time system alerts</p>
-                  </div>
+                  {/* Notification Permission Toggle */}
+                  {typeof window !== 'undefined' && "Notification" in window && Notification.permission !== "granted" && (
+                    <button 
+                      onClick={() => Notification.requestPermission().then(() => fetchTickets())}
+                      className="p-2 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-all group"
+                      title="Aktifkan Notifikasi Browser"
+                    >
+                      <Bell className="w-4 h-4 animate-bounce group-hover:animate-none" />
+                    </button>
+                  )}
                 </div>
                 
                 <div className="space-y-3">
-                  {tickets.filter(t => t.status === 'Pending').length > 0 ? (
+                  {tickets.filter(t => t.status === 'New').length > 0 ? (
                     <div className="p-4 bg-rose-50/50 rounded-2xl border border-rose-100 group hover:bg-rose-50 transition-all">
                       <div className="flex items-center justify-between mb-2">
                         <span className="flex items-center gap-1.5 text-[10px] font-bold text-rose-600 uppercase tracking-widest">
                           <AlertCircle className="w-3 h-3" /> Action Required
                         </span>
                         <span className="px-2 py-0.5 bg-rose-600 text-white text-[10px] font-bold rounded-full animate-pulse shadow-sm shadow-rose-200">
-                          {tickets.filter(t => t.status === 'Pending').length}
+                          {tickets.filter(t => t.status === 'New').length}
                         </span>
                       </div>
                       <p className="text-xs text-rose-700 font-semibold leading-relaxed">Ada tiket yang menunggu respon Anda segera.</p>
@@ -858,33 +959,33 @@ export default function App() {
             )}
 
             {/* Queue Statistics */}
-            <section className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-6 shadow-sm">
+            <section className={`${themeClasses.card} rounded-3xl border p-4 sm:p-6 shadow-sm`}>
               <div className="flex items-center justify-between mb-4 sm:mb-6">
-                <h2 className="text-sm font-bold text-slate-900 tracking-wider">Status Antrian</h2>
+                <h2 className={`text-sm font-bold tracking-wider ${themeClasses.text}`}>Status Antrian</h2>
                 <BarChart3 className="w-4 h-4 text-slate-300" />
               </div>
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-slate-200 transition-all">
-                  <p className="text-xl sm:text-2xl font-black text-slate-900 leading-none mb-1">{tickets.length}</p>
-                  <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</p>
+                <div className={`p-3 sm:p-4 rounded-2xl border transition-all ${themeClasses.bgSecondary} ${themeClasses.border} hover:opacity-80`}>
+                  <p className={`text-xl sm:text-2xl font-black leading-none mb-1 ${themeClasses.text}`}>{filteredTickets.length}</p>
+                  <p className={`text-[9px] sm:text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>Total</p>
                 </div>
-                <div className="p-3 sm:p-4 bg-amber-50 rounded-2xl border border-amber-100 hover:border-amber-200 transition-all">
-                  <p className="text-xl sm:text-2xl font-black text-amber-600 leading-none mb-1">
-                    {tickets.filter(t => t.status === 'Pending').length}
+                <div className={`p-3 sm:p-4 rounded-2xl border transition-all ${isDark ? 'bg-amber-900/20 border-amber-900/30 hover:border-amber-900/50' : 'bg-amber-50 border-amber-100 hover:border-amber-200'}`}>
+                  <p className={`text-xl sm:text-2xl font-black leading-none mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                    {filteredTickets.filter(t => t.status === 'New').length}
                   </p>
-                  <p className="text-[9px] sm:text-[10px] font-bold text-amber-500 uppercase tracking-widest">Waiting</p>
+                  <p className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-amber-500/70' : 'text-amber-500'}`}>Waiting</p>
                 </div>
-                <div className="p-3 sm:p-4 bg-blue-50 rounded-2xl border border-blue-100 hover:border-blue-200 transition-all">
-                  <p className="text-xl sm:text-2xl font-black text-blue-600 leading-none mb-1">
-                    {tickets.filter(t => t.status === 'In Progress').length}
+                <div className={`p-3 sm:p-4 rounded-2xl border transition-all ${isDark ? 'bg-blue-900/20 border-blue-900/30 hover:border-blue-900/50' : 'bg-blue-50 border-blue-100 hover:border-amber-200'}`}>
+                  <p className={`text-xl sm:text-2xl font-black leading-none mb-1 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                    {filteredTickets.filter(t => t.status === 'In Progress').length}
                   </p>
-                  <p className="text-[9px] sm:text-[10px] font-bold text-blue-500 uppercase tracking-widest">Active</p>
+                  <p className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-blue-500/70' : 'text-blue-500'}`}>Active</p>
                 </div>
-                <div className="p-3 sm:p-4 bg-emerald-50 rounded-2xl border border-emerald-100 hover:border-emerald-200 transition-all">
-                  <p className="text-xl sm:text-2xl font-black text-emerald-600 leading-none mb-1">
-                    {tickets.filter(t => t.status === 'Resolved').length}
+                <div className={`p-3 sm:p-4 rounded-2xl border transition-all ${isDark ? 'bg-emerald-900/20 border-emerald-900/30 hover:border-emerald-900/50' : 'bg-emerald-50 border-emerald-100 hover:border-emerald-200'}`}>
+                  <p className={`text-xl sm:text-2xl font-black leading-none mb-1 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                    {filteredTickets.filter(t => t.status === 'Completed').length}
                   </p>
-                  <p className="text-[9px] sm:text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Done</p>
+                  <p className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-emerald-500/70' : 'text-emerald-500'}`}>Done</p>
                 </div>
               </div>
             </section>
@@ -894,9 +995,9 @@ export default function App() {
               <motion.section 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-6 shadow-sm"
+                className={`${themeClasses.card} rounded-3xl border p-4 sm:p-6 shadow-sm`}
               >
-                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 sm:mb-6">Distribusi Masalah</h2>
+                <h2 className={`text-sm font-bold uppercase tracking-wider mb-4 sm:mb-6 ${themeClasses.text}`}>Distribusi Masalah</h2>
                 <div className="h-48 w-full min-w-0" style={{ minHeight: '192px' }}>
                   <ResponsiveContainer width="100%" height="100%" minHeight={192}>
                     <PieChart>
@@ -914,7 +1015,15 @@ export default function App() {
                         ))}
                       </Pie>
                       <RechartsTooltip 
-                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
+                        contentStyle={{ 
+                          borderRadius: '16px', 
+                          border: 'none', 
+                          boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', 
+                          fontSize: '12px', 
+                          fontWeight: 'bold',
+                          backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                          color: isDark ? '#ffffff' : '#000000'
+                        }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -933,7 +1042,7 @@ export default function App() {
             {/* Help CTA - Hidden on mobile, moved to bottom */}
             <section 
               className="hidden lg:block rounded-3xl p-8 text-white shadow-xl relative overflow-hidden group transition-all"
-              style={{ backgroundColor: appSettings.primary_color, boxShadow: `0 20px 25px -5px ${appSettings.primary_color}30` }}
+              style={{ backgroundColor: primaryColor, boxShadow: `0 20px 25px -5px ${primaryColor}30` }}
             >
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
                 <Zap className="w-20 h-20" />
@@ -945,7 +1054,7 @@ export default function App() {
               <button 
                 onClick={() => setShowForm(true)}
                 className={`w-full font-bold py-3.5 rounded-2xl text-sm transition-all shadow-lg active:scale-95 ${
-                  appSettings.theme_mode === 'dark' ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-white text-slate-900 hover:bg-slate-50'
+                  isDark ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-white text-slate-900 hover:bg-slate-50'
                 }`}
               >
                 Buat Tiket Sekarang
@@ -1019,19 +1128,13 @@ export default function App() {
             </div>
 
             {/* Filters - Hidden on mobile, replaced by modal */}
-            <div className={`hidden sm:flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6 p-2 sm:p-4 rounded-2xl border shadow-sm transition-colors ${
-              appSettings.theme_mode === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200'
-            }`}>
+            <div className={`hidden sm:flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6 p-2 sm:p-4 rounded-2xl border shadow-sm transition-colors ${themeClasses.card}`}>
               <div className="flex-1 relative">
                 <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                 <select 
                   value={filterDept}
                   onChange={(e) => setFilterDept(e.target.value)}
-                  className={`w-full border rounded-xl py-2 pl-8 pr-4 text-[10px] sm:text-xs font-bold outline-none appearance-none cursor-pointer transition-all ${
-                    appSettings.theme_mode === 'dark' 
-                    ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-750' 
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                  }`}
+                  className={`w-full border rounded-xl py-2 pl-8 pr-4 text-[10px] sm:text-xs font-bold outline-none appearance-none cursor-pointer transition-all ${themeClasses.input}`}
                 >
                   <option value="">Semua Bagian</option>
                   {departments.map(dept => (
@@ -1044,11 +1147,7 @@ export default function App() {
                 <select 
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className={`w-full border rounded-xl py-2 pl-8 pr-4 text-[10px] sm:text-xs font-bold outline-none appearance-none cursor-pointer transition-all ${
-                    appSettings.theme_mode === 'dark' 
-                    ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-750' 
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                  }`}
+                  className={`w-full border rounded-xl py-2 pl-8 pr-4 text-[10px] sm:text-xs font-bold outline-none appearance-none cursor-pointer transition-all ${themeClasses.input}`}
                 >
                   <option value="">Semua Status</option>
                   {STATUSES.map(status => (
@@ -1062,22 +1161,18 @@ export default function App() {
                   type="date"
                   value={filterDate}
                   onChange={(e) => setFilterDate(e.target.value)}
-                  className={`w-full border rounded-xl py-2 pl-8 pr-4 text-[10px] sm:text-xs font-bold outline-none cursor-pointer transition-all ${
-                    appSettings.theme_mode === 'dark' 
-                    ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-750' 
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                  }`}
+                  className={`w-full border rounded-xl py-2 pl-8 pr-4 text-[10px] sm:text-xs font-bold outline-none cursor-pointer transition-all ${themeClasses.input}`}
                 />
               </div>
             </div>
 
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-200 border-dashed">
+              <div className={`flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
                 <RefreshCcw className="w-8 h-8 text-emerald-600 animate-spin mb-4" />
                 <p className="text-slate-500 font-medium">Loading queue...</p>
               </div>
             ) : tickets.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-200 border-dashed">
+              <div className={`flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
                 <CurrentLogo className="w-12 h-12 text-slate-200 mb-4" />
                 <p className="text-slate-500 font-medium">No tickets in queue</p>
                 <button 
@@ -1090,84 +1185,44 @@ export default function App() {
             ) : (
               <div className="space-y-4">
                 <AnimatePresence mode="popLayout">
-                  {(() => {
-                    const filtered = tickets.filter(ticket => {
-                      // View Mode Filter (Today vs All)
-                      if (viewMode === 'today') {
-                        const ticketDate = new Date(ticket.created_at).toLocaleDateString('en-CA'); // YYYY-MM-DD
-                        const today = new Date().toLocaleDateString('en-CA');
-                        if (ticketDate !== today) return false;
-                      }
-
-                      const matchDept = filterDept ? ticket.department === filterDept : true;
-                      const matchStatus = filterStatus ? ticket.status === filterStatus : true;
-                      const matchDate = filterDate ? new Date(ticket.created_at).toLocaleDateString('en-CA') === filterDate : true;
-                      return matchDept && matchStatus && matchDate;
-                    });
-
-                    if (tickets.length === 0) {
-                      return (
-                        <motion.div 
-                          key="empty"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-200 border-dashed"
-                        >
-                          <CurrentLogo className="w-12 h-12 text-slate-200 mb-4" />
-                          <p className="text-slate-500 font-medium">No tickets in queue</p>
-                          <button 
-                            onClick={() => setShowForm(true)}
-                            className="mt-4 text-emerald-600 font-bold text-sm hover:underline"
-                          >
-                            Be the first to submit
-                          </button>
-                        </motion.div>
-                      );
-                    }
-
-                    if (filtered.length === 0) {
-                      return (
-                        <motion.div 
-                          key="no-match"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-200 border-dashed"
-                        >
-                          <Filter className="w-12 h-12 text-slate-200 mb-4" />
-                          <p className="text-slate-500 font-medium">No tickets match your filter</p>
-                          <button 
-                            onClick={() => {
-                              setFilterDept('');
-                              setFilterStatus('');
-                              setFilterDate('');
-                            }}
-                            className="mt-4 text-emerald-600 font-bold text-sm hover:underline"
-                          >
-                            Clear all filters
-                          </button>
-                        </motion.div>
-                      );
-                    }
-
-                    return (
-                      <motion.div 
-                        key={viewMode}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.2 }}
-                        className="flex flex-col gap-3"
+                  {filteredTickets.length === 0 ? (
+                    <motion.div 
+                      key="no-match"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className={`flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}
+                    >
+                      <Filter className="w-12 h-12 text-slate-200 mb-4" />
+                      <p className="text-slate-500 font-medium">No tickets match your filter</p>
+                      <button 
+                        onClick={() => {
+                          setFilterDept('');
+                          setFilterStatus('');
+                          setFilterDate('');
+                        }}
+                        className="mt-4 text-emerald-600 font-bold text-sm hover:underline"
                       >
-                        {filtered.map((ticket) => (
+                        Reset filters
+                      </button>
+                    </motion.div>
+                  ) : (
+                    <motion.div 
+                      key={viewMode}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex flex-col gap-3"
+                    >
+                      {filteredTickets.map((ticket) => (
                           <motion.div
                             key={ticket.id}
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className={`bg-white rounded-2xl border p-3 shadow-sm hover:shadow-md transition-all group cursor-pointer relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between ${
-                              getSLAColor(ticket.created_at, ticket.status) || 'border-slate-100 hover:border-emerald-100'
+                            className={`${themeClasses.card} rounded-2xl p-3 shadow-sm hover:shadow-md transition-all group cursor-pointer relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between ${
+                              getSLAColor(ticket.created_at, ticket.status) || (isDark ? 'hover:border-emerald-900' : 'hover:border-emerald-100')
                             }`}
                             onClick={() => handleSelectTicket(ticket)}
                           >
@@ -1275,8 +1330,7 @@ export default function App() {
                           </motion.div>
                         ))}
                       </motion.div>
-                    );
-                  })()}
+                  )}
                 </AnimatePresence>
               </div>
             )}
@@ -1284,7 +1338,7 @@ export default function App() {
             {/* Help CTA - Visible on mobile at the bottom */}
             <section 
               className="lg:hidden rounded-3xl p-5 sm:p-6 text-white shadow-xl relative overflow-hidden group transition-all mt-6 sm:mt-8"
-              style={{ backgroundColor: appSettings.primary_color, boxShadow: `0 20px 25px -5px ${appSettings.primary_color}30` }}
+              style={{ backgroundColor: primaryColor, boxShadow: `0 20px 25px -5px ${primaryColor}30` }}
             >
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
                 <Zap className="w-16 h-16" />
@@ -1296,7 +1350,7 @@ export default function App() {
               <button 
                 onClick={() => setShowForm(true)}
                 className={`w-full font-bold py-3 rounded-2xl text-xs transition-all shadow-lg active:scale-95 ${
-                  appSettings.theme_mode === 'dark' ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-white text-slate-900 hover:bg-slate-50'
+                  isDark ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-white text-slate-900 hover:bg-slate-50'
                 }`}
               >
                 Buat Tiket Sekarang
@@ -1321,11 +1375,9 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className={`relative rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[95vh] transition-colors ${
-                appSettings.theme_mode === 'dark' ? 'bg-slate-900 text-slate-100' : 'bg-white text-slate-900'
-              }`}
+              className={`relative rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[95vh] transition-colors ${themeClasses.card} ${themeClasses.text}`}
             >
-              <div className={`p-4 sm:p-6 border-b shrink-0 ${appSettings.theme_mode === 'dark' ? 'border-slate-800' : 'border-slate-100'}`}>
+              <div className={`p-4 sm:p-6 border-b shrink-0 ${themeClasses.border}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
@@ -1333,17 +1385,17 @@ export default function App() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-slate-400">#{selectedTicket.ticket_no || selectedTicket.id.toString().padStart(4, '0')}</span>
+                        <span className={`text-[10px] font-bold ${themeClasses.textMuted}`}>#{selectedTicket.ticket_no || selectedTicket.id.toString().padStart(4, '0')}</span>
                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${getStatusColor(selectedTicket.status)}`}>
                           {selectedTicket.status}
                         </span>
                       </div>
-                      <h2 className={`text-lg font-bold ${appSettings.theme_mode === 'dark' ? 'text-white' : 'text-slate-900'}`}>{selectedTicket.category} Request</h2>
+                      <h2 className={`text-lg font-bold ${themeClasses.text}`}>{selectedTicket.category} Request</h2>
                     </div>
                   </div>
                   <button 
                     onClick={() => setSelectedTicket(null)}
-                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100/10 rounded-full transition-all"
+                    className={`p-2 rounded-full transition-all ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -1355,76 +1407,62 @@ export default function App() {
                   {/* Left Column: Info & Description */}
                   <div className="lg:col-span-7 space-y-6">
                     <div className="grid grid-cols-2 gap-3">
-                      <div className={`p-3 rounded-xl border flex items-center gap-3 ${
-                        appSettings.theme_mode === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'
-                      }`}>
+                      <div className={`p-3 rounded-xl border flex items-center gap-3 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
                         <User className="w-4 h-4 text-slate-400" />
                         <div>
-                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Pengguna</p>
-                          <p className={`text-xs font-bold ${appSettings.theme_mode === 'dark' ? 'text-slate-200' : 'text-slate-900'}`}>{selectedTicket.name}</p>
+                          <p className={`text-[8px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>Pengguna</p>
+                          <p className={`text-xs font-bold ${themeClasses.text}`}>{selectedTicket.name}</p>
                         </div>
                       </div>
-                      <div className={`p-3 rounded-xl border flex items-center gap-3 ${
-                        appSettings.theme_mode === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'
-                      }`}>
+                      <div className={`p-3 rounded-xl border flex items-center gap-3 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
                         <Building2 className="w-4 h-4 text-slate-400" />
                         <div>
-                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Departemen</p>
-                          <p className={`text-xs font-bold ${appSettings.theme_mode === 'dark' ? 'text-slate-200' : 'text-slate-900'}`}>{selectedTicket.department}</p>
+                          <p className={`text-[8px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>Departemen</p>
+                          <p className={`text-xs font-bold ${themeClasses.text}`}>{selectedTicket.department}</p>
                         </div>
                       </div>
-                      <div className={`p-3 rounded-xl border flex items-center gap-3 ${
-                        appSettings.theme_mode === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'
-                      }`}>
+                      <div className={`p-3 rounded-xl border flex items-center gap-3 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
                         <Phone className="w-4 h-4 text-slate-400" />
                         <div>
-                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Telepon</p>
-                          <p className={`text-xs font-bold ${appSettings.theme_mode === 'dark' ? 'text-slate-200' : 'text-slate-900'}`}>{selectedTicket.phone}</p>
+                          <p className={`text-[8px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>Telepon</p>
+                          <p className={`text-xs font-bold ${themeClasses.text}`}>{selectedTicket.phone}</p>
                         </div>
                       </div>
-                      <div className={`p-3 rounded-xl border flex items-center gap-3 ${
-                        appSettings.theme_mode === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'
-                      }`}>
+                      <div className={`p-3 rounded-xl border flex items-center gap-3 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
                         <Layers className="w-4 h-4 text-slate-400" />
                         <div>
-                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Kategori</p>
-                          <p className={`text-xs font-bold ${appSettings.theme_mode === 'dark' ? 'text-slate-200' : 'text-slate-900'}`}>{selectedTicket.category}</p>
+                          <p className={`text-[8px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>Kategori</p>
+                          <p className={`text-xs font-bold ${themeClasses.text}`}>{selectedTicket.category}</p>
                         </div>
                       </div>
                     </div>
 
-                    <div className={`p-4 rounded-2xl border ${
-                      appSettings.theme_mode === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'
-                    }`}>
+                    <div className={`p-4 rounded-2xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
                       <div className="flex items-center gap-2 text-slate-400 mb-2">
                         <MessageSquare className="w-4 h-4" />
                         <span className="text-[10px] font-bold uppercase tracking-wider">Masalah / Detail</span>
                       </div>
-                      <p className={`text-sm whitespace-pre-wrap leading-relaxed ${
-                        appSettings.theme_mode === 'dark' ? 'text-slate-300' : 'text-slate-600'
-                      }`}>
+                      <p className={`text-sm whitespace-pre-wrap leading-relaxed ${themeClasses.text}`}>
                         {selectedTicket.description}
                       </p>
                     </div>
 
                     {adminUser && (
-                      <div className={`p-4 rounded-2xl border ${
-                        appSettings.theme_mode === 'dark' ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-100'
-                      }`}>
+                      <div className={`p-4 rounded-2xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
                         <div className="flex items-center gap-2 text-slate-400 mb-3">
                           <ShieldCheck className="w-4 h-4" />
                           <span className="text-[10px] font-bold uppercase tracking-wider">Audit Log (Admin Only)</span>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                           <div>
-                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">IP Address</p>
-                            <p className={`text-[10px] font-mono font-bold ${appSettings.theme_mode === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                            <p className={`text-[8px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>IP Address</p>
+                            <p className={`text-[10px] font-mono font-bold ${themeClasses.text}`}>
                               {selectedTicket.ip_address || 'Unknown'}
                             </p>
                           </div>
                           <div>
-                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Device Info</p>
-                            <p className={`text-[10px] font-mono font-bold ${appSettings.theme_mode === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                            <p className={`text-[8px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>Device Info</p>
+                            <p className={`text-[10px] font-mono font-bold ${themeClasses.text}`}>
                               {getDeviceInfo(selectedTicket.user_agent || '')}
                             </p>
                           </div>
@@ -1446,7 +1484,7 @@ export default function App() {
                           </div>
                           <div>
                             <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">User Agent</p>
-                            <p className={`text-[10px] font-mono font-bold truncate ${appSettings.theme_mode === 'dark' ? 'text-slate-300' : 'text-slate-600'}`} title={selectedTicket.user_agent || 'Unknown'}>
+                            <p className={`text-[10px] font-mono font-bold truncate ${isDark ? 'text-slate-300' : 'text-slate-600'}`} title={selectedTicket.user_agent || 'Unknown'}>
                               {selectedTicket.user_agent || 'Unknown'}
                             </p>
                           </div>
@@ -1605,7 +1643,7 @@ export default function App() {
                             setSelectedTicket(null);
                             setModalStatus('');
                           }}
-                          style={{ backgroundColor: appSettings.primary_color }}
+                          style={{ backgroundColor: primaryColor }}
                           className="w-full text-white font-black py-3 rounded-xl hover:opacity-90 transition-all shadow-xl active:scale-[0.98] uppercase tracking-widest text-[10px]"
                         >
                           Simpan Perubahan
@@ -1779,7 +1817,7 @@ export default function App() {
                     <button 
                       type="submit"
                       disabled={submitting || photoLoading || gpsStatus !== 'success'}
-                      style={{ backgroundColor: !(submitting || photoLoading || gpsStatus !== 'success') ? appSettings.primary_color : undefined }}
+                      style={{ backgroundColor: !(submitting || photoLoading || gpsStatus !== 'success') ? primaryColor : undefined }}
                       className={`hidden lg:block w-full font-black py-4 rounded-xl transition-all shadow-xl active:scale-[0.98] uppercase tracking-widest text-[10px] ${
                         submitting || photoLoading || gpsStatus !== 'success'
                         ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
@@ -1891,20 +1929,20 @@ export default function App() {
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className={`relative w-full max-w-lg rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${
-                appSettings.theme_mode === 'dark' ? 'bg-slate-900' : 'bg-white'
+                isDark ? 'bg-slate-900' : 'bg-white'
               }`}
             >
               <div className={`p-6 border-b shrink-0 flex items-center justify-between ${
-                appSettings.theme_mode === 'dark' ? 'border-slate-800' : 'border-slate-100'
+                isDark ? 'border-slate-800' : 'border-slate-100'
               }`}>
                 <div>
-                  <h2 className={`text-xl font-black tracking-tight ${appSettings.theme_mode === 'dark' ? 'text-white' : 'text-slate-900'}`}>Filter Antrian</h2>
+                  <h2 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Filter Antrian</h2>
                   <p className="text-[10px] text-slate-400 mt-0.5 font-medium uppercase tracking-widest">Sesuaikan tampilan antrian</p>
                 </div>
                 <button 
                   onClick={() => setShowMobileFilter(false)}
                   className={`p-2 rounded-xl transition-all border ${
-                    appSettings.theme_mode === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-750' : 'bg-slate-50 border-slate-100 hover:bg-slate-100'
+                    isDark ? 'bg-slate-800 border-slate-700 hover:bg-slate-750' : 'bg-slate-50 border-slate-100 hover:bg-slate-100'
                   }`}
                 >
                   <X className="w-5 h-5 text-slate-400" />
@@ -1921,7 +1959,7 @@ export default function App() {
                       className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${
                         tempFilters.dept === '' 
                         ? 'bg-emerald-600 border-emerald-600 text-white' 
-                        : appSettings.theme_mode === 'dark' 
+                        : isDark 
                           ? 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750' 
                           : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'
                       }`}
@@ -1935,7 +1973,7 @@ export default function App() {
                         className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${
                           tempFilters.dept === dept.name 
                           ? 'bg-emerald-600 border-emerald-600 text-white' 
-                          : appSettings.theme_mode === 'dark' 
+                          : isDark 
                             ? 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750' 
                             : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'
                         }`}
@@ -1955,7 +1993,7 @@ export default function App() {
                       className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${
                         tempFilters.status === '' 
                         ? 'bg-emerald-600 border-emerald-600 text-white' 
-                        : appSettings.theme_mode === 'dark' 
+                        : isDark 
                           ? 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750' 
                           : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'
                       }`}
@@ -1969,7 +2007,7 @@ export default function App() {
                         className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${
                           tempFilters.status === status 
                           ? 'bg-emerald-600 border-emerald-600 text-white' 
-                          : appSettings.theme_mode === 'dark' 
+                          : isDark 
                             ? 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750' 
                             : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'
                         }`}
@@ -1990,7 +2028,7 @@ export default function App() {
                       value={tempFilters.date}
                       onChange={(e) => setTempFilters({ ...tempFilters, date: e.target.value })}
                       className={`w-full border rounded-xl py-3 pl-12 pr-4 text-xs font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all ${
-                        appSettings.theme_mode === 'dark' 
+                        isDark 
                         ? 'bg-slate-800 border-slate-700 text-slate-200' 
                         : 'bg-slate-50 border-slate-100 text-slate-700'
                       }`}
@@ -2000,7 +2038,7 @@ export default function App() {
               </div>
 
               <div className={`p-6 border-t shrink-0 flex gap-3 ${
-                appSettings.theme_mode === 'dark' ? 'border-slate-800' : 'border-slate-100'
+                isDark ? 'border-slate-800' : 'border-slate-100'
               }`}>
                 <button 
                   onClick={() => {
@@ -2011,7 +2049,7 @@ export default function App() {
                     setShowMobileFilter(false);
                   }}
                   className={`flex-1 py-4 font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all ${
-                    appSettings.theme_mode === 'dark' ? 'bg-slate-800 text-slate-400 hover:bg-slate-750' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    isDark ? 'bg-slate-800 text-slate-400 hover:bg-slate-750' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
                   Reset
@@ -2024,7 +2062,7 @@ export default function App() {
                     setShowMobileFilter(false);
                   }}
                   className={`flex-[2] py-4 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-lg transition-all active:scale-[0.98] ${
-                    appSettings.theme_mode === 'dark' ? 'bg-emerald-500 shadow-emerald-900/40 hover:bg-emerald-400' : 'bg-emerald-600 shadow-emerald-900/20 hover:opacity-90'
+                    isDark ? 'bg-emerald-500 shadow-emerald-900/40 hover:bg-emerald-400' : 'bg-emerald-600 shadow-emerald-900/20 hover:opacity-90'
                   }`}
                 >
                   Apply Filters
@@ -2150,19 +2188,17 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className={`relative w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-colors ${
-                appSettings.theme_mode === 'dark' ? 'bg-slate-900 text-slate-100' : 'bg-white text-slate-900'
-              }`}
+              className={`relative w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-colors ${themeClasses.card} ${themeClasses.text}`}
             >
-              <div className={`p-6 border-b shrink-0 ${appSettings.theme_mode === 'dark' ? 'border-slate-800' : 'border-slate-100'}`}>
+              <div className={`p-6 border-b shrink-0 ${themeClasses.border}`}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-2xl font-bold">App Settings & Management</h2>
-                    <p className="text-sm opacity-60 mt-1">Customize your helpdesk and manage data</p>
+                    <h2 className={`text-2xl font-bold ${themeClasses.text}`}>App Settings & Management</h2>
+                    <p className={`text-sm ${themeClasses.textMuted} mt-1`}>Customize your helpdesk and manage data</p>
                   </div>
                   <button 
                     onClick={() => setShowSettings(false)}
-                    className="p-2 hover:bg-slate-100/10 rounded-full transition-colors"
+                    className={`p-2 hover:bg-slate-100/10 rounded-full transition-colors ${themeClasses.text}`}
                   >
                     <X className="w-6 h-6" />
                   </button>
@@ -2176,61 +2212,105 @@ export default function App() {
                   <form onSubmit={handleUpdateSettings} className="space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold opacity-60 uppercase tracking-wider ml-1">Application Name</label>
+                        <label className={`text-xs font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Application Name</label>
                         <input 
                           required
                           type="text"
-                          className={`w-full border rounded-xl py-3 px-4 text-sm outline-none transition-all ${
-                            appSettings.theme_mode === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
-                          }`}
+                          className={`w-full border rounded-xl py-3 px-4 text-sm outline-none transition-all ${themeClasses.input}`}
                           value={appSettings.app_name}
                           onChange={e => setAppSettings({...appSettings, app_name: e.target.value})}
                         />
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold opacity-60 uppercase tracking-wider ml-1">Theme Mode</label>
-                        <div className="flex gap-2 p-1 bg-slate-800 rounded-xl border border-slate-700">
-                          <button
-                            type="button"
-                            onClick={() => setAppSettings({...appSettings, theme_mode: 'light'})}
-                            className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                              appSettings.theme_mode === 'light' ? 'bg-white text-slate-900' : 'text-slate-400 hover:text-white'
-                            }`}
-                          >
-                            Light
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setAppSettings({...appSettings, theme_mode: 'dark'})}
-                            className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                              appSettings.theme_mode === 'dark' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
-                            }`}
-                          >
-                            Dark
-                          </button>
+                      <div className="space-y-4">
+                        <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Frontend Theme</h3>
+                        <div className="space-y-1.5">
+                          <label className={`text-xs font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Theme Mode</label>
+                          <div className={`flex gap-2 p-1 rounded-xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                            <button
+                              type="button"
+                              onClick={() => setAppSettings({...appSettings, theme_mode: 'light'})}
+                              className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                                appSettings.theme_mode === 'light' ? 'bg-white text-slate-900 shadow-sm' : `${themeClasses.textMuted} hover:${themeClasses.text}`
+                              }`}
+                            >
+                              Light
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setAppSettings({...appSettings, theme_mode: 'dark'})}
+                              className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                                appSettings.theme_mode === 'dark' ? (isDark ? 'bg-slate-700 text-white shadow-sm' : 'bg-slate-800 text-white shadow-sm') : `${themeClasses.textMuted} hover:${themeClasses.text}`
+                              }`}
+                            >
+                              Dark
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <label className="text-xs font-bold opacity-60 uppercase tracking-wider ml-1">Primary Color</label>
+                          <div className="flex flex-wrap gap-3">
+                            {['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#000000'].map(color => (
+                              <button
+                                key={color}
+                                type="button"
+                                onClick={() => setAppSettings({...appSettings, primary_color: color})}
+                                className={`w-10 h-10 rounded-full border-4 transition-all ${
+                                  appSettings.primary_color === color ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'
+                                }`}
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="space-y-3">
-                      <label className="text-xs font-bold opacity-60 uppercase tracking-wider ml-1">Primary Color</label>
-                      <div className="flex flex-wrap gap-3">
-                        {['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#000000'].map(color => (
-                          <button
-                            key={color}
-                            type="button"
-                            onClick={() => setAppSettings({...appSettings, primary_color: color})}
-                            className={`w-10 h-10 rounded-full border-4 transition-all ${
-                              appSettings.primary_color === color ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'
-                            }`}
-                            style={{ backgroundColor: color }}
-                          />
-                        ))}
+                      <div className="space-y-4 pt-4 border-t border-slate-800">
+                        <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-500">Admin Theme</h3>
+                        <div className="space-y-1.5">
+                          <label className={`text-xs font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Admin Theme Mode</label>
+                          <div className={`flex gap-2 p-1 rounded-xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                            <button
+                              type="button"
+                              onClick={() => setAppSettings({...appSettings, admin_theme_mode: 'light'})}
+                              className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                                appSettings.admin_theme_mode === 'light' ? 'bg-white text-slate-900 shadow-sm' : `${themeClasses.textMuted} hover:${themeClasses.text}`
+                              }`}
+                            >
+                              Light
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setAppSettings({...appSettings, admin_theme_mode: 'dark'})}
+                              className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                                appSettings.admin_theme_mode === 'dark' ? (isDark ? 'bg-slate-700 text-white shadow-sm' : 'bg-slate-800 text-white shadow-sm') : `${themeClasses.textMuted} hover:${themeClasses.text}`
+                              }`}
+                            >
+                              Dark
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <label className={`text-xs font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Admin Primary Color</label>
+                          <div className="flex flex-wrap gap-3">
+                            {['#6366f1', '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#000000'].map(color => (
+                              <button
+                                key={color}
+                                type="button"
+                                onClick={() => setAppSettings({...appSettings, admin_primary_color: color})}
+                                className={`w-10 h-10 rounded-full border-4 transition-all ${
+                                  appSettings.admin_primary_color === color ? (isDark ? 'border-white scale-110 shadow-lg' : 'border-slate-900 scale-110 shadow-lg') : 'border-transparent opacity-60 hover:opacity-100'
+                                }`}
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                    </div>
 
                     <div className="space-y-3">
-                      <label className="text-xs font-bold opacity-60 uppercase tracking-wider ml-1">Pilih Logo</label>
+                      <label className={`text-xs font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Pilih Logo</label>
                       <div className="grid grid-cols-5 gap-3">
                         {LOGO_OPTIONS.map(option => (
                           <button
@@ -2239,8 +2319,8 @@ export default function App() {
                             onClick={() => setAppSettings({...appSettings, logo_type: option.id})}
                             className={`aspect-square rounded-xl flex items-center justify-center border-2 transition-all ${
                               appSettings.logo_type === option.id 
-                              ? 'bg-emerald-500 border-emerald-500 text-white' 
-                              : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'
+                              ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' 
+                              : `${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.textMuted} hover:${themeClasses.text}`
                             }`}
                           >
                             <option.icon className="w-6 h-6" />
@@ -2248,10 +2328,11 @@ export default function App() {
                         ))}
                       </div>
                     </div>
+                  </div>
 
-                    <button 
-                      type="submit"
-                      style={{ backgroundColor: appSettings.primary_color }}
+                  <button 
+                    type="submit"
+                      style={{ backgroundColor: primaryColor }}
                       className="w-full hover:opacity-90 text-white font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-[0.98]"
                     >
                       Simpan Pengaturan Visual
@@ -2260,11 +2341,11 @@ export default function App() {
                 </section>
 
                 {/* Email Notifications */}
-                <section className="space-y-6 pt-8 border-t border-slate-800">
+                <section className={`space-y-6 pt-8 border-t ${themeClasses.border}`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-xs font-black uppercase tracking-widest text-amber-500">Email Notifications</h3>
-                      <p className="text-[10px] opacity-60 mt-1">Maksimal 3 email untuk notifikasi tiket baru</p>
+                      <p className={`text-[10px] ${themeClasses.textMuted} mt-1`}>Maksimal 3 email untuk notifikasi tiket baru</p>
                     </div>
                     {!showEmailInput && appSettings.notification_emails.length < 3 && (
                       <button 
@@ -2282,9 +2363,7 @@ export default function App() {
                       <input 
                         type="email"
                         placeholder="Masukkan email..."
-                        className={`flex-1 border rounded-xl py-2 px-4 text-xs outline-none transition-all ${
-                          appSettings.theme_mode === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
-                        }`}
+                        className={`flex-1 border rounded-xl py-2 px-4 text-xs outline-none transition-all ${themeClasses.input}`}
                         value={newEmailInput}
                         onChange={e => setNewEmailInput(e.target.value)}
                         onKeyPress={e => {
@@ -2338,15 +2417,15 @@ export default function App() {
                   
                   <div className="space-y-2">
                     {appSettings.notification_emails.length === 0 ? (
-                      <p className="text-[10px] italic opacity-40">Belum ada email notifikasi yang didaftarkan.</p>
+                      <p className={`text-[10px] italic ${themeClasses.textMuted}`}>Belum ada email notifikasi yang didaftarkan.</p>
                     ) : (
                       appSettings.notification_emails.map((email, idx) => (
-                        <div key={idx} className="flex items-center justify-between bg-slate-800/50 border border-slate-700 p-3 rounded-xl group">
+                        <div key={idx} className={`flex items-center justify-between ${themeClasses.bgSecondary} border ${themeClasses.border} p-3 rounded-xl group`}>
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-slate-700 rounded-lg flex items-center justify-center text-slate-400">
+                            <div className={`w-8 h-8 ${isDark ? 'bg-slate-700' : 'bg-slate-200'} rounded-lg flex items-center justify-center text-slate-400`}>
                               <Globe className="w-4 h-4" />
                             </div>
-                            <span className="text-xs font-bold">{email}</span>
+                            <span className={`text-xs font-bold ${themeClasses.text}`}>{email}</span>
                           </div>
                           <button 
                             type="button"
@@ -2366,23 +2445,21 @@ export default function App() {
                 </section>
 
                 {/* Telegram Notifications */}
-                <section className="space-y-6 pt-8 border-t border-slate-800">
+                <section className={`space-y-6 pt-8 border-t ${themeClasses.border}`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-xs font-black uppercase tracking-widest text-blue-400">Telegram Notifications</h3>
-                      <p className="text-[10px] opacity-60 mt-1">Gunakan Bot Telegram untuk menerima notifikasi</p>
+                      <p className={`text-[10px] ${themeClasses.textMuted} mt-1`}>Gunakan Bot Telegram untuk menerima notifikasi</p>
                     </div>
                   </div>
 
                   <div className="space-y-4">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold opacity-60 uppercase tracking-wider ml-1">Bot Token</label>
+                      <label className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Bot Token</label>
                       <input 
                         type="password"
                         placeholder="Masukkan Bot Token (dari @BotFather)..."
-                        className={`w-full border rounded-xl py-2.5 px-4 text-xs outline-none transition-all ${
-                          appSettings.theme_mode === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
-                        }`}
+                        className={`w-full border rounded-xl py-2.5 px-4 text-xs outline-none transition-all ${themeClasses.input}`}
                         value={appSettings.telegram_bot_token}
                         onChange={e => setAppSettings({...appSettings, telegram_bot_token: e.target.value})}
                       />
@@ -2390,7 +2467,7 @@ export default function App() {
 
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-bold opacity-60 uppercase tracking-wider ml-1">Chat IDs</label>
+                        <label className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Chat IDs</label>
                         <button 
                           type="button"
                           onClick={() => {
@@ -2410,15 +2487,15 @@ export default function App() {
                       
                       <div className="space-y-2">
                         {appSettings.telegram_chat_ids.length === 0 ? (
-                          <p className="text-[10px] italic opacity-40">Belum ada Chat ID yang didaftarkan.</p>
+                          <p className={`text-[10px] italic ${themeClasses.textMuted}`}>Belum ada Chat ID yang didaftarkan.</p>
                         ) : (
                           appSettings.telegram_chat_ids.map((id, idx) => (
-                            <div key={idx} className="flex items-center justify-between bg-slate-800/50 border border-slate-700 p-2.5 rounded-xl group">
+                            <div key={idx} className={`flex items-center justify-between ${themeClasses.bgSecondary} border ${themeClasses.border} p-2.5 rounded-xl group`}>
                               <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 bg-slate-700 rounded-lg flex items-center justify-center text-slate-400">
+                                <div className={`w-6 h-6 ${isDark ? 'bg-slate-700' : 'bg-slate-200'} rounded-lg flex items-center justify-center text-slate-400`}>
                                   <Send className="w-3 h-3" />
                                 </div>
-                                <span className="text-xs font-mono">{id}</span>
+                                <span className={`text-xs font-mono ${themeClasses.text}`}>{id}</span>
                               </div>
                               <button 
                                 type="button"
@@ -2440,13 +2517,13 @@ export default function App() {
                 </section>
 
                 {/* Data Management */}
-                <section className="space-y-6 pt-8 border-t border-slate-800">
+                <section className={`space-y-6 pt-8 border-t ${themeClasses.border}`}>
                   <h3 className="text-xs font-black uppercase tracking-widest text-blue-500">Data Management</h3>
                   
                   {/* IT Personnel */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold opacity-60 uppercase tracking-wider">Tim IT</label>
+                      <label className={`text-xs font-bold ${themeClasses.textMuted} uppercase tracking-wider`}>Tim IT</label>
                       <button 
                         onClick={() => setAddingType(addingType === 'it' ? null : 'it')} 
                         className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
@@ -2463,7 +2540,7 @@ export default function App() {
                           value={newItemName}
                           onChange={e => setNewItemName(e.target.value)}
                           placeholder="Nama IT baru..."
-                          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs font-bold text-white outline-none focus:ring-1 focus:ring-emerald-500"
+                          className={`flex-1 border rounded-lg px-3 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
                           onKeyDown={e => e.key === 'Enter' && handleManagementAction('it', 'add')}
                         />
                         <button 
@@ -2477,8 +2554,8 @@ export default function App() {
 
                     <div className="flex flex-wrap gap-2">
                       {itPersonnel.map(it => (
-                        <div key={it.id} className="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 group">
-                          <span className="text-xs font-bold text-slate-200">{it.name}</span>
+                        <div key={it.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
+                          <span className={`text-xs font-bold ${themeClasses.text}`}>{it.name}</span>
                           <button onClick={() => handleManagementAction('it', 'delete', it)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -2507,7 +2584,7 @@ export default function App() {
                           value={newItemName}
                           onChange={e => setNewItemName(e.target.value)}
                           placeholder="Nama Departemen baru..."
-                          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs font-bold text-white outline-none focus:ring-1 focus:ring-emerald-500"
+                          className={`flex-1 border rounded-lg px-3 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
                           onKeyDown={e => e.key === 'Enter' && handleManagementAction('dept', 'add')}
                         />
                         <button 
@@ -2521,8 +2598,8 @@ export default function App() {
 
                     <div className="flex flex-wrap gap-2">
                       {departments.map(dept => (
-                        <div key={dept.id} className="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 group">
-                          <span className="text-xs font-bold text-slate-200">{dept.name}</span>
+                        <div key={dept.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
+                          <span className={`text-xs font-bold ${themeClasses.text}`}>{dept.name}</span>
                           <button onClick={() => handleManagementAction('dept', 'delete', dept)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -2551,7 +2628,7 @@ export default function App() {
                           value={newItemName}
                           onChange={e => setNewItemName(e.target.value)}
                           placeholder="Nama Kategori baru..."
-                          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs font-bold text-white outline-none focus:ring-1 focus:ring-emerald-500"
+                          className={`flex-1 border rounded-lg px-3 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
                           onKeyDown={e => e.key === 'Enter' && handleManagementAction('cat', 'add')}
                         />
                         <button 
@@ -2565,8 +2642,8 @@ export default function App() {
 
                     <div className="flex flex-wrap gap-2">
                       {categories.map(cat => (
-                        <div key={cat.id} className="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 group">
-                          <span className="text-xs font-bold text-slate-200">{cat.name}</span>
+                        <div key={cat.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
+                          <span className={`text-xs font-bold ${themeClasses.text}`}>{cat.name}</span>
                           <button onClick={() => handleManagementAction('cat', 'delete', cat)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -2596,20 +2673,20 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden"
+              className={`relative w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden ${themeClasses.card} border ${themeClasses.border}`}
             >
               <div className="p-8 text-center">
                 <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Trash2 className="text-rose-600 w-8 h-8" />
                 </div>
-                <h2 className="text-xl font-bold text-slate-900 mb-2">Reset All Data?</h2>
-                <p className="text-sm text-slate-500 mb-8 leading-relaxed">
+                <h2 className={`text-xl font-bold mb-2 ${themeClasses.text}`}>Reset All Data?</h2>
+                <p className={`text-sm mb-8 leading-relaxed ${themeClasses.textMuted}`}>
                   This action will permanently delete all tickets in the queue. This cannot be undone.
                 </p>
                 <div className="flex gap-3">
                   <button 
                     onClick={() => setShowResetConfirm(false)}
-                    className="flex-1 px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all"
+                    className={`flex-1 px-4 py-3 font-bold rounded-xl transition-all ${themeClasses.bgSecondary} hover:opacity-80 ${themeClasses.text}`}
                   >
                     Cancel
                   </button>
@@ -2641,20 +2718,20 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden"
+              className={`relative w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}
             >
               <div className="p-8 text-center">
                 <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
                   <CheckCircle2 className="text-emerald-600 w-8 h-8" />
                 </div>
-                <h2 className="text-xl font-bold text-slate-900 mb-2">Konfirmasi Perubahan</h2>
-                <p className="text-sm text-slate-500 mb-6 leading-relaxed">
-                  Apakah Anda yakin ingin memperbarui status menjadi <span className="font-bold text-slate-900">{pendingUpdate.status}</span> dan menyimpan data penanganan ini?
+                <h2 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Konfirmasi Perubahan</h2>
+                <p className={`text-sm mb-6 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Apakah Anda yakin ingin memperbarui status menjadi <span className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{pendingUpdate.status}</span> dan menyimpan data penanganan ini?
                 </p>
                 <div className="flex gap-3">
                   <button 
                     onClick={() => setPendingUpdate(null)}
-                    className="flex-1 px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all"
+                    className={`flex-1 px-4 py-3 font-bold rounded-xl transition-all ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}
                   >
                     Batal
                   </button>

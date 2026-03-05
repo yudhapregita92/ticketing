@@ -1,0 +1,17 @@
+{
+  "name": "IT Helpdesk Pro",
+  "short_name": "IT Helpdesk",
+  "description": "Professional IT Helpdesk Ticketing System",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2906/2906274.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
