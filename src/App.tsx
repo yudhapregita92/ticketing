@@ -41,7 +41,10 @@ import {
   Bell,
   TrendingUp,
   BarChart3,
-  SlidersHorizontal
+  SlidersHorizontal,
+  History,
+  ShieldAlert,
+  UserPlus
 } from 'lucide-react';
 
 interface ITicket {
@@ -112,6 +115,7 @@ const getDeviceInfo = (ua: string) => {
 export default function App() {
   // --- State Management ---
   const [tickets, setTickets] = useState<ITicket[]>([]); // Daftar semua tiket
+  const [ticketLogs, setTicketLogs] = useState<any[]>([]); // Riwayat tiket
   const [itPersonnel, setItPersonnel] = useState<{id: number, name: string}[]>([]);
   const [users, setUsers] = useState<{id: number, username: string, full_name: string, role: string}[]>([]);
   const [departments, setDepartments] = useState<{id: number, name: string}[]>([]);
@@ -121,14 +125,24 @@ export default function App() {
 
   const handleSelectTicket = async (ticket: ITicket) => {
     setSelectedTicket(ticket);
+    setTicketLogs([]);
     try {
-      const res = await fetch(`/api/tickets/${ticket.id}/photo`);
-      const data = await res.json();
-      if (data.photo) {
-        setSelectedTicket(prev => prev && prev.id === ticket.id ? { ...prev, photo: data.photo } : prev);
+      const [photoRes, logsRes] = await Promise.all([
+        fetch(`/api/tickets/${ticket.id}/photo`),
+        fetch(`/api/tickets/${ticket.id}/logs`)
+      ]);
+      
+      const photoData = await photoRes.json();
+      if (photoData.photo) {
+        setSelectedTicket(prev => prev && prev.id === ticket.id ? { ...prev, photo: photoData.photo } : prev);
+      }
+
+      const logsData = await logsRes.json();
+      if (Array.isArray(logsData)) {
+        setTicketLogs(logsData);
       }
     } catch (err) {
-      console.error('Failed to fetch ticket photo:', err);
+      console.error('Failed to fetch ticket details:', err);
     }
   };
   const [loading, setLoading] = useState(true); // Loading state untuk fetch data awal
@@ -137,6 +151,7 @@ export default function App() {
   const [showLogin, setShowLogin] = useState(false); // Toggle modal login admin
   const [showSettings, setShowSettings] = useState(false); // Toggle modal pengaturan aplikasi
   const [showResetConfirm, setShowResetConfirm] = useState(false); // Toggle konfirmasi reset data
+  const [showTakeoverConfirm, setShowTakeoverConfirm] = useState<{id: number, type: 'takeover' | 'reassign', targetUser?: string} | null>(null);
   const [pendingUpdate, setPendingUpdate] = useState<{id: number, status: string, assigned_to: string | null, admin_reply: string | null, internal_notes: string | null} | null>(null); // Data update yang menunggu konfirmasi
   const [addingType, setAddingType] = useState<'it' | 'dept' | 'cat' | null>(null);
   const [newItemName, setNewItemName] = useState('');
@@ -154,6 +169,8 @@ export default function App() {
     primary_color: '#10b981', // emerald-600
     admin_theme_mode: 'light', // 'light' or 'dark'
     admin_primary_color: '#8b5cf6', // violet-500
+    custom_logo: '',
+    custom_favicon: '',
     notification_emails: [] as string[],
     telegram_bot_token: '',
     telegram_chat_ids: [] as string[]
@@ -230,6 +247,63 @@ export default function App() {
   }, [tickets, categories]);
 
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+
+  const handleCustomLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // Resize to max 200px height for logo
+        const maxH = 200;
+        let width = img.width;
+        let height = img.height;
+        if (height > maxH) {
+          width *= maxH / height;
+          height = maxH;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const base64 = canvas.toDataURL('image/png');
+        setAppSettings(prev => ({ ...prev, custom_logo: base64 }));
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCustomFaviconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // Resize to 32x32 for favicon
+        canvas.width = 32;
+        canvas.height = 32;
+        ctx.drawImage(img, 0, 0, 32, 32);
+
+        const base64 = canvas.toDataURL('image/x-icon');
+        setAppSettings(prev => ({ ...prev, custom_favicon: base64 }));
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   /**
    * Mengambil lokasi GPS pengguna
@@ -522,13 +596,14 @@ export default function App() {
     }
   };
 
-  const handleIntervention = async (ticketId: number, type: 'takeover' | 'reassign', targetUser?: string) => {
+  const executeIntervention = async (ticketId: number, type: 'takeover' | 'reassign', targetUser?: string) => {
     if (!adminUser || adminUser.role !== 'Super Admin') return;
     
     try {
       const body: any = {};
       if (type === 'takeover') body.takeover_by = adminUser.username;
       if (type === 'reassign') body.reassign_to = targetUser;
+      body.performed_by = adminUser.username;
 
       const res = await fetch(`/api/tickets/${ticketId}`, {
         method: 'PATCH',
@@ -541,10 +616,15 @@ export default function App() {
         if (selectedTicket && selectedTicket.id === ticketId) {
           setSelectedTicket(null);
         }
+        setShowTakeoverConfirm(null);
       }
     } catch (err) {
       alert('Intervention failed');
     }
+  };
+
+  const handleIntervention = (ticketId: number, type: 'takeover' | 'reassign', targetUser?: string) => {
+    setShowTakeoverConfirm({ id: ticketId, type, targetUser });
   };
 
   /**
@@ -702,7 +782,8 @@ export default function App() {
           status: pendingUpdate.status, 
           assigned_to: pendingUpdate.assigned_to, 
           admin_reply: pendingUpdate.admin_reply,
-          internal_notes: pendingUpdate.internal_notes
+          internal_notes: pendingUpdate.internal_notes,
+          performed_by: adminUser.username
         })
       });
       if (res.ok) {
@@ -764,6 +845,19 @@ export default function App() {
     }
   };
 
+  // Update favicon when appSettings.custom_favicon changes
+  useEffect(() => {
+    if (appSettings.custom_favicon) {
+      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.getElementsByTagName('head')[0].appendChild(link);
+      }
+      link.href = appSettings.custom_favicon;
+    }
+  }, [appSettings.custom_favicon]);
+
   const CurrentLogo = LOGO_OPTIONS.find(l => l.id === appSettings.logo_type)?.icon || ShieldCheck;
   
   // Dynamic theme based on user role
@@ -809,7 +903,11 @@ export default function App() {
               className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shadow-lg transition-all shrink-0"
               style={{ backgroundColor: primaryColor, boxShadow: `0 10px 15px -3px ${primaryColor}40` }}
             >
-              <CurrentLogo className="text-white w-5 h-5 sm:w-6 sm:h-6" />
+              {appSettings.custom_logo ? (
+                <img src={appSettings.custom_logo} alt="Logo" className="w-6 h-6 sm:w-7 sm:h-7 object-contain" referrerPolicy="no-referrer" />
+              ) : (
+                <CurrentLogo className="text-white w-5 h-5 sm:w-6 sm:h-6" />
+              )}
             </div>
             <div className="min-w-0 flex-1">
               <h1 className={`text-sm sm:text-lg font-bold tracking-tight leading-tight truncate whitespace-nowrap ${isDark ? 'text-white' : 'text-slate-900'}`}>{appSettings.app_name}</h1>
@@ -964,28 +1062,28 @@ export default function App() {
                 <h2 className={`text-sm font-bold tracking-wider ${themeClasses.text}`}>Status Antrian</h2>
                 <BarChart3 className="w-4 h-4 text-slate-300" />
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                <div className={`p-3 sm:p-4 rounded-2xl border transition-all ${themeClasses.bgSecondary} ${themeClasses.border} hover:opacity-80`}>
-                  <p className={`text-xl sm:text-2xl font-black leading-none mb-1 ${themeClasses.text}`}>{filteredTickets.length}</p>
-                  <p className={`text-[9px] sm:text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>Total</p>
+              <div className="grid grid-cols-4 gap-2 sm:gap-4">
+                <div className={`aspect-square rounded-2xl border transition-all ${themeClasses.bgSecondary} ${themeClasses.border} hover:opacity-80 flex flex-col items-center justify-center text-center p-2 shadow-sm`}>
+                  <p className={`text-lg sm:text-2xl font-black leading-none mb-1 ${themeClasses.text}`}>{filteredTickets.length}</p>
+                  <p className={`text-[7px] sm:text-[9px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>Total</p>
                 </div>
-                <div className={`p-3 sm:p-4 rounded-2xl border transition-all ${isDark ? 'bg-amber-900/20 border-amber-900/30 hover:border-amber-900/50' : 'bg-amber-50 border-amber-100 hover:border-amber-200'}`}>
-                  <p className={`text-xl sm:text-2xl font-black leading-none mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                <div className={`aspect-square rounded-2xl border transition-all ${isDark ? 'bg-amber-900/20 border-amber-900/30 hover:border-amber-900/50' : 'bg-amber-50 border-amber-100 hover:border-amber-200'} flex flex-col items-center justify-center text-center p-2 shadow-sm`}>
+                  <p className={`text-lg sm:text-2xl font-black leading-none mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
                     {filteredTickets.filter(t => t.status === 'New').length}
                   </p>
-                  <p className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-amber-500/70' : 'text-amber-500'}`}>Waiting</p>
+                  <p className={`text-[7px] sm:text-[9px] font-bold uppercase tracking-widest ${isDark ? 'text-amber-500/70' : 'text-amber-500'}`}>Wait</p>
                 </div>
-                <div className={`p-3 sm:p-4 rounded-2xl border transition-all ${isDark ? 'bg-blue-900/20 border-blue-900/30 hover:border-blue-900/50' : 'bg-blue-50 border-blue-100 hover:border-amber-200'}`}>
-                  <p className={`text-xl sm:text-2xl font-black leading-none mb-1 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                <div className={`aspect-square rounded-2xl border transition-all ${isDark ? 'bg-blue-900/20 border-blue-900/30 hover:border-blue-900/50' : 'bg-blue-50 border-blue-100 hover:border-blue-200'} flex flex-col items-center justify-center text-center p-2 shadow-sm`}>
+                  <p className={`text-lg sm:text-2xl font-black leading-none mb-1 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
                     {filteredTickets.filter(t => t.status === 'In Progress').length}
                   </p>
-                  <p className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-blue-500/70' : 'text-blue-500'}`}>Active</p>
+                  <p className={`text-[7px] sm:text-[9px] font-bold uppercase tracking-widest ${isDark ? 'text-blue-500/70' : 'text-blue-500'}`}>Active</p>
                 </div>
-                <div className={`p-3 sm:p-4 rounded-2xl border transition-all ${isDark ? 'bg-emerald-900/20 border-emerald-900/30 hover:border-emerald-900/50' : 'bg-emerald-50 border-emerald-100 hover:border-emerald-200'}`}>
-                  <p className={`text-xl sm:text-2xl font-black leading-none mb-1 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                <div className={`aspect-square rounded-2xl border transition-all ${isDark ? 'bg-emerald-900/20 border-emerald-900/30 hover:border-emerald-900/50' : 'bg-emerald-50 border-emerald-100 hover:border-emerald-200'} flex flex-col items-center justify-center text-center p-2 shadow-sm`}>
+                  <p className={`text-lg sm:text-2xl font-black leading-none mb-1 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
                     {filteredTickets.filter(t => t.status === 'Completed').length}
                   </p>
-                  <p className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-emerald-500/70' : 'text-emerald-500'}`}>Done</p>
+                  <p className={`text-[7px] sm:text-[9px] font-bold uppercase tracking-widest ${isDark ? 'text-emerald-500/70' : 'text-emerald-500'}`}>Done</p>
                 </div>
               </div>
             </section>
@@ -1375,118 +1473,112 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className={`relative rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[95vh] transition-colors ${themeClasses.card} ${themeClasses.text}`}
+              className={`relative rounded-[2rem] sm:rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[95vh] transition-colors ${themeClasses.card} ${themeClasses.text}`}
             >
               <div className={`p-4 sm:p-6 border-b shrink-0 ${themeClasses.border}`}>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
-                      <Ticket className="w-5 h-5" />
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-emerald-100 rounded-lg sm:rounded-xl flex items-center justify-center text-emerald-600">
+                      <Ticket className="w-4 h-4 sm:w-5 h-5" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-bold ${themeClasses.textMuted}`}>#{selectedTicket.ticket_no || selectedTicket.id.toString().padStart(4, '0')}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${getStatusColor(selectedTicket.status)}`}>
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <span className={`text-[9px] sm:text-[10px] font-bold ${themeClasses.textMuted}`}>#{selectedTicket.ticket_no || selectedTicket.id.toString().padStart(4, '0')}</span>
+                        <span className={`px-1.5 py-0.5 rounded-full text-[8px] sm:text-[9px] font-bold uppercase tracking-wider border ${getStatusColor(selectedTicket.status)}`}>
                           {selectedTicket.status}
                         </span>
                       </div>
-                      <h2 className={`text-lg font-bold ${themeClasses.text}`}>{selectedTicket.category} Request</h2>
+                      <h2 className={`text-sm sm:text-lg font-black tracking-tight ${themeClasses.text}`}>{selectedTicket.category} Request</h2>
                     </div>
                   </div>
                   <button 
                     onClick={() => setSelectedTicket(null)}
-                    className={`p-2 rounded-full transition-all ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+                    className={`p-1.5 sm:p-2 rounded-full transition-all ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-4 h-4 sm:w-5 h-5" />
                   </button>
                 </div>
               </div>
 
-              <div className="p-4 sm:p-6 overflow-y-auto custom-scrollbar">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="p-3 sm:p-6 overflow-y-auto custom-scrollbar">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
                   {/* Left Column: Info & Description */}
-                  <div className="lg:col-span-7 space-y-6">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className={`p-3 rounded-xl border flex items-center gap-3 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
-                        <User className="w-4 h-4 text-slate-400" />
-                        <div>
-                          <p className={`text-[8px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>Pengguna</p>
-                          <p className={`text-xs font-bold ${themeClasses.text}`}>{selectedTicket.name}</p>
+                  <div className="lg:col-span-7 space-y-4 sm:space-y-6">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                      <div className={`p-2 sm:p-3 rounded-xl border flex items-center gap-2 sm:gap-3 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                        <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 shrink-0" />
+                        <div className="min-w-0">
+                          <p className={`text-[7px] sm:text-[8px] font-bold ${themeClasses.textMuted} uppercase tracking-widest truncate`}>Pengguna</p>
+                          <p className={`text-[10px] sm:text-xs font-bold ${themeClasses.text} truncate`}>{selectedTicket.name}</p>
                         </div>
                       </div>
-                      <div className={`p-3 rounded-xl border flex items-center gap-3 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
-                        <Building2 className="w-4 h-4 text-slate-400" />
-                        <div>
-                          <p className={`text-[8px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>Departemen</p>
-                          <p className={`text-xs font-bold ${themeClasses.text}`}>{selectedTicket.department}</p>
+                      <div className={`p-2 sm:p-3 rounded-xl border flex items-center gap-2 sm:gap-3 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                        <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 shrink-0" />
+                        <div className="min-w-0">
+                          <p className={`text-[7px] sm:text-[8px] font-bold ${themeClasses.textMuted} uppercase tracking-widest truncate`}>Bagian</p>
+                          <p className={`text-[10px] sm:text-xs font-bold ${themeClasses.text} truncate`}>{selectedTicket.department}</p>
                         </div>
                       </div>
-                      <div className={`p-3 rounded-xl border flex items-center gap-3 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
-                        <Phone className="w-4 h-4 text-slate-400" />
-                        <div>
-                          <p className={`text-[8px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>Telepon</p>
-                          <p className={`text-xs font-bold ${themeClasses.text}`}>{selectedTicket.phone}</p>
+                      <div className={`p-2 sm:p-3 rounded-xl border flex items-center gap-2 sm:gap-3 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                        <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 shrink-0" />
+                        <div className="min-w-0">
+                          <p className={`text-[7px] sm:text-[8px] font-bold ${themeClasses.textMuted} uppercase tracking-widest truncate`}>Telepon</p>
+                          <p className={`text-[10px] sm:text-xs font-bold ${themeClasses.text} truncate`}>{selectedTicket.phone}</p>
                         </div>
                       </div>
-                      <div className={`p-3 rounded-xl border flex items-center gap-3 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
-                        <Layers className="w-4 h-4 text-slate-400" />
-                        <div>
-                          <p className={`text-[8px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>Kategori</p>
-                          <p className={`text-xs font-bold ${themeClasses.text}`}>{selectedTicket.category}</p>
+                      <div className={`p-2 sm:p-3 rounded-xl border flex items-center gap-2 sm:gap-3 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                        <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 shrink-0" />
+                        <div className="min-w-0">
+                          <p className={`text-[7px] sm:text-[8px] font-bold ${themeClasses.textMuted} uppercase tracking-widest truncate`}>Kategori</p>
+                          <p className={`text-[10px] sm:text-xs font-bold ${themeClasses.text} truncate`}>{selectedTicket.category}</p>
                         </div>
                       </div>
                     </div>
 
-                    <div className={`p-4 rounded-2xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
-                      <div className="flex items-center gap-2 text-slate-400 mb-2">
-                        <MessageSquare className="w-4 h-4" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Masalah / Detail</span>
+                    <div className={`p-3 sm:p-4 rounded-2xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                      <div className="flex items-center gap-2 text-slate-400 mb-1.5 sm:mb-2">
+                        <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Masalah / Detail</span>
                       </div>
-                      <p className={`text-sm whitespace-pre-wrap leading-relaxed ${themeClasses.text}`}>
+                      <p className={`text-xs sm:text-sm whitespace-pre-wrap leading-relaxed ${themeClasses.text}`}>
                         {selectedTicket.description}
                       </p>
                     </div>
 
                     {adminUser && (
-                      <div className={`p-4 rounded-2xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
-                        <div className="flex items-center gap-2 text-slate-400 mb-3">
-                          <ShieldCheck className="w-4 h-4" />
-                          <span className="text-[10px] font-bold uppercase tracking-wider">Audit Log (Admin Only)</span>
+                      <div className={`p-3 sm:p-4 rounded-2xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                        <div className="flex items-center gap-2 text-slate-400 mb-2 sm:mb-3">
+                          <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Audit Log (Admin Only)</span>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                           <div>
-                            <p className={`text-[8px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>IP Address</p>
-                            <p className={`text-[10px] font-mono font-bold ${themeClasses.text}`}>
+                            <p className={`text-[7px] sm:text-[8px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>IP Address</p>
+                            <p className={`text-[9px] sm:text-[10px] font-mono font-bold ${themeClasses.text}`}>
                               {selectedTicket.ip_address || 'Unknown'}
                             </p>
                           </div>
                           <div>
-                            <p className={`text-[8px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>Device Info</p>
-                            <p className={`text-[10px] font-mono font-bold ${themeClasses.text}`}>
+                            <p className={`text-[7px] sm:text-[8px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>Device</p>
+                            <p className={`text-[9px] sm:text-[10px] font-mono font-bold ${themeClasses.text} truncate`}>
                               {getDeviceInfo(selectedTicket.user_agent || '')}
                             </p>
                           </div>
-                          <div>
-                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Location (GPS)</p>
+                          <div className="col-span-2 sm:col-span-1">
+                            <p className="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-widest">Location (GPS)</p>
                             {selectedTicket.latitude ? (
                               <a 
                                 href={`https://www.google.com/maps?q=${selectedTicket.latitude},${selectedTicket.longitude}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-[10px] font-bold text-blue-500 hover:underline"
+                                className="flex items-center gap-1 text-[9px] sm:text-[10px] font-bold text-blue-500 hover:underline"
                               >
-                                <MapPin className="w-3 h-3" />
+                                <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                                 {selectedTicket.latitude.toFixed(4)}, {selectedTicket.longitude?.toFixed(4)}
                               </a>
                             ) : (
-                              <p className="text-[10px] font-bold text-rose-500">No GPS Data</p>
+                              <p className="text-[9px] sm:text-[10px] font-bold text-rose-500">No GPS Data</p>
                             )}
-                          </div>
-                          <div>
-                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">User Agent</p>
-                            <p className={`text-[10px] font-mono font-bold truncate ${isDark ? 'text-slate-300' : 'text-slate-600'}`} title={selectedTicket.user_agent || 'Unknown'}>
-                              {selectedTicket.user_agent || 'Unknown'}
-                            </p>
                           </div>
                         </div>
                       </div>
@@ -1494,53 +1586,53 @@ export default function App() {
 
                     {(selectedTicket.assigned_to || selectedTicket.admin_reply) && (
                       <div className="overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50/30">
-                        <div className="bg-emerald-100/50 px-4 py-2 border-b border-emerald-200 flex items-center justify-between">
+                        <div className="bg-emerald-100/50 px-3 sm:px-4 py-1.5 sm:py-2 border-b border-emerald-200 flex items-center justify-between">
                           <div className="flex items-center gap-2 text-emerald-700">
-                            <ShieldCheck className="w-4 h-4" />
-                            <span className="text-[9px] font-black uppercase tracking-widest">Tim Respon IT</span>
+                            <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest">Tim Respon IT</span>
                           </div>
                         </div>
-                        <div className="p-4">
+                        <div className="p-3 sm:p-4">
                           {selectedTicket.admin_reply ? (
-                            <div className="space-y-2">
-                              <p className="text-sm text-emerald-900 leading-relaxed font-semibold italic">
+                            <div className="space-y-1.5 sm:space-y-2">
+                              <p className="text-xs sm:text-sm text-emerald-900 leading-relaxed font-semibold italic">
                                 "{selectedTicket.admin_reply}"
                               </p>
-                              <p className="text-[9px] text-emerald-600 font-black uppercase tracking-widest pt-2 border-t border-emerald-100">Balasan Resmi</p>
+                              <p className="text-[8px] sm:text-[9px] text-emerald-600 font-black uppercase tracking-widest pt-1.5 sm:pt-2 border-t border-emerald-100">Balasan Resmi</p>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-3 text-emerald-600/70">
-                              <div className="w-6 h-6 rounded-full border-2 border-emerald-200 border-t-emerald-600 animate-spin" />
-                              <p className="text-xs font-bold italic">Sedang ditangani oleh {selectedTicket.assigned_to || 'Tim IT'}</p>
+                            <div className="flex items-center gap-2 sm:gap-3 text-emerald-600/70">
+                              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-emerald-200 border-t-emerald-600 animate-spin" />
+                              <p className="text-[10px] sm:text-xs font-bold italic">Sedang ditangani oleh {selectedTicket.assigned_to || 'Tim IT'}</p>
                             </div>
                           )}
                         </div>
                       </div>
                     )}
 
-                    <div className="grid grid-cols-3 gap-2 p-3 bg-white rounded-xl border border-slate-100">
+                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2 p-2 sm:p-3 bg-white rounded-xl border border-slate-100">
                       <div className="flex flex-col">
-                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Diajukan</span>
-                        <span className="text-[10px] font-medium text-slate-600">{formatDate(selectedTicket.created_at)}</span>
+                        <span className="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Diajukan</span>
+                        <span className="text-[9px] sm:text-[10px] font-medium text-slate-600">{formatDate(selectedTicket.created_at)}</span>
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Respon</span>
-                        <span className="text-[10px] font-medium text-slate-600">{selectedTicket.responded_at ? formatDate(selectedTicket.responded_at) : '-'}</span>
+                        <span className="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Respon</span>
+                        <span className="text-[9px] sm:text-[10px] font-medium text-slate-600">{selectedTicket.responded_at ? formatDate(selectedTicket.responded_at) : '-'}</span>
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Selesai</span>
-                        <span className="text-[10px] font-medium text-slate-600">{selectedTicket.resolved_at ? formatDate(selectedTicket.resolved_at) : '-'}</span>
+                        <span className="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Selesai</span>
+                        <span className="text-[9px] sm:text-[10px] font-medium text-slate-600">{selectedTicket.resolved_at ? formatDate(selectedTicket.resolved_at) : '-'}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Right Column: Photo & Admin Actions */}
-                  <div className="lg:col-span-5 space-y-6">
+                  <div className="lg:col-span-5 space-y-4 sm:space-y-6">
                     {selectedTicket.photo && (
-                      <div className="space-y-2">
+                      <div className="space-y-1.5 sm:space-y-2">
                         <div className="flex items-center gap-2 text-slate-400">
-                          <ImageIcon className="w-4 h-4" />
-                          <span className="text-[10px] font-bold uppercase tracking-wider">Lampiran Foto</span>
+                          <ImageIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Lampiran Foto</span>
                         </div>
                         <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 aspect-video flex items-center justify-center">
                           <img 
@@ -1553,20 +1645,70 @@ export default function App() {
                       </div>
                     )}
 
+                    {/* Ticket History / Logs */}
+                    <div className="space-y-2 sm:space-y-3">
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <History className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Riwayat Tiket</span>
+                      </div>
+                      <div className={`rounded-2xl border p-3 sm:p-4 space-y-3 sm:space-y-4 max-h-[200px] sm:max-h-[300px] overflow-y-auto custom-scrollbar ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                        {ticketLogs.length === 0 ? (
+                          <p className="text-[9px] sm:text-[10px] text-slate-400 italic text-center py-4">Belum ada riwayat aktivitas.</p>
+                        ) : (
+                          <div className="space-y-3 sm:space-y-4 relative before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-700">
+                            {ticketLogs.map((log, idx) => (
+                              <div key={idx} className="relative pl-5 sm:pl-6">
+                                <div className={`absolute left-0 top-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-white dark:border-slate-800 shadow-sm flex items-center justify-center ${
+                                  log.action.includes('Status') ? 'bg-emerald-500' :
+                                  log.action.includes('Tugaskan') ? 'bg-blue-500' :
+                                  log.action.includes('Ambil Alih') ? 'bg-amber-500' :
+                                  'bg-slate-400'
+                                }`}>
+                                  <div className="w-1 h-1 bg-white rounded-full" />
+                                </div>
+                                <div className="space-y-0.5 sm:space-y-1">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <p className={`text-[9px] sm:text-[10px] font-black ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{log.action}</p>
+                                    <span className="text-[7px] sm:text-[8px] font-bold text-slate-400 whitespace-nowrap">{formatDate(log.created_at)}</span>
+                                  </div>
+                                  <p className="text-[8px] sm:text-[9px] font-medium text-slate-500 leading-relaxed">
+                                    Oleh: <span className="font-bold text-slate-600 dark:text-slate-400">{log.performed_by}</span>
+                                  </p>
+                                  {log.note && (
+                                    <div className={`mt-1 p-1.5 sm:p-2 rounded-lg text-[8px] sm:text-[9px] font-medium italic leading-relaxed ${isDark ? 'bg-slate-900/50 text-slate-400' : 'bg-white text-slate-500'}`}>
+                                      "{log.note}"
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     {adminUser && (
-                      <div className="bg-slate-900 rounded-2xl p-5 shadow-xl space-y-4">
-                        <div className="flex items-center gap-2 text-white mb-1">
-                          <Settings2 className="w-4 h-4 text-emerald-400" />
-                          <h3 className="text-[10px] font-black uppercase tracking-widest">Tindakan Admin</h3>
+                      <div className="bg-slate-900 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3 sm:space-y-4">
+                        <div className="flex items-center gap-2 text-white mb-0.5 sm:mb-1">
+                          <Settings2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
+                          <h3 className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Tindakan Admin</h3>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-4">
-                          <div className="space-y-1.5">
-                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Tugaskan IT</label>
+                        <div className="grid grid-cols-1 gap-3 sm:gap-4">
+                          {adminUser.role === 'Super Admin' && selectedTicket.assigned_to && selectedTicket.assigned_to !== adminUser.username && (
+                            <button
+                              onClick={() => handleIntervention(selectedTicket.id, 'takeover')}
+                              className="w-full bg-amber-500 text-white font-black py-2 sm:py-2.5 rounded-xl hover:bg-amber-600 transition-all uppercase tracking-widest text-[8px] sm:text-[9px] shadow-lg shadow-amber-900/20 active:scale-[0.98]"
+                            >
+                              Ambil Alih Tiket
+                            </button>
+                          )}
+                          <div className="space-y-1">
+                            <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Tugaskan IT</label>
                             {adminUser.role === 'Super Admin' ? (
                               <select 
                                 id={`modal-assignee-${selectedTicket.id}`}
-                                className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl py-2.5 px-3 text-xs outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-bold"
+                                className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl py-2 sm:py-2.5 px-3 text-[10px] sm:text-xs outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-bold"
                                 defaultValue={selectedTicket.assigned_to || ''}
                               >
                                 <option value="">Pilih IT...</option>
@@ -1580,7 +1722,7 @@ export default function App() {
                                   id={`modal-assignee-${selectedTicket.id}`}
                                   type="text"
                                   readOnly
-                                  className="w-full bg-slate-800 border border-slate-700 text-slate-300 rounded-xl py-2.5 px-3 text-xs outline-none font-bold"
+                                  className="w-full bg-slate-800 border border-slate-700 text-slate-300 rounded-xl py-2 sm:py-2.5 px-3 text-[10px] sm:text-xs outline-none font-bold"
                                   value={selectedTicket.assigned_to || adminUser.username}
                                 />
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -1589,14 +1731,14 @@ export default function App() {
                               </div>
                             )}
                           </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
-                            <div className="flex gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700">
+                          <div className="space-y-1">
+                            <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
+                            <div className="flex gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700 overflow-x-auto no-scrollbar">
                               {STATUSES.map(status => (
                                 <button
                                   key={status}
                                   onClick={() => setModalStatus(status)}
-                                  className={`flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${
+                                  className={`flex-1 min-w-[60px] py-1.5 rounded-lg text-[7px] sm:text-[8px] font-black uppercase tracking-tighter transition-all ${
                                     (modalStatus || selectedTicket.status) === status 
                                     ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' 
                                     : 'text-slate-400 hover:text-white hover:bg-slate-700'
@@ -1609,22 +1751,22 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div className="space-y-1.5">
-                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Balasan Resolusi (Publik)</label>
+                        <div className="space-y-1">
+                          <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Balasan Resolusi (Publik)</label>
                           <textarea 
                             id={`modal-reply-${selectedTicket.id}`}
-                            className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl py-3 px-4 text-xs outline-none focus:ring-2 focus:ring-emerald-500 resize-none transition-all font-medium placeholder:text-slate-600"
+                            className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl py-2.5 sm:py-3 px-3 sm:px-4 text-[10px] sm:text-xs outline-none focus:ring-2 focus:ring-emerald-500 resize-none transition-all font-medium placeholder:text-slate-600"
                             placeholder="Tulis solusi di sini..."
                             rows={2}
                             defaultValue={selectedTicket.admin_reply || ''}
                           />
                         </div>
 
-                        <div className="space-y-1.5">
-                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Catatan Internal (Private)</label>
+                        <div className="space-y-1">
+                          <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Catatan Internal (Private)</label>
                           <textarea 
                             id={`modal-internal-${selectedTicket.id}`}
-                            className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl py-3 px-4 text-xs outline-none focus:ring-2 focus:ring-blue-500 resize-none transition-all font-medium placeholder:text-slate-600"
+                            className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl py-2.5 sm:py-3 px-3 sm:px-4 text-[10px] sm:text-xs outline-none focus:ring-2 focus:ring-blue-500 resize-none transition-all font-medium placeholder:text-slate-600"
                             placeholder="Catatan rahasia tim IT..."
                             rows={2}
                             defaultValue={selectedTicket.internal_notes || ''}
@@ -1644,7 +1786,7 @@ export default function App() {
                             setModalStatus('');
                           }}
                           style={{ backgroundColor: primaryColor }}
-                          className="w-full text-white font-black py-3 rounded-xl hover:opacity-90 transition-all shadow-xl active:scale-[0.98] uppercase tracking-widest text-[10px]"
+                          className="w-full text-white font-black py-2.5 sm:py-3 rounded-xl hover:opacity-90 transition-all shadow-xl active:scale-[0.98] uppercase tracking-widest text-[9px] sm:text-[10px]"
                         >
                           Simpan Perubahan
                         </button>
@@ -1673,17 +1815,17 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-4xl bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[95vh]"
+              className={`relative w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[95vh] ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}
             >
-              <div className="p-3 sm:p-4 border-b border-slate-100 shrink-0">
+              <div className={`p-3 sm:p-4 border-b shrink-0 ${themeClasses.border}`}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">Tiket Baru</h2>
-                    <p className="text-[9px] sm:text-[10px] text-slate-400 mt-0.5 font-medium uppercase tracking-widest">Beri tahu kami masalah Anda</p>
+                    <h2 className={`text-lg sm:text-2xl font-black tracking-tight ${themeClasses.text}`}>Tiket Baru</h2>
+                    <p className={`text-[9px] sm:text-[10px] ${themeClasses.textMuted} mt-0.5 font-medium uppercase tracking-widest`}>Beri tahu kami masalah Anda</p>
                   </div>
                   <button 
                     onClick={() => setShowForm(false)}
-                    className="p-1.5 sm:p-2 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all border border-slate-100"
+                    className={`p-1.5 sm:p-2 rounded-xl transition-all border ${themeClasses.input}`}
                   >
                     <X className="w-4 h-4 sm:w-5 h-5 text-slate-400" />
                   </button>
@@ -1696,28 +1838,28 @@ export default function App() {
                   <div className="space-y-3 sm:space-y-4">
                     <div className="grid grid-cols-2 gap-3 sm:gap-4">
                       <div className="space-y-1.5">
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Lengkap</label>
+                        <label className={`text-[9px] font-black uppercase tracking-widest ml-1 ${themeClasses.textMuted}`}>Nama Lengkap</label>
                         <div className="relative">
                           <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                           <input 
                             required
                             type="text"
                             placeholder="Nama Anda"
-                            className="w-full bg-slate-50 border border-slate-100 rounded-xl py-2.5 pl-10 pr-4 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                            className={`w-full border rounded-xl py-2.5 pl-10 pr-4 text-xs font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all ${themeClasses.input}`}
                             value={formData.name}
                             onChange={e => setFormData({...formData, name: e.target.value})}
                           />
                         </div>
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Nomor HP</label>
+                        <label className={`text-[9px] font-black uppercase tracking-widest ml-1 ${themeClasses.textMuted}`}>Nomor HP</label>
                         <div className="relative">
                           <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                           <input 
                             required
                             type="tel"
                             placeholder="0812..."
-                            className="w-full bg-slate-50 border border-slate-100 rounded-xl py-2.5 pl-10 pr-4 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                            className={`w-full border rounded-xl py-2.5 pl-10 pr-4 text-xs font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all ${themeClasses.input}`}
                             value={formData.phone}
                             onChange={e => setFormData({...formData, phone: e.target.value})}
                           />
@@ -1928,22 +2070,16 @@ export default function App() {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className={`relative w-full max-w-lg rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${
-                isDark ? 'bg-slate-900' : 'bg-white'
-              }`}
+              className={`relative w-full max-w-lg rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${themeClasses.card}`}
             >
-              <div className={`p-6 border-b shrink-0 flex items-center justify-between ${
-                isDark ? 'border-slate-800' : 'border-slate-100'
-              }`}>
+              <div className={`p-6 border-b shrink-0 flex items-center justify-between ${themeClasses.border}`}>
                 <div>
-                  <h2 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Filter Antrian</h2>
-                  <p className="text-[10px] text-slate-400 mt-0.5 font-medium uppercase tracking-widest">Sesuaikan tampilan antrian</p>
+                  <h2 className={`text-xl font-black tracking-tight ${themeClasses.text}`}>Filter Antrian</h2>
+                  <p className={`text-[10px] ${themeClasses.textMuted} mt-0.5 font-medium uppercase tracking-widest`}>Sesuaikan tampilan antrian</p>
                 </div>
                 <button 
                   onClick={() => setShowMobileFilter(false)}
-                  className={`p-2 rounded-xl transition-all border ${
-                    isDark ? 'bg-slate-800 border-slate-700 hover:bg-slate-750' : 'bg-slate-50 border-slate-100 hover:bg-slate-100'
-                  }`}
+                  className={`p-2 rounded-xl transition-all border ${themeClasses.input}`}
                 >
                   <X className="w-5 h-5 text-slate-400" />
                 </button>
@@ -2088,21 +2224,21 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl overflow-hidden"
+              className={`relative w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden ${isDark ? 'bg-zinc-900 border border-zinc-800' : 'bg-white'}`}
             >
               <div className="p-10">
                 <div className="flex flex-col items-center text-center mb-10">
-                  <div className="w-16 h-16 bg-slate-900 rounded-[1.5rem] flex items-center justify-center text-white mb-4 shadow-xl shadow-slate-200">
+                  <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-4 shadow-xl ${isDark ? 'bg-zinc-800 text-white shadow-zinc-950' : 'bg-slate-900 text-white shadow-slate-200'}`}>
                     <Lock className="w-8 h-8" />
                   </div>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">Admin Portal</h2>
-                  <p className="text-sm text-slate-400 mt-1 font-medium">Authorized personnel only</p>
+                  <h2 className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Admin Portal</h2>
+                  <p className={`text-sm mt-1 font-medium ${isDark ? 'text-zinc-400' : 'text-slate-400'}`}>Authorized personnel only</p>
                 </div>
 
                 <form onSubmit={handleLogin} className="space-y-6">
                   {/* Quick Login for Prototype */}
-                  <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-center">Quick Access (Prototype)</p>
+                  <div className={`rounded-2xl p-4 border ${isDark ? 'bg-zinc-800/50 border-zinc-700' : 'bg-slate-50 border-slate-100'}`}>
+                    <p className={`text-[10px] font-black uppercase tracking-widest mb-3 text-center ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Quick Access (Prototype)</p>
                     <div className="grid grid-cols-3 gap-2">
                       {[
                         { u: 'yudha', l: 'Yudha' },
@@ -2115,7 +2251,11 @@ export default function App() {
                           onClick={() => {
                             setLoginData({ username: acc.u, password: '' });
                           }}
-                          className="py-2 px-1 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-600 hover:border-slate-900 hover:text-slate-900 transition-all"
+                          className={`py-2 px-1 rounded-xl text-[10px] font-bold transition-all border ${
+                            loginData.username === acc.u 
+                            ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-200' 
+                            : isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-600' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-900 hover:text-slate-900'
+                          }`}
                         >
                           {acc.l}
                         </button>
@@ -2124,14 +2264,14 @@ export default function App() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Username</label>
+                    <label className={`text-[10px] font-black uppercase tracking-widest ml-1 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Username</label>
                     <div className="relative">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <input 
                         required
                         type="text"
                         placeholder="Admin username"
-                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-11 pr-4 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all"
+                        className={`w-full border rounded-2xl py-4 pl-11 pr-4 text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all ${isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-slate-50 border-slate-100 text-slate-700'}`}
                         value={loginData.username}
                         onChange={e => setLoginData({...loginData, username: e.target.value})}
                       />
@@ -2139,14 +2279,14 @@ export default function App() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Password</label>
+                    <label className={`text-[10px] font-black uppercase tracking-widest ml-1 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Password</label>
                     <div className="relative">
                       <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <input 
                         required
                         type="password"
                         placeholder="••••••••"
-                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-11 pr-4 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all"
+                        className={`w-full border rounded-2xl py-4 pl-11 pr-4 text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all ${isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-slate-50 border-slate-100 text-slate-700'}`}
                         value={loginData.password}
                         onChange={e => setLoginData({...loginData, password: e.target.value})}
                       />
@@ -2220,6 +2360,52 @@ export default function App() {
                           value={appSettings.app_name}
                           onChange={e => setAppSettings({...appSettings, app_name: e.target.value})}
                         />
+                      </div>
+
+                      {/* Custom Branding */}
+                      <div className="col-span-full space-y-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                          <ImageIcon className="w-3 h-3" /> Custom Branding
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Custom Logo</label>
+                            <div className="flex items-center gap-3">
+                              {appSettings.custom_logo && (
+                                <div className="h-10 w-10 rounded-lg border border-slate-200 bg-white p-1 flex items-center justify-center overflow-hidden">
+                                  <img src={appSettings.custom_logo} alt="Preview" className="max-h-full max-w-full object-contain" referrerPolicy="no-referrer" />
+                                </div>
+                              )}
+                              <label className="flex-1 cursor-pointer bg-white border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors text-center">
+                                Upload Logo
+                                <input type="file" className="hidden" accept="image/*" onChange={handleCustomLogoUpload} />
+                              </label>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Custom Favicon</label>
+                            <div className="flex items-center gap-3">
+                              {appSettings.custom_favicon && (
+                                <div className="h-8 w-8 rounded border border-slate-200 bg-white p-1 flex items-center justify-center overflow-hidden">
+                                  <img src={appSettings.custom_favicon} alt="Favicon" className="max-h-full max-w-full object-contain" referrerPolicy="no-referrer" />
+                                </div>
+                              )}
+                              <label className="flex-1 cursor-pointer bg-white border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors text-center">
+                                Upload Favicon
+                                <input type="file" className="hidden" accept="image/*" onChange={handleCustomFaviconUpload} />
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                        {(appSettings.custom_logo || appSettings.custom_favicon) && (
+                          <button 
+                            type="button"
+                            onClick={() => setAppSettings(prev => ({ ...prev, custom_logo: '', custom_favicon: '' }))}
+                            className="text-[9px] text-rose-500 font-bold hover:underline uppercase tracking-widest"
+                          >
+                            Reset Custom Branding
+                          </button>
+                        )}
                       </div>
                       <div className="space-y-4">
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Frontend Theme</h3>
@@ -2718,20 +2904,20 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className={`relative w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}
+              className={`relative w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden ${themeClasses.card} border ${themeClasses.border}`}
             >
               <div className="p-8 text-center">
                 <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
                   <CheckCircle2 className="text-emerald-600 w-8 h-8" />
                 </div>
-                <h2 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Konfirmasi Perubahan</h2>
-                <p className={`text-sm mb-6 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Apakah Anda yakin ingin memperbarui status menjadi <span className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{pendingUpdate.status}</span> dan menyimpan data penanganan ini?
+                <h2 className={`text-xl font-bold mb-2 ${themeClasses.text}`}>Konfirmasi Perubahan</h2>
+                <p className={`text-sm mb-6 leading-relaxed ${themeClasses.textMuted}`}>
+                  Apakah Anda yakin ingin memperbarui status menjadi <span className={`font-bold ${themeClasses.text}`}>{pendingUpdate.status}</span> dan menyimpan data penanganan ini?
                 </p>
                 <div className="flex gap-3">
                   <button 
                     onClick={() => setPendingUpdate(null)}
-                    className={`flex-1 px-4 py-3 font-bold rounded-xl transition-all ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}
+                    className={`flex-1 px-4 py-3 font-bold rounded-xl transition-all ${themeClasses.bgSecondary} hover:opacity-80 ${themeClasses.text}`}
                   >
                     Batal
                   </button>
@@ -2757,6 +2943,63 @@ export default function App() {
           animation: spin-slow 3s linear infinite;
         }
       `}</style>
+      {/* Takeover/Reassign Confirmation Modal */}
+      <AnimatePresence>
+        {showTakeoverConfirm && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowTakeoverConfirm(null)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className={`relative w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden ${isDark ? 'bg-zinc-900 border border-zinc-800' : 'bg-white'}`}
+            >
+              <div className="p-8">
+                <div className="flex flex-col items-center text-center mb-8">
+                  <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-4 shadow-xl ${
+                    showTakeoverConfirm.type === 'takeover' ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'
+                  }`}>
+                    {showTakeoverConfirm.type === 'takeover' ? <ShieldAlert className="w-8 h-8" /> : <UserPlus className="w-8 h-8" />}
+                  </div>
+                  <h2 className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    {showTakeoverConfirm.type === 'takeover' ? 'Konfirmasi Ambil Alih' : 'Konfirmasi Penugasan'}
+                  </h2>
+                  <p className={`text-sm mt-2 font-medium ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                    {showTakeoverConfirm.type === 'takeover' 
+                      ? 'Apakah Anda yakin ingin mengambil alih tiket ini? Tindakan ini akan tercatat dalam riwayat tiket.'
+                      : `Apakah Anda yakin ingin menugaskan tiket ini kepada ${showTakeoverConfirm.targetUser}?`}
+                  </p>
+                </div>
+
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => setShowTakeoverConfirm(null)}
+                    className={`flex-1 py-4 font-black text-xs uppercase tracking-widest rounded-2xl transition-all ${
+                      isDark ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-750' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                    }`}
+                  >
+                    Batal
+                  </button>
+                  <button 
+                    onClick={() => executeIntervention(showTakeoverConfirm.id, showTakeoverConfirm.type, showTakeoverConfirm.targetUser)}
+                    className={`flex-1 py-4 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg transition-all active:scale-[0.98] ${
+                      showTakeoverConfirm.type === 'takeover' ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-900/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-900/20'
+                    }`}
+                  >
+                    Ya, Lanjutkan
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

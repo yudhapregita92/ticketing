@@ -175,6 +175,16 @@ async function startServer() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT UNIQUE NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS ticket_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ticket_id INTEGER NOT NULL,
+        action TEXT NOT NULL,
+        note TEXT,
+        performed_by TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+      );
     `);
 
     // Migration: Check for missing columns in tickets table
@@ -246,6 +256,8 @@ async function startServer() {
     initSettings.run('notification_emails', '[]');
     initSettings.run('telegram_bot_token', '');
     initSettings.run('telegram_chat_ids', '[]');
+    initSettings.run('custom_logo', '');
+    initSettings.run('custom_favicon', '');
 
     // Create or update default users
     const usersToCreate = [
@@ -438,6 +450,16 @@ async function startServer() {
     }
   });
 
+  app.get("/api/tickets/:id/logs", (req, res) => {
+    try {
+      const { id } = req.params;
+      const logs = db.prepare("SELECT * FROM ticket_logs WHERE ticket_id = ? ORDER BY created_at DESC").all(id);
+      res.json(logs);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.post("/api/tickets", (req, res) => {
     try {
       const { name, department, phone, category, description, photo, latitude, longitude } = req.body;
@@ -524,7 +546,7 @@ async function startServer() {
 
   app.patch("/api/tickets/:id", (req, res) => {
     const { id } = req.params;
-    const { status, assigned_to, admin_reply, internal_notes, takeover_by, reassign_to } = req.body;
+    const { status, assigned_to, admin_reply, internal_notes, takeover_by, reassign_to, performed_by, note } = req.body;
     
     const currentTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(id) as any;
     if (!currentTicket) return res.status(404).json({ error: "Ticket not found" });
@@ -534,17 +556,33 @@ async function startServer() {
     let newStatus = status || currentTicket.status;
     let newAssignedTo = assigned_to || currentTicket.assigned_to;
 
+    const logs = [];
+
     // Intervention logic for Yudha
     if (takeover_by) {
       newAssignedTo = takeover_by;
+      logs.push({ action: 'Takeover', note: `Ticket taken over by ${takeover_by}`, performed_by: performed_by || takeover_by });
       console.log(`[INTERVENTION] Ticket ${currentTicket.ticket_no} taken over by ${takeover_by}`);
     } else if (reassign_to) {
       newAssignedTo = reassign_to;
+      logs.push({ action: 'Reassigned', note: `Ticket reassigned to ${reassign_to}`, performed_by: performed_by || 'System' });
       console.log(`[INTERVENTION] Ticket ${currentTicket.ticket_no} reassigned to ${reassign_to}`);
     }
 
+    if (status && status !== currentTicket.status) {
+      logs.push({ action: 'Status Changed', note: `Status changed from ${currentTicket.status} to ${status}${note ? ': ' + note : ''}`, performed_by: performed_by || 'System' });
+    }
+
+    if (assigned_to && assigned_to !== currentTicket.assigned_to && !takeover_by && !reassign_to) {
+      logs.push({ action: 'Assigned', note: `Assigned to ${assigned_to}`, performed_by: performed_by || 'System' });
+    }
+
+    if (admin_reply && admin_reply !== currentTicket.admin_reply) {
+      logs.push({ action: 'Admin Reply', note: admin_reply, performed_by: performed_by || 'System' });
+    }
+
     // Set responded_at if it's the first time admin replies or changes status from New
-    if (!respondedAt && (admin_reply || newStatus !== 'New')) {
+    if (!respondedAt && (admin_reply || (newStatus !== 'New' && newStatus !== currentTicket.status))) {
       respondedAt = new Date().toISOString();
     }
 
@@ -558,6 +596,12 @@ async function startServer() {
     db.prepare("UPDATE tickets SET status = ?, assigned_to = ?, admin_reply = ?, internal_notes = ?, responded_at = ?, resolved_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
       .run(newStatus, newAssignedTo, admin_reply || currentTicket.admin_reply, internal_notes || currentTicket.internal_notes, respondedAt, resolvedAt, id);
     
+    // Insert logs
+    const insertLog = db.prepare("INSERT INTO ticket_logs (ticket_id, action, note, performed_by) VALUES (?, ?, ?, ?)");
+    logs.forEach(log => {
+      insertLog.run(id, log.action, log.note, log.performed_by);
+    });
+
     res.json({ success: true });
   });
 
