@@ -6,16 +6,26 @@ import nodemailer from "nodemailer";
 
 const db = new Database("tickets.db");
 
-// Email Transporter Setup
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '465'),
-  secure: true, // 465 requires secure: true
-  auth: {
-    user: process.env.SMTP_USER || 'itk3dk2026@gmail.com',
-    pass: process.env.SMTP_PASS || 'wkizhrimtufuderw',
-  },
-});
+// Email Transporter Helper
+async function getTransporter() {
+  const smtpHost = db.prepare("SELECT value FROM settings WHERE key = 'smtp_host'").get() as { value: string } | undefined;
+  const smtpPort = db.prepare("SELECT value FROM settings WHERE key = 'smtp_port'").get() as { value: string } | undefined;
+  const smtpUser = db.prepare("SELECT value FROM settings WHERE key = 'smtp_user'").get() as { value: string } | undefined;
+  const smtpPass = db.prepare("SELECT value FROM settings WHERE key = 'smtp_pass'").get() as { value: string } | undefined;
+
+  const host = smtpHost?.value || process.env.SMTP_HOST || 'smtp.gmail.com';
+  const port = parseInt(smtpPort?.value || process.env.SMTP_PORT || '465');
+  const user = smtpUser?.value || process.env.SMTP_USER || 'itk3dk2026@gmail.com';
+  const pass = smtpPass?.value || process.env.SMTP_PASS || 'wkizhrimtufuderw';
+
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: { user, pass },
+    tls: { rejectUnauthorized: false }
+  });
+}
 
 async function sendNotificationEmail(ticket: any, emails: string[]) {
   console.log('Attempting to send email notification to:', emails);
@@ -25,11 +35,16 @@ async function sendNotificationEmail(ticket: any, emails: string[]) {
     return;
   }
 
-  // Check removed since we hardcoded the fallback values
+  const smtpFrom = db.prepare("SELECT value FROM settings WHERE key = 'smtp_from'").get() as { value: string } | undefined;
+  const smtpUser = db.prepare("SELECT value FROM settings WHERE key = 'smtp_user'").get() as { value: string } | undefined;
+  const fromName = smtpFrom?.value || "IT Support Portal";
+  const fromEmail = smtpUser?.value || process.env.SMTP_USER || 'itk3dk2026@gmail.com';
+
+  const transporter = await getTransporter();
   
   for (const email of emails) {
     const mailOptions = {
-      from: process.env.SMTP_FROM || 'itk3dk2026@gmail.com',
+      from: `"${fromName}" <${fromEmail}>`,
       to: email,
       subject: `[New Ticket] ${ticket.ticket_no} - ${ticket.category}`,
       text: `Ada tiket baru masuk!\n\nNo Tiket: ${ticket.ticket_no}\nNama: ${ticket.name}\nDepartemen: ${ticket.department}\nKategori: ${ticket.category}\nDeskripsi: ${ticket.description}\n\nSilakan cek portal admin untuk detail lebih lanjut.`,
@@ -46,7 +61,7 @@ async function sendNotificationEmail(ticket: any, emails: string[]) {
             <tr><td style="padding: 8px 0; font-weight: bold;">Deskripsi:</td><td>${ticket.description}</td></tr>
           </table>
           <div style="margin-top: 30px;">
-            <a href="https://www.itk3dk.my.id/" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Buka Portal Admin</a>
+            <a href="https://ais-dev-aspx3kmisiuq7p7soe62g4-352550373021.asia-east1.run.app/" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Buka Portal Admin</a>
           </div>
         </div>
       `
@@ -295,6 +310,64 @@ async function startServer() {
   } catch (err) {
     console.error("Database data init error:", err);
   }
+
+  // Branding & PWA Routes
+  app.get("/manifest.json", (req, res) => {
+    const settings = db.prepare("SELECT * FROM settings").all();
+    const s = settings.reduce((acc: any, curr: any) => {
+      acc[curr.key] = curr.value;
+      return acc;
+    }, {});
+
+    const manifest = {
+      name: s.app_name || "IT Helpdesk Pro",
+      short_name: (s.app_name || "IT Helpdesk").split(' ')[0],
+      description: "Professional IT Helpdesk Ticketing System",
+      start_url: "/",
+      display: "standalone",
+      background_color: "#ffffff",
+      theme_color: s.primary_color || "#10b981",
+      icons: [
+        {
+          src: "/api/branding/logo",
+          sizes: "512x512",
+          type: "image/png",
+          purpose: "any maskable"
+        }
+      ]
+    };
+    res.json(manifest);
+  });
+
+  app.get("/api/branding/logo", (req, res) => {
+    const logo = db.prepare("SELECT value FROM settings WHERE key = 'custom_logo'").get() as { value: string } | undefined;
+    if (logo && logo.value) {
+      const base64Data = logo.value.replace(/^data:image\/\w+;base64,/, "");
+      const img = Buffer.from(base64Data, 'base64');
+      res.writeHead(200, {
+        'Content-Type': 'image/png',
+        'Content-Length': img.length
+      });
+      res.end(img);
+    } else {
+      res.redirect("https://cdn-icons-png.flaticon.com/512/2906/2906274.png");
+    }
+  });
+
+  app.get("/api/branding/favicon", (req, res) => {
+    const favicon = db.prepare("SELECT value FROM settings WHERE key = 'custom_favicon'").get() as { value: string } | undefined;
+    if (favicon && favicon.value) {
+      const base64Data = favicon.value.replace(/^data:image\/\w+;base64,/, "");
+      const img = Buffer.from(base64Data, 'base64');
+      res.writeHead(200, {
+        'Content-Type': 'image/png',
+        'Content-Length': img.length
+      });
+      res.end(img);
+    } else {
+      res.redirect("https://cdn-icons-png.flaticon.com/512/2906/2906274.png");
+    }
+  });
 
   // API Routes
   app.get("/api/settings", (req, res) => {

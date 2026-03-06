@@ -150,6 +150,7 @@ export default function App() {
   const [showForm, setShowForm] = useState(false); // Toggle modal buat tiket baru
   const [showLogin, setShowLogin] = useState(false); // Toggle modal login admin
   const [showSettings, setShowSettings] = useState(false); // Toggle modal pengaturan aplikasi
+  const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'notifications' | 'data'>('general');
   const [showResetConfirm, setShowResetConfirm] = useState(false); // Toggle konfirmasi reset data
   const [showTakeoverConfirm, setShowTakeoverConfirm] = useState<{id: number, type: 'takeover' | 'reassign', targetUser?: string} | null>(null);
   const [pendingUpdate, setPendingUpdate] = useState<{id: number, status: string, assigned_to: string | null, admin_reply: string | null, internal_notes: string | null} | null>(null); // Data update yang menunggu konfirmasi
@@ -173,7 +174,12 @@ export default function App() {
     custom_favicon: '',
     notification_emails: [] as string[],
     telegram_bot_token: '',
-    telegram_chat_ids: [] as string[]
+    telegram_chat_ids: [] as string[],
+    smtp_host: '',
+    smtp_port: '465',
+    smtp_user: '',
+    smtp_pass: '',
+    smtp_from: ''
   }); // Pengaturan nama & logo app
 
   const [loginData, setLoginData] = useState({ username: '', password: '' }); // Form data login
@@ -845,24 +851,50 @@ export default function App() {
     }
   };
 
-  // Update favicon when appSettings.custom_favicon changes
-  useEffect(() => {
-    if (appSettings.custom_favicon) {
-      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-      if (!link) {
-        link = document.createElement('link');
-        link.rel = 'icon';
-        document.getElementsByTagName('head')[0].appendChild(link);
-      }
-      link.href = appSettings.custom_favicon;
-    }
-  }, [appSettings.custom_favicon]);
-
   const CurrentLogo = LOGO_OPTIONS.find(l => l.id === appSettings.logo_type)?.icon || ShieldCheck;
   
   // Dynamic theme based on user role
   const isDark = adminUser ? appSettings.admin_theme_mode === 'dark' : appSettings.theme_mode === 'dark';
   const primaryColor = adminUser ? appSettings.admin_primary_color : appSettings.primary_color;
+
+  // Update favicon, apple-touch-icon, theme-color, and manifest when appSettings change
+  useEffect(() => {
+    // Favicon
+    let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.getElementsByTagName('head')[0].appendChild(link);
+    }
+    link.href = appSettings.custom_favicon ? "/api/branding/favicon" : "https://cdn-icons-png.flaticon.com/512/2906/2906274.png";
+
+    // Apple Touch Icon
+    let appleLink = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement;
+    if (!appleLink) {
+      appleLink = document.createElement('link');
+      appleLink.rel = 'apple-touch-icon';
+      document.getElementsByTagName('head')[0].appendChild(appleLink);
+    }
+    appleLink.href = appSettings.custom_logo ? "/api/branding/logo" : (appSettings.custom_favicon ? "/api/branding/favicon" : "https://cdn-icons-png.flaticon.com/512/2906/2906274.png");
+
+    // Theme Color
+    let themeMeta = document.querySelector("meta[name='theme-color']") as HTMLMetaElement;
+    if (!themeMeta) {
+      themeMeta = document.createElement('meta');
+      themeMeta.name = 'theme-color';
+      document.getElementsByTagName('head')[0].appendChild(themeMeta);
+    }
+    themeMeta.content = primaryColor;
+
+    // Manifest
+    let manifestLink = document.querySelector("link[rel='manifest']") as HTMLLinkElement;
+    if (!manifestLink) {
+      manifestLink = document.createElement('link');
+      manifestLink.rel = 'manifest';
+      document.getElementsByTagName('head')[0].appendChild(manifestLink);
+    }
+    manifestLink.href = "/manifest.json";
+  }, [appSettings.custom_favicon, appSettings.custom_logo, appSettings.app_name, primaryColor, isDark]);
 
   // Theme-aware color variables
   const themeClasses = {
@@ -1064,26 +1096,26 @@ export default function App() {
               </div>
               <div className="flex flex-wrap gap-2 sm:gap-4 justify-start">
                 <div className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${themeClasses.bgSecondary} ${themeClasses.border} hover:opacity-80 flex flex-col items-center justify-center text-center shadow-sm`}>
-                  <p className={`text-sm sm:text-xl font-black leading-none mb-0.5 sm:mb-1 ${themeClasses.text}`}>{filteredTickets.length}</p>
-                  <p className={`text-[7px] sm:text-[9px] font-bold ${themeClasses.textMuted} tracking-wide`}>Total</p>
+                  <p className={`text-[10px] sm:text-xs font-black leading-none mb-0.5 sm:mb-1 ${themeClasses.text}`}>{filteredTickets.length}</p>
+                  <p className={`text-[8px] sm:text-[10px] font-bold ${themeClasses.textMuted} tracking-wide uppercase`}>Total</p>
                 </div>
                 <div className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${isDark ? 'bg-amber-900/20 border-amber-900/30 hover:border-amber-900/50' : 'bg-amber-50 border-amber-100 hover:border-amber-200'} flex flex-col items-center justify-center text-center shadow-sm`}>
-                  <p className={`text-sm sm:text-xl font-black leading-none mb-0.5 sm:mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                  <p className={`text-[10px] sm:text-xs font-black leading-none mb-0.5 sm:mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
                     {filteredTickets.filter(t => t.status === 'New').length}
                   </p>
-                  <p className={`text-[7px] sm:text-[9px] font-bold tracking-wide ${isDark ? 'text-amber-500/70' : 'text-amber-500'}`}>Wait</p>
+                  <p className={`text-[8px] sm:text-[10px] font-bold tracking-wide ${isDark ? 'text-amber-500/70' : 'text-amber-500'} uppercase`}>Wait</p>
                 </div>
                 <div className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${isDark ? 'bg-blue-900/20 border-blue-900/30 hover:border-blue-900/50' : 'bg-blue-50 border-blue-100 hover:border-blue-200'} flex flex-col items-center justify-center text-center shadow-sm`}>
-                  <p className={`text-sm sm:text-xl font-black leading-none mb-0.5 sm:mb-1 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                  <p className={`text-[10px] sm:text-xs font-black leading-none mb-0.5 sm:mb-1 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
                     {filteredTickets.filter(t => t.status === 'In Progress').length}
                   </p>
-                  <p className={`text-[7px] sm:text-[9px] font-bold tracking-wide ${isDark ? 'text-blue-500/70' : 'text-blue-500'}`}>Active</p>
+                  <p className={`text-[8px] sm:text-[10px] font-bold tracking-wide ${isDark ? 'text-blue-500/70' : 'text-blue-500'} uppercase`}>Active</p>
                 </div>
                 <div className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${isDark ? 'bg-emerald-900/20 border-emerald-900/30 hover:border-emerald-900/50' : 'bg-emerald-50 border-emerald-100 hover:border-emerald-200'} flex flex-col items-center justify-center text-center shadow-sm`}>
-                  <p className={`text-sm sm:text-xl font-black leading-none mb-0.5 sm:mb-1 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                  <p className={`text-[10px] sm:text-xs font-black leading-none mb-0.5 sm:mb-1 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
                     {filteredTickets.filter(t => t.status === 'Completed').length}
                   </p>
-                  <p className={`text-[7px] sm:text-[9px] font-bold tracking-wide ${isDark ? 'text-emerald-500/70' : 'text-emerald-500'}`}>Done</p>
+                  <p className={`text-[8px] sm:text-[10px] font-bold tracking-wide ${isDark ? 'text-emerald-500/70' : 'text-emerald-500'} uppercase`}>Done</p>
                 </div>
               </div>
             </section>
@@ -2331,9 +2363,9 @@ export default function App() {
               className={`relative w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-colors ${themeClasses.card} ${themeClasses.text}`}
             >
               <div className={`p-6 border-b shrink-0 ${themeClasses.border}`}>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h2 className={`text-2xl font-bold ${themeClasses.text}`}>App Settings & Management</h2>
+                    <h2 className={`text-2xl font-bold ${themeClasses.text}`}>Admin Control Panel</h2>
                     <p className={`text-sm ${themeClasses.textMuted} mt-1`}>Customize your helpdesk and manage data</p>
                   </div>
                   <button 
@@ -2343,72 +2375,53 @@ export default function App() {
                     <X className="w-6 h-6" />
                   </button>
                 </div>
+
+                {/* Tab Navigation */}
+                <div className="flex gap-1 p-1 bg-slate-100/50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700">
+                  {[
+                    { id: 'general', label: 'General', icon: SlidersHorizontal },
+                    { id: 'branding', label: 'Branding', icon: ImageIcon },
+                    { id: 'notifications', label: 'Notifications', icon: Bell },
+                    { id: 'data', label: 'Data Management', icon: Layers }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setSettingsTab(tab.id as any)}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                        settingsTab === tab.id 
+                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm ring-1 ring-slate-200 dark:ring-slate-600' 
+                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                      }`}
+                    >
+                      <tab.icon className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">{tab.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="p-6 overflow-y-auto custom-scrollbar space-y-8">
-                {/* Visual Settings */}
-                <section className="space-y-6">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500">Visual & Theme</h3>
-                  <form onSubmit={handleUpdateSettings} className="space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      <div className="space-y-1.5">
-                        <label className={`text-xs font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Application Name</label>
-                        <input 
-                          required
-                          type="text"
-                          className={`w-full border rounded-xl py-3 px-4 text-sm outline-none transition-all ${themeClasses.input}`}
-                          value={appSettings.app_name}
-                          onChange={e => setAppSettings({...appSettings, app_name: e.target.value})}
-                        />
-                      </div>
-
-                      {/* Custom Branding */}
-                      <div className="col-span-full space-y-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                          <ImageIcon className="w-3 h-3" /> Custom Branding
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Custom Logo</label>
-                            <div className="flex items-center gap-3">
-                              {appSettings.custom_logo && (
-                                <div className="h-10 w-10 rounded-lg border border-slate-200 bg-white p-1 flex items-center justify-center overflow-hidden">
-                                  <img src={appSettings.custom_logo} alt="Preview" className="max-h-full max-w-full object-contain" referrerPolicy="no-referrer" />
-                                </div>
-                              )}
-                              <label className="flex-1 cursor-pointer bg-white border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors text-center">
-                                Upload Logo
-                                <input type="file" className="hidden" accept="image/*" onChange={handleCustomLogoUpload} />
-                              </label>
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Custom Favicon</label>
-                            <div className="flex items-center gap-3">
-                              {appSettings.custom_favicon && (
-                                <div className="h-8 w-8 rounded border border-slate-200 bg-white p-1 flex items-center justify-center overflow-hidden">
-                                  <img src={appSettings.custom_favicon} alt="Favicon" className="max-h-full max-w-full object-contain" referrerPolicy="no-referrer" />
-                                </div>
-                              )}
-                              <label className="flex-1 cursor-pointer bg-white border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors text-center">
-                                Upload Favicon
-                                <input type="file" className="hidden" accept="image/*" onChange={handleCustomFaviconUpload} />
-                              </label>
-                            </div>
-                          </div>
+              <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                {settingsTab === 'general' && (
+                  <form onSubmit={handleUpdateSettings} className="space-y-8">
+                    <section className="space-y-6">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500">General Settings</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="space-y-1.5">
+                          <label className={`text-xs font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Application Name</label>
+                          <input 
+                            required
+                            type="text"
+                            className={`w-full border rounded-xl py-3 px-4 text-sm outline-none transition-all ${themeClasses.input}`}
+                            value={appSettings.app_name}
+                            onChange={e => setAppSettings({...appSettings, app_name: e.target.value})}
+                          />
                         </div>
-                        {(appSettings.custom_logo || appSettings.custom_favicon) && (
-                          <button 
-                            type="button"
-                            onClick={() => setAppSettings(prev => ({ ...prev, custom_logo: '', custom_favicon: '' }))}
-                            className="text-[9px] text-rose-500 font-bold hover:underline uppercase tracking-widest"
-                          >
-                            Reset Custom Branding
-                          </button>
-                        )}
                       </div>
-                      <div className="space-y-4">
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Frontend Theme</h3>
+                    </section>
+
+                    <section className="space-y-6">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500">Frontend Theme</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div className="space-y-1.5">
                           <label className={`text-xs font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Theme Mode</label>
                           <div className={`flex gap-2 p-1 rounded-xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
@@ -2450,9 +2463,11 @@ export default function App() {
                           </div>
                         </div>
                       </div>
+                    </section>
 
-                      <div className="space-y-4 pt-4 border-t border-slate-800">
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-500">Admin Theme</h3>
+                    <section className="space-y-6">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-indigo-500">Admin Theme</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div className="space-y-1.5">
                           <label className={`text-xs font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Admin Theme Mode</label>
                           <div className={`flex gap-2 p-1 rounded-xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
@@ -2494,350 +2509,442 @@ export default function App() {
                           </div>
                         </div>
                       </div>
+                    </section>
 
-                    <div className="space-y-3">
-                      <label className={`text-xs font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Pilih Logo</label>
+                    <button 
+                      type="submit"
+                      style={{ backgroundColor: primaryColor }}
+                      className="w-full hover:opacity-90 text-white font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-[0.98]"
+                    >
+                      Simpan Pengaturan General
+                    </button>
+                  </form>
+                )}
+
+                {settingsTab === 'branding' && (
+                  <form onSubmit={handleUpdateSettings} className="space-y-8">
+                    <section className="space-y-6">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500">Custom Branding</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <ImageIcon className="w-3 h-3" /> Custom Logo
+                          </label>
+                          <div className="flex items-center gap-4">
+                            {appSettings.custom_logo && (
+                              <div className="h-16 w-16 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 flex items-center justify-center overflow-hidden">
+                                <img src={appSettings.custom_logo} alt="Preview" className="max-h-full max-w-full object-contain" referrerPolicy="no-referrer" />
+                              </div>
+                            )}
+                            <label className="flex-1 cursor-pointer bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-center shadow-sm">
+                              Upload Logo
+                              <input type="file" className="hidden" accept="image/*" onChange={handleCustomLogoUpload} />
+                            </label>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <Globe className="w-3 h-3" /> Custom Favicon
+                          </label>
+                          <div className="flex items-center gap-4">
+                            {appSettings.custom_favicon && (
+                              <div className="h-12 w-12 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 flex items-center justify-center overflow-hidden">
+                                <img src={appSettings.custom_favicon} alt="Favicon" className="max-h-full max-w-full object-contain" referrerPolicy="no-referrer" />
+                              </div>
+                            )}
+                            <label className="flex-1 cursor-pointer bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-center shadow-sm">
+                              Upload Favicon
+                              <input type="file" className="hidden" accept="image/*" onChange={handleCustomFaviconUpload} />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      {(appSettings.custom_logo || appSettings.custom_favicon) && (
+                        <div className="flex justify-center">
+                          <button 
+                            type="button"
+                            onClick={() => setAppSettings(prev => ({ ...prev, custom_logo: '', custom_favicon: '' }))}
+                            className="text-[10px] text-rose-500 font-black hover:underline uppercase tracking-widest flex items-center gap-2"
+                          >
+                            <Trash2 className="w-3 h-3" /> Reset to Default Branding
+                          </button>
+                        </div>
+                      )}
+                    </section>
+
+                    <section className="space-y-6">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500">Preset Logo Options</h3>
                       <div className="grid grid-cols-5 gap-3">
                         {LOGO_OPTIONS.map(option => (
                           <button
                             key={option.id}
                             type="button"
                             onClick={() => setAppSettings({...appSettings, logo_type: option.id})}
-                            className={`aspect-square rounded-xl flex items-center justify-center border-2 transition-all ${
+                            className={`aspect-square rounded-2xl flex items-center justify-center border-2 transition-all ${
                               appSettings.logo_type === option.id 
-                              ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' 
-                              : `${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.textMuted} hover:${themeClasses.text}`
+                              ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg scale-105' 
+                              : `${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.textMuted} hover:${themeClasses.text} hover:scale-105`
                             }`}
                           >
-                            <option.icon className="w-6 h-6" />
+                            <option.icon className="w-8 h-8" />
                           </button>
                         ))}
                       </div>
-                    </div>
-                  </div>
+                    </section>
 
-                  <button 
-                    type="submit"
+                    <button 
+                      type="submit"
                       style={{ backgroundColor: primaryColor }}
                       className="w-full hover:opacity-90 text-white font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-[0.98]"
                     >
-                      Simpan Pengaturan Visual
+                      Simpan Pengaturan Branding
                     </button>
                   </form>
-                </section>
+                )}
 
-                {/* Email Notifications */}
-                <section className={`space-y-6 pt-8 border-t ${themeClasses.border}`}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-xs font-black uppercase tracking-widest text-amber-500">Email Notifications</h3>
-                      <p className={`text-[10px] ${themeClasses.textMuted} mt-1`}>Maksimal 3 email untuk notifikasi tiket baru</p>
-                    </div>
-                    {!showEmailInput && appSettings.notification_emails.length < 3 && (
-                      <button 
-                        type="button"
-                        onClick={() => setShowEmailInput(true)}
-                        className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
-                      >
-                        + Tambah Email
-                      </button>
-                    )}
-                  </div>
-                  
-                  {showEmailInput && (
-                    <div className="flex gap-2">
-                      <input 
-                        type="email"
-                        placeholder="Masukkan email..."
-                        className={`flex-1 border rounded-xl py-2 px-4 text-xs outline-none transition-all ${themeClasses.input}`}
-                        value={newEmailInput}
-                        onChange={e => setNewEmailInput(e.target.value)}
-                        onKeyPress={e => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            const email = newEmailInput.trim();
-                            if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                              setAppSettings({
-                                ...appSettings,
-                                notification_emails: [...appSettings.notification_emails, email]
-                              });
-                              setNewEmailInput('');
-                              setShowEmailInput(false);
-                            } else {
-                              alert('Format email tidak valid');
-                            }
-                          }
-                        }}
-                      />
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          const email = newEmailInput.trim();
-                          if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                            setAppSettings({
-                              ...appSettings,
-                              notification_emails: [...appSettings.notification_emails, email]
-                            });
-                            setNewEmailInput('');
-                            setShowEmailInput(false);
-                          } else {
-                            alert('Format email tidak valid');
-                          }
-                        }}
-                        className="px-4 py-2 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl"
-                      >
-                        Add
-                      </button>
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          setShowEmailInput(false);
-                          setNewEmailInput('');
-                        }}
-                        className="px-4 py-2 bg-slate-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl"
-                      >
-                        Batal
-                      </button>
-                    </div>
-                  )}
-                  
-                  <div className="space-y-2">
-                    {appSettings.notification_emails.length === 0 ? (
-                      <p className={`text-[10px] italic ${themeClasses.textMuted}`}>Belum ada email notifikasi yang didaftarkan.</p>
-                    ) : (
-                      appSettings.notification_emails.map((email, idx) => (
-                        <div key={idx} className={`flex items-center justify-between ${themeClasses.bgSecondary} border ${themeClasses.border} p-3 rounded-xl group`}>
-                          <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 ${isDark ? 'bg-slate-700' : 'bg-slate-200'} rounded-lg flex items-center justify-center text-slate-400`}>
-                              <Globe className="w-4 h-4" />
-                            </div>
-                            <span className={`text-xs font-bold ${themeClasses.text}`}>{email}</span>
+                {settingsTab === 'notifications' && (
+                  <form onSubmit={handleUpdateSettings} className="space-y-8">
+                    <section className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500">Email Notifications</h3>
+                          <p className={`text-[10px] ${themeClasses.textMuted} mt-1`}>Konfigurasi pengiriman notifikasi email</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>SMTP Host</label>
+                            <input 
+                              type="text"
+                              placeholder="e.g. smtp.gmail.com"
+                              className={`w-full border rounded-xl py-2.5 px-4 text-xs outline-none transition-all ${themeClasses.input}`}
+                              value={appSettings.smtp_host}
+                              onChange={e => setAppSettings({...appSettings, smtp_host: e.target.value})}
+                            />
                           </div>
+                          <div className="space-y-1.5">
+                            <label className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>SMTP Port</label>
+                            <input 
+                              type="text"
+                              placeholder="465 or 587"
+                              className={`w-full border rounded-xl py-2.5 px-4 text-xs outline-none transition-all ${themeClasses.input}`}
+                              value={appSettings.smtp_port}
+                              onChange={e => setAppSettings({...appSettings, smtp_port: e.target.value})}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>SMTP User</label>
+                            <input 
+                              type="text"
+                              placeholder="Email pengirim..."
+                              className={`w-full border rounded-xl py-2.5 px-4 text-xs outline-none transition-all ${themeClasses.input}`}
+                              value={appSettings.smtp_user}
+                              onChange={e => setAppSettings({...appSettings, smtp_user: e.target.value})}
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>SMTP Password</label>
+                            <input 
+                              type="password"
+                              placeholder="Password / App Password..."
+                              className={`w-full border rounded-xl py-2.5 px-4 text-xs outline-none transition-all ${themeClasses.input}`}
+                              value={appSettings.smtp_pass}
+                              onChange={e => setAppSettings({...appSettings, smtp_pass: e.target.value})}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Sender Name (From)</label>
+                          <input 
+                            type="text"
+                            placeholder="e.g. IT Support Portal"
+                            className={`w-full border rounded-xl py-2.5 px-4 text-xs outline-none transition-all ${themeClasses.input}`}
+                            value={appSettings.smtp_from}
+                            onChange={e => setAppSettings({...appSettings, smtp_from: e.target.value})}
+                          />
+                        </div>
+
+                        <div className="space-y-3 pt-2">
+                          <div className="flex items-center justify-between">
+                            <label className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Recipient Emails</label>
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                const email = prompt('Masukkan email penerima:');
+                                if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                                  setAppSettings({
+                                    ...appSettings,
+                                    notification_emails: [...appSettings.notification_emails, email.trim()]
+                                  });
+                                } else if (email) {
+                                  alert('Format email tidak valid');
+                                }
+                              }}
+                              className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
+                            >
+                              + Tambah Email
+                            </button>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            {appSettings.notification_emails.length === 0 ? (
+                              <p className={`text-[10px] italic ${themeClasses.textMuted}`}>Belum ada email notifikasi yang didaftarkan.</p>
+                            ) : (
+                              appSettings.notification_emails.map((email, idx) => (
+                                <div key={idx} className={`flex items-center justify-between ${themeClasses.bgSecondary} border ${themeClasses.border} p-2.5 rounded-xl group`}>
+                                  <div className="flex items-center gap-2">
+                                    <div className={`w-6 h-6 ${isDark ? 'bg-slate-700' : 'bg-slate-200'} rounded-lg flex items-center justify-center text-slate-400`}>
+                                      <Globe className="w-3 h-3" />
+                                    </div>
+                                    <span className={`text-xs font-bold ${themeClasses.text}`}>{email}</span>
+                                  </div>
+                                  <button 
+                                    type="button"
+                                    onClick={() => {
+                                      const newEmails = [...appSettings.notification_emails];
+                                      newEmails.splice(idx, 1);
+                                      setAppSettings({ ...appSettings, notification_emails: newEmails });
+                                    }}
+                                    className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+
+                    <section className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-xs font-black uppercase tracking-widest text-blue-400">Telegram Notifications</h3>
+                          <p className={`text-[10px] ${themeClasses.textMuted} mt-1`}>Gunakan Bot Telegram untuk menerima notifikasi</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="space-y-1.5">
+                          <label className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Bot Token</label>
+                          <input 
+                            type="password"
+                            placeholder="Masukkan Bot Token (dari @BotFather)..."
+                            className={`w-full border rounded-xl py-2.5 px-4 text-xs outline-none transition-all ${themeClasses.input}`}
+                            value={appSettings.telegram_bot_token}
+                            onChange={e => setAppSettings({...appSettings, telegram_bot_token: e.target.value})}
+                          />
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <label className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Chat IDs</label>
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                const chatId = prompt('Masukkan Chat ID Telegram (bisa didapat dari @userinfobot):');
+                                if (chatId && chatId.trim()) {
+                                  setAppSettings({
+                                    ...appSettings,
+                                    telegram_chat_ids: [...appSettings.telegram_chat_ids, chatId.trim()]
+                                  });
+                                }
+                              }}
+                              className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
+                            >
+                              + Tambah Chat ID
+                            </button>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            {appSettings.telegram_chat_ids.length === 0 ? (
+                              <p className={`text-[10px] italic ${themeClasses.textMuted}`}>Belum ada Chat ID yang didaftarkan.</p>
+                            ) : (
+                              appSettings.telegram_chat_ids.map((id, idx) => (
+                                <div key={idx} className={`flex items-center justify-between ${themeClasses.bgSecondary} border ${themeClasses.border} p-2.5 rounded-xl group`}>
+                                  <div className="flex items-center gap-2">
+                                    <div className={`w-6 h-6 ${isDark ? 'bg-slate-700' : 'bg-slate-200'} rounded-lg flex items-center justify-center text-slate-400`}>
+                                      <Send className="w-3 h-3" />
+                                    </div>
+                                    <span className={`text-xs font-mono ${themeClasses.text}`}>{id}</span>
+                                  </div>
+                                  <button 
+                                    type="button"
+                                    onClick={() => {
+                                      const newIds = [...appSettings.telegram_chat_ids];
+                                      newIds.splice(idx, 1);
+                                      setAppSettings({ ...appSettings, telegram_chat_ids: newIds });
+                                    }}
+                                    className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+
+                    <button 
+                      type="submit"
+                      style={{ backgroundColor: primaryColor }}
+                      className="w-full hover:opacity-90 text-white font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-[0.98]"
+                    >
+                      Simpan Pengaturan Notifikasi
+                    </button>
+                  </form>
+                )}
+
+                {settingsTab === 'data' && (
+                  <div className="space-y-8">
+                    <section className="space-y-6">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-blue-500">Data Management</h3>
+                      
+                      {/* IT Personnel */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className={`text-xs font-bold ${themeClasses.textMuted} uppercase tracking-wider`}>Tim IT</label>
                           <button 
-                            type="button"
-                            onClick={() => {
-                              const newEmails = [...appSettings.notification_emails];
-                              newEmails.splice(idx, 1);
-                              setAppSettings({ ...appSettings, notification_emails: newEmails });
-                            }}
-                            className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => setAddingType(addingType === 'it' ? null : 'it')} 
+                            className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            {addingType === 'it' ? 'Batal' : '+ Tambah IT'}
                           </button>
                         </div>
-                      ))
-                    )}
-                  </div>
-                </section>
+                        
+                        {addingType === 'it' && (
+                          <div className="flex gap-2">
+                            <input 
+                              autoFocus
+                              type="text"
+                              value={newItemName}
+                              onChange={e => setNewItemName(e.target.value)}
+                              placeholder="Nama IT baru..."
+                              className={`flex-1 border rounded-lg px-3 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
+                              onKeyDown={e => e.key === 'Enter' && handleManagementAction('it', 'add')}
+                            />
+                            <button 
+                              onClick={() => handleManagementAction('it', 'add')}
+                              className="bg-emerald-600 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase"
+                            >
+                              Simpan
+                            </button>
+                          </div>
+                        )}
 
-                {/* Telegram Notifications */}
-                <section className={`space-y-6 pt-8 border-t ${themeClasses.border}`}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-xs font-black uppercase tracking-widest text-blue-400">Telegram Notifications</h3>
-                      <p className={`text-[10px] ${themeClasses.textMuted} mt-1`}>Gunakan Bot Telegram untuk menerima notifikasi</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="space-y-1.5">
-                      <label className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Bot Token</label>
-                      <input 
-                        type="password"
-                        placeholder="Masukkan Bot Token (dari @BotFather)..."
-                        className={`w-full border rounded-xl py-2.5 px-4 text-xs outline-none transition-all ${themeClasses.input}`}
-                        value={appSettings.telegram_bot_token}
-                        onChange={e => setAppSettings({...appSettings, telegram_bot_token: e.target.value})}
-                      />
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <label className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Chat IDs</label>
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            const chatId = prompt('Masukkan Chat ID Telegram (bisa didapat dari @userinfobot):');
-                            if (chatId && chatId.trim()) {
-                              setAppSettings({
-                                ...appSettings,
-                                telegram_chat_ids: [...appSettings.telegram_chat_ids, chatId.trim()]
-                              });
-                            }
-                          }}
-                          className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
-                        >
-                          + Tambah Chat ID
-                        </button>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        {appSettings.telegram_chat_ids.length === 0 ? (
-                          <p className={`text-[10px] italic ${themeClasses.textMuted}`}>Belum ada Chat ID yang didaftarkan.</p>
-                        ) : (
-                          appSettings.telegram_chat_ids.map((id, idx) => (
-                            <div key={idx} className={`flex items-center justify-between ${themeClasses.bgSecondary} border ${themeClasses.border} p-2.5 rounded-xl group`}>
-                              <div className="flex items-center gap-2">
-                                <div className={`w-6 h-6 ${isDark ? 'bg-slate-700' : 'bg-slate-200'} rounded-lg flex items-center justify-center text-slate-400`}>
-                                  <Send className="w-3 h-3" />
-                                </div>
-                                <span className={`text-xs font-mono ${themeClasses.text}`}>{id}</span>
-                              </div>
-                              <button 
-                                type="button"
-                                onClick={() => {
-                                  const newIds = [...appSettings.telegram_chat_ids];
-                                  newIds.splice(idx, 1);
-                                  setAppSettings({ ...appSettings, telegram_chat_ids: newIds });
-                                }}
-                                className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <Trash2 className="w-4 h-4" />
+                        <div className="flex flex-wrap gap-2">
+                          {itPersonnel.map(it => (
+                            <div key={it.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
+                              <span className={`text-xs font-bold ${themeClasses.text}`}>{it.name}</span>
+                              <button onClick={() => handleManagementAction('it', 'delete', it)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Trash2 className="w-3 h-3" />
                               </button>
                             </div>
-                          ))
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Departments */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold opacity-60 uppercase tracking-wider">Departemen</label>
+                          <button 
+                            onClick={() => setAddingType(addingType === 'dept' ? null : 'dept')} 
+                            className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
+                          >
+                            {addingType === 'dept' ? 'Batal' : '+ Tambah Departemen'}
+                          </button>
+                        </div>
+
+                        {addingType === 'dept' && (
+                          <div className="flex gap-2">
+                            <input 
+                              autoFocus
+                              type="text"
+                              value={newItemName}
+                              onChange={e => setNewItemName(e.target.value)}
+                              placeholder="Nama Departemen baru..."
+                              className={`flex-1 border rounded-lg px-3 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
+                              onKeyDown={e => e.key === 'Enter' && handleManagementAction('dept', 'add')}
+                            />
+                            <button 
+                              onClick={() => handleManagementAction('dept', 'add')}
+                              className="bg-emerald-600 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase"
+                            >
+                              Simpan
+                            </button>
+                          </div>
                         )}
-                      </div>
-                    </div>
-                  </div>
-                </section>
 
-                {/* Data Management */}
-                <section className={`space-y-6 pt-8 border-t ${themeClasses.border}`}>
-                  <h3 className="text-xs font-black uppercase tracking-widest text-blue-500">Data Management</h3>
-                  
-                  {/* IT Personnel */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className={`text-xs font-bold ${themeClasses.textMuted} uppercase tracking-wider`}>Tim IT</label>
-                      <button 
-                        onClick={() => setAddingType(addingType === 'it' ? null : 'it')} 
-                        className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
-                      >
-                        {addingType === 'it' ? 'Batal' : '+ Tambah IT'}
-                      </button>
-                    </div>
-                    
-                    {addingType === 'it' && (
-                      <div className="flex gap-2">
-                        <input 
-                          autoFocus
-                          type="text"
-                          value={newItemName}
-                          onChange={e => setNewItemName(e.target.value)}
-                          placeholder="Nama IT baru..."
-                          className={`flex-1 border rounded-lg px-3 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
-                          onKeyDown={e => e.key === 'Enter' && handleManagementAction('it', 'add')}
-                        />
-                        <button 
-                          onClick={() => handleManagementAction('it', 'add')}
-                          className="bg-emerald-600 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase"
-                        >
-                          Simpan
-                        </button>
+                        <div className="flex flex-wrap gap-2">
+                          {departments.map(dept => (
+                            <div key={dept.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
+                              <span className={`text-xs font-bold ${themeClasses.text}`}>{dept.name}</span>
+                              <button onClick={() => handleManagementAction('dept', 'delete', dept)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    )}
 
-                    <div className="flex flex-wrap gap-2">
-                      {itPersonnel.map(it => (
-                        <div key={it.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
-                          <span className={`text-xs font-bold ${themeClasses.text}`}>{it.name}</span>
-                          <button onClick={() => handleManagementAction('it', 'delete', it)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Trash2 className="w-3 h-3" />
+                      {/* Categories */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold opacity-60 uppercase tracking-wider">Kategori</label>
+                          <button 
+                            onClick={() => setAddingType(addingType === 'cat' ? null : 'cat')} 
+                            className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
+                          >
+                            {addingType === 'cat' ? 'Batal' : '+ Tambah Kategori'}
                           </button>
                         </div>
-                      ))}
-                    </div>
-                  </div>
 
-                  {/* Departments */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold opacity-60 uppercase tracking-wider">Departemen</label>
-                      <button 
-                        onClick={() => setAddingType(addingType === 'dept' ? null : 'dept')} 
-                        className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
-                      >
-                        {addingType === 'dept' ? 'Batal' : '+ Tambah Departemen'}
-                      </button>
-                    </div>
+                        {addingType === 'cat' && (
+                          <div className="flex gap-2">
+                            <input 
+                              autoFocus
+                              type="text"
+                              value={newItemName}
+                              onChange={e => setNewItemName(e.target.value)}
+                              placeholder="Nama Kategori baru..."
+                              className={`flex-1 border rounded-lg px-3 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
+                              onKeyDown={e => e.key === 'Enter' && handleManagementAction('cat', 'add')}
+                            />
+                            <button 
+                              onClick={() => handleManagementAction('cat', 'add')}
+                              className="bg-emerald-600 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase"
+                            >
+                              Simpan
+                            </button>
+                          </div>
+                        )}
 
-                    {addingType === 'dept' && (
-                      <div className="flex gap-2">
-                        <input 
-                          autoFocus
-                          type="text"
-                          value={newItemName}
-                          onChange={e => setNewItemName(e.target.value)}
-                          placeholder="Nama Departemen baru..."
-                          className={`flex-1 border rounded-lg px-3 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
-                          onKeyDown={e => e.key === 'Enter' && handleManagementAction('dept', 'add')}
-                        />
-                        <button 
-                          onClick={() => handleManagementAction('dept', 'add')}
-                          className="bg-emerald-600 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase"
-                        >
-                          Simpan
-                        </button>
-                      </div>
-                    )}
-
-                    <div className="flex flex-wrap gap-2">
-                      {departments.map(dept => (
-                        <div key={dept.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
-                          <span className={`text-xs font-bold ${themeClasses.text}`}>{dept.name}</span>
-                          <button onClick={() => handleManagementAction('dept', 'delete', dept)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Trash2 className="w-3 h-3" />
-                          </button>
+                        <div className="flex flex-wrap gap-2">
+                          {categories.map(cat => (
+                            <div key={cat.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
+                              <span className={`text-xs font-bold ${themeClasses.text}`}>{cat.name}</span>
+                              <button onClick={() => handleManagementAction('cat', 'delete', cat)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Categories */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold opacity-60 uppercase tracking-wider">Kategori</label>
-                      <button 
-                        onClick={() => setAddingType(addingType === 'cat' ? null : 'cat')} 
-                        className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
-                      >
-                        {addingType === 'cat' ? 'Batal' : '+ Tambah Kategori'}
-                      </button>
-                    </div>
-
-                    {addingType === 'cat' && (
-                      <div className="flex gap-2">
-                        <input 
-                          autoFocus
-                          type="text"
-                          value={newItemName}
-                          onChange={e => setNewItemName(e.target.value)}
-                          placeholder="Nama Kategori baru..."
-                          className={`flex-1 border rounded-lg px-3 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
-                          onKeyDown={e => e.key === 'Enter' && handleManagementAction('cat', 'add')}
-                        />
-                        <button 
-                          onClick={() => handleManagementAction('cat', 'add')}
-                          className="bg-emerald-600 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase"
-                        >
-                          Simpan
-                        </button>
                       </div>
-                    )}
-
-                    <div className="flex flex-wrap gap-2">
-                      {categories.map(cat => (
-                        <div key={cat.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
-                          <span className={`text-xs font-bold ${themeClasses.text}`}>{cat.name}</span>
-                          <button onClick={() => handleManagementAction('cat', 'delete', cat)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                    </section>
                   </div>
-                </section>
+                )}
               </div>
             </motion.div>
           </div>
