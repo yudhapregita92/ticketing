@@ -1065,25 +1065,25 @@ export default function App() {
               <div className="flex flex-wrap gap-2 sm:gap-4 justify-start">
                 <div className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${themeClasses.bgSecondary} ${themeClasses.border} hover:opacity-80 flex flex-col items-center justify-center text-center shadow-sm`}>
                   <p className={`text-sm sm:text-xl font-black leading-none mb-0.5 sm:mb-1 ${themeClasses.text}`}>{filteredTickets.length}</p>
-                  <p className={`text-[6px] sm:text-[8px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>Total</p>
+                  <p className={`text-[7px] sm:text-[9px] font-bold ${themeClasses.textMuted} tracking-wide`}>Total</p>
                 </div>
                 <div className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${isDark ? 'bg-amber-900/20 border-amber-900/30 hover:border-amber-900/50' : 'bg-amber-50 border-amber-100 hover:border-amber-200'} flex flex-col items-center justify-center text-center shadow-sm`}>
                   <p className={`text-sm sm:text-xl font-black leading-none mb-0.5 sm:mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
                     {filteredTickets.filter(t => t.status === 'New').length}
                   </p>
-                  <p className={`text-[6px] sm:text-[8px] font-bold uppercase tracking-widest ${isDark ? 'text-amber-500/70' : 'text-amber-500'}`}>Wait</p>
+                  <p className={`text-[7px] sm:text-[9px] font-bold tracking-wide ${isDark ? 'text-amber-500/70' : 'text-amber-500'}`}>Wait</p>
                 </div>
                 <div className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${isDark ? 'bg-blue-900/20 border-blue-900/30 hover:border-blue-900/50' : 'bg-blue-50 border-blue-100 hover:border-blue-200'} flex flex-col items-center justify-center text-center shadow-sm`}>
                   <p className={`text-sm sm:text-xl font-black leading-none mb-0.5 sm:mb-1 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
                     {filteredTickets.filter(t => t.status === 'In Progress').length}
                   </p>
-                  <p className={`text-[6px] sm:text-[8px] font-bold uppercase tracking-widest ${isDark ? 'text-blue-500/70' : 'text-blue-500'}`}>Active</p>
+                  <p className={`text-[7px] sm:text-[9px] font-bold tracking-wide ${isDark ? 'text-blue-500/70' : 'text-blue-500'}`}>Active</p>
                 </div>
                 <div className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${isDark ? 'bg-emerald-900/20 border-emerald-900/30 hover:border-emerald-900/50' : 'bg-emerald-50 border-emerald-100 hover:border-emerald-200'} flex flex-col items-center justify-center text-center shadow-sm`}>
                   <p className={`text-sm sm:text-xl font-black leading-none mb-0.5 sm:mb-1 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
                     {filteredTickets.filter(t => t.status === 'Completed').length}
                   </p>
-                  <p className={`text-[6px] sm:text-[8px] font-bold uppercase tracking-widest ${isDark ? 'text-emerald-500/70' : 'text-emerald-500'}`}>Done</p>
+                  <p className={`text-[7px] sm:text-[9px] font-bold tracking-wide ${isDark ? 'text-emerald-500/70' : 'text-emerald-500'}`}>Done</p>
                 </div>
               </div>
             </section>
