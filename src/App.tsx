@@ -103,6 +103,53 @@ const getDeviceInfo = (ua: string) => {
 };
 
 /**
+ * Komponen Counter Animasi
+ */
+const Counter = ({ value, className }: { value: number, className?: string }) => {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const end = value;
+    if (start === end) {
+      setDisplayValue(end);
+      return;
+    }
+
+    const duration = 1000;
+    const increment = end / (duration / 16);
+    
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= end) {
+        setDisplayValue(end);
+        clearInterval(timer);
+      } else {
+        setDisplayValue(Math.floor(start));
+      }
+    }, 16);
+
+    return () => clearInterval(timer);
+  }, [value]);
+
+  return <span className={className}>{displayValue}</span>;
+};
+
+/**
+ * Komponen Shimmer Loading
+ */
+const Shimmer = ({ className }: { className?: string }) => (
+  <div className={`relative overflow-hidden bg-slate-200 dark:bg-slate-800 rounded-xl ${className}`}>
+    <motion.div
+      initial={{ x: '-100%' }}
+      animate={{ x: '100%' }}
+      transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
+      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+    />
+  </div>
+);
+
+/**
  * IT Helpdesk Pro - Main Application Component
  * 
  * Flow Aplikasi:
@@ -150,6 +197,7 @@ export default function App() {
   const [loading, setLoading] = useState(true); // Loading state untuk fetch data awal
   const [adminUser, setAdminUser] = useState<any>(null); // Data login admin
   const [showForm, setShowForm] = useState(false); // Toggle modal buat tiket baru
+  const [showSuccess, setShowSuccess] = useState(false); // Toggle modal sukses
   const [showLogin, setShowLogin] = useState(false); // Toggle modal login admin
   const [showSettings, setShowSettings] = useState(false); // Toggle modal pengaturan aplikasi
   const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'notifications' | 'data'>('general');
@@ -797,6 +845,8 @@ export default function App() {
       if (res.ok) {
         setFormData({ name: '', department: '', category: '', phone: '', description: '', photo: '' });
         setShowForm(false);
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
         fetchTickets();
       } else {
         const errorData = await res.json();
@@ -1015,23 +1065,29 @@ export default function App() {
               <div className="flex items-center gap-1 sm:gap-3">
                 {adminUser.role === 'Super Admin' && (
                   <>
-                    <button 
+                    <motion.button 
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
                       onClick={() => setShowSettings(true)}
                       className={`p-1.5 sm:p-2 rounded-lg transition-all ${isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
                       title="Settings"
                     >
                       <Settings2 className="w-4 h-4 sm:w-5 h-5" />
-                    </button>
-                    <button 
+                    </motion.button>
+                    <motion.button 
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       onClick={() => setShowResetConfirm(true)}
                       className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 transition-all"
                     >
                       <Trash2 className="w-3.5 h-3.5 sm:w-4 h-4" />
                       <span className="hidden md:inline">Reset</span>
-                    </button>
+                    </motion.button>
                   </>
                 )}
-                <button 
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={handleLogout}
                   className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-all relative ${isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
                 >
@@ -1040,19 +1096,23 @@ export default function App() {
                   {tickets.filter(t => t.status === 'New').length > 0 && (
                     <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white animate-pulse" />
                   )}
-                </button>
+                </motion.button>
               </div>
             ) : (
-              <button 
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setShowLogin(true)}
                 className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-all ${isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
               >
                 <LogIn className="w-3.5 h-3.5 sm:w-4 h-4" />
                 <span className="hidden xs:inline">Login</span>
-              </button>
+              </motion.button>
             )}
             {!adminUser && (
-              <button 
+              <motion.button 
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setShowForm(true)}
                 style={{ backgroundColor: primaryColor, boxShadow: `0 10px 15px -3px ${primaryColor}40` }}
                 className="hover:opacity-90 text-white px-3 sm:px-4 py-2 rounded-xl text-[10px] sm:text-sm font-semibold shadow-lg transition-all duration-200 flex items-center gap-1.5 sm:gap-2 active:scale-95"
@@ -1060,7 +1120,7 @@ export default function App() {
                 <Plus className="w-3.5 h-3.5 sm:w-4 h-4" />
                 <span className="hidden xs:inline">New Ticket</span>
                 <span className="xs:hidden">New</span>
-              </button>
+              </motion.button>
             )}
           </div>
         </div>
@@ -1154,28 +1214,43 @@ export default function App() {
                 <BarChart3 className="w-4 h-4 text-slate-300" />
               </div>
               <div className="flex flex-wrap gap-2 sm:gap-4 justify-start">
-                <div className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${themeClasses.bgSecondary} ${themeClasses.border} hover:opacity-80 flex flex-col items-center justify-center text-center shadow-sm`}>
-                  <p className={`text-[10px] sm:text-xs font-black leading-none mb-0.5 sm:mb-1 ${themeClasses.text}`}>{filteredTickets.length}</p>
+                <motion.div 
+                  whileHover={{ y: -5 }}
+                  className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${themeClasses.bgSecondary} ${themeClasses.border} hover:opacity-80 flex flex-col items-center justify-center text-center shadow-sm`}
+                >
+                  <Counter value={filteredTickets.length} className={`text-[10px] sm:text-xs font-black leading-none mb-0.5 sm:mb-1 ${themeClasses.text}`} />
                   <p className={`text-[8px] sm:text-[10px] font-bold ${themeClasses.textMuted} tracking-wide uppercase`}>Total</p>
-                </div>
-                <div className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${isDark ? 'bg-amber-900/20 border-amber-900/30 hover:border-amber-900/50' : 'bg-amber-50 border-amber-100 hover:border-amber-200'} flex flex-col items-center justify-center text-center shadow-sm`}>
-                  <p className={`text-[10px] sm:text-xs font-black leading-none mb-0.5 sm:mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
-                    {filteredTickets.filter(t => t.status === 'New').length}
-                  </p>
+                </motion.div>
+                <motion.div 
+                  whileHover={{ y: -5 }}
+                  className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${isDark ? 'bg-amber-900/20 border-amber-900/30 hover:border-amber-900/50' : 'bg-amber-50 border-amber-100 hover:border-amber-200'} flex flex-col items-center justify-center text-center shadow-sm`}
+                >
+                  <Counter 
+                    value={filteredTickets.filter(t => t.status === 'New').length} 
+                    className={`text-[10px] sm:text-xs font-black leading-none mb-0.5 sm:mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} 
+                  />
                   <p className={`text-[8px] sm:text-[10px] font-bold tracking-wide ${isDark ? 'text-amber-500/70' : 'text-amber-500'} uppercase`}>Wait</p>
-                </div>
-                <div className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${isDark ? 'bg-blue-900/20 border-blue-900/30 hover:border-blue-900/50' : 'bg-blue-50 border-blue-100 hover:border-blue-200'} flex flex-col items-center justify-center text-center shadow-sm`}>
-                  <p className={`text-[10px] sm:text-xs font-black leading-none mb-0.5 sm:mb-1 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
-                    {filteredTickets.filter(t => t.status === 'In Progress').length}
-                  </p>
+                </motion.div>
+                <motion.div 
+                  whileHover={{ y: -5 }}
+                  className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${isDark ? 'bg-blue-900/20 border-blue-900/30 hover:border-blue-900/50' : 'bg-blue-50 border-blue-100 hover:border-blue-200'} flex flex-col items-center justify-center text-center shadow-sm`}
+                >
+                  <Counter 
+                    value={filteredTickets.filter(t => t.status === 'In Progress').length} 
+                    className={`text-[10px] sm:text-xs font-black leading-none mb-0.5 sm:mb-1 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} 
+                  />
                   <p className={`text-[8px] sm:text-[10px] font-bold tracking-wide ${isDark ? 'text-blue-500/70' : 'text-blue-500'} uppercase`}>Active</p>
-                </div>
-                <div className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${isDark ? 'bg-emerald-900/20 border-emerald-900/30 hover:border-emerald-900/50' : 'bg-emerald-50 border-emerald-100 hover:border-emerald-200'} flex flex-col items-center justify-center text-center shadow-sm`}>
-                  <p className={`text-[10px] sm:text-xs font-black leading-none mb-0.5 sm:mb-1 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                    {filteredTickets.filter(t => t.status === 'Completed').length}
-                  </p>
+                </motion.div>
+                <motion.div 
+                  whileHover={{ y: -5 }}
+                  className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${isDark ? 'bg-emerald-900/20 border-emerald-900/30 hover:border-emerald-900/50' : 'bg-emerald-50 border-emerald-100 hover:border-emerald-200'} flex flex-col items-center justify-center text-center shadow-sm`}
+                >
+                  <Counter 
+                    value={filteredTickets.filter(t => t.status === 'Completed').length} 
+                    className={`text-[10px] sm:text-xs font-black leading-none mb-0.5 sm:mb-1 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} 
+                  />
                   <p className={`text-[8px] sm:text-[10px] font-bold tracking-wide ${isDark ? 'text-emerald-500/70' : 'text-emerald-500'} uppercase`}>Done</p>
-                </div>
+                </motion.div>
               </div>
             </section>
 
@@ -1392,9 +1467,18 @@ export default function App() {
             </div>
 
             {loading ? (
-              <div className={`flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                <RefreshCcw className="w-8 h-8 text-emerald-600 animate-spin mb-4" />
-                <p className="text-slate-500 font-medium">Loading queue...</p>
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <div key={i} className={`p-4 rounded-2xl border ${themeClasses.card} ${themeClasses.border}`}>
+                    <div className="flex items-center gap-3">
+                      <Shimmer className="w-10 h-10" />
+                      <div className="flex-1 space-y-2">
+                        <Shimmer className="w-1/3 h-4" />
+                        <Shimmer className="w-1/2 h-3" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : tickets.length === 0 ? (
               <div className={`flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
@@ -1440,12 +1524,13 @@ export default function App() {
                       transition={{ duration: 0.2 }}
                       className="flex flex-col gap-3"
                     >
-                      {paginatedTickets.map((ticket) => (
+                      {paginatedTickets.map((ticket, index) => (
                           <motion.div
                             key={ticket.id}
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ delay: index * 0.05 }}
                             className={`${themeClasses.card} rounded-2xl p-3 shadow-sm hover:shadow-md transition-all group cursor-pointer relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between ${
                               getSLAColor(ticket.created_at, ticket.status) || (isDark ? 'hover:border-emerald-900' : 'hover:border-emerald-100')
                             }`}
@@ -1455,13 +1540,17 @@ export default function App() {
                             
                             <div className="flex items-start gap-3 min-w-0 sm:w-1/2">
                               <div className="flex-shrink-0">
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${
-                                  ticket.status === 'Completed' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
-                                  ticket.status === 'New' ? 'bg-amber-50 border-amber-100 text-amber-600' :
-                                  'bg-blue-50 border-blue-100 text-blue-600'
-                                }`}>
+                                <motion.div 
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  className={`w-8 h-8 rounded-lg flex items-center justify-center border ${
+                                    ticket.status === 'Completed' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
+                                    ticket.status === 'New' ? 'bg-amber-50 border-amber-100 text-amber-600' :
+                                    'bg-blue-50 border-blue-100 text-blue-600'
+                                  }`}
+                                >
                                   {getStatusIcon(ticket.status)}
-                                </div>
+                                </motion.div>
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center justify-between gap-2 mb-0.5">
@@ -1999,9 +2088,10 @@ export default function App() {
               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
             />
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.9, y: 40 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              exit={{ opacity: 0, scale: 0.9, y: 40 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className={`relative w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[95vh] ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}
             >
               <div className={`p-3 sm:p-4 border-b shrink-0 ${themeClasses.border}`}>
@@ -2143,18 +2233,20 @@ export default function App() {
                       )}
                     </div>
 
-                    <button 
+                    <motion.button 
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       type="submit"
                       disabled={submitting || photoLoading || gpsStatus !== 'success'}
                       style={{ backgroundColor: !(submitting || photoLoading || gpsStatus !== 'success') ? primaryColor : undefined }}
-                      className={`hidden lg:block w-full font-black py-4 rounded-xl transition-all shadow-xl active:scale-[0.98] uppercase tracking-widest text-[10px] ${
+                      className={`hidden lg:block w-full font-black py-4 rounded-xl transition-all shadow-xl uppercase tracking-widest text-[10px] ${
                         submitting || photoLoading || gpsStatus !== 'success'
                         ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
                         : 'text-white hover:opacity-90 shadow-emerald-900/20'
                       }`}
                     >
                       {submitting ? 'Mengirim...' : 'Kirim Tiket'}
-                    </button>
+                    </motion.button>
                   </div>
 
                   {/* Right Column: Photo Upload */}
@@ -2222,17 +2314,20 @@ export default function App() {
                       </div>
                     </div>
 
-                    <button 
+                    <motion.button 
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       type="submit"
                       disabled={submitting || photoLoading || gpsStatus !== 'success'}
-                      className={`lg:hidden w-full font-black py-4 rounded-xl transition-all shadow-xl active:scale-[0.98] uppercase tracking-widest text-[10px] ${
+                      style={{ backgroundColor: !(submitting || photoLoading || gpsStatus !== 'success') ? primaryColor : undefined }}
+                      className={`lg:hidden w-full font-black py-4 rounded-xl transition-all shadow-xl uppercase tracking-widest text-[10px] ${
                         submitting || photoLoading || gpsStatus !== 'success'
                         ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                        : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-900/20'
+                        : 'text-white hover:opacity-90 shadow-emerald-900/20'
                       }`}
                     >
                       {submitting ? 'Mengirim...' : 'Kirim Tiket'}
-                    </button>
+                    </motion.button>
                   </div>
                 </form>
               </div>
@@ -2408,6 +2503,48 @@ export default function App() {
                   Apply Filters
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Success Modal */}
+        {showSuccess && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              className={`relative w-full max-w-sm rounded-[2.5rem] p-8 text-center shadow-2xl ${themeClasses.card}`}
+            >
+              <div className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/30">
+                <motion.div
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                  <CheckCircle2 className="w-10 h-10 text-white" />
+                </motion.div>
+              </div>
+              <h2 className={`text-2xl font-black tracking-tight mb-2 ${themeClasses.text}`}>Tiket Terkirim!</h2>
+              <p className={`text-sm font-medium ${themeClasses.textMuted} leading-relaxed`}>
+                Laporan Anda telah berhasil masuk ke antrian IT. Tim kami akan segera memprosesnya.
+              </p>
+              <motion.div 
+                className="mt-8 h-1 bg-slate-100 rounded-full overflow-hidden"
+              >
+                <motion.div 
+                  initial={{ width: '100%' }}
+                  animate={{ width: '0%' }}
+                  transition={{ duration: 3, ease: 'linear' }}
+                  className="h-full bg-emerald-500"
+                />
+              </motion.div>
             </motion.div>
           </div>
         )}
