@@ -1213,7 +1213,7 @@ export default function App() {
                 <h2 className={`text-sm font-bold tracking-wider ${themeClasses.text}`}>Status Antrian</h2>
                 <BarChart3 className="w-4 h-4 text-slate-300" />
               </div>
-              <div className="flex flex-wrap gap-2 sm:gap-4 justify-start">
+              <div className="flex flex-wrap gap-2 sm:gap-4 justify-center">
                 <motion.div 
                   whileHover={{ y: -5 }}
                   className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${themeClasses.bgSecondary} ${themeClasses.border} hover:opacity-80 flex flex-col items-center justify-center text-center shadow-sm`}
@@ -1608,8 +1608,7 @@ export default function App() {
                                     <button 
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        const target = prompt('Pindahkan ke siapa? (bayu/dita/yudha)');
-                                        if (target) handleIntervention(ticket.id, 'reassign', target);
+                                        handleIntervention(ticket.id, 'reassign');
                                       }}
                                       className="px-2 py-1 bg-blue-500 text-white text-[8px] font-black uppercase rounded hover:bg-blue-600"
                                     >
@@ -3384,33 +3383,67 @@ export default function App() {
                     {showTakeoverConfirm.type === 'takeover' ? <ShieldAlert className="w-8 h-8" /> : <UserPlus className="w-8 h-8" />}
                   </div>
                   <h2 className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    {showTakeoverConfirm.type === 'takeover' ? 'Konfirmasi Ambil Alih' : 'Konfirmasi Penugasan'}
+                    {showTakeoverConfirm.type === 'takeover' ? 'Konfirmasi Ambil Alih' : 'Pindahkan Tiket'}
                   </h2>
                   <p className={`text-sm mt-2 font-medium ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
                     {showTakeoverConfirm.type === 'takeover' 
                       ? 'Apakah Anda yakin ingin mengambil alih tiket ini? Tindakan ini akan tercatat dalam riwayat tiket.'
-                      : `Apakah Anda yakin ingin menugaskan tiket ini kepada ${showTakeoverConfirm.targetUser}?`}
+                      : showTakeoverConfirm.targetUser 
+                        ? `Apakah Anda yakin ingin menugaskan tiket ini kepada ${showTakeoverConfirm.targetUser}?`
+                        : 'Pilih IT yang akan menangani tiket ini:'}
                   </p>
                 </div>
 
-                <div className="flex gap-3">
+                {showTakeoverConfirm.type === 'reassign' && !showTakeoverConfirm.targetUser && (
+                  <div className="grid grid-cols-1 gap-2 mb-8 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                    {users.map(u => (
+                      <button
+                        key={u.id}
+                        onClick={() => setShowTakeoverConfirm({ ...showTakeoverConfirm, targetUser: u.username })}
+                        className={`w-full py-3 px-4 rounded-xl border font-bold text-sm transition-all flex items-center justify-between group ${
+                          isDark 
+                          ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:border-blue-500 hover:text-blue-400' 
+                          : 'bg-slate-50 border-slate-100 text-slate-600 hover:border-blue-500 hover:text-blue-600'
+                        }`}
+                      >
+                        <span>{u.full_name || u.username}</span>
+                        <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {(showTakeoverConfirm.type === 'takeover' || showTakeoverConfirm.targetUser) && (
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => setShowTakeoverConfirm(null)}
+                      className={`flex-1 py-4 font-black text-xs uppercase tracking-widest rounded-2xl transition-all ${
+                        isDark ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-750' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      }`}
+                    >
+                      Batal
+                    </button>
+                    <button 
+                      onClick={() => executeIntervention(showTakeoverConfirm.id, showTakeoverConfirm.type, showTakeoverConfirm.targetUser)}
+                      className={`flex-1 py-4 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg transition-all active:scale-[0.98] ${
+                        showTakeoverConfirm.type === 'takeover' ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-900/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-900/20'
+                      }`}
+                    >
+                      Ya, Lanjutkan
+                    </button>
+                  </div>
+                )}
+                
+                {showTakeoverConfirm.type === 'reassign' && !showTakeoverConfirm.targetUser && (
                   <button 
                     onClick={() => setShowTakeoverConfirm(null)}
-                    className={`flex-1 py-4 font-black text-xs uppercase tracking-widest rounded-2xl transition-all ${
+                    className={`w-full py-4 font-black text-xs uppercase tracking-widest rounded-2xl transition-all ${
                       isDark ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-750' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                     }`}
                   >
                     Batal
                   </button>
-                  <button 
-                    onClick={() => executeIntervention(showTakeoverConfirm.id, showTakeoverConfirm.type, showTakeoverConfirm.targetUser)}
-                    className={`flex-1 py-4 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg transition-all active:scale-[0.98] ${
-                      showTakeoverConfirm.type === 'takeover' ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-900/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-900/20'
-                    }`}
-                  >
-                    Ya, Lanjutkan
-                  </button>
-                </div>
+                )}
               </div>
             </motion.div>
           </div>
