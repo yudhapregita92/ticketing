@@ -19,6 +19,8 @@ import {
   Layers,
   Settings2,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   RefreshCcw,
   Trash2,
   LogIn,
@@ -153,6 +155,7 @@ export default function App() {
   const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'notifications' | 'data'>('general');
   const [showResetConfirm, setShowResetConfirm] = useState(false); // Toggle konfirmasi reset data
   const [showTakeoverConfirm, setShowTakeoverConfirm] = useState<{id: number, type: 'takeover' | 'reassign', targetUser?: string} | null>(null);
+  const [showDistribution, setShowDistribution] = useState(false); // Toggle distribusi masalah
   const [pendingUpdate, setPendingUpdate] = useState<{id: number, status: string, assigned_to: string | null, admin_reply: string | null, internal_notes: string | null} | null>(null); // Data update yang menunggu konfirmasi
   const [addingType, setAddingType] = useState<'it' | 'dept' | 'cat' | null>(null);
   const [newItemName, setNewItemName] = useState('');
@@ -162,7 +165,7 @@ export default function App() {
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'today' | 'all'>('today');
   const [showMobileFilter, setShowMobileFilter] = useState(false);
-  const [tempFilters, setTempFilters] = useState({ dept: '', status: '', date: '' });
+  const [tempFilters, setTempFilters] = useState({ dept: '', status: '', date: '', search: '' });
   const [appSettings, setAppSettings] = useState({ 
     app_name: 'IT Helpdesk Pro', 
     logo_type: 'ShieldCheck',
@@ -197,7 +200,10 @@ export default function App() {
   const [filterDept, setFilterDept] = useState<string>(''); // Filter departemen
   const [filterStatus, setFilterStatus] = useState<string>(''); // Filter status
   const [filterDate, setFilterDate] = useState<string>(''); // Filter tanggal
+  const [searchQuery, setSearchQuery] = useState<string>(''); // Pencarian tiket
+  const [currentPage, setCurrentPage] = useState<number>(1); // Halaman saat ini
   const [photoLoading, setPhotoLoading] = useState(false); // Loading state saat proses watermark foto
+  const itemsPerPage = 10; // Jumlah tiket per halaman
   const lastTicketIdRef = useRef<number | null>(null);
 
   /**
@@ -215,9 +221,29 @@ export default function App() {
       const matchDept = filterDept ? ticket.department === filterDept : true;
       const matchStatus = filterStatus ? ticket.status === filterStatus : true;
       const matchDate = filterDate ? new Date(ticket.created_at).toLocaleDateString('en-CA') === filterDate : true;
-      return matchDept && matchStatus && matchDate;
+      const matchSearch = searchQuery ? (
+        ticket.id.toString().includes(searchQuery) || 
+        ticket.user_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ticket.issue_description.toLowerCase().includes(searchQuery.toLowerCase())
+      ) : true;
+      return matchDept && matchStatus && matchDate && matchSearch;
     });
-  }, [tickets, viewMode, filterDept, filterStatus, filterDate]);
+  }, [tickets, viewMode, filterDept, filterStatus, filterDate, searchQuery]);
+
+  /**
+   * Tiket yang ditampilkan setelah paginasi
+   */
+  const paginatedTickets = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredTickets.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredTickets, currentPage]);
+
+  const totalPages = Math.ceil(filteredTickets.length / itemsPerPage);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [viewMode, filterDept, filterStatus, filterDate, searchQuery]);
 
   const getSLAColor = (createdAt: string, status: string) => {
     if (status !== 'New') return '';
@@ -711,6 +737,7 @@ export default function App() {
   const handleUpdateSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Update global settings
       const res = await fetch('/api/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -720,6 +747,25 @@ export default function App() {
           telegram_chat_ids: JSON.stringify(appSettings.telegram_chat_ids)
         })
       });
+
+      // If admin is logged in, also update their personal settings
+      if (adminUser) {
+        await fetch(`/api/users/${adminUser.username}/settings`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            theme_mode: appSettings.admin_theme_mode,
+            primary_color: appSettings.admin_primary_color
+          })
+        });
+        // Update local adminUser state to reflect changes
+        setAdminUser({
+          ...adminUser,
+          theme_mode: appSettings.admin_theme_mode,
+          primary_color: appSettings.admin_primary_color
+        });
+      }
+
       if (res.ok) {
         setShowSettings(false);
         alert('Settings updated successfully!');
@@ -854,8 +900,19 @@ export default function App() {
   const CurrentLogo = LOGO_OPTIONS.find(l => l.id === appSettings.logo_type)?.icon || ShieldCheck;
   
   // Dynamic theme based on user role
-  const isDark = adminUser ? appSettings.admin_theme_mode === 'dark' : appSettings.theme_mode === 'dark';
-  const primaryColor = adminUser ? appSettings.admin_primary_color : appSettings.primary_color;
+  const isDark = adminUser ? adminUser.theme_mode === 'dark' : appSettings.theme_mode === 'dark';
+  const primaryColor = adminUser ? adminUser.primary_color : appSettings.primary_color;
+
+  // Sync appSettings with adminUser settings when adminUser changes
+  useEffect(() => {
+    if (adminUser) {
+      setAppSettings(prev => ({
+        ...prev,
+        admin_theme_mode: adminUser.theme_mode || 'light',
+        admin_primary_color: adminUser.primary_color || '#8b5cf6'
+      }));
+    }
+  }, [adminUser]);
 
   // Update favicon, apple-touch-icon, theme-color, and manifest when appSettings change
   useEffect(() => {
@@ -994,15 +1051,17 @@ export default function App() {
                 <span className="hidden xs:inline">Login</span>
               </button>
             )}
-            <button 
-              onClick={() => setShowForm(true)}
-              style={{ backgroundColor: primaryColor, boxShadow: `0 10px 15px -3px ${primaryColor}40` }}
-              className="hover:opacity-90 text-white px-3 sm:px-4 py-2 rounded-xl text-[10px] sm:text-sm font-semibold shadow-lg transition-all duration-200 flex items-center gap-1.5 sm:gap-2 active:scale-95"
-            >
-              <Plus className="w-3.5 h-3.5 sm:w-4 h-4" />
-              <span className="hidden xs:inline">New Ticket</span>
-              <span className="xs:hidden">New</span>
-            </button>
+            {!adminUser && (
+              <button 
+                onClick={() => setShowForm(true)}
+                style={{ backgroundColor: primaryColor, boxShadow: `0 10px 15px -3px ${primaryColor}40` }}
+                className="hover:opacity-90 text-white px-3 sm:px-4 py-2 rounded-xl text-[10px] sm:text-sm font-semibold shadow-lg transition-all duration-200 flex items-center gap-1.5 sm:gap-2 active:scale-95"
+              >
+                <Plus className="w-3.5 h-3.5 sm:w-4 h-4" />
+                <span className="hidden xs:inline">New Ticket</span>
+                <span className="xs:hidden">New</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -1127,37 +1186,48 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 className={`${themeClasses.card} rounded-3xl border p-4 sm:p-6 shadow-sm`}
               >
-                <h2 className={`text-sm font-bold uppercase tracking-wider mb-4 sm:mb-6 ${themeClasses.text}`}>Distribusi Masalah</h2>
-                <div className="h-48 w-full min-w-0" style={{ minHeight: '192px' }}>
-                  <ResponsiveContainer width="100%" height="100%" minHeight={192}>
-                    <PieChart>
-                      <Pie
-                        data={categoryStats}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={40}
-                        outerRadius={70}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {categoryStats.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <RechartsTooltip 
-                        contentStyle={{ 
-                          borderRadius: '16px', 
-                          border: 'none', 
-                          boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', 
-                          fontSize: '12px', 
-                          fontWeight: 'bold',
-                          backgroundColor: isDark ? '#1e293b' : '#ffffff',
-                          color: isDark ? '#ffffff' : '#000000'
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                <div className="flex items-center justify-between mb-4 sm:mb-6">
+                  <h2 className={`text-sm font-bold uppercase tracking-wider ${themeClasses.text}`}>Distribusi Masalah</h2>
+                  <button 
+                    onClick={() => setShowDistribution(!showDistribution)}
+                    className={`p-2 rounded-xl transition-all ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}
+                  >
+                    {showDistribution ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
                 </div>
+
+                {showDistribution && (
+                  <div className="h-48 w-full min-w-0" style={{ minHeight: '192px' }}>
+                    <ResponsiveContainer width="100%" height="100%" minHeight={192}>
+                      <PieChart>
+                        <Pie
+                          data={categoryStats}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={40}
+                          outerRadius={70}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {categoryStats.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip 
+                          contentStyle={{ 
+                            borderRadius: '16px', 
+                            border: 'none', 
+                            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', 
+                            fontSize: '12px', 
+                            fontWeight: 'bold',
+                            backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                            color: isDark ? '#ffffff' : '#000000'
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-y-2 mt-4">
                   {categoryStats.map((stat, idx) => (
                     <div key={stat.name} className="flex items-center gap-2">
@@ -1224,11 +1294,11 @@ export default function App() {
               <div className="flex items-center gap-1 sm:gap-2">
                 <button 
                   onClick={() => {
-                    setTempFilters({ dept: filterDept, status: filterStatus, date: filterDate });
+                    setTempFilters({ dept: filterDept, status: filterStatus, date: filterDate, search: searchQuery });
                     setShowMobileFilter(true);
                   }}
                   className={`sm:hidden flex items-center gap-1 px-2 py-1 border rounded-lg text-[9px] font-black uppercase tracking-tighter shadow-sm active:scale-95 transition-all ${
-                    (filterDept || filterStatus || filterDate)
+                    (filterDept || filterStatus || filterDate || searchQuery)
                     ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
                     : 'bg-white border-slate-200 text-slate-500'
                   }`}
@@ -1259,6 +1329,16 @@ export default function App() {
 
             {/* Filters - Hidden on mobile, replaced by modal */}
             <div className={`hidden sm:flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6 p-2 sm:p-4 rounded-2xl border shadow-sm transition-colors ${themeClasses.card}`}>
+              <div className="flex-[2] relative">
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                <input 
+                  type="text"
+                  placeholder="Cari ID, Nama, atau Masalah..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={`w-full border rounded-xl py-2 pl-8 pr-4 text-[10px] sm:text-xs font-bold outline-none transition-all ${themeClasses.input}`}
+                />
+              </div>
               <div className="flex-1 relative">
                 <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                 <select 
@@ -1294,6 +1374,21 @@ export default function App() {
                   className={`w-full border rounded-xl py-2 pl-8 pr-4 text-[10px] sm:text-xs font-bold outline-none cursor-pointer transition-all ${themeClasses.input}`}
                 />
               </div>
+            </div>
+
+            {/* Results Summary */}
+            <div className="flex items-center justify-between mb-4 px-1">
+              <p className={`text-[10px] sm:text-xs font-bold ${themeClasses.textMuted}`}>
+                Menampilkan <span className={themeClasses.text}>{Math.min((currentPage - 1) * itemsPerPage + 1, filteredTickets.length)}</span> - <span className={themeClasses.text}>{Math.min(currentPage * itemsPerPage, filteredTickets.length)}</span> dari <span className={themeClasses.text}>{filteredTickets.length}</span> tiket
+              </p>
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery('')}
+                  className="text-[10px] font-bold text-rose-500 hover:underline"
+                >
+                  Hapus Pencarian
+                </button>
+              )}
             </div>
 
             {loading ? (
@@ -1345,7 +1440,7 @@ export default function App() {
                       transition={{ duration: 0.2 }}
                       className="flex flex-col gap-3"
                     >
-                      {filteredTickets.map((ticket) => (
+                      {paginatedTickets.map((ticket) => (
                           <motion.div
                             key={ticket.id}
                             initial={{ opacity: 0, scale: 0.95 }}
@@ -1462,6 +1557,66 @@ export default function App() {
                       </motion.div>
                   )}
                 </AnimatePresence>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-8">
+                    <button 
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className={`p-2 rounded-xl border transition-all ${
+                        currentPage === 1 
+                        ? 'opacity-30 cursor-not-allowed' 
+                        : 'hover:bg-emerald-50 hover:border-emerald-200 text-slate-600'
+                      } ${themeClasses.card}`}
+                    >
+                      <ChevronRight className="w-4 h-4 rotate-180" />
+                    </button>
+                    
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                        // Only show first, last, and pages around current
+                        if (
+                          page === 1 || 
+                          page === totalPages || 
+                          (page >= currentPage - 1 && page <= currentPage + 1)
+                        ) {
+                          return (
+                            <button
+                              key={page}
+                              onClick={() => setCurrentPage(page)}
+                              className={`w-8 h-8 rounded-xl text-[10px] font-bold transition-all ${
+                                currentPage === page
+                                ? 'bg-emerald-600 text-white shadow-lg'
+                                : `border hover:bg-emerald-50 ${themeClasses.card} ${themeClasses.textMuted}`
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          );
+                        } else if (
+                          (page === 2 && currentPage > 3) || 
+                          (page === totalPages - 1 && currentPage < totalPages - 2)
+                        ) {
+                          return <span key={page} className="text-slate-400 px-1">...</span>;
+                        }
+                        return null;
+                      })}
+                    </div>
+
+                    <button 
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className={`p-2 rounded-xl border transition-all ${
+                        currentPage === totalPages 
+                        ? 'opacity-30 cursor-not-allowed' 
+                        : 'hover:bg-emerald-50 hover:border-emerald-200 text-slate-600'
+                      } ${themeClasses.card}`}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -2118,6 +2273,21 @@ export default function App() {
               </div>
 
               <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
+                {/* Search Filter */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Cari Tiket</label>
+                  <div className="relative">
+                    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                    <input 
+                      type="text"
+                      placeholder="ID, Nama, atau Masalah..."
+                      value={tempFilters.search}
+                      onChange={(e) => setTempFilters({ ...tempFilters, search: e.target.value })}
+                      className={`w-full border rounded-xl py-3 pl-10 pr-4 text-xs font-bold outline-none transition-all ${themeClasses.input}`}
+                    />
+                  </div>
+                </div>
+
                 {/* Department Filter */}
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Bagian / Departemen</label>
@@ -2213,7 +2383,8 @@ export default function App() {
                     setFilterDept('');
                     setFilterStatus('');
                     setFilterDate('');
-                    setTempFilters({ dept: '', status: '', date: '' });
+                    setSearchQuery('');
+                    setTempFilters({ dept: '', status: '', date: '', search: '' });
                     setShowMobileFilter(false);
                   }}
                   className={`flex-1 py-4 font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all ${
@@ -2227,6 +2398,7 @@ export default function App() {
                     setFilterDept(tempFilters.dept);
                     setFilterStatus(tempFilters.status);
                     setFilterDate(tempFilters.date);
+                    setSearchQuery(tempFilters.search);
                     setShowMobileFilter(false);
                   }}
                   className={`flex-[2] py-4 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-lg transition-all active:scale-[0.98] ${

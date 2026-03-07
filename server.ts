@@ -168,7 +168,9 @@ async function startServer() {
         username TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         role TEXT DEFAULT 'staff',
-        full_name TEXT
+        full_name TEXT,
+        theme_mode TEXT DEFAULT 'light',
+        primary_color TEXT DEFAULT '#8b5cf6'
       );
 
       CREATE TABLE IF NOT EXISTS settings (
@@ -405,12 +407,25 @@ async function startServer() {
         user: { 
           username: user.username, 
           role: user.role, 
-          full_name: user.full_name 
+          full_name: user.full_name,
+          theme_mode: user.theme_mode,
+          primary_color: user.primary_color
         } 
       });
     } else {
       console.log(`Login failed for: ${cleanUsername}`);
       res.status(401).json({ error: "Username atau Password salah" });
+    }
+  });
+
+  app.patch("/api/users/:username/settings", (req, res) => {
+    const { username } = req.params;
+    const { theme_mode, primary_color } = req.body;
+    try {
+      db.prepare("UPDATE users SET theme_mode = ?, primary_color = ? WHERE username = ?").run(theme_mode, primary_color, username);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
   });
 
