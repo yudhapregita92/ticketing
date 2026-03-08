@@ -41,6 +41,7 @@ import {
   Image as ImageIcon,
   MapPin,
   Bell,
+  BellOff,
   TrendingUp,
   BarChart3,
   SlidersHorizontal,
@@ -209,8 +210,32 @@ export default function App() {
   const [newItemName, setNewItemName] = useState('');
   const [newEmailInput, setNewEmailInput] = useState('');
   const [showEmailInput, setShowEmailInput] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
+    typeof Notification !== 'undefined' ? Notification.permission : 'default'
+  );
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [gpsError, setGpsError] = useState<string | null>(null);
+
+  const requestNotificationPermission = async () => {
+    if (!("Notification" in window)) return;
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+    if (permission === 'granted') {
+      new Notification("Notifikasi Aktif", {
+        body: "Anda akan menerima pemberitahuan untuk setiap tiket baru.",
+        icon: "https://cdn-icons-png.flaticon.com/512/2906/2906274.png"
+      });
+    }
+  };
+
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+      audio.play();
+    } catch (e) {
+      console.error('Failed to play sound:', e);
+    }
+  };
   const [viewMode, setViewMode] = useState<'today' | 'all'>('today');
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [tempFilters, setTempFilters] = useState({ dept: '', status: '', date: '', search: '' });
@@ -525,14 +550,20 @@ export default function App() {
         if (adminUser && lastTicketIdRef.current !== null && data.length > 0) {
           const newTickets = data.filter(t => t.id > lastTicketIdRef.current!);
           if (newTickets.length > 0) {
+            playNotificationSound();
             newTickets.forEach(ticket => {
               if (Notification.permission === "granted") {
                 try {
-                  new Notification(`Tiket Baru: ${ticket.ticket_no}`, {
+                  const n = new Notification(`Tiket Baru: ${ticket.ticket_no}`, {
                     body: `${ticket.name} - ${ticket.category}\n${ticket.description}`,
-                    icon: "https://cdn-icons-png.flaticon.com/512/2906/2906274.png",
-                    badge: "https://cdn-icons-png.flaticon.com/512/2906/2906274.png"
+                    icon: appSettings.custom_logo || "https://cdn-icons-png.flaticon.com/512/2906/2906274.png",
+                    badge: appSettings.custom_favicon || "https://cdn-icons-png.flaticon.com/512/2906/2906274.png",
+                    tag: `ticket-${ticket.id}`
                   });
+                  n.onclick = () => {
+                    window.focus();
+                    handleSelectTicket(ticket);
+                  };
                 } catch (e) {
                   console.error('Notification error:', e);
                 }
@@ -623,7 +654,12 @@ export default function App() {
    */
   useEffect(() => {
     const savedAdmin = localStorage.getItem('adminUser');
-    if (savedAdmin) setAdminUser(JSON.parse(savedAdmin));
+    if (savedAdmin) {
+      setAdminUser(JSON.parse(savedAdmin));
+      if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission().then(setNotificationPermission);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -1061,7 +1097,27 @@ export default function App() {
                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{adminUser.role}</p>
               </div>
             )}
-            {adminUser ? (
+            {adminUser && (
+          <motion.button 
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={requestNotificationPermission}
+            className={`p-1.5 sm:p-2 rounded-lg transition-all relative ${
+              notificationPermission === 'granted' 
+                ? 'text-emerald-500 bg-emerald-50/50' 
+                : notificationPermission === 'denied'
+                ? 'text-rose-500 bg-rose-50/50'
+                : isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'
+            }`}
+            title={notificationPermission === 'granted' ? "Notifikasi Aktif" : "Aktifkan Notifikasi"}
+          >
+            {notificationPermission === 'granted' ? <Bell className="w-4 h-4 sm:w-5 h-5" /> : <BellOff className="w-4 h-4 sm:w-5 h-5" />}
+            {notificationPermission === 'default' && (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full animate-ping" />
+            )}
+          </motion.button>
+        )}
+        {adminUser ? (
               <div className="flex items-center gap-1 sm:gap-3">
                 {adminUser.role === 'Super Admin' && (
                   <>
@@ -1113,8 +1169,16 @@ export default function App() {
               <motion.button 
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
+                animate={{ 
+                  boxShadow: [
+                    `0 0 0px ${primaryColor}00`, 
+                    `0 0 15px ${primaryColor}40`, 
+                    `0 0 0px ${primaryColor}00`
+                  ] 
+                }}
+                transition={{ repeat: Infinity, duration: 2 }}
                 onClick={() => setShowForm(true)}
-                style={{ backgroundColor: primaryColor, boxShadow: `0 10px 15px -3px ${primaryColor}40` }}
+                style={{ backgroundColor: primaryColor }}
                 className="hover:opacity-90 text-white px-3 sm:px-4 py-2 rounded-xl text-[10px] sm:text-sm font-semibold shadow-lg transition-all duration-200 flex items-center gap-1.5 sm:gap-2 active:scale-95"
               >
                 <Plus className="w-3.5 h-3.5 sm:w-4 h-4" />
@@ -1167,7 +1231,13 @@ export default function App() {
                     <div className="p-4 bg-rose-50/50 rounded-2xl border border-rose-100 group hover:bg-rose-50 transition-all">
                       <div className="flex items-center justify-between mb-2">
                         <span className="flex items-center gap-1.5 text-[10px] font-bold text-rose-600 uppercase tracking-widest">
-                          <AlertCircle className="w-3 h-3" /> Action Required
+                          <motion.div
+                            animate={{ rotate: [-10, 10, -10, 10, 0] }}
+                            transition={{ repeat: Infinity, duration: 0.5, repeatDelay: 2 }}
+                          >
+                            <AlertCircle className="w-3 h-3" />
+                          </motion.div>
+                          Action Required
                         </span>
                         <span className="px-2 py-0.5 bg-rose-600 text-white text-[10px] font-bold rounded-full animate-pulse shadow-sm shadow-rose-200">
                           {tickets.filter(t => t.status === 'New').length}
@@ -1215,14 +1285,22 @@ export default function App() {
               </div>
               <div className="flex flex-wrap gap-2 sm:gap-4 justify-center">
                 <motion.div 
-                  whileHover={{ y: -5 }}
+                  whileHover={{ y: -5, scale: 1.05, rotate: 1 }}
+                  whileTap={{ scale: 0.95 }}
                   className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${themeClasses.bgSecondary} ${themeClasses.border} hover:opacity-80 flex flex-col items-center justify-center text-center shadow-sm`}
                 >
                   <Counter value={filteredTickets.length} className={`text-[10px] sm:text-xs font-black leading-none mb-0.5 sm:mb-1 ${themeClasses.text}`} />
                   <p className={`text-[8px] sm:text-[10px] font-bold ${themeClasses.textMuted} tracking-wide uppercase`}>Total</p>
                 </motion.div>
                 <motion.div 
-                  whileHover={{ y: -5 }}
+                  whileHover={{ y: -5, scale: 1.05, rotate: -1 }}
+                  whileTap={{ scale: 0.95 }}
+                  animate={filteredTickets.filter(t => t.status === 'New').length > 0 ? {
+                    boxShadow: isDark 
+                      ? ["0 0 0px rgba(251, 191, 36, 0)", "0 0 15px rgba(251, 191, 36, 0.3)", "0 0 0px rgba(251, 191, 36, 0)"]
+                      : ["0 0 0px rgba(245, 158, 11, 0)", "0 0 15px rgba(245, 158, 11, 0.3)", "0 0 0px rgba(245, 158, 11, 0)"]
+                  } : {}}
+                  transition={{ repeat: Infinity, duration: 2 }}
                   className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${isDark ? 'bg-amber-900/20 border-amber-900/30 hover:border-amber-900/50' : 'bg-amber-50 border-amber-100 hover:border-amber-200'} flex flex-col items-center justify-center text-center shadow-sm`}
                 >
                   <Counter 
@@ -1232,7 +1310,8 @@ export default function App() {
                   <p className={`text-[8px] sm:text-[10px] font-bold tracking-wide ${isDark ? 'text-amber-500/70' : 'text-amber-500'} uppercase`}>Wait</p>
                 </motion.div>
                 <motion.div 
-                  whileHover={{ y: -5 }}
+                  whileHover={{ y: -5, scale: 1.05, rotate: 1 }}
+                  whileTap={{ scale: 0.95 }}
                   className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${isDark ? 'bg-blue-900/20 border-blue-900/30 hover:border-blue-900/50' : 'bg-blue-50 border-blue-100 hover:border-blue-200'} flex flex-col items-center justify-center text-center shadow-sm`}
                 >
                   <Counter 
@@ -1242,7 +1321,8 @@ export default function App() {
                   <p className={`text-[8px] sm:text-[10px] font-bold tracking-wide ${isDark ? 'text-blue-500/70' : 'text-blue-500'} uppercase`}>Active</p>
                 </motion.div>
                 <motion.div 
-                  whileHover={{ y: -5 }}
+                  whileHover={{ y: -5, scale: 1.05, rotate: -1 }}
+                  whileTap={{ scale: 0.95 }}
                   className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${isDark ? 'bg-emerald-900/20 border-emerald-900/30 hover:border-emerald-900/50' : 'bg-emerald-50 border-emerald-100 hover:border-emerald-200'} flex flex-col items-center justify-center text-center shadow-sm`}
                 >
                   <Counter 
@@ -1502,7 +1582,12 @@ export default function App() {
                       exit={{ opacity: 0 }}
                       className={`flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}
                     >
-                      <Filter className="w-12 h-12 text-slate-200 mb-4" />
+                      <motion.div
+                        animate={{ y: [0, -10, 0] }}
+                        transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                      >
+                        <Filter className="w-12 h-12 text-slate-200 mb-4" />
+                      </motion.div>
                       <p className="text-slate-500 font-medium">No tickets match your filter</p>
                       <button 
                         onClick={() => {
@@ -1525,17 +1610,18 @@ export default function App() {
                       className="flex flex-col gap-3"
                     >
                       {paginatedTickets.map((ticket, index) => (
-                          <motion.div
-                            key={ticket.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            transition={{ delay: index * 0.05 }}
-                            className={`${themeClasses.card} rounded-2xl p-3 shadow-sm hover:shadow-md transition-all group cursor-pointer relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between ${
-                              getSLAColor(ticket.created_at, ticket.status) || (isDark ? 'hover:border-emerald-900' : 'hover:border-emerald-100')
-                            }`}
-                            onClick={() => handleSelectTicket(ticket)}
-                          >
+                            <motion.div
+                              key={ticket.id}
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95 }}
+                              whileHover={{ y: -2, scale: 1.01, rotate: 0.5 }}
+                              transition={{ delay: index * 0.05 }}
+                              className={`${themeClasses.card} rounded-2xl p-3 shadow-sm hover:shadow-md transition-all group cursor-pointer relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between ${
+                                getSLAColor(ticket.created_at, ticket.status) || (isDark ? 'hover:border-emerald-900' : 'hover:border-emerald-100')
+                              }`}
+                              onClick={() => handleSelectTicket(ticket)}
+                            >
                             <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                             
                             <div className="flex items-start gap-3 min-w-0 sm:w-1/2">
@@ -1543,6 +1629,11 @@ export default function App() {
                                 <motion.div 
                                   whileHover={{ scale: 1.1 }}
                                   whileTap={{ scale: 0.9 }}
+                                  animate={ticket.status === 'New' ? {
+                                    scale: [1, 1.1, 1],
+                                    boxShadow: ["0 0 0px rgba(245, 158, 11, 0)", "0 0 10px rgba(245, 158, 11, 0.4)", "0 0 0px rgba(245, 158, 11, 0)"]
+                                  } : {}}
+                                  transition={{ repeat: Infinity, duration: 2 }}
                                   className={`w-8 h-8 rounded-lg flex items-center justify-center border ${
                                     ticket.status === 'Completed' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
                                     ticket.status === 'New' ? 'bg-amber-50 border-amber-100 text-amber-600' :
@@ -1878,7 +1969,11 @@ export default function App() {
                           ) : (
                             <div className="flex items-center gap-2 text-emerald-600/70">
                               <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-emerald-200 border-t-emerald-600 animate-spin" />
-                              <p className="text-[9px] sm:text-[11px] font-bold italic">Sedang ditangani oleh {selectedTicket.assigned_to || 'Tim IT'}</p>
+                              <p className="text-[9px] sm:text-[11px] font-bold italic">
+                                {selectedTicket.status === 'New' 
+                                  ? `Mohon ditunggu, ${selectedTicket.assigned_to || 'Tim IT'} akan segera merespon` 
+                                  : `Sedang ditangani oleh ${selectedTicket.assigned_to || 'Tim IT'}`}
+                              </p>
                             </div>
                           )}
                         </div>
