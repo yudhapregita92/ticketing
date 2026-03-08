@@ -3,6 +3,9 @@ import { createServer as createViteServer } from "vite";
 import Database from "better-sqlite3";
 import path from "path";
 import nodemailer from "nodemailer";
+import cors from "cors";
+import { createServer } from "http";
+import { Server } from "socket.io";
 
 const db = new Database("tickets.db");
 
@@ -127,7 +130,21 @@ async function sendTelegramNotification(ticket: any, botToken: string, chatIds: 
 async function startServer() {
   console.log("Starting server initialization...");
   const app = express();
+  const httpServer = createServer(app);
+  const io = new Server(httpServer, {
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST"]
+    }
+  });
   const PORT = 3000;
+
+  io.on("connection", (socket) => {
+    console.log("Client connected:", socket.id);
+    socket.on("disconnect", () => {
+      console.log("Client disconnected:", socket.id);
+    });
+  });
 
   // Add health check ASAP
   app.get("/api/health", (req, res) => {
@@ -136,6 +153,7 @@ async function startServer() {
 
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  app.use(cors());
 
   console.log("Initializing database tables...");
   try {
@@ -626,6 +644,7 @@ async function startServer() {
       }
 
       res.status(201).json(newTicket);
+      io.emit("ticket_created", newTicket);
     } catch (err: any) {
       console.error('Error creating ticket:', err);
       res.status(500).json({ error: err.message || "Internal server error" });
@@ -691,6 +710,7 @@ async function startServer() {
     });
 
     res.json({ success: true });
+    io.emit("ticket_updated", { id, status: newStatus, assigned_to: newAssignedTo });
   });
 
   // Vite middleware for development
@@ -713,7 +733,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`Server is listening on 0.0.0.0:${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   });

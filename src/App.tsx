@@ -41,7 +41,6 @@ import {
   Image as ImageIcon,
   MapPin,
   Bell,
-  BellOff,
   TrendingUp,
   BarChart3,
   SlidersHorizontal,
@@ -210,32 +209,8 @@ export default function App() {
   const [newItemName, setNewItemName] = useState('');
   const [newEmailInput, setNewEmailInput] = useState('');
   const [showEmailInput, setShowEmailInput] = useState(false);
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
-    typeof Notification !== 'undefined' ? Notification.permission : 'default'
-  );
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [gpsError, setGpsError] = useState<string | null>(null);
-
-  const requestNotificationPermission = async () => {
-    if (!("Notification" in window)) return;
-    const permission = await Notification.requestPermission();
-    setNotificationPermission(permission);
-    if (permission === 'granted') {
-      new Notification("Notifikasi Aktif", {
-        body: "Anda akan menerima pemberitahuan untuk setiap tiket baru.",
-        icon: "https://cdn-icons-png.flaticon.com/512/2906/2906274.png"
-      });
-    }
-  };
-
-  const playNotificationSound = () => {
-    try {
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-      audio.play();
-    } catch (e) {
-      console.error('Failed to play sound:', e);
-    }
-  };
   const [viewMode, setViewMode] = useState<'today' | 'all'>('today');
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [tempFilters, setTempFilters] = useState({ dept: '', status: '', date: '', search: '' });
@@ -550,20 +525,14 @@ export default function App() {
         if (adminUser && lastTicketIdRef.current !== null && data.length > 0) {
           const newTickets = data.filter(t => t.id > lastTicketIdRef.current!);
           if (newTickets.length > 0) {
-            playNotificationSound();
             newTickets.forEach(ticket => {
               if (Notification.permission === "granted") {
                 try {
-                  const n = new Notification(`Tiket Baru: ${ticket.ticket_no}`, {
+                  new Notification(`Tiket Baru: ${ticket.ticket_no}`, {
                     body: `${ticket.name} - ${ticket.category}\n${ticket.description}`,
-                    icon: appSettings.custom_logo || "https://cdn-icons-png.flaticon.com/512/2906/2906274.png",
-                    badge: appSettings.custom_favicon || "https://cdn-icons-png.flaticon.com/512/2906/2906274.png",
-                    tag: `ticket-${ticket.id}`
+                    icon: "https://cdn-icons-png.flaticon.com/512/2906/2906274.png",
+                    badge: "https://cdn-icons-png.flaticon.com/512/2906/2906274.png"
                   });
-                  n.onclick = () => {
-                    window.focus();
-                    handleSelectTicket(ticket);
-                  };
                 } catch (e) {
                   console.error('Notification error:', e);
                 }
@@ -654,12 +623,7 @@ export default function App() {
    */
   useEffect(() => {
     const savedAdmin = localStorage.getItem('adminUser');
-    if (savedAdmin) {
-      setAdminUser(JSON.parse(savedAdmin));
-      if ("Notification" in window && Notification.permission === "default") {
-        Notification.requestPermission().then(setNotificationPermission);
-      }
-    }
+    if (savedAdmin) setAdminUser(JSON.parse(savedAdmin));
   }, []);
 
   useEffect(() => {
@@ -1097,27 +1061,7 @@ export default function App() {
                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{adminUser.role}</p>
               </div>
             )}
-            {adminUser && (
-          <motion.button 
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={requestNotificationPermission}
-            className={`p-1.5 sm:p-2 rounded-lg transition-all relative ${
-              notificationPermission === 'granted' 
-                ? 'text-emerald-500 bg-emerald-50/50' 
-                : notificationPermission === 'denied'
-                ? 'text-rose-500 bg-rose-50/50'
-                : isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'
-            }`}
-            title={notificationPermission === 'granted' ? "Notifikasi Aktif" : "Aktifkan Notifikasi"}
-          >
-            {notificationPermission === 'granted' ? <Bell className="w-4 h-4 sm:w-5 h-5" /> : <BellOff className="w-4 h-4 sm:w-5 h-5" />}
-            {notificationPermission === 'default' && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full animate-ping" />
-            )}
-          </motion.button>
-        )}
-        {adminUser ? (
+            {adminUser ? (
               <div className="flex items-center gap-1 sm:gap-3">
                 {adminUser.role === 'Super Admin' && (
                   <>
@@ -1159,10 +1103,10 @@ export default function App() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowLogin(true)}
-                className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-all ${isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
+                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-all ${isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
               >
-                <LogIn className="w-3.5 h-3.5 sm:w-4 h-4" />
-                <span className="hidden xs:inline">Login</span>
+                <LogIn className="w-3.5 h-3.5 sm:w-4 h-4 flex-shrink-0" />
+                <span className="whitespace-nowrap">Login</span>
               </motion.button>
             )}
             {!adminUser && (
@@ -1179,11 +1123,10 @@ export default function App() {
                 transition={{ repeat: Infinity, duration: 2 }}
                 onClick={() => setShowForm(true)}
                 style={{ backgroundColor: primaryColor }}
-                className="hover:opacity-90 text-white px-3 sm:px-4 py-2 rounded-xl text-[10px] sm:text-sm font-semibold shadow-lg transition-all duration-200 flex items-center gap-1.5 sm:gap-2 active:scale-95"
+                className="hover:opacity-90 text-white px-2.5 sm:px-4 py-2 rounded-xl text-[10px] sm:text-sm font-semibold shadow-lg transition-all duration-200 flex items-center gap-1 sm:gap-2 active:scale-95"
               >
-                <Plus className="w-3.5 h-3.5 sm:w-4 h-4" />
-                <span className="hidden xs:inline">New Ticket</span>
-                <span className="xs:hidden">New</span>
+                <Plus className="w-3.5 h-3.5 sm:w-4 h-4 flex-shrink-0" />
+                <span className="whitespace-nowrap">New Ticket</span>
               </motion.button>
             )}
           </div>
