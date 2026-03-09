@@ -651,6 +651,65 @@ async function startServer() {
     }
   });
 
+  app.post("/api/tickets/bulk", (req, res) => {
+    try {
+      const { tickets } = req.body;
+      if (!Array.isArray(tickets)) {
+        return res.status(400).json({ error: "Invalid data format. Expected an array of tickets." });
+      }
+
+      const insert = db.prepare(`
+        INSERT INTO tickets (ticket_no, name, department, phone, category, description, assigned_to, status, created_at) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      const insertMany = db.transaction((ticketsToInsert) => {
+        for (const t of ticketsToInsert) {
+          // Generate ticket_no if not provided
+          let ticketNo = t.ticket_no;
+          if (!ticketNo) {
+            const utcNow = new Date();
+            const jakartaNow = new Date(utcNow.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+            const year = jakartaNow.getFullYear().toString().slice(-2);
+            const month = (jakartaNow.getMonth() + 1).toString().padStart(2, '0');
+            const day = jakartaNow.getDate().toString().padStart(2, '0');
+            const datePrefix = `${year}${month}${day}`;
+            
+            const lastTicket = db.prepare("SELECT ticket_no FROM tickets WHERE ticket_no LIKE ? ORDER BY ticket_no DESC LIMIT 1")
+              .get(`${datePrefix}%`) as { ticket_no: string } | undefined;
+
+            let sequence = 1;
+            if (lastTicket && lastTicket.ticket_no) {
+              const lastSeq = parseInt(lastTicket.ticket_no.slice(-3));
+              if (!isNaN(lastSeq)) {
+                sequence = lastSeq + 1;
+              }
+            }
+            ticketNo = `${datePrefix}${sequence.toString().padStart(3, '0')}`;
+          }
+
+          insert.run(
+            ticketNo,
+            t.name || "Unknown",
+            t.department || "Other",
+            t.phone || "-",
+            t.category || "Other",
+            t.description || "",
+            t.assigned_to || null,
+            t.status || "New",
+            t.created_at || new Date().toISOString()
+          );
+        }
+      });
+
+      insertMany(tickets);
+      res.json({ success: true, count: tickets.length });
+    } catch (err: any) {
+      console.error('Bulk import error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.patch("/api/tickets/:id", (req, res) => {
     const { id } = req.params;
     const { status, assigned_to, admin_reply, internal_notes, takeover_by, reassign_to, performed_by, note } = req.body;

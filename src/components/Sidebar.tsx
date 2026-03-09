@@ -219,7 +219,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Help CTA */}
       <section 
-        className="rounded-3xl p-8 text-white shadow-xl relative overflow-hidden group transition-all"
+        className="hidden lg:block rounded-3xl p-8 text-white shadow-xl relative overflow-hidden group transition-all"
         style={{ backgroundColor: primaryColor, boxShadow: `0 20px 25px -5px ${primaryColor}30` }}
       >
         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">

@@ -1,13 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  X, 
-  User, 
-  Lock, 
-  LogIn, 
-  RefreshCcw, 
-  ShieldCheck 
-} from 'lucide-react';
+import { X, ShieldCheck, User, Lock, LogIn } from 'lucide-react';
 
 interface LoginModalProps {
   showLogin: boolean;
@@ -16,110 +9,96 @@ interface LoginModalProps {
   themeClasses: any;
   loginData: any;
   setLoginData: (data: any) => void;
-  loggingIn: boolean;
   handleLogin: (e: React.FormEvent) => void;
   primaryColor: string;
 }
 
-export const LoginModal: React.FC<LoginModalProps> = ({
+export const LoginModal = React.memo(({
   showLogin,
   setShowLogin,
   isDark,
   themeClasses,
   loginData,
   setLoginData,
-  loggingIn,
   handleLogin,
   primaryColor
-}) => {
+}: LoginModalProps) => {
+  if (!showLogin) return null;
+
   return (
-    <AnimatePresence>
-      {showLogin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowLogin(false)}
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-          />
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className={`relative w-full max-w-md rounded-3xl shadow-2xl border overflow-hidden ${themeClasses.card}`}
-          >
-            <div className="p-8 sm:p-10">
-              <div className="flex flex-col items-center text-center mb-8 sm:mb-10">
-                <div 
-                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl flex items-center justify-center mb-6 shadow-xl"
-                  style={{ backgroundColor: primaryColor, boxShadow: `0 20px 25px -5px ${primaryColor}40` }}
-                >
-                  <ShieldCheck className="text-white w-10 h-10 sm:w-12 h-12" />
-                </div>
-                <h2 className={`text-2xl sm:text-3xl font-black tracking-tight mb-2 ${themeClasses.text}`}>Admin Login</h2>
-                <p className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-widest">Akses Panel Manajemen IT</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={() => setShowLogin(false)}
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+      />
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className={`relative rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col transition-colors ${themeClasses.card} ${themeClasses.text}`}
+      >
+        <div className={`p-4 sm:p-6 border-b shrink-0 ${themeClasses.border}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
+                <ShieldCheck className="w-5 h-5" />
               </div>
-
-              <form onSubmit={handleLogin} className="space-y-6 sm:space-y-8">
-                <div className="space-y-4 sm:space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                      <User className="w-3 h-3" /> Username
-                    </label>
-                    <input 
-                      required
-                      type="text"
-                      placeholder="Masukkan username Anda"
-                      value={loginData.username}
-                      onChange={(e) => setLoginData({...loginData, username: e.target.value})}
-                      className={`w-full px-4 py-3 sm:py-4 rounded-2xl border transition-all focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none text-sm sm:text-base font-medium ${themeClasses.input}`}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                      <Lock className="w-3 h-3" /> Password
-                    </label>
-                    <input 
-                      required
-                      type="password"
-                      placeholder="Masukkan password Anda"
-                      value={loginData.password}
-                      onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                      className={`w-full px-4 py-3 sm:py-4 rounded-2xl border transition-all focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none text-sm sm:text-base font-medium ${themeClasses.input}`}
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-4">
-                  <button 
-                    disabled={loggingIn}
-                    type="submit"
-                    style={{ backgroundColor: primaryColor }}
-                    className="w-full text-white font-black py-4 sm:py-5 rounded-2xl text-sm sm:text-base shadow-xl hover:opacity-90 transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 group"
-                  >
-                    {loggingIn ? (
-                      <RefreshCcw className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <>
-                        <LogIn className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                        Masuk ke Dashboard
-                      </>
-                    )}
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setShowLogin(false)}
-                    className={`w-full mt-4 font-bold py-3 text-xs sm:text-sm transition-all uppercase tracking-widest ${isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-slate-400 hover:text-slate-600'}`}
-                  >
-                    Batal
-                  </button>
-                </div>
-              </form>
+              <div>
+                <h2 className={`text-lg font-black tracking-tight ${themeClasses.text}`}>Portal Admin</h2>
+                <p className={`text-[10px] font-bold uppercase tracking-widest ${themeClasses.textMuted}`}>Login untuk mengelola tiket</p>
+              </div>
             </div>
-          </motion.div>
+            <button 
+              onClick={() => setShowLogin(false)}
+              className={`p-2 rounded-full transition-all ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
-      )}
-    </AnimatePresence>
+
+        <form onSubmit={handleLogin} className="p-4 sm:p-6 space-y-4">
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+              <User className="w-3 h-3" /> Username
+            </label>
+            <input 
+              required
+              type="text"
+              placeholder="Masukkan username"
+              className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+              value={loginData.username}
+              onChange={e => setLoginData({...loginData, username: e.target.value})}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+              <Lock className="w-3 h-3" /> Password
+            </label>
+            <input 
+              required
+              type="password"
+              placeholder="Masukkan password"
+              className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+              value={loginData.password}
+              onChange={e => setLoginData({...loginData, password: e.target.value})}
+            />
+          </div>
+
+          <div className="pt-2">
+            <button 
+              type="submit"
+              style={{ backgroundColor: primaryColor }}
+              className={`w-full py-3 sm:py-4 rounded-2xl text-white font-black uppercase tracking-widest text-xs sm:text-sm shadow-xl shadow-emerald-900/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2`}
+            >
+              <LogIn className="w-4 h-4" /> Masuk Sekarang
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
   );
-};
+});

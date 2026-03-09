@@ -1,13 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  PieChart, 
-  Pie, 
-  Cell, 
-  ResponsiveContainer, 
-  Tooltip as RechartsTooltip 
-} from 'recharts';
-import { 
   ShieldCheck, 
   Plus, 
   Clock, 
@@ -48,6 +41,19 @@ import {
   ShieldAlert,
   UserPlus
 } from 'lucide-react';
+
+// Import modular components
+import { Counter, Shimmer } from './components/Common';
+import { Header } from './components/Header';
+import { Sidebar } from './components/Sidebar';
+import { TicketDetailModal } from './components/modals/TicketDetailModal';
+import { NewTicketModal } from './components/modals/NewTicketModal';
+import { LoginModal } from './components/modals/LoginModal';
+import { SettingsModal } from './components/modals/SettingsModal';
+import { ConfirmModal } from './components/modals/ConfirmModal';
+import { TakeoverModal } from './components/modals/TakeoverModal';
+import { SuccessModal } from './components/modals/SuccessModal';
+import { MobileFilterModal } from './components/modals/MobileFilterModal';
 
 interface ITicket {
   id: number;
@@ -103,53 +109,6 @@ const getDeviceInfo = (ua: string) => {
 };
 
 /**
- * Komponen Counter Animasi
- */
-const Counter = ({ value, className }: { value: number, className?: string }) => {
-  const [displayValue, setDisplayValue] = useState(0);
-
-  useEffect(() => {
-    let start = 0;
-    const end = value;
-    if (start === end) {
-      setDisplayValue(end);
-      return;
-    }
-
-    const duration = 1000;
-    const increment = end / (duration / 16);
-    
-    const timer = setInterval(() => {
-      start += increment;
-      if (start >= end) {
-        setDisplayValue(end);
-        clearInterval(timer);
-      } else {
-        setDisplayValue(Math.floor(start));
-      }
-    }, 16);
-
-    return () => clearInterval(timer);
-  }, [value]);
-
-  return <span className={className}>{displayValue}</span>;
-};
-
-/**
- * Komponen Shimmer Loading
- */
-const Shimmer = ({ className }: { className?: string }) => (
-  <div className={`relative overflow-hidden bg-slate-200 dark:bg-slate-800 rounded-xl ${className}`}>
-    <motion.div
-      initial={{ x: '-100%' }}
-      animate={{ x: '100%' }}
-      transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
-      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-    />
-  </div>
-);
-
-/**
  * IT Helpdesk Pro - Main Application Component
  * 
  * Flow Aplikasi:
@@ -194,6 +153,16 @@ export default function App() {
       console.error('Failed to fetch ticket details:', err);
     }
   };
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
+    typeof window !== 'undefined' ? Notification.permission : 'default'
+  );
+
+  const requestNotificationPermission = async () => {
+    if (!("Notification" in window)) return;
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+  };
+
   const [loading, setLoading] = useState(true); // Loading state untuk fetch data awal
   const [adminUser, setAdminUser] = useState<any>(null); // Data login admin
   const [showForm, setShowForm] = useState(false); // Toggle modal buat tiket baru
@@ -1035,330 +1004,37 @@ export default function App() {
   return (
     <div className={`min-h-screen font-sans transition-colors duration-300 ${themeClasses.bg} ${themeClasses.selection}`} style={{ '--primary': primaryColor } as any}>
       {/* --- HEADER SECTION --- */}
-      <header className={`sticky top-0 z-40 w-full border-b backdrop-blur-md transition-colors ${themeClasses.header}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div 
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shadow-lg transition-all shrink-0"
-              style={{ backgroundColor: primaryColor, boxShadow: `0 10px 15px -3px ${primaryColor}40` }}
-            >
-              {appSettings.custom_logo ? (
-                <img src={appSettings.custom_logo} alt="Logo" className="w-6 h-6 sm:w-7 sm:h-7 object-contain" referrerPolicy="no-referrer" />
-              ) : (
-                <CurrentLogo className="text-white w-5 h-5 sm:w-6 sm:h-6" />
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <h1 className={`text-sm sm:text-lg font-bold tracking-tight leading-tight truncate whitespace-nowrap ${isDark ? 'text-white' : 'text-slate-900'}`}>{appSettings.app_name}</h1>
-              <p className="hidden sm:block text-[10px] sm:text-xs font-medium text-slate-500 mt-0.5">Enterprise Support System</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
-            {adminUser && (
-              <div className="hidden lg:flex flex-col items-end mr-2">
-                <p className={`text-[10px] font-black leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>{adminUser.full_name}</p>
-                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{adminUser.role}</p>
-              </div>
-            )}
-            {adminUser ? (
-              <div className="flex items-center gap-1 sm:gap-3">
-                {adminUser.role === 'Super Admin' && (
-                  <>
-                    <motion.button 
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => setShowSettings(true)}
-                      className={`p-1.5 sm:p-2 rounded-lg transition-all ${isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
-                      title="Settings"
-                    >
-                      <Settings2 className="w-4 h-4 sm:w-5 h-5" />
-                    </motion.button>
-                    <motion.button 
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setShowResetConfirm(true)}
-                      className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 transition-all"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 sm:w-4 h-4" />
-                      <span className="hidden md:inline">Reset</span>
-                    </motion.button>
-                  </>
-                )}
-                <motion.button 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleLogout}
-                  className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-all relative ${isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
-                >
-                  <LogOut className="w-3.5 h-3.5 sm:w-4 h-4" />
-                  <span className="hidden md:inline">Logout</span>
-                  {tickets.filter(t => t.status === 'New').length > 0 && (
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white animate-pulse" />
-                  )}
-                </motion.button>
-              </div>
-            ) : (
-              <motion.button 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowLogin(true)}
-                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-all ${isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
-              >
-                <LogIn className="w-3.5 h-3.5 sm:w-4 h-4 flex-shrink-0" />
-                <span className="whitespace-nowrap">Login</span>
-              </motion.button>
-            )}
-            {!adminUser && (
-              <motion.button 
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                animate={{ 
-                  boxShadow: [
-                    `0 0 0px ${primaryColor}00`, 
-                    `0 0 15px ${primaryColor}40`, 
-                    `0 0 0px ${primaryColor}00`
-                  ] 
-                }}
-                transition={{ repeat: Infinity, duration: 2 }}
-                onClick={() => setShowForm(true)}
-                style={{ backgroundColor: primaryColor }}
-                className="hover:opacity-90 text-white px-2.5 sm:px-4 py-2 rounded-xl text-[10px] sm:text-sm font-semibold shadow-lg transition-all duration-200 flex items-center gap-1 sm:gap-2 active:scale-95"
-              >
-                <Plus className="w-3.5 h-3.5 sm:w-4 h-4 flex-shrink-0" />
-                <span className="whitespace-nowrap">New Ticket</span>
-              </motion.button>
-            )}
-          </div>
-        </div>
-      </header>
+      <Header 
+        appSettings={appSettings}
+        primaryColor={primaryColor}
+        isDark={isDark}
+        adminUser={adminUser}
+        setShowSettings={setShowSettings}
+        setShowResetConfirm={setShowResetConfirm}
+        handleLogout={handleLogout}
+        setShowLogin={setShowLogin}
+        setShowForm={setShowForm}
+        tickets={tickets}
+        notificationPermission={notificationPermission}
+        requestNotificationPermission={requestNotificationPermission}
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
           {/* --- SIDEBAR: STATS & INFO --- */}
-          <div className="lg:col-span-1 space-y-4 lg:space-y-6">
-            {/* Admin Notifications */}
-            {adminUser && (
-              <motion.section 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`${themeClasses.card} rounded-3xl border p-4 sm:p-6 shadow-sm overflow-hidden relative`}
-              >
-                <div className="absolute top-0 right-0 p-6 opacity-5">
-                  <Bell className={`w-24 h-24 ${isDark ? 'text-white' : 'text-slate-900'}`} />
-                </div>
-                <div className="flex items-center justify-between mb-4 sm:mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border ${isDark ? 'bg-rose-900/30 text-rose-400 border-rose-800' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
-                      <Bell className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h2 className={`text-sm font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>Smart Notifications</h2>
-                      <p className="text-[10px] text-slate-400 font-medium">Real-time system alerts</p>
-                    </div>
-                  </div>
-                  {/* Notification Permission Toggle */}
-                  {typeof window !== 'undefined' && "Notification" in window && Notification.permission !== "granted" && (
-                    <button 
-                      onClick={() => Notification.requestPermission().then(() => fetchTickets())}
-                      className="p-2 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-all group"
-                      title="Aktifkan Notifikasi Browser"
-                    >
-                      <Bell className="w-4 h-4 animate-bounce group-hover:animate-none" />
-                    </button>
-                  )}
-                </div>
-                
-                <div className="space-y-3">
-                  {tickets.filter(t => t.status === 'New').length > 0 ? (
-                    <div className="p-4 bg-rose-50/50 rounded-2xl border border-rose-100 group hover:bg-rose-50 transition-all">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="flex items-center gap-1.5 text-[10px] font-bold text-rose-600 uppercase tracking-widest">
-                          <motion.div
-                            animate={{ rotate: [-10, 10, -10, 10, 0] }}
-                            transition={{ repeat: Infinity, duration: 0.5, repeatDelay: 2 }}
-                          >
-                            <AlertCircle className="w-3 h-3" />
-                          </motion.div>
-                          Action Required
-                        </span>
-                        <span className="px-2 py-0.5 bg-rose-600 text-white text-[10px] font-bold rounded-full animate-pulse shadow-sm shadow-rose-200">
-                          {tickets.filter(t => t.status === 'New').length}
-                        </span>
-                      </div>
-                      <p className="text-xs text-rose-700 font-semibold leading-relaxed">Ada tiket yang menunggu respon Anda segera.</p>
-                    </div>
-                  ) : (
-                    <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100">
-                      <p className="text-xs text-emerald-700 font-semibold flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4" /> Inbox Zero! Semua tiket telah direspon.
-                      </p>
-                    </div>
-                  )}
-
-                  {(() => {
-                    const today = new Date().toLocaleDateString('en-CA');
-                    const newToday = tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === today).length;
-                    if (newToday > 0) {
-                      return (
-                        <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 group hover:bg-blue-50 transition-all">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 uppercase tracking-widest">
-                              <TrendingUp className="w-3 h-3" /> Traffic Update
-                            </span>
-                            <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full shadow-sm shadow-blue-200">
-                              {newToday}
-                            </span>
-                          </div>
-                          <p className="text-xs text-blue-700 font-semibold leading-relaxed">Tiket baru masuk hari ini.</p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
-                </div>
-              </motion.section>
-            )}
-
-            {/* Queue Statistics */}
-            <section className={`${themeClasses.card} rounded-3xl border p-4 sm:p-6 shadow-sm`}>
-              <div className="flex items-center justify-between mb-4 sm:mb-6">
-                <h2 className={`text-sm font-bold tracking-wider ${themeClasses.text}`}>Status Antrian</h2>
-                <BarChart3 className="w-4 h-4 text-slate-300" />
-              </div>
-              <div className="flex flex-wrap gap-2 sm:gap-4 justify-center">
-                <motion.div 
-                  whileHover={{ y: -5, scale: 1.05, rotate: 1 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${themeClasses.bgSecondary} ${themeClasses.border} hover:opacity-80 flex flex-col items-center justify-center text-center shadow-sm`}
-                >
-                  <Counter value={filteredTickets.length} className={`text-[10px] sm:text-xs font-black leading-none mb-0.5 sm:mb-1 ${themeClasses.text}`} />
-                  <p className={`text-[8px] sm:text-[10px] font-bold ${themeClasses.textMuted} tracking-wide uppercase`}>Total</p>
-                </motion.div>
-                <motion.div 
-                  whileHover={{ y: -5, scale: 1.05, rotate: -1 }}
-                  whileTap={{ scale: 0.95 }}
-                  animate={filteredTickets.filter(t => t.status === 'New').length > 0 ? {
-                    boxShadow: isDark 
-                      ? ["0 0 0px rgba(251, 191, 36, 0)", "0 0 15px rgba(251, 191, 36, 0.3)", "0 0 0px rgba(251, 191, 36, 0)"]
-                      : ["0 0 0px rgba(245, 158, 11, 0)", "0 0 15px rgba(245, 158, 11, 0.3)", "0 0 0px rgba(245, 158, 11, 0)"]
-                  } : {}}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                  className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${isDark ? 'bg-amber-900/20 border-amber-900/30 hover:border-amber-900/50' : 'bg-amber-50 border-amber-100 hover:border-amber-200'} flex flex-col items-center justify-center text-center shadow-sm`}
-                >
-                  <Counter 
-                    value={filteredTickets.filter(t => t.status === 'New').length} 
-                    className={`text-[10px] sm:text-xs font-black leading-none mb-0.5 sm:mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} 
-                  />
-                  <p className={`text-[8px] sm:text-[10px] font-bold tracking-wide ${isDark ? 'text-amber-500/70' : 'text-amber-500'} uppercase`}>Wait</p>
-                </motion.div>
-                <motion.div 
-                  whileHover={{ y: -5, scale: 1.05, rotate: 1 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${isDark ? 'bg-blue-900/20 border-blue-900/30 hover:border-blue-900/50' : 'bg-blue-50 border-blue-100 hover:border-blue-200'} flex flex-col items-center justify-center text-center shadow-sm`}
-                >
-                  <Counter 
-                    value={filteredTickets.filter(t => t.status === 'In Progress').length} 
-                    className={`text-[10px] sm:text-xs font-black leading-none mb-0.5 sm:mb-1 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} 
-                  />
-                  <p className={`text-[8px] sm:text-[10px] font-bold tracking-wide ${isDark ? 'text-blue-500/70' : 'text-blue-500'} uppercase`}>Active</p>
-                </motion.div>
-                <motion.div 
-                  whileHover={{ y: -5, scale: 1.05, rotate: -1 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`w-16 h-16 sm:w-24 sm:h-24 rounded-2xl border transition-all ${isDark ? 'bg-emerald-900/20 border-emerald-900/30 hover:border-emerald-900/50' : 'bg-emerald-50 border-emerald-100 hover:border-emerald-200'} flex flex-col items-center justify-center text-center shadow-sm`}
-                >
-                  <Counter 
-                    value={filteredTickets.filter(t => t.status === 'Completed').length} 
-                    className={`text-[10px] sm:text-xs font-black leading-none mb-0.5 sm:mb-1 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} 
-                  />
-                  <p className={`text-[8px] sm:text-[10px] font-bold tracking-wide ${isDark ? 'text-emerald-500/70' : 'text-emerald-500'} uppercase`}>Done</p>
-                </motion.div>
-              </div>
-            </section>
-
-            {/* Issue Distribution (Pie Chart) */}
-            {adminUser && categoryStats.length > 0 && (
-              <motion.section 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`${themeClasses.card} rounded-3xl border p-4 sm:p-6 shadow-sm`}
-              >
-                <div className="flex items-center justify-between mb-4 sm:mb-6">
-                  <h2 className={`text-sm font-bold uppercase tracking-wider ${themeClasses.text}`}>Distribusi Masalah</h2>
-                  <button 
-                    onClick={() => setShowDistribution(!showDistribution)}
-                    className={`p-2 rounded-xl transition-all ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}
-                  >
-                    {showDistribution ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  </button>
-                </div>
-
-                {showDistribution && (
-                  <div className="h-48 w-full min-w-0" style={{ minHeight: '192px' }}>
-                    <ResponsiveContainer width="100%" height="100%" minHeight={192}>
-                      <PieChart>
-                        <Pie
-                          data={categoryStats}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={40}
-                          outerRadius={70}
-                          paddingAngle={5}
-                          dataKey="value"
-                        >
-                          {categoryStats.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <RechartsTooltip 
-                          contentStyle={{ 
-                            borderRadius: '16px', 
-                            border: 'none', 
-                            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', 
-                            fontSize: '12px', 
-                            fontWeight: 'bold',
-                            backgroundColor: isDark ? '#1e293b' : '#ffffff',
-                            color: isDark ? '#ffffff' : '#000000'
-                          }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
-                <div className="grid grid-cols-2 gap-y-2 mt-4">
-                  {categoryStats.map((stat, idx) => (
-                    <div key={stat.name} className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
-                      <span className="text-[10px] font-bold text-slate-500 uppercase truncate">{stat.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </motion.section>
-            )}
-
-            {/* Help CTA - Hidden on mobile, moved to bottom */}
-            <section 
-              className="hidden lg:block rounded-3xl p-8 text-white shadow-xl relative overflow-hidden group transition-all"
-              style={{ backgroundColor: primaryColor, boxShadow: `0 20px 25px -5px ${primaryColor}30` }}
-            >
-              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-                <Zap className="w-20 h-20" />
-              </div>
-              <h3 className="font-black text-xl mb-3">Butuh Bantuan?</h3>
-              <p className="text-white/80 text-sm leading-relaxed mb-6 font-medium">
-                Kirim tiket untuk masalah teknis. Tim IT kami akan memproses permintaan Anda sesegera mungkin.
-              </p>
-              <button 
-                onClick={() => setShowForm(true)}
-                className={`w-full font-bold py-3.5 rounded-2xl text-sm transition-all shadow-lg active:scale-95 ${
-                  isDark ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-white text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                Buat Tiket Sekarang
-              </button>
-            </section>
-          </div>
+          <Sidebar 
+            isDark={isDark}
+            themeClasses={themeClasses}
+            tickets={tickets}
+            adminUser={adminUser}
+            setShowDistribution={setShowDistribution}
+            primaryColor={primaryColor}
+            filteredTickets={filteredTickets}
+            categoryStats={categoryStats}
+            showDistribution={showDistribution}
+            setShowForm={setShowForm}
+            fetchTickets={fetchTickets}
+          />
 
           {/* --- MAIN CONTENT: TICKET LIST --- */}
           <div className="lg:col-span-2 space-y-3 sm:space-y-4">
@@ -1768,1624 +1444,137 @@ export default function App() {
       </main>
 
       {/* --- MODAL: TICKET DETAIL --- */}
-      <AnimatePresence>
-        {selectedTicket && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedTicket(null)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className={`relative rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[92vh] transition-colors ${themeClasses.card} ${themeClasses.text}`}
-            >
-              <div className={`p-3 sm:p-5 border-b shrink-0 ${themeClasses.border}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <div className="w-7 h-7 sm:w-9 sm:h-9 bg-emerald-100 rounded-lg sm:rounded-xl flex items-center justify-center text-emerald-600">
-                      <Ticket className="w-3.5 h-3.5 sm:w-4.5 h-4.5" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1.5 sm:gap-2">
-                        <span className={`text-[8px] sm:text-[9px] font-bold ${themeClasses.textMuted}`}>#{selectedTicket.ticket_no || selectedTicket.id.toString().padStart(4, '0')}</span>
-                        <span className={`px-1.5 py-0.5 rounded-full text-[7px] sm:text-[8px] font-bold uppercase tracking-wider border ${getStatusColor(selectedTicket.status)}`}>
-                          {selectedTicket.status}
-                        </span>
-                      </div>
-                      <h2 className={`text-xs sm:text-base font-black tracking-tight ${themeClasses.text}`}>{selectedTicket.category} Request</h2>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => setSelectedTicket(null)}
-                    className={`p-1.5 rounded-full transition-all ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
-                  >
-                    <X className="w-4 h-4 sm:w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-3 sm:p-5 overflow-y-auto custom-scrollbar">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-5">
-                  {/* Left Column: Info & Description */}
-                  <div className="lg:col-span-7 space-y-3 sm:space-y-5">
-                    <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
-                      <div className={`p-1.5 sm:p-2.5 rounded-xl border flex items-center gap-2 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
-                        <User className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0" />
-                        <div className="min-w-0">
-                          <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} uppercase tracking-widest truncate`}>Pengguna</p>
-                          <p className={`text-[9px] sm:text-[11px] font-bold ${themeClasses.text} truncate`}>{selectedTicket.name}</p>
-                        </div>
-                      </div>
-                      <div className={`p-1.5 sm:p-2.5 rounded-xl border flex items-center gap-2 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
-                        <Building2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0" />
-                        <div className="min-w-0">
-                          <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} uppercase tracking-widest truncate`}>Bagian</p>
-                          <p className={`text-[9px] sm:text-[11px] font-bold ${themeClasses.text} truncate`}>{selectedTicket.department}</p>
-                        </div>
-                      </div>
-                      <div className={`p-1.5 sm:p-2.5 rounded-xl border flex items-center gap-2 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
-                        <Phone className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0" />
-                        <div className="min-w-0">
-                          <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} uppercase tracking-widest truncate`}>Telepon</p>
-                          <p className={`text-[9px] sm:text-[11px] font-bold ${themeClasses.text} truncate`}>{selectedTicket.phone}</p>
-                        </div>
-                      </div>
-                      <div className={`p-1.5 sm:p-2.5 rounded-xl border flex items-center gap-2 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
-                        <Layers className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0" />
-                        <div className="min-w-0">
-                          <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} uppercase tracking-widest truncate`}>Kategori</p>
-                          <p className={`text-[9px] sm:text-[11px] font-bold ${themeClasses.text} truncate`}>{selectedTicket.category}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className={`p-2.5 sm:p-3.5 rounded-2xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
-                      <div className="flex items-center gap-2 text-slate-400 mb-1 sm:mb-1.5">
-                        <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                        <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">Masalah / Detail</span>
-                      </div>
-                      <p className={`text-[11px] sm:text-xs whitespace-pre-wrap leading-relaxed ${themeClasses.text}`}>
-                        {selectedTicket.description}
-                      </p>
-                    </div>
-
-                    {adminUser && (
-                      <div className={`p-2.5 sm:p-3.5 rounded-2xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
-                        <div className="flex items-center gap-2 text-slate-400 mb-1.5 sm:mb-2">
-                          <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                          <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">Audit Log</span>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-                          <div>
-                            <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>IP</p>
-                            <p className={`text-[8px] sm:text-[9px] font-mono font-bold ${themeClasses.text}`}>
-                              {selectedTicket.ip_address || 'Unknown'}
-                            </p>
-                          </div>
-                          <div>
-                            <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>Device</p>
-                            <p className={`text-[8px] sm:text-[9px] font-mono font-bold ${themeClasses.text} truncate`}>
-                              {getDeviceInfo(selectedTicket.user_agent || '')}
-                            </p>
-                          </div>
-                          <div className="col-span-2 sm:col-span-1">
-                            <p className="text-[6px] sm:text-[7px] font-bold text-slate-400 uppercase tracking-widest">GPS</p>
-                            {selectedTicket.latitude ? (
-                              <a 
-                                href={`https://www.google.com/maps?q=${selectedTicket.latitude},${selectedTicket.longitude}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-[8px] sm:text-[9px] font-bold text-blue-500 hover:underline"
-                              >
-                                <MapPin className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
-                                {selectedTicket.latitude.toFixed(2)}, {selectedTicket.longitude?.toFixed(2)}
-                              </a>
-                            ) : (
-                              <p className="text-[8px] sm:text-[9px] font-bold text-rose-500">No Data</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {(selectedTicket.assigned_to || selectedTicket.admin_reply) && (
-                      <div className="overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50/30">
-                        <div className="bg-emerald-100/50 px-3 py-1 border-b border-emerald-200 flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-emerald-700">
-                            <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                            <span className="text-[7px] sm:text-[8px] font-black uppercase tracking-widest">Tim Respon IT</span>
-                          </div>
-                        </div>
-                        <div className="p-2.5 sm:p-3.5">
-                          {selectedTicket.admin_reply ? (
-                            <div className="space-y-1">
-                              <p className="text-[11px] sm:text-xs text-emerald-900 leading-relaxed font-semibold italic">
-                                "{selectedTicket.admin_reply}"
-                              </p>
-                              <p className="text-[7px] sm:text-[8px] text-emerald-600 font-black uppercase tracking-widest pt-1 border-t border-emerald-100">Balasan Resmi</p>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2 text-emerald-600/70">
-                              <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-emerald-200 border-t-emerald-600 animate-spin" />
-                              <p className="text-[9px] sm:text-[11px] font-bold italic">
-                                {selectedTicket.status === 'New' 
-                                  ? `Mohon ditunggu, ${selectedTicket.assigned_to || 'Tim IT'} akan segera merespon` 
-                                  : `Sedang ditangani oleh ${selectedTicket.assigned_to || 'Tim IT'}`}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-3 gap-1 p-2 bg-white rounded-xl border border-slate-100">
-                      <div className="flex flex-col">
-                        <span className="text-[6px] sm:text-[7px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Diajukan</span>
-                        <span className="text-[8px] sm:text-[9px] font-medium text-slate-600 truncate">{formatDate(selectedTicket.created_at)}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[6px] sm:text-[7px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Respon</span>
-                        <span className="text-[8px] sm:text-[9px] font-medium text-slate-600 truncate">{selectedTicket.responded_at ? formatDate(selectedTicket.responded_at) : '-'}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[6px] sm:text-[7px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Selesai</span>
-                        <span className="text-[8px] sm:text-[9px] font-medium text-slate-600 truncate">{selectedTicket.resolved_at ? formatDate(selectedTicket.resolved_at) : '-'}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Column: Photo & Admin Actions */}
-                  <div className="lg:col-span-5 space-y-3 sm:space-y-5">
-                    {selectedTicket.photo && (
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 text-slate-400">
-                          <ImageIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                          <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">Lampiran Foto</span>
-                        </div>
-                        <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 aspect-video flex items-center justify-center">
-                          <img 
-                            src={selectedTicket.photo} 
-                            alt="Ticket attachment" 
-                            className="max-w-full max-h-full object-contain"
-                            referrerPolicy="no-referrer"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Ticket History / Logs */}
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <div className="flex items-center gap-2 text-slate-400">
-                        <History className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                        <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">Riwayat Tiket</span>
-                      </div>
-                      <div className={`rounded-2xl border p-2.5 sm:p-3.5 space-y-2.5 sm:space-y-3.5 max-h-[180px] sm:max-h-[250px] overflow-y-auto custom-scrollbar ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
-                        {ticketLogs.length === 0 ? (
-                          <p className="text-[8px] sm:text-[9px] text-slate-400 italic text-center py-3">Belum ada riwayat aktivitas.</p>
-                        ) : (
-                          <div className="space-y-2.5 sm:space-y-3.5 relative before:absolute before:left-[6px] before:top-1.5 before:bottom-1.5 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-700">
-                            {ticketLogs.map((log, idx) => (
-                              <div key={idx} className="relative pl-4.5 sm:pl-5.5">
-                                <div className={`absolute left-0 top-1 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border-2 border-white dark:border-slate-800 shadow-sm flex items-center justify-center ${
-                                  log.action.includes('Status') ? 'bg-emerald-500' :
-                                  log.action.includes('Tugaskan') ? 'bg-blue-500' :
-                                  log.action.includes('Ambil Alih') ? 'bg-amber-500' :
-                                  'bg-slate-400'
-                                }`}>
-                                  <div className="w-0.5 h-0.5 bg-white rounded-full" />
-                                </div>
-                                <div className="space-y-0.5">
-                                  <div className="flex items-center justify-between gap-2">
-                                    <p className={`text-[8px] sm:text-[9px] font-black ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{log.action}</p>
-                                    <span className="text-[6px] sm:text-[7px] font-bold text-slate-400 whitespace-nowrap">{formatDate(log.created_at)}</span>
-                                  </div>
-                                  <p className="text-[7px] sm:text-[8px] font-medium text-slate-500 leading-relaxed">
-                                    Oleh: <span className="font-bold text-slate-600 dark:text-slate-400">{log.performed_by}</span>
-                                  </p>
-                                  {log.note && (
-                                    <div className={`mt-0.5 p-1 sm:p-1.5 rounded-lg text-[7px] sm:text-[8px] font-medium italic leading-relaxed ${isDark ? 'bg-slate-900/50 text-slate-400' : 'bg-white text-slate-500'}`}>
-                                      "{log.note}"
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {adminUser && (
-                      <div className="bg-slate-900 rounded-2xl p-3.5 sm:p-4.5 shadow-xl space-y-2.5 sm:space-y-3.5">
-                        <div className="flex items-center gap-2 text-white mb-0.5">
-                          <Settings2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400" />
-                          <h3 className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest">Tindakan Admin</h3>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-2.5 sm:gap-3.5">
-                          {adminUser.role === 'Super Admin' && selectedTicket.assigned_to && selectedTicket.assigned_to !== adminUser.username && (
-                            <button
-                              onClick={() => handleIntervention(selectedTicket.id, 'takeover')}
-                              className="w-full bg-amber-500 text-white font-black py-1.5 sm:py-2 rounded-xl hover:bg-amber-600 transition-all uppercase tracking-widest text-[7px] sm:text-[8px] shadow-lg shadow-amber-900/20 active:scale-[0.98]"
-                            >
-                              Ambil Alih Tiket
-                            </button>
-                          )}
-                          <div className="space-y-0.5">
-                            <label className="text-[7px] sm:text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Tugaskan IT</label>
-                            {adminUser.role === 'Super Admin' ? (
-                              <select 
-                                id={`modal-assignee-${selectedTicket.id}`}
-                                className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl py-1.5 sm:py-2 px-2.5 text-[9px] sm:text-[11px] outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-bold"
-                                defaultValue={selectedTicket.assigned_to || ''}
-                              >
-                                <option value="">Pilih IT...</option>
-                                {users.map(u => (
-                                  <option key={u.id} value={u.username}>{u.full_name || u.username}</option>
-                                ))}
-                              </select>
-                            ) : (
-                              <div className="relative">
-                                <input 
-                                  id={`modal-assignee-${selectedTicket.id}`}
-                                  type="text"
-                                  readOnly
-                                  className="w-full bg-slate-800 border border-slate-700 text-slate-300 rounded-xl py-1.5 sm:py-2 px-2.5 text-[9px] sm:text-[11px] outline-none font-bold"
-                                  value={selectedTicket.assigned_to || adminUser.username}
-                                />
-                                <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
-                                  <Lock className="w-2.5 h-2.5 text-slate-500" />
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                          <div className="space-y-0.5">
-                            <label className="text-[7px] sm:text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
-                            <div className="flex gap-1 bg-slate-800 p-0.5 rounded-xl border border-slate-700 overflow-x-auto no-scrollbar">
-                              {STATUSES.map(status => (
-                                <button
-                                  key={status}
-                                  onClick={() => setModalStatus(status)}
-                                  className={`flex-1 min-w-[50px] py-1 rounded-lg text-[6px] sm:text-[7px] font-black uppercase tracking-tighter transition-all ${
-                                    (modalStatus || selectedTicket.status) === status 
-                                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' 
-                                    : 'text-slate-400 hover:text-white hover:bg-slate-700'
-                                  }`}
-                                >
-                                  {status}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Balasan Resolusi (Publik)</label>
-                          <textarea 
-                            id={`modal-reply-${selectedTicket.id}`}
-                            className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl py-2.5 sm:py-3 px-3 sm:px-4 text-[10px] sm:text-xs outline-none focus:ring-2 focus:ring-emerald-500 resize-none transition-all font-medium placeholder:text-slate-600"
-                            placeholder="Tulis solusi di sini..."
-                            rows={2}
-                            defaultValue={selectedTicket.admin_reply || ''}
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Catatan Internal (Private)</label>
-                          <textarea 
-                            id={`modal-internal-${selectedTicket.id}`}
-                            className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl py-2.5 sm:py-3 px-3 sm:px-4 text-[10px] sm:text-xs outline-none focus:ring-2 focus:ring-blue-500 resize-none transition-all font-medium placeholder:text-slate-600"
-                            placeholder="Catatan rahasia tim IT..."
-                            rows={2}
-                            defaultValue={selectedTicket.internal_notes || ''}
-                          />
-                        </div>
-
-                        <button
-                          onClick={() => {
-                            const assignee = adminUser.role === 'Super Admin' 
-                              ? (document.getElementById(`modal-assignee-${selectedTicket.id}`) as HTMLSelectElement).value 
-                              : (selectedTicket.assigned_to || adminUser.username);
-                            const reply = (document.getElementById(`modal-reply-${selectedTicket.id}`) as HTMLTextAreaElement).value;
-                            const internal = (document.getElementById(`modal-internal-${selectedTicket.id}`) as HTMLTextAreaElement).value;
-                            const status = modalStatus || selectedTicket.status;
-                            handleUpdateClick(selectedTicket.id, status, assignee, reply, internal);
-                            setSelectedTicket(null);
-                            setModalStatus('');
-                          }}
-                          style={{ backgroundColor: primaryColor }}
-                          className="w-full text-white font-black py-2.5 sm:py-3 rounded-xl hover:opacity-90 transition-all shadow-xl active:scale-[0.98] uppercase tracking-widest text-[9px] sm:text-[10px]"
-                        >
-                          Simpan Perubahan
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <TicketDetailModal
+        selectedTicket={selectedTicket}
+        onClose={() => setSelectedTicket(null)}
+        isDark={isDark}
+        themeClasses={themeClasses}
+        adminUser={adminUser}
+        users={users}
+        ticketLogs={ticketLogs}
+        modalStatus={modalStatus}
+        setModalStatus={setModalStatus}
+        handleIntervention={handleIntervention}
+        handleUpdateClick={handleUpdateClick}
+        formatDate={formatDate}
+        getDeviceInfo={getDeviceInfo}
+        primaryColor={primaryColor}
+      />
 
       {/* --- MODAL: NEW TICKET FORM --- */}
-      <AnimatePresence>
-        {showForm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowForm(false)}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 40 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 40 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className={`relative w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[95vh] ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}
-            >
-              <div className={`p-3 sm:p-4 border-b shrink-0 ${themeClasses.border}`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className={`text-lg sm:text-2xl font-black tracking-tight ${themeClasses.text}`}>Tiket Baru</h2>
-                    <p className={`text-[9px] sm:text-[10px] ${themeClasses.textMuted} mt-0.5 font-medium uppercase tracking-widest`}>Beri tahu kami masalah Anda</p>
-                  </div>
-                  <button 
-                    onClick={() => setShowForm(false)}
-                    className={`p-1.5 sm:p-2 rounded-xl transition-all border ${themeClasses.input}`}
-                  >
-                    <X className="w-4 h-4 sm:w-5 h-5 text-slate-400" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-3 sm:p-6 overflow-y-auto custom-scrollbar">
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
-                  {/* Left Column: Form Fields */}
-                  <div className="space-y-3 sm:space-y-4">
-                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                      <div className="space-y-1.5">
-                        <label className={`text-[9px] font-black uppercase tracking-widest ml-1 ${themeClasses.textMuted}`}>Nama Lengkap</label>
-                        <div className="relative">
-                          <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                          <input 
-                            required
-                            type="text"
-                            placeholder="Nama Anda"
-                            className={`w-full border rounded-xl py-2.5 pl-10 pr-4 text-xs font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all ${themeClasses.input}`}
-                            value={formData.name}
-                            onChange={e => setFormData({...formData, name: e.target.value})}
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className={`text-[9px] font-black uppercase tracking-widest ml-1 ${themeClasses.textMuted}`}>Nomor HP</label>
-                        <div className="relative">
-                          <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                          <input 
-                            required
-                            type="tel"
-                            placeholder="0812..."
-                            className={`w-full border rounded-xl py-2.5 pl-10 pr-4 text-xs font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all ${themeClasses.input}`}
-                            value={formData.phone}
-                            onChange={e => setFormData({...formData, phone: e.target.value})}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Departemen</label>
-                        <div className="relative">
-                          <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                          <select 
-                            required
-                            className="w-full bg-slate-50 border border-slate-100 rounded-xl py-2.5 pl-10 pr-4 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all appearance-none cursor-pointer"
-                            value={formData.department}
-                            onChange={e => setFormData({...formData, department: e.target.value})}
-                          >
-                            <option value="" disabled>Pilih Bagian...</option>
-                            {departments.map(dept => (
-                              <option key={dept.id} value={dept.name}>{dept.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Kategori</label>
-                        <div className="relative">
-                          <Layers className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                          <select 
-                            required
-                            className="w-full bg-slate-50 border border-slate-100 rounded-xl py-2.5 pl-10 pr-4 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all appearance-none cursor-pointer"
-                            value={formData.category}
-                            onChange={e => setFormData({...formData, category: e.target.value})}
-                          >
-                            <option value="" disabled>Pilih Kategori...</option>
-                            {categories.map(cat => (
-                              <option key={cat.id} value={cat.name}>{cat.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Detail Masalah</label>
-                      <div className="relative">
-                        <MessageSquare className="absolute left-3.5 top-3.5 w-3.5 h-3.5 text-slate-400" />
-                        <textarea 
-                          required
-                          placeholder="Jelaskan masalah Anda secara detail..."
-                          rows={2}
-                          className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 pl-10 pr-4 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none transition-all resize-none"
-                          value={formData.description}
-                          onChange={e => setFormData({...formData, description: e.target.value})}
-                        />
-                      </div>
-                    </div>
-
-                    <div className={`p-3 rounded-xl border flex items-center justify-between ${
-                      gpsStatus === 'success' ? 'bg-emerald-50 border-emerald-100' :
-                      gpsStatus === 'error' ? 'bg-rose-50 border-rose-100' :
-                      'bg-slate-50 border-slate-100'
-                    }`}>
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                          gpsStatus === 'success' ? 'bg-emerald-500 text-white' :
-                          gpsStatus === 'error' ? 'bg-rose-500 text-white' :
-                          'bg-slate-200 text-slate-400'
-                        }`}>
-                          <MapPin className={`w-4 h-4 ${gpsStatus === 'loading' ? 'animate-bounce' : ''}`} />
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status GPS (Wajib)</p>
-                          <p className={`text-xs font-bold ${
-                            gpsStatus === 'success' ? 'text-emerald-700' :
-                            gpsStatus === 'error' ? 'text-rose-700' :
-                            'text-slate-600'
-                          }`}>
-                            {gpsStatus === 'loading' ? 'Mencari Lokasi...' :
-                             gpsStatus === 'success' ? 'Lokasi Terkunci' :
-                             gpsStatus === 'error' ? gpsError : 'Menunggu Izin...'}
-                          </p>
-                        </div>
-                      </div>
-                      {gpsStatus === 'error' && (
-                        <button 
-                          type="button"
-                          onClick={getGPSLocation}
-                          className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline"
-                        >
-                          Coba Lagi
-                        </button>
-                      )}
-                    </div>
-
-                    <motion.button 
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      type="submit"
-                      disabled={submitting || photoLoading || gpsStatus !== 'success'}
-                      style={{ backgroundColor: !(submitting || photoLoading || gpsStatus !== 'success') ? primaryColor : undefined }}
-                      className={`hidden lg:block w-full font-black py-4 rounded-xl transition-all shadow-xl uppercase tracking-widest text-[10px] ${
-                        submitting || photoLoading || gpsStatus !== 'success'
-                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                        : 'text-white hover:opacity-90 shadow-emerald-900/20'
-                      }`}
-                    >
-                      {submitting ? 'Mengirim...' : 'Kirim Tiket'}
-                    </motion.button>
-                  </div>
-
-                  {/* Right Column: Photo Upload */}
-                  <div className="space-y-3 sm:space-y-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                        Lampiran Foto (Opsional)
-                      </label>
-                      <div className="relative">
-                        <input 
-                          type="file"
-                          accept="image/*"
-                          onChange={handlePhotoUpload}
-                          className="hidden"
-                          id="photo-upload"
-                        />
-                        <label 
-                          htmlFor="photo-upload"
-                          className={`w-full flex flex-col items-center justify-center gap-3 sm:gap-4 py-6 sm:py-10 px-4 border-2 border-dashed rounded-[1.5rem] sm:rounded-[2rem] cursor-pointer transition-all ${
-                            formData.photo 
-                            ? 'bg-emerald-50 border-emerald-200 text-emerald-600' 
-                            : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100 hover:border-slate-200'
-                          }`}
-                        >
-                          {photoLoading ? (
-                            <>
-                              <RefreshCcw className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-emerald-600" />
-                              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">Processing...</span>
-                            </>
-                          ) : formData.photo ? (
-                            <>
-                              <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-white shadow-xl">
-                                <img src={formData.photo} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                                <div className="absolute inset-0 bg-emerald-600/40 flex items-center justify-center">
-                                  <CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                                </div>
-                              </div>
-                              <div className="text-center">
-                                <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Foto Terlampir</p>
-                                <button 
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setFormData(prev => ({ ...prev, photo: '' }));
-                                  }}
-                                  className="text-[8px] sm:text-[9px] font-bold text-rose-500 uppercase tracking-widest hover:underline mt-1"
-                                >
-                                  Hapus Foto
-                                </button>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-100">
-                                <Camera className="w-5 h-5 sm:w-6 sm:h-6" />
-                              </div>
-                              <div className="text-center">
-                                <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Klik untuk Upload</p>
-                                <p className="text-[8px] sm:text-[9px] font-medium text-slate-400 mt-1">Maksimal 5MB (JPG, PNG)</p>
-                              </div>
-                            </>
-                          )}
-                        </label>
-                      </div>
-                    </div>
-
-                    <motion.button 
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      type="submit"
-                      disabled={submitting || photoLoading || gpsStatus !== 'success'}
-                      style={{ backgroundColor: !(submitting || photoLoading || gpsStatus !== 'success') ? primaryColor : undefined }}
-                      className={`lg:hidden w-full font-black py-4 rounded-xl transition-all shadow-xl uppercase tracking-widest text-[10px] ${
-                        submitting || photoLoading || gpsStatus !== 'success'
-                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                        : 'text-white hover:opacity-90 shadow-emerald-900/20'
-                      }`}
-                    >
-                      {submitting ? 'Mengirim...' : 'Kirim Tiket'}
-                    </motion.button>
-                  </div>
-                </form>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <NewTicketModal
+        show={showForm}
+        onClose={() => setShowForm(false)}
+        formData={formData}
+        setFormData={setFormData}
+        handleSubmit={handleSubmit}
+        handlePhotoUpload={handlePhotoUpload}
+        photoLoading={photoLoading}
+        gpsStatus={gpsStatus}
+        gpsError={gpsError}
+        getGPSLocation={getGPSLocation}
+        submitting={submitting}
+        departments={departments}
+        categories={categories}
+        isDark={isDark}
+        themeClasses={themeClasses}
+        primaryColor={primaryColor}
+      />
 
       {/* --- MODAL: MOBILE FILTER --- */}
-      <AnimatePresence>
-        {showMobileFilter && (
-          <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowMobileFilter(false)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className={`relative w-full max-w-lg rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${themeClasses.card}`}
-            >
-              <div className={`p-6 border-b shrink-0 flex items-center justify-between ${themeClasses.border}`}>
-                <div>
-                  <h2 className={`text-xl font-black tracking-tight ${themeClasses.text}`}>Filter Antrian</h2>
-                  <p className={`text-[10px] ${themeClasses.textMuted} mt-0.5 font-medium uppercase tracking-widest`}>Sesuaikan tampilan antrian</p>
-                </div>
-                <button 
-                  onClick={() => setShowMobileFilter(false)}
-                  className={`p-2 rounded-xl transition-all border ${themeClasses.input}`}
-                >
-                  <X className="w-5 h-5 text-slate-400" />
-                </button>
-              </div>
+      <MobileFilterModal 
+        show={showMobileFilter}
+        onClose={() => setShowMobileFilter(false)}
+        isDark={isDark}
+        themeClasses={themeClasses}
+        tempFilters={tempFilters}
+        setTempFilters={setTempFilters}
+        departments={departments}
+        STATUSES={STATUSES}
+        onReset={() => {
+          setFilterDept('');
+          setFilterStatus('');
+          setFilterDate('');
+          setSearchQuery('');
+          setTempFilters({ dept: '', status: '', date: '', search: '' });
+          setShowMobileFilter(false);
+        }}
+        onApply={() => {
+          setFilterDept(tempFilters.dept);
+          setFilterStatus(tempFilters.status);
+          setFilterDate(tempFilters.date);
+          setSearchQuery(tempFilters.search);
+          setShowMobileFilter(false);
+        }}
+      />
 
-              <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
-                {/* Search Filter */}
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Cari Tiket</label>
-                  <div className="relative">
-                    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                    <input 
-                      type="text"
-                      placeholder="ID, Nama, atau Masalah..."
-                      value={tempFilters.search}
-                      onChange={(e) => setTempFilters({ ...tempFilters, search: e.target.value })}
-                      className={`w-full border rounded-xl py-3 pl-10 pr-4 text-xs font-bold outline-none transition-all ${themeClasses.input}`}
-                    />
-                  </div>
-                </div>
+      {/* Success Modal */}
+      <SuccessModal 
+        show={showSuccess}
+        themeClasses={themeClasses}
+      />
 
-                {/* Department Filter */}
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Bagian / Departemen</label>
-                  <div className="flex flex-wrap gap-2">
-                    <button 
-                      onClick={() => setTempFilters({ ...tempFilters, dept: '' })}
-                      className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${
-                        tempFilters.dept === '' 
-                        ? 'bg-emerald-600 border-emerald-600 text-white' 
-                        : isDark 
-                          ? 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750' 
-                          : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'
-                      }`}
-                    >
-                      Semua
-                    </button>
-                    {departments.map(dept => (
-                      <button 
-                        key={dept.id}
-                        onClick={() => setTempFilters({ ...tempFilters, dept: dept.name })}
-                        className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${
-                          tempFilters.dept === dept.name 
-                          ? 'bg-emerald-600 border-emerald-600 text-white' 
-                          : isDark 
-                            ? 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750' 
-                            : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'
-                        }`}
-                      >
-                        {dept.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+      <LoginModal 
+        showLogin={showLogin}
+        setShowLogin={setShowLogin}
+        isDark={isDark}
+        themeClasses={themeClasses}
+        loginData={loginData}
+        setLoginData={setLoginData}
+        handleLogin={handleLogin}
+        primaryColor={primaryColor}
+      />
 
-                {/* Status Filter */}
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Status Tiket</label>
-                  <div className="flex flex-wrap gap-2">
-                    <button 
-                      onClick={() => setTempFilters({ ...tempFilters, status: '' })}
-                      className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${
-                        tempFilters.status === '' 
-                        ? 'bg-emerald-600 border-emerald-600 text-white' 
-                        : isDark 
-                          ? 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750' 
-                          : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'
-                      }`}
-                    >
-                      Semua
-                    </button>
-                    {STATUSES.map(status => (
-                      <button 
-                        key={status}
-                        onClick={() => setTempFilters({ ...tempFilters, status: status })}
-                        className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${
-                          tempFilters.status === status 
-                          ? 'bg-emerald-600 border-emerald-600 text-white' 
-                          : isDark 
-                            ? 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750' 
-                            : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'
-                        }`}
-                      >
-                        {status}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+      <SettingsModal 
+        showSettings={showSettings}
+        setShowSettings={setShowSettings}
+        isDark={isDark}
+        themeClasses={themeClasses}
+        settingsTab={settingsTab}
+        setSettingsTab={setSettingsTab}
+        appSettings={appSettings}
+        setAppSettings={setAppSettings}
+        LOGO_OPTIONS={LOGO_OPTIONS}
+        newEmailInput={newEmailInput}
+        setNewEmailInput={setNewEmailInput}
+        showEmailInput={showEmailInput}
+        setShowEmailInput={setShowEmailInput}
+        handleUpdateSettings={handleUpdateSettings}
+        primaryColor={primaryColor}
+        adminUser={adminUser}
+        itPersonnel={itPersonnel}
+        departments={departments}
+        categories={categories}
+        addingType={addingType}
+        setAddingType={setAddingType}
+        newItemName={newItemName}
+        setNewItemName={setNewItemName}
+        handleManagementAction={handleManagementAction}
+      />
 
-                {/* Date Filter */}
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tanggal Spesifik</label>
-                  <div className="relative">
-                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input 
-                      type="date"
-                      value={tempFilters.date}
-                      onChange={(e) => setTempFilters({ ...tempFilters, date: e.target.value })}
-                      className={`w-full border rounded-xl py-3 pl-12 pr-4 text-xs font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all ${
-                        isDark 
-                        ? 'bg-slate-800 border-slate-700 text-slate-200' 
-                        : 'bg-slate-50 border-slate-100 text-slate-700'
-                      }`}
-                    />
-                  </div>
-                </div>
-              </div>
+      <ConfirmModal 
+        show={showResetConfirm}
+        onClose={() => setShowResetConfirm(false)}
+        onConfirm={handleReset}
+        title="Reset All Data?"
+        message="This action will permanently delete all tickets in the queue. This cannot be undone."
+        confirmText="Yes, Reset"
+        isDark={isDark}
+        themeClasses={themeClasses}
+        type="danger"
+      />
 
-              <div className={`p-6 border-t shrink-0 flex gap-3 ${
-                isDark ? 'border-slate-800' : 'border-slate-100'
-              }`}>
-                <button 
-                  onClick={() => {
-                    setFilterDept('');
-                    setFilterStatus('');
-                    setFilterDate('');
-                    setSearchQuery('');
-                    setTempFilters({ dept: '', status: '', date: '', search: '' });
-                    setShowMobileFilter(false);
-                  }}
-                  className={`flex-1 py-4 font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all ${
-                    isDark ? 'bg-slate-800 text-slate-400 hover:bg-slate-750' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  Reset
-                </button>
-                <button 
-                  onClick={() => {
-                    setFilterDept(tempFilters.dept);
-                    setFilterStatus(tempFilters.status);
-                    setFilterDate(tempFilters.date);
-                    setSearchQuery(tempFilters.search);
-                    setShowMobileFilter(false);
-                  }}
-                  className={`flex-[2] py-4 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-lg transition-all active:scale-[0.98] ${
-                    isDark ? 'bg-emerald-500 shadow-emerald-900/40 hover:bg-emerald-400' : 'bg-emerald-600 shadow-emerald-900/20 hover:opacity-90'
-                  }`}
-                >
-                  Apply Filters
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-
-        {/* Success Modal */}
-        {showSuccess && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
-            />
-            <motion.div 
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.5, opacity: 0 }}
-              className={`relative w-full max-w-sm rounded-[2.5rem] p-8 text-center shadow-2xl ${themeClasses.card}`}
-            >
-              <div className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/30">
-                <motion.div
-                  initial={{ pathLength: 0 }}
-                  animate={{ pathLength: 1 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                >
-                  <CheckCircle2 className="w-10 h-10 text-white" />
-                </motion.div>
-              </div>
-              <h2 className={`text-2xl font-black tracking-tight mb-2 ${themeClasses.text}`}>Tiket Terkirim!</h2>
-              <p className={`text-sm font-medium ${themeClasses.textMuted} leading-relaxed`}>
-                Laporan Anda telah berhasil masuk ke antrian IT. Tim kami akan segera memprosesnya.
-              </p>
-              <motion.div 
-                className="mt-8 h-1 bg-slate-100 rounded-full overflow-hidden"
-              >
-                <motion.div 
-                  initial={{ width: '100%' }}
-                  animate={{ width: '0%' }}
-                  transition={{ duration: 3, ease: 'linear' }}
-                  className="h-full bg-emerald-500"
-                />
-              </motion.div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* --- MODAL: ADMIN LOGIN --- */}
-      <AnimatePresence>
-        {showLogin && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowLogin(false)}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className={`relative w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden ${isDark ? 'bg-zinc-900 border border-zinc-800' : 'bg-white'}`}
-            >
-              <div className="p-10">
-                <div className="flex flex-col items-center text-center mb-10">
-                  <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-4 shadow-xl ${isDark ? 'bg-zinc-800 text-white shadow-zinc-950' : 'bg-slate-900 text-white shadow-slate-200'}`}>
-                    <Lock className="w-8 h-8" />
-                  </div>
-                  <h2 className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Admin Portal</h2>
-                  <p className={`text-sm mt-1 font-medium ${isDark ? 'text-zinc-400' : 'text-slate-400'}`}>Authorized personnel only</p>
-                </div>
-
-                <form onSubmit={handleLogin} className="space-y-6">
-                  {/* Quick Login for Prototype */}
-                  <div className={`rounded-2xl p-4 border ${isDark ? 'bg-zinc-800/50 border-zinc-700' : 'bg-slate-50 border-slate-100'}`}>
-                    <p className={`text-[10px] font-black uppercase tracking-widest mb-3 text-center ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Quick Access (Prototype)</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { u: 'yudha', l: 'Yudha' },
-                        { u: 'bayu', l: 'Bayu' },
-                        { u: 'dita', l: 'Dita' }
-                      ].map(acc => (
-                        <button
-                          key={acc.u}
-                          type="button"
-                          onClick={() => {
-                            setLoginData({ username: acc.u, password: '' });
-                          }}
-                          className={`py-2 px-1 rounded-xl text-[10px] font-bold transition-all border ${
-                            loginData.username === acc.u 
-                            ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-200' 
-                            : isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-600' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-900 hover:text-slate-900'
-                          }`}
-                        >
-                          {acc.l}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className={`text-[10px] font-black uppercase tracking-widest ml-1 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Username</label>
-                    <div className="relative">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                      <input 
-                        required
-                        type="text"
-                        placeholder="Admin username"
-                        className={`w-full border rounded-2xl py-4 pl-11 pr-4 text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all ${isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-slate-50 border-slate-100 text-slate-700'}`}
-                        value={loginData.username}
-                        onChange={e => setLoginData({...loginData, username: e.target.value})}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className={`text-[10px] font-black uppercase tracking-widest ml-1 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Password</label>
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                      <input 
-                        required
-                        type="password"
-                        placeholder="••••••••"
-                        className={`w-full border rounded-2xl py-4 pl-11 pr-4 text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all ${isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-slate-50 border-slate-100 text-slate-700'}`}
-                        value={loginData.password}
-                        onChange={e => setLoginData({...loginData, password: e.target.value})}
-                      />
-                    </div>
-                  </div>
-
-                  <button 
-                    type="submit"
-                    className="w-full bg-slate-900 hover:bg-black text-white font-black py-5 rounded-2xl shadow-xl shadow-slate-200 transition-all active:scale-[0.98] uppercase tracking-widest text-xs mt-4"
-                  >
-                    Authenticate
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setShowLogin(false)}
-                    className="w-full text-slate-400 text-xs font-bold hover:text-slate-600 transition-colors"
-                  >
-                    Cancel and Return
-                  </button>
-                </form>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* --- MODAL: APP SETTINGS --- */}
-      <AnimatePresence>
-        {showSettings && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowSettings(false)}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className={`relative w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-colors ${themeClasses.card} ${themeClasses.text}`}
-            >
-              <div className={`p-6 border-b shrink-0 ${themeClasses.border}`}>
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className={`text-2xl font-bold ${themeClasses.text}`}>Admin Control Panel</h2>
-                    <p className={`text-sm ${themeClasses.textMuted} mt-1`}>Customize your helpdesk and manage data</p>
-                  </div>
-                  <button 
-                    onClick={() => setShowSettings(false)}
-                    className={`p-2 hover:bg-slate-100/10 rounded-full transition-colors ${themeClasses.text}`}
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-
-                {/* Tab Navigation */}
-                <div className="flex gap-1 p-1 bg-slate-100/50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700">
-                  {[
-                    { id: 'general', label: 'General', icon: SlidersHorizontal },
-                    { id: 'branding', label: 'Branding', icon: ImageIcon },
-                    { id: 'notifications', label: 'Notifications', icon: Bell },
-                    { id: 'data', label: 'Data Management', icon: Layers }
-                  ].map(tab => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setSettingsTab(tab.id as any)}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                        settingsTab === tab.id 
-                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm ring-1 ring-slate-200 dark:ring-slate-600' 
-                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                      }`}
-                    >
-                      <tab.icon className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">{tab.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
-                {settingsTab === 'general' && (
-                  <form onSubmit={handleUpdateSettings} className="space-y-8">
-                    <section className="space-y-6">
-                      <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500">General Settings</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div className="space-y-1.5">
-                          <label className={`text-xs font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Application Name</label>
-                          <input 
-                            required
-                            type="text"
-                            className={`w-full border rounded-xl py-3 px-4 text-sm outline-none transition-all ${themeClasses.input}`}
-                            value={appSettings.app_name}
-                            onChange={e => setAppSettings({...appSettings, app_name: e.target.value})}
-                          />
-                        </div>
-                      </div>
-                    </section>
-
-                    <section className="space-y-6">
-                      <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500">Frontend Theme</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div className="space-y-1.5">
-                          <label className={`text-xs font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Theme Mode</label>
-                          <div className={`flex gap-2 p-1 rounded-xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
-                            <button
-                              type="button"
-                              onClick={() => setAppSettings({...appSettings, theme_mode: 'light'})}
-                              className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                                appSettings.theme_mode === 'light' ? 'bg-white text-slate-900 shadow-sm' : `${themeClasses.textMuted} hover:${themeClasses.text}`
-                              }`}
-                            >
-                              Light
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setAppSettings({...appSettings, theme_mode: 'dark'})}
-                              className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                                appSettings.theme_mode === 'dark' ? (isDark ? 'bg-slate-700 text-white shadow-sm' : 'bg-slate-800 text-white shadow-sm') : `${themeClasses.textMuted} hover:${themeClasses.text}`
-                              }`}
-                            >
-                              Dark
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="space-y-3">
-                          <label className="text-xs font-bold opacity-60 uppercase tracking-wider ml-1">Primary Color</label>
-                          <div className="flex flex-wrap gap-3">
-                            {['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#000000'].map(color => (
-                              <button
-                                key={color}
-                                type="button"
-                                onClick={() => setAppSettings({...appSettings, primary_color: color})}
-                                className={`w-10 h-10 rounded-full border-4 transition-all ${
-                                  appSettings.primary_color === color ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'
-                                }`}
-                                style={{ backgroundColor: color }}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </section>
-
-                    <section className="space-y-6">
-                      <h3 className="text-xs font-black uppercase tracking-widest text-indigo-500">Admin Theme</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div className="space-y-1.5">
-                          <label className={`text-xs font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Admin Theme Mode</label>
-                          <div className={`flex gap-2 p-1 rounded-xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
-                            <button
-                              type="button"
-                              onClick={() => setAppSettings({...appSettings, admin_theme_mode: 'light'})}
-                              className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                                appSettings.admin_theme_mode === 'light' ? 'bg-white text-slate-900 shadow-sm' : `${themeClasses.textMuted} hover:${themeClasses.text}`
-                              }`}
-                            >
-                              Light
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setAppSettings({...appSettings, admin_theme_mode: 'dark'})}
-                              className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                                appSettings.admin_theme_mode === 'dark' ? (isDark ? 'bg-slate-700 text-white shadow-sm' : 'bg-slate-800 text-white shadow-sm') : `${themeClasses.textMuted} hover:${themeClasses.text}`
-                              }`}
-                            >
-                              Dark
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="space-y-3">
-                          <label className={`text-xs font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Admin Primary Color</label>
-                          <div className="flex flex-wrap gap-3">
-                            {['#6366f1', '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#000000'].map(color => (
-                              <button
-                                key={color}
-                                type="button"
-                                onClick={() => setAppSettings({...appSettings, admin_primary_color: color})}
-                                className={`w-10 h-10 rounded-full border-4 transition-all ${
-                                  appSettings.admin_primary_color === color ? (isDark ? 'border-white scale-110 shadow-lg' : 'border-slate-900 scale-110 shadow-lg') : 'border-transparent opacity-60 hover:opacity-100'
-                                }`}
-                                style={{ backgroundColor: color }}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </section>
-
-                    <button 
-                      type="submit"
-                      style={{ backgroundColor: primaryColor }}
-                      className="w-full hover:opacity-90 text-white font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-[0.98]"
-                    >
-                      Simpan Pengaturan General
-                    </button>
-                  </form>
-                )}
-
-                {settingsTab === 'branding' && (
-                  <form onSubmit={handleUpdateSettings} className="space-y-8">
-                    <section className="space-y-6">
-                      <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500">Custom Branding</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                            <ImageIcon className="w-3 h-3" /> Custom Logo
-                          </label>
-                          <div className="flex items-center gap-4">
-                            {appSettings.custom_logo && (
-                              <div className="h-16 w-16 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 flex items-center justify-center overflow-hidden">
-                                <img src={appSettings.custom_logo} alt="Preview" className="max-h-full max-w-full object-contain" referrerPolicy="no-referrer" />
-                              </div>
-                            )}
-                            <label className="flex-1 cursor-pointer bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-center shadow-sm">
-                              Upload Logo
-                              <input type="file" className="hidden" accept="image/*" onChange={handleCustomLogoUpload} />
-                            </label>
-                          </div>
-                        </div>
-
-                        <div className="space-y-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                            <Globe className="w-3 h-3" /> Custom Favicon
-                          </label>
-                          <div className="flex items-center gap-4">
-                            {appSettings.custom_favicon && (
-                              <div className="h-12 w-12 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 flex items-center justify-center overflow-hidden">
-                                <img src={appSettings.custom_favicon} alt="Favicon" className="max-h-full max-w-full object-contain" referrerPolicy="no-referrer" />
-                              </div>
-                            )}
-                            <label className="flex-1 cursor-pointer bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-center shadow-sm">
-                              Upload Favicon
-                              <input type="file" className="hidden" accept="image/*" onChange={handleCustomFaviconUpload} />
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-
-                      {(appSettings.custom_logo || appSettings.custom_favicon) && (
-                        <div className="flex justify-center">
-                          <button 
-                            type="button"
-                            onClick={() => setAppSettings(prev => ({ ...prev, custom_logo: '', custom_favicon: '' }))}
-                            className="text-[10px] text-rose-500 font-black hover:underline uppercase tracking-widest flex items-center gap-2"
-                          >
-                            <Trash2 className="w-3 h-3" /> Reset to Default Branding
-                          </button>
-                        </div>
-                      )}
-                    </section>
-
-                    <section className="space-y-6">
-                      <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500">Preset Logo Options</h3>
-                      <div className="grid grid-cols-5 gap-3">
-                        {LOGO_OPTIONS.map(option => (
-                          <button
-                            key={option.id}
-                            type="button"
-                            onClick={() => setAppSettings({...appSettings, logo_type: option.id})}
-                            className={`aspect-square rounded-2xl flex items-center justify-center border-2 transition-all ${
-                              appSettings.logo_type === option.id 
-                              ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg scale-105' 
-                              : `${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.textMuted} hover:${themeClasses.text} hover:scale-105`
-                            }`}
-                          >
-                            <option.icon className="w-8 h-8" />
-                          </button>
-                        ))}
-                      </div>
-                    </section>
-
-                    <button 
-                      type="submit"
-                      style={{ backgroundColor: primaryColor }}
-                      className="w-full hover:opacity-90 text-white font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-[0.98]"
-                    >
-                      Simpan Pengaturan Branding
-                    </button>
-                  </form>
-                )}
-
-                {settingsTab === 'notifications' && (
-                  <form onSubmit={handleUpdateSettings} className="space-y-8">
-                    <section className="space-y-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500">Email Notifications</h3>
-                          <p className={`text-[10px] ${themeClasses.textMuted} mt-1`}>Konfigurasi pengiriman notifikasi email</p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1.5">
-                            <label className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>SMTP Host</label>
-                            <input 
-                              type="text"
-                              placeholder="e.g. smtp.gmail.com"
-                              className={`w-full border rounded-xl py-2.5 px-4 text-xs outline-none transition-all ${themeClasses.input}`}
-                              value={appSettings.smtp_host}
-                              onChange={e => setAppSettings({...appSettings, smtp_host: e.target.value})}
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>SMTP Port</label>
-                            <input 
-                              type="text"
-                              placeholder="465 or 587"
-                              className={`w-full border rounded-xl py-2.5 px-4 text-xs outline-none transition-all ${themeClasses.input}`}
-                              value={appSettings.smtp_port}
-                              onChange={e => setAppSettings({...appSettings, smtp_port: e.target.value})}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1.5">
-                            <label className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>SMTP User</label>
-                            <input 
-                              type="text"
-                              placeholder="Email pengirim..."
-                              className={`w-full border rounded-xl py-2.5 px-4 text-xs outline-none transition-all ${themeClasses.input}`}
-                              value={appSettings.smtp_user}
-                              onChange={e => setAppSettings({...appSettings, smtp_user: e.target.value})}
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>SMTP Password</label>
-                            <input 
-                              type="password"
-                              placeholder="Password / App Password..."
-                              className={`w-full border rounded-xl py-2.5 px-4 text-xs outline-none transition-all ${themeClasses.input}`}
-                              value={appSettings.smtp_pass}
-                              onChange={e => setAppSettings({...appSettings, smtp_pass: e.target.value})}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Sender Name (From)</label>
-                          <input 
-                            type="text"
-                            placeholder="e.g. IT Support Portal"
-                            className={`w-full border rounded-xl py-2.5 px-4 text-xs outline-none transition-all ${themeClasses.input}`}
-                            value={appSettings.smtp_from}
-                            onChange={e => setAppSettings({...appSettings, smtp_from: e.target.value})}
-                          />
-                        </div>
-
-                        <div className="space-y-3 pt-2">
-                          <div className="flex items-center justify-between">
-                            <label className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Recipient Emails</label>
-                            <button 
-                              type="button"
-                              onClick={() => {
-                                const email = prompt('Masukkan email penerima:');
-                                if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                                  setAppSettings({
-                                    ...appSettings,
-                                    notification_emails: [...appSettings.notification_emails, email.trim()]
-                                  });
-                                } else if (email) {
-                                  alert('Format email tidak valid');
-                                }
-                              }}
-                              className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
-                            >
-                              + Tambah Email
-                            </button>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            {appSettings.notification_emails.length === 0 ? (
-                              <p className={`text-[10px] italic ${themeClasses.textMuted}`}>Belum ada email notifikasi yang didaftarkan.</p>
-                            ) : (
-                              appSettings.notification_emails.map((email, idx) => (
-                                <div key={idx} className={`flex items-center justify-between ${themeClasses.bgSecondary} border ${themeClasses.border} p-2.5 rounded-xl group`}>
-                                  <div className="flex items-center gap-2">
-                                    <div className={`w-6 h-6 ${isDark ? 'bg-slate-700' : 'bg-slate-200'} rounded-lg flex items-center justify-center text-slate-400`}>
-                                      <Globe className="w-3 h-3" />
-                                    </div>
-                                    <span className={`text-xs font-bold ${themeClasses.text}`}>{email}</span>
-                                  </div>
-                                  <button 
-                                    type="button"
-                                    onClick={() => {
-                                      const newEmails = [...appSettings.notification_emails];
-                                      newEmails.splice(idx, 1);
-                                      setAppSettings({ ...appSettings, notification_emails: newEmails });
-                                    }}
-                                    className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </section>
-
-                    <section className="space-y-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-xs font-black uppercase tracking-widest text-blue-400">Telegram Notifications</h3>
-                          <p className={`text-[10px] ${themeClasses.textMuted} mt-1`}>Gunakan Bot Telegram untuk menerima notifikasi</p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="space-y-1.5">
-                          <label className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Bot Token</label>
-                          <input 
-                            type="password"
-                            placeholder="Masukkan Bot Token (dari @BotFather)..."
-                            className={`w-full border rounded-xl py-2.5 px-4 text-xs outline-none transition-all ${themeClasses.input}`}
-                            value={appSettings.telegram_bot_token}
-                            onChange={e => setAppSettings({...appSettings, telegram_bot_token: e.target.value})}
-                          />
-                        </div>
-
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <label className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>Chat IDs</label>
-                            <button 
-                              type="button"
-                              onClick={() => {
-                                const chatId = prompt('Masukkan Chat ID Telegram (bisa didapat dari @userinfobot):');
-                                if (chatId && chatId.trim()) {
-                                  setAppSettings({
-                                    ...appSettings,
-                                    telegram_chat_ids: [...appSettings.telegram_chat_ids, chatId.trim()]
-                                  });
-                                }
-                              }}
-                              className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
-                            >
-                              + Tambah Chat ID
-                            </button>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            {appSettings.telegram_chat_ids.length === 0 ? (
-                              <p className={`text-[10px] italic ${themeClasses.textMuted}`}>Belum ada Chat ID yang didaftarkan.</p>
-                            ) : (
-                              appSettings.telegram_chat_ids.map((id, idx) => (
-                                <div key={idx} className={`flex items-center justify-between ${themeClasses.bgSecondary} border ${themeClasses.border} p-2.5 rounded-xl group`}>
-                                  <div className="flex items-center gap-2">
-                                    <div className={`w-6 h-6 ${isDark ? 'bg-slate-700' : 'bg-slate-200'} rounded-lg flex items-center justify-center text-slate-400`}>
-                                      <Send className="w-3 h-3" />
-                                    </div>
-                                    <span className={`text-xs font-mono ${themeClasses.text}`}>{id}</span>
-                                  </div>
-                                  <button 
-                                    type="button"
-                                    onClick={() => {
-                                      const newIds = [...appSettings.telegram_chat_ids];
-                                      newIds.splice(idx, 1);
-                                      setAppSettings({ ...appSettings, telegram_chat_ids: newIds });
-                                    }}
-                                    className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </section>
-
-                    <button 
-                      type="submit"
-                      style={{ backgroundColor: primaryColor }}
-                      className="w-full hover:opacity-90 text-white font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-[0.98]"
-                    >
-                      Simpan Pengaturan Notifikasi
-                    </button>
-                  </form>
-                )}
-
-                {settingsTab === 'data' && (
-                  <div className="space-y-8">
-                    <section className="space-y-6">
-                      <h3 className="text-xs font-black uppercase tracking-widest text-blue-500">Data Management</h3>
-                      
-                      {/* IT Personnel */}
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <label className={`text-xs font-bold ${themeClasses.textMuted} uppercase tracking-wider`}>Tim IT</label>
-                          <button 
-                            onClick={() => setAddingType(addingType === 'it' ? null : 'it')} 
-                            className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
-                          >
-                            {addingType === 'it' ? 'Batal' : '+ Tambah IT'}
-                          </button>
-                        </div>
-                        
-                        {addingType === 'it' && (
-                          <div className="flex gap-2">
-                            <input 
-                              autoFocus
-                              type="text"
-                              value={newItemName}
-                              onChange={e => setNewItemName(e.target.value)}
-                              placeholder="Nama IT baru..."
-                              className={`flex-1 border rounded-lg px-3 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
-                              onKeyDown={e => e.key === 'Enter' && handleManagementAction('it', 'add')}
-                            />
-                            <button 
-                              onClick={() => handleManagementAction('it', 'add')}
-                              className="bg-emerald-600 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase"
-                            >
-                              Simpan
-                            </button>
-                          </div>
-                        )}
-
-                        <div className="flex flex-wrap gap-2">
-                          {itPersonnel.map(it => (
-                            <div key={it.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
-                              <span className={`text-xs font-bold ${themeClasses.text}`}>{it.name}</span>
-                              <button onClick={() => handleManagementAction('it', 'delete', it)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Departments */}
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <label className="text-xs font-bold opacity-60 uppercase tracking-wider">Departemen</label>
-                          <button 
-                            onClick={() => setAddingType(addingType === 'dept' ? null : 'dept')} 
-                            className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
-                          >
-                            {addingType === 'dept' ? 'Batal' : '+ Tambah Departemen'}
-                          </button>
-                        </div>
-
-                        {addingType === 'dept' && (
-                          <div className="flex gap-2">
-                            <input 
-                              autoFocus
-                              type="text"
-                              value={newItemName}
-                              onChange={e => setNewItemName(e.target.value)}
-                              placeholder="Nama Departemen baru..."
-                              className={`flex-1 border rounded-lg px-3 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
-                              onKeyDown={e => e.key === 'Enter' && handleManagementAction('dept', 'add')}
-                            />
-                            <button 
-                              onClick={() => handleManagementAction('dept', 'add')}
-                              className="bg-emerald-600 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase"
-                            >
-                              Simpan
-                            </button>
-                          </div>
-                        )}
-
-                        <div className="flex flex-wrap gap-2">
-                          {departments.map(dept => (
-                            <div key={dept.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
-                              <span className={`text-xs font-bold ${themeClasses.text}`}>{dept.name}</span>
-                              <button onClick={() => handleManagementAction('dept', 'delete', dept)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Categories */}
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <label className="text-xs font-bold opacity-60 uppercase tracking-wider">Kategori</label>
-                          <button 
-                            onClick={() => setAddingType(addingType === 'cat' ? null : 'cat')} 
-                            className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
-                          >
-                            {addingType === 'cat' ? 'Batal' : '+ Tambah Kategori'}
-                          </button>
-                        </div>
-
-                        {addingType === 'cat' && (
-                          <div className="flex gap-2">
-                            <input 
-                              autoFocus
-                              type="text"
-                              value={newItemName}
-                              onChange={e => setNewItemName(e.target.value)}
-                              placeholder="Nama Kategori baru..."
-                              className={`flex-1 border rounded-lg px-3 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
-                              onKeyDown={e => e.key === 'Enter' && handleManagementAction('cat', 'add')}
-                            />
-                            <button 
-                              onClick={() => handleManagementAction('cat', 'add')}
-                              className="bg-emerald-600 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase"
-                            >
-                              Simpan
-                            </button>
-                          </div>
-                        )}
-
-                        <div className="flex flex-wrap gap-2">
-                          {categories.map(cat => (
-                            <div key={cat.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
-                              <span className={`text-xs font-bold ${themeClasses.text}`}>{cat.name}</span>
-                              <button onClick={() => handleManagementAction('cat', 'delete', cat)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Reset Confirmation Modal */}
-      <AnimatePresence>
-        {showResetConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowResetConfirm(false)}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className={`relative w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden ${themeClasses.card} border ${themeClasses.border}`}
-            >
-              <div className="p-8 text-center">
-                <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Trash2 className="text-rose-600 w-8 h-8" />
-                </div>
-                <h2 className={`text-xl font-bold mb-2 ${themeClasses.text}`}>Reset All Data?</h2>
-                <p className={`text-sm mb-8 leading-relaxed ${themeClasses.textMuted}`}>
-                  This action will permanently delete all tickets in the queue. This cannot be undone.
-                </p>
-                <div className="flex gap-3">
-                  <button 
-                    onClick={() => setShowResetConfirm(false)}
-                    className={`flex-1 px-4 py-3 font-bold rounded-xl transition-all ${themeClasses.bgSecondary} hover:opacity-80 ${themeClasses.text}`}
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    onClick={handleReset}
-                    className="flex-1 px-4 py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl shadow-lg shadow-rose-100 transition-all active:scale-[0.98]"
-                  >
-                    Yes, Reset
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Update Confirmation Modal */}
-      <AnimatePresence>
-        {pendingUpdate && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setPendingUpdate(null)}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className={`relative w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden ${themeClasses.card} border ${themeClasses.border}`}
-            >
-              <div className="p-8 text-center">
-                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <CheckCircle2 className="text-emerald-600 w-8 h-8" />
-                </div>
-                <h2 className={`text-xl font-bold mb-2 ${themeClasses.text}`}>Konfirmasi Perubahan</h2>
-                <p className={`text-sm mb-6 leading-relaxed ${themeClasses.textMuted}`}>
-                  Apakah Anda yakin ingin memperbarui status menjadi <span className={`font-bold ${themeClasses.text}`}>{pendingUpdate.status}</span> dan menyimpan data penanganan ini?
-                </p>
-                <div className="flex gap-3">
-                  <button 
-                    onClick={() => setPendingUpdate(null)}
-                    className={`flex-1 px-4 py-3 font-bold rounded-xl transition-all ${themeClasses.bgSecondary} hover:opacity-80 ${themeClasses.text}`}
-                  >
-                    Batal
-                  </button>
-                  <button 
-                    onClick={confirmUpdate}
-                    className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-100 transition-all active:scale-[0.98]"
-                  >
-                    Ya, Simpan
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <ConfirmModal 
+        show={!!pendingUpdate}
+        onClose={() => setPendingUpdate(null)}
+        onConfirm={confirmUpdate}
+        title="Konfirmasi Perubahan"
+        message={pendingUpdate ? `Apakah Anda yakin ingin memperbarui status menjadi ${pendingUpdate.status} dan menyimpan data penanganan ini?` : ''}
+        confirmText="Ya, Simpan"
+        isDark={isDark}
+        themeClasses={themeClasses}
+        type="success"
+      />
 
       <style>{`
         @keyframes spin-slow {
@@ -3396,97 +1585,13 @@ export default function App() {
           animation: spin-slow 3s linear infinite;
         }
       `}</style>
-      {/* Takeover/Reassign Confirmation Modal */}
-      <AnimatePresence>
-        {showTakeoverConfirm && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowTakeoverConfirm(null)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className={`relative w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden ${isDark ? 'bg-zinc-900 border border-zinc-800' : 'bg-white'}`}
-            >
-              <div className="p-8">
-                <div className="flex flex-col items-center text-center mb-8">
-                  <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-4 shadow-xl ${
-                    showTakeoverConfirm.type === 'takeover' ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'
-                  }`}>
-                    {showTakeoverConfirm.type === 'takeover' ? <ShieldAlert className="w-8 h-8" /> : <UserPlus className="w-8 h-8" />}
-                  </div>
-                  <h2 className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    {showTakeoverConfirm.type === 'takeover' ? 'Konfirmasi Ambil Alih' : 'Pindahkan Tiket'}
-                  </h2>
-                  <p className={`text-sm mt-2 font-medium ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
-                    {showTakeoverConfirm.type === 'takeover' 
-                      ? 'Apakah Anda yakin ingin mengambil alih tiket ini? Tindakan ini akan tercatat dalam riwayat tiket.'
-                      : showTakeoverConfirm.targetUser 
-                        ? `Apakah Anda yakin ingin menugaskan tiket ini kepada ${showTakeoverConfirm.targetUser}?`
-                        : 'Pilih IT yang akan menangani tiket ini:'}
-                  </p>
-                </div>
-
-                {showTakeoverConfirm.type === 'reassign' && !showTakeoverConfirm.targetUser && (
-                  <div className="grid grid-cols-1 gap-2 mb-8 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
-                    {users.map(u => (
-                      <button
-                        key={u.id}
-                        onClick={() => setShowTakeoverConfirm({ ...showTakeoverConfirm, targetUser: u.username })}
-                        className={`w-full py-3 px-4 rounded-xl border font-bold text-sm transition-all flex items-center justify-between group ${
-                          isDark 
-                          ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:border-blue-500 hover:text-blue-400' 
-                          : 'bg-slate-50 border-slate-100 text-slate-600 hover:border-blue-500 hover:text-blue-600'
-                        }`}
-                      >
-                        <span>{u.full_name || u.username}</span>
-                        <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {(showTakeoverConfirm.type === 'takeover' || showTakeoverConfirm.targetUser) && (
-                  <div className="flex gap-3">
-                    <button 
-                      onClick={() => setShowTakeoverConfirm(null)}
-                      className={`flex-1 py-4 font-black text-xs uppercase tracking-widest rounded-2xl transition-all ${
-                        isDark ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-750' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                      }`}
-                    >
-                      Batal
-                    </button>
-                    <button 
-                      onClick={() => executeIntervention(showTakeoverConfirm.id, showTakeoverConfirm.type, showTakeoverConfirm.targetUser)}
-                      className={`flex-1 py-4 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg transition-all active:scale-[0.98] ${
-                        showTakeoverConfirm.type === 'takeover' ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-900/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-900/20'
-                      }`}
-                    >
-                      Ya, Lanjutkan
-                    </button>
-                  </div>
-                )}
-                
-                {showTakeoverConfirm.type === 'reassign' && !showTakeoverConfirm.targetUser && (
-                  <button 
-                    onClick={() => setShowTakeoverConfirm(null)}
-                    className={`w-full py-4 font-black text-xs uppercase tracking-widest rounded-2xl transition-all ${
-                      isDark ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-750' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                    }`}
-                  >
-                    Batal
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <TakeoverModal 
+        showTakeoverConfirm={showTakeoverConfirm}
+        setShowTakeoverConfirm={setShowTakeoverConfirm}
+        isDark={isDark}
+        users={users}
+        executeIntervention={executeIntervention}
+      />
     </div>
   );
 }

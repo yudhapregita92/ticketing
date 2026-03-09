@@ -2,319 +2,425 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle, 
+  Ticket, 
   User, 
   Building2, 
-  Layers, 
   Phone, 
+  Layers, 
   MessageSquare, 
+  ShieldCheck, 
   MapPin, 
-  Globe, 
-  Cpu, 
-  Camera,
   History, 
-  Trash2, 
-  RefreshCcw, 
-  Send, 
-  ExternalLink, 
-  ShieldCheck 
+  Settings2, 
+  Lock,
+  Calendar,
+  Image as ImageIcon,
+  Eye,
+  Trash2
 } from 'lucide-react';
-import { ITicket, IAdminUser, STATUSES } from '../../types';
+
+interface ITicket {
+  id: number;
+  ticket_no: string;
+  name: string;
+  department: string;
+  phone: string;
+  category: string;
+  description: string;
+  assigned_to: string | null;
+  admin_reply: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  responded_at?: string | null;
+  resolved_at?: string | null;
+  photo?: string | null;
+  ip_address?: string | null;
+  user_agent?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  internal_notes?: string | null;
+}
 
 interface TicketDetailModalProps {
   selectedTicket: ITicket | null;
   setSelectedTicket: (ticket: ITicket | null) => void;
   isDark: boolean;
   themeClasses: any;
-  adminUser: IAdminUser | null;
-  adminReply: string;
-  setAdminReply: (reply: string) => void;
-  internalNotes: string;
-  setInternalNotes: (notes: string) => void;
-  assignedTo: string;
-  setAssignedTo: (name: string) => void;
-  itPersonnel: { id: number, name: string }[];
-  updating: boolean;
-  handleUpdateTicket: (status: string) => void;
-  handleDeleteTicket: (id: number) => void;
+  getStatusColor: (status: string) => string;
+  formatDate: (date: string) => string;
+  getDeviceInfo: (ua: string) => string;
+  adminUser: any;
+  ticketLogs: any[];
+  users: any[];
+  STATUSES: string[];
+  modalStatus: string;
+  setModalStatus: (status: string) => void;
+  handleUpdateClick: (id: number, status: string, assigned_to: string | null, reply: string | null, internal: string | null) => void;
+  handleIntervention: (id: number, type: 'takeover' | 'reassign') => void;
   primaryColor: string;
 }
 
-export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
+export const TicketDetailModal = React.memo(({
   selectedTicket,
   setSelectedTicket,
   isDark,
   themeClasses,
+  getStatusColor,
+  formatDate,
+  getDeviceInfo,
   adminUser,
-  adminReply,
-  setAdminReply,
-  internalNotes,
-  setInternalNotes,
-  assignedTo,
-  setAssignedTo,
-  itPersonnel,
-  updating,
-  handleUpdateTicket,
-  handleDeleteTicket,
+  ticketLogs,
+  users,
+  STATUSES,
+  modalStatus,
+  setModalStatus,
+  handleUpdateClick,
+  handleIntervention,
   primaryColor
-}) => {
+}: TicketDetailModalProps) => {
   if (!selectedTicket) return null;
 
   return (
-    <AnimatePresence>
-      {selectedTicket && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSelectedTicket(null)}
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-          />
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className={`relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl border ${themeClasses.card}`}
-          >
-            <div className={`sticky top-0 z-10 p-4 sm:p-6 border-b flex items-center justify-between backdrop-blur-md ${themeClasses.header}`}>
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-lg ${
-                  selectedTicket.status === 'New' ? 'bg-amber-500 shadow-amber-500/20' :
-                  selectedTicket.status === 'In Progress' ? 'bg-blue-500 shadow-blue-500/20' :
-                  selectedTicket.status === 'Completed' ? 'bg-emerald-500 shadow-emerald-500/20' :
-                  'bg-rose-500 shadow-rose-500/20'
-                }`}>
-                  {selectedTicket.status === 'New' && <Clock className="w-5 h-5" />}
-                  {selectedTicket.status === 'In Progress' && <History className="w-5 h-5 animate-spin-slow" />}
-                  {selectedTicket.status === 'Completed' && <CheckCircle2 className="w-5 h-5" />}
-                  {selectedTicket.status === 'Cancelled' && <AlertCircle className="w-5 h-5" />}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={() => setSelectedTicket(null)}
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+      />
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className={`relative rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[92vh] transition-colors ${themeClasses.card} ${themeClasses.text}`}
+      >
+        <div className={`p-3 sm:p-5 border-b shrink-0 ${themeClasses.border}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-7 h-7 sm:w-9 sm:h-9 bg-emerald-100 rounded-lg sm:rounded-xl flex items-center justify-center text-emerald-600">
+                <Ticket className="w-3.5 h-3.5 sm:w-4.5 h-4.5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className={`text-[8px] sm:text-[9px] font-bold ${themeClasses.textMuted}`}>#{selectedTicket.ticket_no || selectedTicket.id.toString().padStart(4, '0')}</span>
+                  <span className={`px-1.5 py-0.5 rounded-full text-[7px] sm:text-[8px] font-bold uppercase tracking-wider border ${getStatusColor(selectedTicket.status)}`}>
+                    {selectedTicket.status}
+                  </span>
                 </div>
-                <div>
-                  <h2 className={`text-lg sm:text-xl font-black tracking-tight ${themeClasses.text}`}>Detail Tiket {selectedTicket.ticket_no}</h2>
-                  <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest">Informasi lengkap laporan</p>
+                <h2 className={`text-xs sm:text-base font-black tracking-tight ${themeClasses.text}`}>{selectedTicket.category} Request</h2>
+              </div>
+            </div>
+            <button 
+              onClick={() => setSelectedTicket(null)}
+              className={`p-1.5 rounded-full transition-all ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+            >
+              <X className="w-4 h-4 sm:w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-3 sm:p-5 overflow-y-auto custom-scrollbar">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-5">
+            {/* Left Column: Info & Description */}
+            <div className="lg:col-span-7 space-y-3 sm:space-y-5">
+              <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
+                <div className={`p-1.5 sm:p-2.5 rounded-xl border flex items-center gap-2 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                  <User className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0" />
+                  <div className="min-w-0">
+                    <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} uppercase tracking-widest truncate`}>Pengguna</p>
+                    <p className={`text-[9px] sm:text-[11px] font-bold ${themeClasses.text} truncate`}>{selectedTicket.name}</p>
+                  </div>
+                </div>
+                <div className={`p-1.5 sm:p-2.5 rounded-xl border flex items-center gap-2 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                  <Building2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0" />
+                  <div className="min-w-0">
+                    <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} uppercase tracking-widest truncate`}>Bagian</p>
+                    <p className={`text-[9px] sm:text-[11px] font-bold ${themeClasses.text} truncate`}>{selectedTicket.department}</p>
+                  </div>
+                </div>
+                <div className={`p-1.5 sm:p-2.5 rounded-xl border flex items-center gap-2 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                  <Phone className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0" />
+                  <div className="min-w-0">
+                    <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} uppercase tracking-widest truncate`}>Telepon</p>
+                    <p className={`text-[9px] sm:text-[11px] font-bold ${themeClasses.text} truncate`}>{selectedTicket.phone}</p>
+                  </div>
+                </div>
+                <div className={`p-1.5 sm:p-2.5 rounded-xl border flex items-center gap-2 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                  <Layers className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0" />
+                  <div className="min-w-0">
+                    <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} uppercase tracking-widest truncate`}>Kategori</p>
+                    <p className={`text-[9px] sm:text-[11px] font-bold ${themeClasses.text} truncate`}>{selectedTicket.category}</p>
+                  </div>
                 </div>
               </div>
-              <button 
-                onClick={() => setSelectedTicket(null)}
-                className={`p-2 rounded-xl transition-all ${isDark ? 'hover:bg-zinc-800 text-zinc-500' : 'hover:bg-slate-100 text-slate-400'}`}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <div className="p-4 sm:p-8 space-y-8 sm:space-y-10">
-              {/* Ticket Info Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-10">
-                <div className="space-y-6 sm:space-y-8">
-                  <div className="space-y-4">
-                    <h3 className={`text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4`}>
-                      <User className="w-3 h-3" /> Informasi Pelapor
-                    </h3>
-                    <div className="grid grid-cols-1 gap-4">
-                      <div className={`p-4 rounded-2xl border ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-slate-50/50 border-slate-100'}`}>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Nama Lengkap</p>
-                        <p className={`text-sm sm:text-base font-bold ${themeClasses.text}`}>{selectedTicket.name}</p>
-                      </div>
-                      <div className={`p-4 rounded-2xl border ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-slate-50/50 border-slate-100'}`}>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Departemen</p>
-                        <p className={`text-sm sm:text-base font-bold ${themeClasses.text}`}>{selectedTicket.department}</p>
-                      </div>
-                      <div className={`p-4 rounded-2xl border ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-slate-50/50 border-slate-100'}`}>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">No. Telepon</p>
-                        <a href={`tel:${selectedTicket.phone}`} className="text-sm sm:text-base font-bold text-emerald-500 hover:underline flex items-center gap-2">
-                          {selectedTicket.phone} <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                    </div>
+              <div className={`p-2.5 sm:p-3.5 rounded-2xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                <div className="flex items-center gap-2 text-slate-400 mb-1 sm:mb-1.5">
+                  <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">Masalah / Detail</span>
+                </div>
+                <p className={`text-[11px] sm:text-xs whitespace-pre-wrap leading-relaxed ${themeClasses.text}`}>
+                  {selectedTicket.description}
+                </p>
+              </div>
+
+              {adminUser && (
+                <div className={`p-2.5 sm:p-3.5 rounded-2xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                  <div className="flex items-center gap-2 text-slate-400 mb-1.5 sm:mb-2">
+                    <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                    <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">Audit Log</span>
                   </div>
-
-                  <div className="space-y-4">
-                    <h3 className={`text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4`}>
-                      <Layers className="w-3 h-3" /> Detail Masalah
-                    </h3>
-                    <div className={`p-5 rounded-2xl border ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-slate-50/50 border-slate-100'}`}>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Kategori: {selectedTicket.category}</p>
-                      <p className={`text-sm sm:text-base leading-relaxed font-medium ${isDark ? 'text-zinc-300' : 'text-slate-600'}`}>{selectedTicket.description}</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                    <div>
+                      <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>IP</p>
+                      <p className={`text-[8px] sm:text-[9px] font-mono font-bold ${themeClasses.text}`}>
+                        {selectedTicket.ip_address || 'Unknown'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>Device</p>
+                      <p className={`text-[8px] sm:text-[9px] font-mono font-bold ${themeClasses.text} truncate`}>
+                        {getDeviceInfo(selectedTicket.user_agent || '')}
+                      </p>
+                    </div>
+                    <div className="col-span-2 sm:col-span-1">
+                      <p className="text-[6px] sm:text-[7px] font-bold text-slate-400 uppercase tracking-widest">GPS</p>
+                      {selectedTicket.latitude ? (
+                        <a 
+                          href={`https://www.google.com/maps?q=${selectedTicket.latitude},${selectedTicket.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-[8px] sm:text-[9px] font-bold text-blue-500 hover:underline"
+                        >
+                          <MapPin className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
+                          {selectedTicket.latitude.toFixed(2)}, {selectedTicket.longitude?.toFixed(2)}
+                        </a>
+                      ) : (
+                        <p className="text-[8px] sm:text-[9px] font-bold text-rose-500">No Data</p>
+                      )}
                     </div>
                   </div>
                 </div>
+              )}
 
-                <div className="space-y-6 sm:space-y-8">
-                  <div className="space-y-4">
-                    <h3 className={`text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4`}>
-                      <Camera className="w-3 h-3" /> Bukti Foto & Metadata
-                    </h3>
-                    {selectedTicket.photo ? (
-                      <div className="relative group">
-                        <img 
-                          src={selectedTicket.photo} 
-                          alt="Evidence" 
-                          className="w-full h-48 sm:h-64 object-cover rounded-3xl border shadow-lg"
-                          referrerPolicy="no-referrer"
-                        />
-                        <a 
-                          href={selectedTicket.photo} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-3xl"
-                        >
-                          <span className="bg-white text-slate-900 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2">
-                            <ExternalLink className="w-4 h-4" /> Lihat Ukuran Penuh
-                          </span>
-                        </a>
+              {(selectedTicket.assigned_to || selectedTicket.admin_reply) && (
+                <div className="overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50/30">
+                  <div className="bg-emerald-100/50 px-3 py-1 border-b border-emerald-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-emerald-700">
+                      <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      <span className="text-[7px] sm:text-[8px] font-black uppercase tracking-widest">Tim Respon IT</span>
+                    </div>
+                  </div>
+                  <div className="p-2.5 sm:p-3.5">
+                    {selectedTicket.admin_reply ? (
+                      <div className="space-y-1">
+                        <p className="text-[11px] sm:text-xs text-emerald-900 leading-relaxed font-semibold italic">
+                          "{selectedTicket.admin_reply}"
+                        </p>
+                        <p className="text-[7px] sm:text-[8px] text-emerald-600 font-black uppercase tracking-widest pt-1 border-t border-emerald-100">Balasan Resmi</p>
                       </div>
                     ) : (
-                      <div className={`w-full h-48 sm:h-64 rounded-3xl border border-dashed flex flex-col items-center justify-center gap-3 ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-slate-50/50 border-slate-200'}`}>
-                        <Camera className="w-8 h-8 text-slate-300" />
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Tidak Ada Foto</p>
+                      <div className="flex items-center gap-2 text-emerald-600/70">
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-emerald-200 border-t-emerald-600 animate-spin" />
+                        <p className="text-[9px] sm:text-[11px] font-bold italic">
+                          {selectedTicket.status === 'New' 
+                            ? `Mohon ditunggu, ${selectedTicket.assigned_to || 'Tim IT'} akan segera merespon` 
+                            : `Sedang ditangani oleh ${selectedTicket.assigned_to || 'Tim IT'}`}
+                        </p>
                       </div>
-                    )}
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className={`p-3 rounded-2xl border flex items-center gap-3 ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-slate-50/50 border-slate-100'}`}>
-                        <Globe className="w-4 h-4 text-slate-400" />
-                        <div className="min-w-0">
-                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">IP Address</p>
-                          <p className="text-[10px] font-bold truncate text-slate-500">{selectedTicket.ip_address || 'N/A'}</p>
-                        </div>
-                      </div>
-                      <div className={`p-3 rounded-2xl border flex items-center gap-3 ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-slate-50/50 border-slate-100'}`}>
-                        <Cpu className="w-4 h-4 text-slate-400" />
-                        <div className="min-w-0">
-                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">User Agent</p>
-                          <p className="text-[10px] font-bold truncate text-slate-500" title={selectedTicket.user_agent || 'N/A'}>{selectedTicket.user_agent || 'N/A'}</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {selectedTicket.latitude && selectedTicket.longitude && (
-                      <a 
-                        href={`https://www.google.com/maps?q=${selectedTicket.latitude},${selectedTicket.longitude}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`w-full p-3 rounded-2xl border flex items-center justify-between group transition-all ${isDark ? 'bg-emerald-900/10 border-emerald-900/30 hover:bg-emerald-900/20' : 'bg-emerald-50 border-emerald-100 hover:bg-emerald-100'}`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <MapPin className="w-4 h-4 text-emerald-500" />
-                          <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Lokasi GPS Terdeteksi</span>
-                        </div>
-                        <ExternalLink className="w-3 h-3 text-emerald-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                      </a>
                     )}
                   </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-3 gap-1 p-2 bg-white rounded-xl border border-slate-100">
+                <div className="flex flex-col">
+                  <span className="text-[6px] sm:text-[7px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Diajukan</span>
+                  <span className="text-[8px] sm:text-[9px] font-medium text-slate-600 truncate">{formatDate(selectedTicket.created_at)}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[6px] sm:text-[7px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Respon</span>
+                  <span className="text-[8px] sm:text-[9px] font-medium text-slate-600 truncate">{selectedTicket.responded_at ? formatDate(selectedTicket.responded_at) : '-'}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[6px] sm:text-[7px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Selesai</span>
+                  <span className="text-[8px] sm:text-[9px] font-medium text-slate-600 truncate">{selectedTicket.resolved_at ? formatDate(selectedTicket.resolved_at) : '-'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Photo & Admin Actions */}
+            <div className="lg:col-span-5 space-y-3 sm:space-y-5">
+              {selectedTicket.photo && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <ImageIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                    <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">Lampiran Foto</span>
+                  </div>
+                  <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 aspect-video flex items-center justify-center">
+                    <img 
+                      src={selectedTicket.photo} 
+                      alt="Ticket attachment" 
+                      className="max-w-full max-h-full object-contain"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Ticket History / Logs */}
+              <div className="space-y-1.5 sm:space-y-2">
+                <div className="flex items-center gap-2 text-slate-400">
+                  <History className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">Riwayat Tiket</span>
+                </div>
+                <div className={`rounded-2xl border p-2.5 sm:p-3.5 space-y-2.5 sm:space-y-3.5 max-h-[180px] sm:max-h-[250px] overflow-y-auto custom-scrollbar ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                  {ticketLogs.length === 0 ? (
+                    <p className="text-[8px] sm:text-[9px] text-slate-400 italic text-center py-3">Belum ada riwayat aktivitas.</p>
+                  ) : (
+                    <div className="space-y-2.5 sm:space-y-3.5 relative before:absolute before:left-[6px] before:top-1.5 before:bottom-1.5 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-700">
+                      {ticketLogs.map((log, idx) => (
+                        <div key={idx} className="relative pl-4.5 sm:pl-5.5">
+                          <div className={`absolute left-0 top-1 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border-2 border-white dark:border-slate-800 shadow-sm flex items-center justify-center ${
+                            log.action.includes('Status') ? 'bg-emerald-500' :
+                            log.action.includes('Tugaskan') ? 'bg-blue-500' :
+                            log.action.includes('Ambil Alih') ? 'bg-amber-500' :
+                            'bg-slate-400'
+                          }`}>
+                            <div className="w-0.5 h-0.5 bg-white rounded-full" />
+                          </div>
+                          <div className="space-y-0.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className={`text-[8px] sm:text-[9px] font-black ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{log.action}</p>
+                              <span className="text-[6px] sm:text-[7px] font-bold text-slate-400 whitespace-nowrap">{formatDate(log.created_at)}</span>
+                            </div>
+                            <p className="text-[7px] sm:text-[8px] font-medium text-slate-500 leading-relaxed">
+                              Oleh: <span className="font-bold text-slate-600 dark:text-slate-400">{log.performed_by}</span>
+                            </p>
+                            {log.note && (
+                              <div className={`mt-0.5 p-1 sm:p-1.5 rounded-lg text-[7px] sm:text-[8px] font-medium italic leading-relaxed ${isDark ? 'bg-slate-900/50 text-slate-400' : 'bg-white text-slate-500'}`}>
+                                "{log.note}"
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Admin Section */}
               {adminUser && (
-                <div className={`pt-8 sm:pt-10 border-t space-y-8 sm:space-y-10 ${themeClasses.border}`}>
-                  <div className="flex items-center gap-3 mb-6">
-                    <ShieldCheck className="w-5 h-5 text-emerald-500" />
-                    <h3 className={`text-base sm:text-lg font-black tracking-tight ${themeClasses.text}`}>Admin Management</h3>
+                <div className="bg-slate-900 rounded-2xl p-3.5 sm:p-4.5 shadow-xl space-y-2.5 sm:space-y-3.5">
+                  <div className="flex items-center gap-2 text-white mb-0.5">
+                    <Settings2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400" />
+                    <h3 className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest">Tindakan Admin</h3>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-10">
-                    <div className="space-y-6">
-                      <div className="space-y-2">
-                        <label className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                          <User className="w-3 h-3" /> Tugaskan Ke (Personnel)
-                        </label>
+                  <div className="grid grid-cols-1 gap-2.5 sm:gap-3.5">
+                    {adminUser.role === 'Super Admin' && selectedTicket.assigned_to && selectedTicket.assigned_to !== adminUser.username && (
+                      <button
+                        onClick={() => handleIntervention(selectedTicket.id, 'takeover')}
+                        className="w-full bg-amber-500 text-white font-black py-1.5 sm:py-2 rounded-xl hover:bg-amber-600 transition-all uppercase tracking-widest text-[7px] sm:text-[8px] shadow-lg shadow-amber-900/20 active:scale-[0.98]"
+                      >
+                        Ambil Alih Tiket
+                      </button>
+                    )}
+                    <div className="space-y-0.5">
+                      <label className="text-[7px] sm:text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Tugaskan IT</label>
+                      {adminUser.role === 'Super Admin' ? (
                         <select 
-                          value={assignedTo}
-                          onChange={(e) => setAssignedTo(e.target.value)}
-                          className={`w-full px-4 py-3 rounded-2xl border transition-all focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none text-sm font-medium appearance-none ${themeClasses.input}`}
+                          id={`modal-assignee-${selectedTicket.id}`}
+                          className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl py-1.5 sm:py-2 px-2.5 text-[9px] sm:text-[11px] outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-bold"
+                          defaultValue={selectedTicket.assigned_to || ''}
                         >
-                          <option value="">Pilih Personel</option>
-                          {itPersonnel.map(p => (
-                            <option key={p.id} value={p.name}>{p.name}</option>
+                          <option value="">Pilih IT...</option>
+                          {users.map(u => (
+                            <option key={u.id} value={u.username}>{u.full_name || u.username}</option>
                           ))}
                         </select>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                          <MessageSquare className="w-3 h-3" /> Catatan Internal (Hanya Admin)
-                        </label>
-                        <textarea 
-                          rows={3}
-                          placeholder="Tambahkan catatan internal..."
-                          value={internalNotes}
-                          onChange={(e) => setInternalNotes(e.target.value)}
-                          className={`w-full px-4 py-3 rounded-2xl border transition-all focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none text-sm font-medium resize-none ${themeClasses.input}`}
-                        />
-                      </div>
+                      ) : (
+                        <div className="relative">
+                          <input 
+                            id={`modal-assignee-${selectedTicket.id}`}
+                            type="text"
+                            readOnly
+                            className="w-full bg-slate-800 border border-slate-700 text-slate-300 rounded-xl py-1.5 sm:py-2 px-2.5 text-[9px] sm:text-[11px] outline-none font-bold"
+                            value={selectedTicket.assigned_to || adminUser.username}
+                          />
+                          <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                            <Lock className="w-2.5 h-2.5 text-slate-500" />
+                          </div>
+                        </div>
+                      )}
                     </div>
-
-                    <div className="space-y-2">
-                      <label className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                        <Send className="w-3 h-3" /> Balasan Admin (Dilihat User)
-                      </label>
-                      <textarea 
-                        rows={6}
-                        placeholder="Tulis balasan atau solusi untuk pelapor..."
-                        value={adminReply}
-                        onChange={(e) => setAdminReply(e.target.value)}
-                        className={`w-full px-4 py-3 rounded-2xl border transition-all focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none text-sm font-medium resize-none h-full ${themeClasses.input}`}
-                      />
+                    <div className="space-y-0.5">
+                      <label className="text-[7px] sm:text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
+                      <div className="flex gap-1 bg-slate-800 p-0.5 rounded-xl border border-slate-700 overflow-x-auto no-scrollbar">
+                        {STATUSES.map(status => (
+                          <button
+                            key={status}
+                            onClick={() => setModalStatus(status)}
+                            className={`flex-1 min-w-[50px] py-1 rounded-lg text-[6px] sm:text-[7px] font-black uppercase tracking-tighter transition-all ${
+                              (modalStatus || selectedTicket.status) === status 
+                              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' 
+                              : 'text-slate-400 hover:text-white hover:bg-slate-700'
+                            }`}
+                          >
+                            {status}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3 sm:gap-4 pt-4">
-                    <div className="flex-1 flex flex-wrap gap-3">
-                      {STATUSES.map(status => (
-                        <button
-                          key={status}
-                          disabled={updating}
-                          onClick={() => handleUpdateTicket(status)}
-                          className={`px-4 sm:px-6 py-3 sm:py-4 rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 active:scale-95 disabled:opacity-50 ${
-                            selectedTicket.status === status 
-                              ? (status === 'New' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' :
-                                 status === 'In Progress' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' :
-                                 status === 'Completed' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' :
-                                 'bg-rose-500 text-white shadow-lg shadow-rose-500/20')
-                              : isDark ? 'bg-zinc-800 text-zinc-500 hover:bg-zinc-700' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                          }`}
-                        >
-                          {updating && selectedTicket.status !== status ? <RefreshCcw className="w-3 h-3 animate-spin" /> : null}
-                          {status}
-                        </button>
-                      ))}
-                    </div>
-                    <button 
-                      disabled={updating}
-                      onClick={() => handleDeleteTicket(selectedTicket.id)}
-                      className="p-3 sm:p-4 rounded-2xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all active:scale-95 shadow-sm"
-                      title="Hapus Tiket"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                  <div className="space-y-1">
+                    <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Balasan Resolusi (Publik)</label>
+                    <textarea 
+                      id={`modal-reply-${selectedTicket.id}`}
+                      className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl py-2.5 sm:py-3 px-3 sm:px-4 text-[10px] sm:text-xs outline-none focus:ring-2 focus:ring-emerald-500 resize-none transition-all font-medium placeholder:text-slate-600"
+                      placeholder="Tulis solusi di sini..."
+                      rows={2}
+                      defaultValue={selectedTicket.admin_reply || ''}
+                    />
                   </div>
-                </div>
-              )}
 
-              {/* User View Reply */}
-              {!adminUser && selectedTicket.admin_reply && (
-                <div className={`pt-8 sm:pt-10 border-t space-y-4 ${themeClasses.border}`}>
-                  <h3 className={`text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2`}>
-                    <Send className="w-3 h-3" /> Balasan dari Tim IT
-                  </h3>
-                  <div className={`p-5 rounded-3xl border-2 ${isDark ? 'bg-emerald-900/10 border-emerald-900/30' : 'bg-emerald-50 border-emerald-100'}`}>
-                    <p className={`text-sm sm:text-base leading-relaxed font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>{selectedTicket.admin_reply}</p>
-                    <div className="mt-4 flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white">
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                      </div>
-                      <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Official IT Response</span>
-                    </div>
+                  <div className="space-y-1">
+                    <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Catatan Internal (Private)</label>
+                    <textarea 
+                      id={`modal-internal-${selectedTicket.id}`}
+                      className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl py-2.5 sm:py-3 px-3 sm:px-4 text-[10px] sm:text-xs outline-none focus:ring-2 focus:ring-blue-500 resize-none transition-all font-medium placeholder:text-slate-600"
+                      placeholder="Catatan rahasia tim IT..."
+                      rows={2}
+                      defaultValue={selectedTicket.internal_notes || ''}
+                    />
                   </div>
+
+                  <button
+                    onClick={() => {
+                      const assignee = adminUser.role === 'Super Admin' 
+                        ? (document.getElementById(`modal-assignee-${selectedTicket.id}`) as HTMLSelectElement).value 
+                        : (selectedTicket.assigned_to || adminUser.username);
+                      const reply = (document.getElementById(`modal-reply-${selectedTicket.id}`) as HTMLTextAreaElement).value;
+                      const internal = (document.getElementById(`modal-internal-${selectedTicket.id}`) as HTMLTextAreaElement).value;
+                      const status = modalStatus || selectedTicket.status;
+                      handleUpdateClick(selectedTicket.id, status, assignee, reply, internal);
+                      setSelectedTicket(null);
+                      setModalStatus('');
+                    }}
+                    style={{ backgroundColor: primaryColor }}
+                    className="w-full text-white font-black py-2.5 sm:py-3 rounded-xl hover:opacity-90 transition-all shadow-xl active:scale-[0.98] uppercase tracking-widest text-[9px] sm:text-[10px]"
+                  >
+                    Simpan Perubahan
+                  </button>
                 </div>
               )}
             </div>
-          </motion.div>
+          </div>
         </div>
-      )}
-    </AnimatePresence>
+      </motion.div>
+    </div>
   );
-};
+});

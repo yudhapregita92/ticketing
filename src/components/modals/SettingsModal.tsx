@@ -3,332 +3,520 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, 
   Settings2, 
-  Palette, 
   Layout, 
-  Mail, 
-  MessageCircle, 
-  Server, 
-  Save, 
+  Palette, 
+  Bell, 
+  Database, 
   Plus, 
   Trash2, 
-  RefreshCcw, 
-  Check 
+  Save,
+  Mail,
+  MessageCircle,
+  Send
 } from 'lucide-react';
-import { IAppSettings, LOGO_OPTIONS, COLORS } from '../../types';
 
 interface SettingsModalProps {
   showSettings: boolean;
   setShowSettings: (show: boolean) => void;
   isDark: boolean;
   themeClasses: any;
-  appSettings: IAppSettings;
-  setAppSettings: (settings: IAppSettings) => void;
-  savingSettings: boolean;
-  handleSaveSettings: (e: React.FormEvent) => void;
-  newEmail: string;
-  setNewEmail: (email: string) => void;
-  newChatId: string;
-  setNewChatId: (id: string) => void;
+  settingsTab: 'general' | 'branding' | 'notifications' | 'data';
+  setSettingsTab: (tab: 'general' | 'branding' | 'notifications' | 'data') => void;
+  appSettings: any;
+  setAppSettings: (settings: any) => void;
+  LOGO_OPTIONS: any[];
+  newEmailInput: string;
+  setNewEmailInput: (email: string) => void;
+  showEmailInput: boolean;
+  setShowEmailInput: (show: boolean) => void;
+  handleUpdateSettings: (e: React.FormEvent) => void;
+  primaryColor: string;
+  adminUser: any;
+  itPersonnel: any[];
+  departments: any[];
+  categories: any[];
+  addingType: 'it' | 'dept' | 'cat' | null;
+  setAddingType: (type: 'it' | 'dept' | 'cat' | null) => void;
+  newItemName: string;
+  setNewItemName: (name: string) => void;
+  handleManagementAction: (type: 'it' | 'dept' | 'cat', action: 'add' | 'delete', item?: any) => void;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({
+export const SettingsModal = React.memo(({
   showSettings,
   setShowSettings,
   isDark,
   themeClasses,
+  settingsTab,
+  setSettingsTab,
   appSettings,
   setAppSettings,
-  savingSettings,
-  handleSaveSettings,
-  newEmail,
-  setNewEmail,
-  newChatId,
-  setNewChatId
-}) => {
-  const primaryColor = appSettings.primary_color;
+  LOGO_OPTIONS,
+  newEmailInput,
+  setNewEmailInput,
+  showEmailInput,
+  setShowEmailInput,
+  handleUpdateSettings,
+  primaryColor,
+  adminUser,
+  itPersonnel,
+  departments,
+  categories,
+  addingType,
+  setAddingType,
+  newItemName,
+  setNewItemName,
+  handleManagementAction
+}: SettingsModalProps) => {
+  if (!showSettings) return null;
 
   return (
-    <AnimatePresence>
-      {showSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowSettings(false)}
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-          />
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className={`relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl border ${themeClasses.card}`}
-          >
-            <div className={`sticky top-0 z-10 p-4 sm:p-6 border-b flex items-center justify-between backdrop-blur-md ${themeClasses.header}`}>
-              <div className="flex items-center gap-3">
-                <div 
-                  className="w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-lg"
-                  style={{ backgroundColor: primaryColor, boxShadow: `0 10px 15px -3px ${primaryColor}40` }}
-                >
-                  <Settings2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className={`text-lg sm:text-xl font-black tracking-tight ${themeClasses.text}`}>System Settings</h2>
-                  <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest">Konfigurasi Global Aplikasi</p>
-                </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={() => setShowSettings(false)}
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+      />
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className={`relative rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] transition-colors ${themeClasses.card} ${themeClasses.text}`}
+      >
+        <div className={`p-4 sm:p-6 border-b shrink-0 ${themeClasses.border}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
+                <Settings2 className="w-5 h-5" />
               </div>
-              <button 
-                onClick={() => setShowSettings(false)}
-                className={`p-2 rounded-xl transition-all ${isDark ? 'hover:bg-zinc-800 text-zinc-500' : 'hover:bg-slate-100 text-slate-400'}`}
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div>
+                <h2 className={`text-lg font-black tracking-tight ${themeClasses.text}`}>Pengaturan Sistem</h2>
+                <p className={`text-[10px] font-bold uppercase tracking-widest ${themeClasses.textMuted}`}>Konfigurasi aplikasi & branding</p>
+              </div>
             </div>
+            <button 
+              onClick={() => setShowSettings(false)}
+              className={`p-2 rounded-full transition-all ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
 
-            <form onSubmit={handleSaveSettings} className="p-4 sm:p-8 space-y-8 sm:space-y-12">
-              {/* Appearance Section */}
-              <div className="space-y-6 sm:space-y-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <Palette className="w-5 h-5 text-emerald-500" />
-                  <h3 className={`text-base sm:text-lg font-black tracking-tight ${themeClasses.text}`}>Tampilan & Branding</h3>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
-                  <div className="space-y-2">
-                    <label className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">Nama Aplikasi</label>
+        <div className="flex flex-col sm:flex-row flex-1 overflow-hidden">
+          {/* Sidebar Tabs */}
+          <div className={`w-full sm:w-48 border-b sm:border-b-0 sm:border-r p-2 sm:p-4 space-y-1 ${themeClasses.border}`}>
+            <button 
+              onClick={() => setSettingsTab('general')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${settingsTab === 'general' ? 'bg-emerald-600 text-white' : `text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800`}`}
+            >
+              <Layout className="w-4 h-4" /> Umum
+            </button>
+            <button 
+              onClick={() => setSettingsTab('branding')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${settingsTab === 'branding' ? 'bg-emerald-600 text-white' : `text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800`}`}
+            >
+              <Palette className="w-4 h-4" /> Branding
+            </button>
+            <button 
+              onClick={() => setSettingsTab('notifications')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${settingsTab === 'notifications' ? 'bg-emerald-600 text-white' : `text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800`}`}
+            >
+              <Bell className="w-4 h-4" /> Notifikasi
+            </button>
+            <button 
+              onClick={() => setSettingsTab('data')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${settingsTab === 'data' ? 'bg-emerald-600 text-white' : `text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800`}`}
+            >
+              <Database className="w-4 h-4" /> Data & API
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar">
+            <form onSubmit={handleUpdateSettings} className="space-y-6">
+              {settingsTab === 'general' && (
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Aplikasi</label>
                     <input 
                       type="text"
+                      className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                       value={appSettings.app_name}
-                      onChange={(e) => setAppSettings({...appSettings, app_name: e.target.value})}
-                      className={`w-full px-4 py-3 sm:py-4 rounded-2xl border transition-all focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none text-sm sm:text-base font-medium ${themeClasses.input}`}
+                      onChange={e => setAppSettings({...appSettings, app_name: e.target.value})}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">Warna Utama</label>
-                    <div className="flex flex-wrap gap-3 p-3 rounded-2xl border bg-slate-50/50">
-                      {COLORS.map(color => (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Logo Default</label>
+                    <div className="grid grid-cols-5 gap-2">
+                      {LOGO_OPTIONS.map(logo => (
                         <button
-                          key={color}
+                          key={logo.id}
                           type="button"
-                          onClick={() => setAppSettings({...appSettings, primary_color: color})}
-                          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl transition-all flex items-center justify-center shadow-sm active:scale-90 ${appSettings.primary_color === color ? 'ring-4 ring-emerald-500/20 scale-110' : 'hover:scale-105'}`}
-                          style={{ backgroundColor: color }}
+                          onClick={() => setAppSettings({...appSettings, logo_type: logo.id})}
+                          className={`p-3 rounded-xl border flex items-center justify-center transition-all ${appSettings.logo_type === logo.id ? 'bg-emerald-600 text-white border-emerald-600' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400 hover:border-emerald-500`}`}
                         >
-                          {appSettings.primary_color === color && <Check className="text-white w-4 h-4 sm:w-5 h-5" />}
+                          <logo.icon className="w-5 h-5" />
                         </button>
                       ))}
                     </div>
                   </div>
                 </div>
+              )}
 
+              {settingsTab === 'branding' && (
                 <div className="space-y-4">
-                  <label className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">Pilih Icon Logo</label>
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 sm:gap-4">
-                    {LOGO_OPTIONS.map(option => (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Warna Utama (Public)</label>
+                    <div className="flex items-center gap-3">
+                      <input 
+                        type="color"
+                        className="w-10 h-10 rounded-lg cursor-pointer border-none"
+                        value={appSettings.primary_color}
+                        onChange={e => setAppSettings({...appSettings, primary_color: e.target.value})}
+                      />
+                      <input 
+                        type="text"
+                        className={`flex-1 px-4 py-2 rounded-xl border text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                        value={appSettings.primary_color}
+                        onChange={e => setAppSettings({...appSettings, primary_color: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tema Default (Public)</label>
+                    <div className="flex gap-2">
                       <button
-                        key={option.id}
                         type="button"
-                        onClick={() => setAppSettings({...appSettings, logo_type: option.id})}
-                        className={`p-4 sm:p-6 rounded-3xl border transition-all flex flex-col items-center gap-2 sm:gap-3 group active:scale-95 ${
-                          appSettings.logo_type === option.id 
-                            ? 'bg-emerald-500 border-emerald-600 text-white shadow-lg shadow-emerald-500/20' 
-                            : isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700' : 'bg-slate-50 border-slate-200 text-slate-400 hover:border-slate-300'
-                        }`}
+                        onClick={() => setAppSettings({...appSettings, theme_mode: 'light'})}
+                        className={`flex-1 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${appSettings.theme_mode === 'light' ? 'bg-emerald-600 text-white border-emerald-600' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
                       >
-                        <option.icon className={`w-6 h-6 sm:w-8 sm:h-8 transition-transform group-hover:scale-110`} />
-                        <span className={`text-[10px] font-bold uppercase tracking-widest`}>{option.id}</span>
+                        Light Mode
                       </button>
-                    ))}
+                      <button
+                        type="button"
+                        onClick={() => setAppSettings({...appSettings, theme_mode: 'dark'})}
+                        className={`flex-1 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${appSettings.theme_mode === 'dark' ? 'bg-emerald-600 text-white border-emerald-600' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
+                      >
+                        Dark Mode
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
-                  <div className="space-y-2">
-                    <label className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">Custom Logo URL (Opsional)</label>
-                    <input 
-                      type="url"
-                      placeholder="https://example.com/logo.png"
-                      value={appSettings.custom_logo}
-                      onChange={(e) => setAppSettings({...appSettings, custom_logo: e.target.value})}
-                      className={`w-full px-4 py-3 sm:py-4 rounded-2xl border transition-all focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none text-sm sm:text-base font-medium ${themeClasses.input}`}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">Custom Favicon URL (Opsional)</label>
-                    <input 
-                      type="url"
-                      placeholder="https://example.com/favicon.ico"
-                      value={appSettings.custom_favicon}
-                      onChange={(e) => setAppSettings({...appSettings, custom_favicon: e.target.value})}
-                      className={`w-full px-4 py-3 sm:py-4 rounded-2xl border transition-all focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none text-sm sm:text-base font-medium ${themeClasses.input}`}
-                    />
-                  </div>
+                  {adminUser && (
+                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
+                      <h3 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Preferensi Admin ({adminUser.username})</h3>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Warna Utama Admin</label>
+                        <div className="flex items-center gap-3">
+                          <input 
+                            type="color"
+                            className="w-10 h-10 rounded-lg cursor-pointer border-none"
+                            value={appSettings.admin_primary_color}
+                            onChange={e => setAppSettings({...appSettings, admin_primary_color: e.target.value})}
+                          />
+                          <input 
+                            type="text"
+                            className={`flex-1 px-4 py-2 rounded-xl border text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                            value={appSettings.admin_primary_color}
+                            onChange={e => setAppSettings({...appSettings, admin_primary_color: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tema Admin</label>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setAppSettings({...appSettings, admin_theme_mode: 'light'})}
+                            className={`flex-1 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${appSettings.admin_theme_mode === 'light' ? 'bg-emerald-600 text-white border-emerald-600' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
+                          >
+                            Light Mode
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setAppSettings({...appSettings, admin_theme_mode: 'dark'})}
+                            className={`flex-1 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${appSettings.admin_theme_mode === 'dark' ? 'bg-emerald-600 text-white border-emerald-600' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
+                          >
+                            Dark Mode
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
 
-              {/* Notifications Section */}
-              <div className="space-y-6 sm:space-y-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <Mail className="w-5 h-5 text-blue-500" />
-                  <h3 className={`text-base sm:text-lg font-black tracking-tight ${themeClasses.text}`}>Email & SMTP</h3>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">SMTP Host</label>
-                    <input 
-                      type="text"
-                      value={appSettings.smtp_host}
-                      onChange={(e) => setAppSettings({...appSettings, smtp_host: e.target.value})}
-                      className={`w-full px-4 py-3 rounded-2xl border transition-all focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-sm font-medium ${themeClasses.input}`}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">SMTP Port</label>
-                    <input 
-                      type="text"
-                      value={appSettings.smtp_port}
-                      onChange={(e) => setAppSettings({...appSettings, smtp_port: e.target.value})}
-                      className={`w-full px-4 py-3 rounded-2xl border transition-all focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-sm font-medium ${themeClasses.input}`}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">SMTP User</label>
-                    <input 
-                      type="text"
-                      value={appSettings.smtp_user}
-                      onChange={(e) => setAppSettings({...appSettings, smtp_user: e.target.value})}
-                      className={`w-full px-4 py-3 rounded-2xl border transition-all focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-sm font-medium ${themeClasses.input}`}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <label className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">Email Penerima Notifikasi</label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="email"
-                      placeholder="email@example.com"
-                      value={newEmail}
-                      onChange={(e) => setNewEmail(e.target.value)}
-                      className={`flex-1 px-4 py-3 rounded-2xl border transition-all focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-sm font-medium ${themeClasses.input}`}
-                    />
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        if (newEmail && !appSettings.notification_emails.includes(newEmail)) {
-                          setAppSettings({...appSettings, notification_emails: [...appSettings.notification_emails, newEmail]});
-                          setNewEmail('');
-                        }
-                      }}
-                      className="px-6 rounded-2xl bg-blue-500 text-white font-bold text-sm hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-blue-500/20"
-                    >
-                      <Plus className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {appSettings.notification_emails.map(email => (
-                      <span key={email} className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border ${isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-300' : 'bg-slate-100 border-slate-200 text-slate-600'}`}>
-                        {email}
+              {settingsTab === 'notifications' && (
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Notifikasi</label>
+                      <button 
+                        type="button"
+                        onClick={() => setShowEmailInput(true)}
+                        className="text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:underline flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" /> Tambah Email
+                      </button>
+                    </div>
+                    
+                    {showEmailInput && (
+                      <div className="flex gap-2">
+                        <input 
+                          type="email"
+                          placeholder="email@example.com"
+                          className={`flex-1 px-4 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                          value={newEmailInput}
+                          onChange={e => setNewEmailInput(e.target.value)}
+                        />
                         <button 
                           type="button"
-                          onClick={() => setAppSettings({...appSettings, notification_emails: appSettings.notification_emails.filter(e => e !== email)})}
-                          className="text-rose-500 hover:text-rose-600 transition-colors"
+                          onClick={() => {
+                            if (newEmailInput && !appSettings.notification_emails.includes(newEmailInput)) {
+                              setAppSettings({...appSettings, notification_emails: [...appSettings.notification_emails, newEmailInput]});
+                              setNewEmailInput('');
+                              setShowEmailInput(false);
+                            }
+                          }}
+                          className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold"
                         >
-                          <X className="w-3 h-3" />
+                          Add
                         </button>
-                      </span>
-                    ))}
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      {appSettings.notification_emails.length === 0 ? (
+                        <p className="text-xs text-slate-400 italic text-center py-4">Belum ada email notifikasi.</p>
+                      ) : (
+                        appSettings.notification_emails.map((email: string) => (
+                          <div key={email} className={`flex items-center justify-between p-3 rounded-xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                            <div className="flex items-center gap-3">
+                              <Mail className="w-4 h-4 text-slate-400" />
+                              <span className="text-xs font-bold">{email}</span>
+                            </div>
+                            <button 
+                              type="button"
+                              onClick={() => setAppSettings({...appSettings, notification_emails: appSettings.notification_emails.filter((e: string) => e !== email)})}
+                              className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Integrasi Telegram</label>
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-bold text-slate-500 ml-1">Bot Token</label>
+                        <div className="relative">
+                          <Send className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                          <input 
+                            type="password"
+                            placeholder="123456789:ABCDEF..."
+                            className={`w-full pl-10 pr-4 py-2 rounded-xl border text-xs font-mono outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                            value={appSettings.telegram_bot_token}
+                            onChange={e => setAppSettings({...appSettings, telegram_bot_token: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Telegram Section */}
-              <div className="space-y-6 sm:space-y-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <MessageCircle className="w-5 h-5 text-sky-500" />
-                  <h3 className={`text-base sm:text-lg font-black tracking-tight ${themeClasses.text}`}>Telegram Integration</h3>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">Bot Token</label>
-                  <input 
-                    type="password"
-                    placeholder="Masukkan Bot Token dari @BotFather"
-                    value={appSettings.telegram_bot_token}
-                    onChange={(e) => setAppSettings({...appSettings, telegram_bot_token: e.target.value})}
-                    className={`w-full px-4 py-3 rounded-2xl border transition-all focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none text-sm font-medium ${themeClasses.input}`}
-                  />
-                </div>
-
-                <div className="space-y-4">
-                  <label className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">Chat IDs Penerima</label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text"
-                      placeholder="Masukkan Chat ID"
-                      value={newChatId}
-                      onChange={(e) => setNewChatId(e.target.value)}
-                      className={`flex-1 px-4 py-3 rounded-2xl border transition-all focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 outline-none text-sm font-medium ${themeClasses.input}`}
-                    />
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        if (newChatId && !appSettings.telegram_chat_ids.includes(newChatId)) {
-                          setAppSettings({...appSettings, telegram_chat_ids: [...appSettings.telegram_chat_ids, newChatId]});
-                          setNewChatId('');
-                        }
-                      }}
-                      className="px-6 rounded-2xl bg-sky-500 text-white font-bold text-sm hover:bg-sky-600 transition-all active:scale-95 shadow-lg shadow-sky-500/20"
-                    >
-                      <Plus className="w-5 h-5" />
-                    </button>
+              {settingsTab === 'data' && (
+                <div className="space-y-8">
+                  <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100">
+                    <div className="flex gap-3">
+                      <Database className="w-5 h-5 text-amber-600 shrink-0" />
+                      <div>
+                        <h4 className="text-xs font-black text-amber-900 uppercase tracking-widest">Data Management</h4>
+                        <p className="text-[10px] text-amber-700 font-medium leading-relaxed mt-1">
+                          Kelola personil IT, departemen, kategori, dan ekspor data.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {appSettings.telegram_chat_ids.map(id => (
-                      <span key={id} className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border ${isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-300' : 'bg-slate-100 border-slate-200 text-slate-600'}`}>
-                        {id}
+
+                  {/* IT Personnel */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className={`text-[10px] font-black ${themeClasses.textMuted} uppercase tracking-widest ml-1`}>Tim IT</label>
+                      <button 
+                        type="button"
+                        onClick={() => setAddingType(addingType === 'it' ? null : 'it')} 
+                        className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
+                      >
+                        {addingType === 'it' ? 'Batal' : '+ Tambah IT'}
+                      </button>
+                    </div>
+                    
+                    {addingType === 'it' && (
+                      <div className="flex gap-2">
+                        <input 
+                          autoFocus
+                          type="text"
+                          value={newItemName}
+                          onChange={e => setNewItemName(e.target.value)}
+                          placeholder="Nama IT baru..."
+                          className={`flex-1 border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
+                          onKeyDown={e => e.key === 'Enter' && handleManagementAction('it', 'add')}
+                        />
                         <button 
                           type="button"
-                          onClick={() => setAppSettings({...appSettings, telegram_chat_ids: appSettings.telegram_chat_ids.filter(i => i !== id)})}
-                          className="text-rose-500 hover:text-rose-600 transition-colors"
+                          onClick={() => handleManagementAction('it', 'add')}
+                          className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase"
                         >
-                          <X className="w-3 h-3" />
+                          Simpan
                         </button>
-                      </span>
-                    ))}
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-2">
+                      {itPersonnel.map(it => (
+                        <div key={it.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
+                          <span className={`text-xs font-bold ${themeClasses.text}`}>{it.name}</span>
+                          <button type="button" onClick={() => handleManagementAction('it', 'delete', it)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Departments */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className={`text-[10px] font-black ${themeClasses.textMuted} uppercase tracking-widest ml-1`}>Departemen</label>
+                      <button 
+                        type="button"
+                        onClick={() => setAddingType(addingType === 'dept' ? null : 'dept')} 
+                        className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
+                      >
+                        {addingType === 'dept' ? 'Batal' : '+ Tambah Departemen'}
+                      </button>
+                    </div>
+
+                    {addingType === 'dept' && (
+                      <div className="flex gap-2">
+                        <input 
+                          autoFocus
+                          type="text"
+                          value={newItemName}
+                          onChange={e => setNewItemName(e.target.value)}
+                          placeholder="Nama Departemen baru..."
+                          className={`flex-1 border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
+                          onKeyDown={e => e.key === 'Enter' && handleManagementAction('dept', 'add')}
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => handleManagementAction('dept', 'add')}
+                          className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase"
+                        >
+                          Simpan
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-2">
+                      {departments.map(dept => (
+                        <div key={dept.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
+                          <span className={`text-xs font-bold ${themeClasses.text}`}>{dept.name}</span>
+                          <button type="button" onClick={() => handleManagementAction('dept', 'delete', dept)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Categories */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className={`text-[10px] font-black ${themeClasses.textMuted} uppercase tracking-widest ml-1`}>Kategori</label>
+                      <button 
+                        type="button"
+                        onClick={() => setAddingType(addingType === 'cat' ? null : 'cat')} 
+                        className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
+                      >
+                        {addingType === 'cat' ? 'Batal' : '+ Tambah Kategori'}
+                      </button>
+                    </div>
+
+                    {addingType === 'cat' && (
+                      <div className="flex gap-2">
+                        <input 
+                          autoFocus
+                          type="text"
+                          value={newItemName}
+                          onChange={e => setNewItemName(e.target.value)}
+                          placeholder="Nama Kategori baru..."
+                          className={`flex-1 border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
+                          onKeyDown={e => e.key === 'Enter' && handleManagementAction('cat', 'add')}
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => handleManagementAction('cat', 'add')}
+                          className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase"
+                        >
+                          Simpan
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-2">
+                      {categories.map(cat => (
+                        <div key={cat.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
+                          <span className={`text-xs font-bold ${themeClasses.text}`}>{cat.name}</span>
+                          <button type="button" onClick={() => handleManagementAction('cat', 'delete', cat)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <button 
+                      type="button"
+                      onClick={() => window.open('/api/tickets/export', '_blank')}
+                      className={`flex flex-col items-center justify-center gap-2 p-6 rounded-2xl border transition-all hover:border-emerald-500 hover:bg-emerald-50 group ${themeClasses.bgSecondary} ${themeClasses.border}`}
+                    >
+                      <Save className="w-6 h-6 text-slate-400 group-hover:text-emerald-600" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-600 group-hover:text-emerald-700">Export CSV</span>
+                    </button>
+                    <button 
+                      type="button"
+                      className={`flex flex-col items-center justify-center gap-2 p-6 rounded-2xl border transition-all hover:border-blue-500 hover:bg-blue-50 group ${themeClasses.bgSecondary} ${themeClasses.border}`}
+                    >
+                      <MessageCircle className="w-6 h-6 text-slate-400 group-hover:text-blue-600" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-600 group-hover:text-blue-700">API Docs</span>
+                    </button>
                   </div>
                 </div>
-              </div>
+              )}
 
-              <div className="pt-8 sm:pt-12 border-t flex flex-col sm:flex-row gap-4">
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
                 <button 
-                  disabled={savingSettings}
                   type="submit"
                   style={{ backgroundColor: primaryColor }}
-                  className="flex-1 text-white font-black py-4 sm:py-5 rounded-2xl text-sm sm:text-base shadow-xl hover:opacity-90 transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 group"
+                  className="w-full py-3 sm:py-4 rounded-2xl text-white font-black uppercase tracking-widest text-xs sm:text-sm shadow-xl shadow-emerald-900/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                 >
-                  {savingSettings ? (
-                    <RefreshCcw className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <>
-                      <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                      Simpan Perubahan
-                    </>
-                  )}
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => setShowSettings(false)}
-                  className={`px-8 py-4 sm:py-5 rounded-2xl font-bold text-sm sm:text-base transition-all ${isDark ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
-                >
-                  Batal
+                  <Save className="w-4 h-4" /> Simpan Konfigurasi
                 </button>
               </div>
             </form>
-          </motion.div>
+          </div>
         </div>
-      )}
-    </AnimatePresence>
+      </motion.div>
+    </div>
   );
-};
+});

@@ -4,7 +4,8 @@ import {
   AlertTriangle, 
   Trash2, 
   RefreshCcw, 
-  X 
+  X,
+  CheckCircle2
 } from 'lucide-react';
 
 interface ConfirmModalProps {
@@ -17,7 +18,7 @@ interface ConfirmModalProps {
   isDark: boolean;
   themeClasses: any;
   loading?: boolean;
-  type?: 'danger' | 'warning';
+  type?: 'danger' | 'warning' | 'success';
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({
@@ -51,9 +52,15 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           >
             <div className="p-8 sm:p-10 text-center">
               <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl ${
-                type === 'danger' ? 'bg-rose-500 shadow-rose-500/20' : 'bg-amber-500 shadow-amber-500/20'
+                type === 'danger' ? 'bg-rose-500 shadow-rose-500/20' : 
+                type === 'success' ? 'bg-emerald-500 shadow-emerald-500/20' :
+                'bg-amber-500 shadow-amber-500/20'
               }`}>
-                <AlertTriangle className="text-white w-10 h-10 sm:w-12 h-12" />
+                {type === 'success' ? (
+                  <CheckCircle2 className="text-white w-10 h-10 sm:w-12 h-12" />
+                ) : (
+                  <AlertTriangle className="text-white w-10 h-10 sm:w-12 h-12" />
+                )}
               </div>
               <h2 className={`text-xl sm:text-2xl font-black tracking-tight mb-3 ${themeClasses.text}`}>{title}</h2>
               <p className={`text-sm sm:text-base font-medium leading-relaxed mb-8 ${themeClasses.textMuted}`}>{message}</p>
@@ -63,14 +70,18 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                   disabled={loading}
                   onClick={onConfirm}
                   className={`w-full text-white font-black py-4 rounded-2xl text-sm sm:text-base shadow-xl transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 ${
-                    type === 'danger' ? 'bg-rose-500 hover:bg-rose-600' : 'bg-amber-500 hover:bg-amber-600'
+                    type === 'danger' ? 'bg-rose-500 hover:bg-rose-600' : 
+                    type === 'success' ? 'bg-emerald-600 hover:bg-emerald-700' :
+                    'bg-amber-500 hover:bg-amber-600'
                   }`}
                 >
                   {loading ? (
                     <RefreshCcw className="w-5 h-5 animate-spin" />
                   ) : (
                     <>
-                      {type === 'danger' ? <Trash2 className="w-5 h-5" /> : <RefreshCcw className="w-5 h-5" />}
+                      {type === 'danger' ? <Trash2 className="w-5 h-5" /> : 
+                       type === 'success' ? <CheckCircle2 className="w-5 h-5" /> :
+                       <RefreshCcw className="w-5 h-5" />}
                       {confirmText}
                     </>
                   )}
