@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { io } from 'socket.io-client';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShieldCheck, 
@@ -239,9 +240,9 @@ export default function App() {
       const matchStatus = filterStatus ? ticket.status === filterStatus : true;
       const matchDate = filterDate ? new Date(ticket.created_at).toLocaleDateString('en-CA') === filterDate : true;
       const matchSearch = searchQuery ? (
-        ticket.id.toString().includes(searchQuery) || 
-        ticket.user_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        ticket.issue_description.toLowerCase().includes(searchQuery.toLowerCase())
+        ticket.ticket_no.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        ticket.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ticket.description.toLowerCase().includes(searchQuery.toLowerCase())
       ) : true;
       return matchDept && matchStatus && matchDate && matchSearch;
     });
@@ -608,6 +609,30 @@ export default function App() {
       getGPSLocation();
     }
   }, [showForm]);
+
+  useEffect(() => {
+    const socket = io();
+    
+    socket.on('ticket_created', (newTicket) => {
+      setTickets(prev => [newTicket, ...prev]);
+    });
+
+    socket.on('ticket_updated', (updatedData) => {
+      setTickets(prev => prev.map(t => t.id === Number(updatedData.id) ? { ...t, ...updatedData } : t));
+      
+      // Update selected ticket if it's the one that was updated
+      setSelectedTicket(prev => {
+        if (prev && prev.id === Number(updatedData.id)) {
+          return { ...prev, ...updatedData };
+        }
+        return prev;
+      });
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   /**
    * Menangani proses login admin
@@ -1443,138 +1468,164 @@ export default function App() {
         </div>
       </main>
 
-      {/* --- MODAL: TICKET DETAIL --- */}
-      <TicketDetailModal
-        selectedTicket={selectedTicket}
-        onClose={() => setSelectedTicket(null)}
-        isDark={isDark}
-        themeClasses={themeClasses}
-        adminUser={adminUser}
-        users={users}
-        ticketLogs={ticketLogs}
-        modalStatus={modalStatus}
-        setModalStatus={setModalStatus}
-        handleIntervention={handleIntervention}
-        handleUpdateClick={handleUpdateClick}
-        formatDate={formatDate}
-        getDeviceInfo={getDeviceInfo}
-        primaryColor={primaryColor}
-      />
+      <AnimatePresence>
+        {/* --- MODAL: TICKET DETAIL --- */}
+        {selectedTicket && (
+          <TicketDetailModal
+            selectedTicket={selectedTicket}
+            setSelectedTicket={setSelectedTicket}
+            isDark={isDark}
+            themeClasses={themeClasses}
+            adminUser={adminUser}
+            users={users}
+            ticketLogs={ticketLogs}
+            modalStatus={modalStatus}
+            setModalStatus={setModalStatus}
+            handleIntervention={handleIntervention}
+            handleUpdateClick={handleUpdateClick}
+            formatDate={formatDate}
+            getDeviceInfo={getDeviceInfo}
+            getStatusColor={getStatusColor}
+            STATUSES={STATUSES}
+            primaryColor={primaryColor}
+          />
+        )}
 
-      {/* --- MODAL: NEW TICKET FORM --- */}
-      <NewTicketModal
-        show={showForm}
-        onClose={() => setShowForm(false)}
-        formData={formData}
-        setFormData={setFormData}
-        handleSubmit={handleSubmit}
-        handlePhotoUpload={handlePhotoUpload}
-        photoLoading={photoLoading}
-        gpsStatus={gpsStatus}
-        gpsError={gpsError}
-        getGPSLocation={getGPSLocation}
-        submitting={submitting}
-        departments={departments}
-        categories={categories}
-        isDark={isDark}
-        themeClasses={themeClasses}
-        primaryColor={primaryColor}
-      />
+        {/* --- MODAL: NEW TICKET FORM --- */}
+        {showForm && (
+          <NewTicketModal
+            showForm={showForm}
+            setShowForm={setShowForm}
+            isDark={isDark}
+            themeClasses={themeClasses}
+            newTicket={formData}
+            setNewTicket={setFormData}
+            DEPARTMENTS={departments.map(d => d.name)}
+            CATEGORIES={categories.map(c => c.name)}
+            handlePhotoChange={handlePhotoUpload}
+            handleSubmit={handleSubmit}
+            isSubmitting={submitting}
+            primaryColor={primaryColor}
+          />
+        )}
 
-      {/* --- MODAL: MOBILE FILTER --- */}
-      <MobileFilterModal 
-        show={showMobileFilter}
-        onClose={() => setShowMobileFilter(false)}
-        isDark={isDark}
-        themeClasses={themeClasses}
-        tempFilters={tempFilters}
-        setTempFilters={setTempFilters}
-        departments={departments}
-        STATUSES={STATUSES}
-        onReset={() => {
-          setFilterDept('');
-          setFilterStatus('');
-          setFilterDate('');
-          setSearchQuery('');
-          setTempFilters({ dept: '', status: '', date: '', search: '' });
-          setShowMobileFilter(false);
-        }}
-        onApply={() => {
-          setFilterDept(tempFilters.dept);
-          setFilterStatus(tempFilters.status);
-          setFilterDate(tempFilters.date);
-          setSearchQuery(tempFilters.search);
-          setShowMobileFilter(false);
-        }}
-      />
+        {/* --- MODAL: MOBILE FILTER --- */}
+        {showMobileFilter && (
+          <MobileFilterModal 
+            show={showMobileFilter}
+            onClose={() => setShowMobileFilter(false)}
+            isDark={isDark}
+            themeClasses={themeClasses}
+            tempFilters={tempFilters}
+            setTempFilters={setTempFilters}
+            departments={departments}
+            STATUSES={STATUSES}
+            onReset={() => {
+              setFilterDept('');
+              setFilterStatus('');
+              setFilterDate('');
+              setSearchQuery('');
+              setTempFilters({ dept: '', status: '', date: '', search: '' });
+              setShowMobileFilter(false);
+            }}
+            onApply={() => {
+              setFilterDept(tempFilters.dept);
+              setFilterStatus(tempFilters.status);
+              setFilterDate(tempFilters.date);
+              setSearchQuery(tempFilters.search);
+              setShowMobileFilter(false);
+            }}
+          />
+        )}
 
-      {/* Success Modal */}
-      <SuccessModal 
-        show={showSuccess}
-        themeClasses={themeClasses}
-      />
+        {/* Success Modal */}
+        {showSuccess && (
+          <SuccessModal 
+            show={showSuccess}
+            themeClasses={themeClasses}
+          />
+        )}
 
-      <LoginModal 
-        showLogin={showLogin}
-        setShowLogin={setShowLogin}
-        isDark={isDark}
-        themeClasses={themeClasses}
-        loginData={loginData}
-        setLoginData={setLoginData}
-        handleLogin={handleLogin}
-        primaryColor={primaryColor}
-      />
+        {showLogin && (
+          <LoginModal 
+            showLogin={showLogin}
+            setShowLogin={setShowLogin}
+            isDark={isDark}
+            themeClasses={themeClasses}
+            loginData={loginData}
+            setLoginData={setLoginData}
+            handleLogin={handleLogin}
+            primaryColor={primaryColor}
+          />
+        )}
 
-      <SettingsModal 
-        showSettings={showSettings}
-        setShowSettings={setShowSettings}
-        isDark={isDark}
-        themeClasses={themeClasses}
-        settingsTab={settingsTab}
-        setSettingsTab={setSettingsTab}
-        appSettings={appSettings}
-        setAppSettings={setAppSettings}
-        LOGO_OPTIONS={LOGO_OPTIONS}
-        newEmailInput={newEmailInput}
-        setNewEmailInput={setNewEmailInput}
-        showEmailInput={showEmailInput}
-        setShowEmailInput={setShowEmailInput}
-        handleUpdateSettings={handleUpdateSettings}
-        primaryColor={primaryColor}
-        adminUser={adminUser}
-        itPersonnel={itPersonnel}
-        departments={departments}
-        categories={categories}
-        addingType={addingType}
-        setAddingType={setAddingType}
-        newItemName={newItemName}
-        setNewItemName={setNewItemName}
-        handleManagementAction={handleManagementAction}
-      />
+        {showSettings && (
+          <SettingsModal 
+            showSettings={showSettings}
+            setShowSettings={setShowSettings}
+            isDark={isDark}
+            themeClasses={themeClasses}
+            settingsTab={settingsTab}
+            setSettingsTab={setSettingsTab}
+            appSettings={appSettings}
+            setAppSettings={setAppSettings}
+            LOGO_OPTIONS={LOGO_OPTIONS}
+            newEmailInput={newEmailInput}
+            setNewEmailInput={setNewEmailInput}
+            showEmailInput={showEmailInput}
+            setShowEmailInput={setShowEmailInput}
+            handleUpdateSettings={handleUpdateSettings}
+            primaryColor={primaryColor}
+            adminUser={adminUser}
+            itPersonnel={itPersonnel}
+            departments={departments}
+            categories={categories}
+            addingType={addingType}
+            setAddingType={setAddingType}
+            newItemName={newItemName}
+            setNewItemName={setNewItemName}
+            handleManagementAction={handleManagementAction}
+          />
+        )}
 
-      <ConfirmModal 
-        show={showResetConfirm}
-        onClose={() => setShowResetConfirm(false)}
-        onConfirm={handleReset}
-        title="Reset All Data?"
-        message="This action will permanently delete all tickets in the queue. This cannot be undone."
-        confirmText="Yes, Reset"
-        isDark={isDark}
-        themeClasses={themeClasses}
-        type="danger"
-      />
+        {showResetConfirm && (
+          <ConfirmModal 
+            show={showResetConfirm}
+            onClose={() => setShowResetConfirm(false)}
+            onConfirm={handleReset}
+            title="Reset All Data?"
+            message="This action will permanently delete all tickets in the queue. This cannot be undone."
+            confirmText="Yes, Reset"
+            isDark={isDark}
+            themeClasses={themeClasses}
+            type="danger"
+          />
+        )}
 
-      <ConfirmModal 
-        show={!!pendingUpdate}
-        onClose={() => setPendingUpdate(null)}
-        onConfirm={confirmUpdate}
-        title="Konfirmasi Perubahan"
-        message={pendingUpdate ? `Apakah Anda yakin ingin memperbarui status menjadi ${pendingUpdate.status} dan menyimpan data penanganan ini?` : ''}
-        confirmText="Ya, Simpan"
-        isDark={isDark}
-        themeClasses={themeClasses}
-        type="success"
-      />
+        {pendingUpdate && (
+          <ConfirmModal 
+            show={!!pendingUpdate}
+            onClose={() => setPendingUpdate(null)}
+            onConfirm={confirmUpdate}
+            title="Konfirmasi Perubahan"
+            message={pendingUpdate ? `Apakah Anda yakin ingin memperbarui status menjadi ${pendingUpdate.status} dan menyimpan data penanganan ini?` : ''}
+            confirmText="Ya, Simpan"
+            isDark={isDark}
+            themeClasses={themeClasses}
+            type="success"
+          />
+        )}
+
+        {showTakeoverConfirm && (
+          <TakeoverModal 
+            showTakeoverConfirm={showTakeoverConfirm}
+            setShowTakeoverConfirm={setShowTakeoverConfirm}
+            isDark={isDark}
+            users={users}
+            executeIntervention={executeIntervention}
+          />
+        )}
+      </AnimatePresence>
 
       <style>{`
         @keyframes spin-slow {
@@ -1585,13 +1636,6 @@ export default function App() {
           animation: spin-slow 3s linear infinite;
         }
       `}</style>
-      <TakeoverModal 
-        showTakeoverConfirm={showTakeoverConfirm}
-        setShowTakeoverConfirm={setShowTakeoverConfirm}
-        isDark={isDark}
-        users={users}
-        executeIntervention={executeIntervention}
-      />
     </div>
   );
 }
