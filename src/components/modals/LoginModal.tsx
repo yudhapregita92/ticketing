@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShieldCheck, User, Lock, LogIn } from 'lucide-react';
 
 interface LoginModalProps {

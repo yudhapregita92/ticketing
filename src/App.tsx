@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { io } from 'socket.io-client';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShieldCheck, 
   Plus, 
@@ -179,6 +179,7 @@ export default function App() {
   const [pendingUpdate, setPendingUpdate] = useState<{id: number, status: string, assigned_to: string | null, admin_reply: string | null, internal_notes: string | null} | null>(null); // Data update yang menunggu konfirmasi
   const [addingType, setAddingType] = useState<'it' | 'dept' | 'cat' | 'master-user' | null>(null);
   const [newItemName, setNewItemName] = useState('');
+  const [newItemAssignedTo, setNewItemAssignedTo] = useState('');
   const [newEmailInput, setNewEmailInput] = useState('');
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -801,7 +802,10 @@ export default function App() {
         const res = await fetch(`/api/${endpoint}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: newItemName.trim() })
+          body: JSON.stringify({ 
+            name: newItemName.trim(),
+            assigned_to: type === 'cat' ? newItemAssignedTo : undefined
+          })
         });
         
         if (!res.ok) {
@@ -810,6 +814,7 @@ export default function App() {
         }
         
         setNewItemName('');
+        setNewItemAssignedTo('');
         setAddingType(null);
       } else {
         if (!confirm(`Hapus ${label} "${data.name}"?`)) return;
@@ -1312,11 +1317,22 @@ export default function App() {
                       {paginatedTickets.map((ticket, index) => (
                             <motion.div
                               key={ticket.id}
-                              initial={{ opacity: 0, y: 20 }}
-                              animate={{ opacity: 1, y: 0 }}
+                              layout
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
                               exit={{ opacity: 0, scale: 0.95 }}
-                              whileHover={{ y: -1, scale: 1.005 }}
-                              transition={{ delay: index * 0.03 }}
+                              whileHover={{ 
+                                y: -2, 
+                                scale: 1.01,
+                                boxShadow: isDark ? "0 10px 30px -10px rgba(0,0,0,0.5)" : "0 10px 30px -10px rgba(16,185,129,0.1)"
+                              }}
+                              whileTap={{ scale: 0.99 }}
+                              transition={{ 
+                                delay: index * 0.04,
+                                type: "spring",
+                                stiffness: 260,
+                                damping: 20
+                              }}
                               className={`${themeClasses.card} rounded-xl p-2 shadow-sm hover:shadow-md transition-all group cursor-pointer relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 ${
                                 getSLAColor(ticket.created_at, ticket.status) || (isDark ? 'hover:border-emerald-900' : 'hover:border-emerald-100')
                               }`}
@@ -1504,14 +1520,16 @@ export default function App() {
               <p className="text-white/80 text-xs leading-relaxed mb-4 font-medium">
                 Kirim tiket untuk masalah teknis. Tim IT kami akan memproses permintaan Anda sesegera mungkin.
               </p>
-              <button 
+              <motion.button 
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setShowForm(true)}
                 className={`w-full font-bold py-3 rounded-2xl text-xs transition-all shadow-lg active:scale-95 ${
                   isDark ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-white text-slate-900 hover:bg-slate-50'
                 }`}
               >
                 Buat Tiket Sekarang
-              </button>
+              </motion.button>
             </section>
           </div>
         </div>
@@ -1634,6 +1652,8 @@ export default function App() {
             setAddingType={setAddingType}
             newItemName={newItemName}
             setNewItemName={setNewItemName}
+            newItemAssignedTo={newItemAssignedTo}
+            setNewItemAssignedTo={setNewItemAssignedTo}
             handleManagementAction={handleManagementAction}
             masterUsers={masterUsers}
             adminUsers={adminUsers}

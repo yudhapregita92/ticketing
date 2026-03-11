@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
   Ticket, 
@@ -144,7 +144,9 @@ export const TicketDetailModal = React.memo(({
                   <Phone className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0" />
                   <div className="min-w-0">
                     <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} uppercase tracking-widest truncate`}>Telepon</p>
-                    <p className={`text-[9px] sm:text-[11px] font-bold ${themeClasses.text} truncate`}>{selectedTicket.phone}</p>
+                    <p className={`text-[9px] sm:text-[11px] font-bold ${themeClasses.text} truncate`}>
+                      {adminUser ? selectedTicket.phone : '••••••••'}
+                    </p>
                   </div>
                 </div>
                 <div className={`p-1.5 sm:p-2.5 rounded-xl border flex items-center gap-2 ${themeClasses.bgSecondary} ${themeClasses.border}`}>

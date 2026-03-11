@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
   Settings2, 
@@ -39,6 +39,8 @@ interface SettingsModalProps {
   setAddingType: (type: 'it' | 'dept' | 'cat' | 'master-user' | 'admin-user' | null) => void;
   newItemName: string;
   setNewItemName: (name: string) => void;
+  newItemAssignedTo: string;
+  setNewItemAssignedTo: (user: string) => void;
   handleManagementAction: (type: 'it' | 'dept' | 'cat' | 'master-user' | 'admin-user', action: 'add' | 'delete', item?: any) => void;
   masterUsers: any[];
   adminUsers: any[];
@@ -69,6 +71,8 @@ export const SettingsModal = React.memo(({
   setAddingType,
   newItemName,
   setNewItemName,
+  newItemAssignedTo,
+  setNewItemAssignedTo,
   handleManagementAction,
   masterUsers,
   adminUsers,
@@ -79,6 +83,7 @@ export const SettingsModal = React.memo(({
   const [masterUserName, setMasterUserName] = React.useState('');
   const [masterUserDept, setMasterUserDept] = React.useState('');
   const [masterUserPhone, setMasterUserPhone] = React.useState('');
+  const [masterUserIndex, setMasterUserIndex] = React.useState('');
 
   const [adminUserUsername, setAdminUserUsername] = React.useState('');
   const [adminUserPassword, setAdminUserPassword] = React.useState('');
@@ -133,7 +138,7 @@ export const SettingsModal = React.memo(({
   };
 
   const handleAddMasterUser = async () => {
-    if (!masterUserName || !masterUserDept || !masterUserPhone) {
+    if (!masterUserName || !masterUserDept || !masterUserPhone || !masterUserIndex) {
       alert('Semua kolom wajib diisi');
       return;
     }
@@ -144,7 +149,8 @@ export const SettingsModal = React.memo(({
         body: JSON.stringify({ 
           full_name: masterUserName, 
           department: masterUserDept, 
-          phone: masterUserPhone 
+          phone: masterUserPhone,
+          employee_index: masterUserIndex
         })
       });
       if (res.ok) {
@@ -152,6 +158,7 @@ export const SettingsModal = React.memo(({
         setMasterUserName('');
         setMasterUserDept('');
         setMasterUserPhone('');
+        setMasterUserIndex('');
         // We'll rely on the parent to refresh data, or just call handleManagementAction if we can
         handleManagementAction('master-user', 'add');
       }
@@ -555,33 +562,53 @@ export const SettingsModal = React.memo(({
                       </div>
 
                       {addingType === 'cat' && (
-                        <div className="flex gap-2">
-                          <input 
-                            autoFocus
-                            type="text"
-                            value={newItemName}
-                            onChange={e => setNewItemName(e.target.value)}
-                            placeholder="Nama Kategori baru..."
-                            className={`flex-1 border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
-                            onKeyDown={e => e.key === 'Enter' && handleManagementAction('cat', 'add')}
-                          />
-                          <button 
-                            type="button"
-                            onClick={() => handleManagementAction('cat', 'add')}
-                            className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase"
-                          >
-                            Simpan
-                          </button>
+                        <div className="flex flex-col gap-2 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                          <div className="flex gap-2">
+                            <input 
+                              autoFocus
+                              type="text"
+                              value={newItemName}
+                              onChange={e => setNewItemName(e.target.value)}
+                              placeholder="Nama Kategori baru..."
+                              className={`flex-1 border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
+                            />
+                          </div>
+                          <div className="flex gap-2 items-center">
+                            <select
+                              value={newItemAssignedTo}
+                              onChange={e => setNewItemAssignedTo(e.target.value)}
+                              className={`flex-1 border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
+                            >
+                              <option value="">Pilih IT Penanggung Jawab...</option>
+                              {adminUsers.map(user => (
+                                <option key={user.id} value={user.username}>{user.full_name} ({user.username})</option>
+                              ))}
+                            </select>
+                            <button 
+                              type="button"
+                              onClick={() => handleManagementAction('cat', 'add')}
+                              className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase"
+                            >
+                              Simpan
+                            </button>
+                          </div>
                         </div>
                       )}
 
                       <div className="flex flex-wrap gap-2">
                         {Array.isArray(categories) && categories.map(cat => (
-                          <div key={cat.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
-                            <span className={`text-xs font-bold ${themeClasses.text}`}>{cat.name}</span>
-                            <button type="button" onClick={() => handleManagementAction('cat', 'delete', cat)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Trash2 className="w-3 h-3" />
-                            </button>
+                          <div key={cat.id} className={`flex flex-col gap-1 ${themeClasses.bgSecondary} px-3 py-2 rounded-lg border ${themeClasses.border} group min-w-[120px]`}>
+                            <div className="flex items-center justify-between">
+                              <span className={`text-xs font-bold ${themeClasses.text}`}>{cat.name}</span>
+                              <button type="button" onClick={() => handleManagementAction('cat', 'delete', cat)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                            {cat.assigned_to && (
+                              <span className="text-[9px] font-black text-emerald-500 uppercase tracking-tighter">
+                                PIC: {cat.assigned_to}
+                              </span>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -633,6 +660,13 @@ export const SettingsModal = React.memo(({
                             onChange={e => setMasterUserPhone(e.target.value)}
                           />
                         </div>
+                        <input 
+                          type="text"
+                          placeholder="Indek Karyawan"
+                          className={`w-full px-3 py-2 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                          value={masterUserIndex}
+                          onChange={e => setMasterUserIndex(e.target.value)}
+                        />
                         <div className="flex gap-2">
                           <button 
                             type="button"
@@ -657,7 +691,7 @@ export const SettingsModal = React.memo(({
                         <div key={user.id} className={`flex items-center justify-between p-2.5 rounded-xl border ${themeClasses.border} ${themeClasses.bgSecondary}`}>
                           <div className="flex flex-col">
                             <span className="text-[11px] font-bold">{user.full_name}</span>
-                            <span className="text-[9px] text-slate-400 uppercase font-black">{user.department} • {user.phone}</span>
+                            <span className="text-[9px] text-slate-400 uppercase font-black">{user.department} • {user.phone} • Indek: {user.employee_index}</span>
                           </div>
                           <button 
                             type="button"

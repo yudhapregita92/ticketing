@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { 
   Bell, 
   AlertCircle, 
@@ -54,6 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <motion.section 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          whileHover={{ y: -4, boxShadow: isDark ? "0 20px 40px -10px rgba(0,0,0,0.5)" : "0 20px 40px -10px rgba(0,0,0,0.05)" }}
           className={`${themeClasses.card} rounded-3xl border p-4 sm:p-6 shadow-sm overflow-hidden relative`}
         >
           <div className="absolute top-0 right-0 p-6 opacity-5">
@@ -70,13 +71,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             </div>
             {typeof window !== 'undefined' && "Notification" in window && Notification.permission !== "granted" && (
-              <button 
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => Notification.requestPermission().then(() => fetchTickets())}
                 className="p-2 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-all group"
                 title="Aktifkan Notifikasi Browser"
               >
                 <Bell className="w-4 h-4 animate-bounce group-hover:animate-none" />
-              </button>
+              </motion.button>
             )}
           </div>
           
@@ -138,22 +141,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <BarChart3 className="w-4 h-4 text-slate-300" />
         </div>
         <div className="grid grid-cols-4 gap-1.5">
-          <div className="bg-slate-50 border border-slate-100 rounded-xl p-2 flex flex-col items-center justify-center text-center">
-            <span className="text-base font-black text-slate-900 leading-none mb-0.5">{filteredTickets.length}</span>
+          <motion.div 
+            whileHover={{ y: -2, scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="bg-slate-50 border border-slate-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
+          >
+            <Counter value={filteredTickets.length} className="text-base font-black text-slate-900 leading-none mb-0.5" />
             <span className="text-[7px] font-bold text-slate-400 uppercase tracking-wider">Total</span>
-          </div>
-          <div className="bg-amber-50 border border-amber-100 rounded-xl p-2 flex flex-col items-center justify-center text-center">
-            <span className="text-base font-black text-amber-500 leading-none mb-0.5">{filteredTickets.filter(t => t.status === 'New').length}</span>
+          </motion.div>
+          <motion.div 
+            whileHover={{ y: -2, scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="bg-amber-50 border border-amber-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
+          >
+            <Counter value={filteredTickets.filter(t => t.status === 'New').length} className="text-base font-black text-amber-500 leading-none mb-0.5" />
             <span className="text-[7px] font-bold text-amber-500 uppercase tracking-wider">Wait</span>
-          </div>
-          <div className="bg-blue-50 border border-blue-100 rounded-xl p-2 flex flex-col items-center justify-center text-center">
-            <span className="text-base font-black text-blue-500 leading-none mb-0.5">{filteredTickets.filter(t => t.status === 'In Progress').length}</span>
+          </motion.div>
+          <motion.div 
+            whileHover={{ y: -2, scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="bg-blue-50 border border-blue-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
+          >
+            <Counter value={filteredTickets.filter(t => t.status === 'In Progress').length} className="text-base font-black text-blue-500 leading-none mb-0.5" />
             <span className="text-[7px] font-bold text-blue-500 uppercase tracking-wider">Active</span>
-          </div>
-          <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-2 flex flex-col items-center justify-center text-center">
-            <span className="text-base font-black text-emerald-500 leading-none mb-0.5">{filteredTickets.filter(t => t.status === 'Completed').length}</span>
+          </motion.div>
+          <motion.div 
+            whileHover={{ y: -2, scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="bg-emerald-50 border border-emerald-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
+          >
+            <Counter value={filteredTickets.filter(t => t.status === 'Completed').length} className="text-base font-black text-emerald-500 leading-none mb-0.5" />
             <span className="text-[7px] font-bold text-emerald-500 uppercase tracking-wider">Done</span>
-          </div>
+          </motion.div>
         </div>
       </section>
 

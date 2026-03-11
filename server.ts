@@ -210,7 +210,8 @@ async function startServer() {
 
       CREATE TABLE IF NOT EXISTS categories (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE NOT NULL
+        name TEXT UNIQUE NOT NULL,
+        assigned_to TEXT
       );
 
       CREATE TABLE IF NOT EXISTS ticket_logs (
@@ -227,7 +228,8 @@ async function startServer() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         full_name TEXT UNIQUE NOT NULL,
         department TEXT NOT NULL,
-        phone TEXT NOT NULL
+        phone TEXT NOT NULL,
+        employee_index TEXT
       );
     `);
 
@@ -252,6 +254,20 @@ async function startServer() {
       db.exec("ALTER TABLE tickets ADD COLUMN resolved_at DATETIME");
     }
 
+    const catTableInfo = db.prepare("PRAGMA table_info(categories)").all() as any[];
+    const catColumns = catTableInfo.map(c => c.name);
+    if (!catColumns.includes('assigned_to')) {
+      console.log("Adding missing column: assigned_to to categories");
+      db.exec("ALTER TABLE categories ADD COLUMN assigned_to TEXT");
+    }
+
+    const masterTableInfo = db.prepare("PRAGMA table_info(master_users)").all() as any[];
+    const masterColumns = masterTableInfo.map(c => c.name);
+    if (!masterColumns.includes('employee_index')) {
+      console.log("Adding missing column: employee_index to master_users");
+      db.exec("ALTER TABLE master_users ADD COLUMN employee_index TEXT");
+    }
+
     console.log("Database tables checked/created.");
   } catch (err) {
     console.error("Database initialization error:", err);
@@ -273,18 +289,24 @@ async function startServer() {
 
     const catCount = db.prepare("SELECT COUNT(*) as count FROM categories").get() as { count: number };
     if (catCount.count === 0) {
-      const insert = db.prepare("INSERT INTO categories (name) VALUES (?)");
-      ['Synergi', 'SCM', 'MKT', 'Hardware', 'Jaringan'].forEach(name => insert.run(name));
+      const insert = db.prepare("INSERT INTO categories (name, assigned_to) VALUES (?, ?)");
+      [
+        ['Hardware', 'bayu'],
+        ['Jaringan', 'bayu'],
+        ['MKT', 'bayu'],
+        ['SCM', 'dita'],
+        ['Synergi', 'dita']
+      ].forEach(c => insert.run(c[0], c[1]));
     }
 
     const masterUserCount = db.prepare("SELECT COUNT(*) as count FROM master_users").get() as { count: number };
     if (masterUserCount.count === 0) {
-      const insert = db.prepare("INSERT INTO master_users (full_name, department, phone) VALUES (?, ?, ?)");
+      const insert = db.prepare("INSERT INTO master_users (full_name, department, phone, employee_index) VALUES (?, ?, ?, ?)");
       [
-        ['Budi Santoso', 'HRGA', '081234567890'],
-        ['Siti Aminah', 'CE Business', '081234567891'],
-        ['Andi Wijaya', 'Fleet Business', '081234567892']
-      ].forEach(u => insert.run(u[0], u[1], u[2]));
+        ['Budi Santoso', 'HRGA', '081234567890', '12345'],
+        ['Siti Aminah', 'CE Business', '081234567891', '67890'],
+        ['Andi Wijaya', 'Fleet Business', '081234567892', '11223']
+      ].forEach(u => insert.run(u[0], u[1], u[2], u[3]));
     }
 
     // Add new columns if they don't exist (for existing databases)
@@ -561,9 +583,9 @@ async function startServer() {
     res.json(db.prepare("SELECT * FROM categories ORDER BY name ASC").all());
   });
   app.post("/api/categories", (req, res) => {
-    const { name } = req.body;
+    const { name, assigned_to } = req.body;
     try {
-      db.prepare("INSERT INTO categories (name) VALUES (?)").run(name);
+      db.prepare("INSERT INTO categories (name, assigned_to) VALUES (?, ?)").run(name, assigned_to || null);
       res.json({ success: true });
     } catch (e: any) { res.status(400).json({ error: e.message }); }
   });
@@ -576,9 +598,9 @@ async function startServer() {
     res.json(db.prepare("SELECT * FROM master_users ORDER BY full_name ASC").all());
   });
   app.post("/api/master-users", (req, res) => {
-    const { full_name, department, phone } = req.body;
+    const { full_name, department, phone, employee_index } = req.body;
     try {
-      db.prepare("INSERT INTO master_users (full_name, department, phone) VALUES (?, ?, ?)").run(full_name, department, phone);
+      db.prepare("INSERT INTO master_users (full_name, department, phone, employee_index) VALUES (?, ?, ?, ?)").run(full_name, department, phone, employee_index);
       res.json({ success: true });
     } catch (e: any) { res.status(400).json({ error: e.message }); }
   });
@@ -595,7 +617,7 @@ async function startServer() {
       const sheet = workbook.Sheets[sheetName];
       const data = xlsx.utils.sheet_to_json(sheet);
       
-      const insert = db.prepare("INSERT OR REPLACE INTO master_users (full_name, department, phone) VALUES (?, ?, ?)");
+      const insert = db.prepare("INSERT OR REPLACE INTO master_users (full_name, department, phone, employee_index) VALUES (?, ?, ?, ?)");
       
       let count = 0;
       db.transaction(() => {
@@ -603,9 +625,10 @@ async function startServer() {
           const fullName = row['Nama'] || row['Nama Lengkap'] || row['full_name'] || row['name'] || row['Nama User'];
           const department = row['Bagian'] || row['Departemen'] || row['department'] || row['dept'] || row['Unit'];
           const phone = row['No HP'] || row['Telepon'] || row['phone'] || row['no_hp'] || row['No Telepon'];
+          const employeeIndex = row['Indek'] || row['Indeks'] || row['Index'] || row['employee_index'] || row['NIK'];
           
-          if (fullName && department && phone) {
-            insert.run(String(fullName).trim(), String(department).trim(), String(phone).trim());
+          if (fullName && department && phone && employeeIndex) {
+            insert.run(String(fullName).trim(), String(department).trim(), String(phone).trim(), String(employeeIndex).trim());
             count++;
           }
         }
@@ -680,9 +703,11 @@ async function startServer() {
       const { name, department, phone, category, description, photo, latitude, longitude } = req.body;
       console.log('Incoming ticket data:', { name, department, phone, category, hasPhoto: !!photo, lat: latitude, lng: longitude });
       
-      if (!name || !department || !phone || !category) {
+      if (!name || !department || !category) {
         return res.status(400).json({ error: "Missing required fields" });
       }
+
+      const finalPhone = phone || "-";
 
       // Generate ticket_no: YYMMDDNNN
       const utcNow = new Date();
@@ -712,15 +737,14 @@ async function startServer() {
 
       // Auto-mapping logic
       let assignedTo = 'yudha'; // Default
-      if (['Hardware', 'Jaringan', 'MKT'].includes(category)) {
-        assignedTo = 'bayu';
-      } else if (['SCM', 'Synergi'].includes(category)) {
-        assignedTo = 'dita';
+      const catInfo = db.prepare("SELECT assigned_to FROM categories WHERE name = ?").get(category) as { assigned_to: string } | undefined;
+      if (catInfo && catInfo.assigned_to) {
+        assignedTo = catInfo.assigned_to;
       }
 
       const info = db.prepare(
         "INSERT INTO tickets (ticket_no, name, department, phone, category, description, photo, created_at, ip_address, user_agent, latitude, longitude, assigned_to, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-      ).run(ticketNo, name, department, phone, category, description || "", photo || null, utcNow.toISOString(), String(ip), String(userAgent), latitude || null, longitude || null, assignedTo, 'New');
+      ).run(ticketNo, name, department, finalPhone, category, description || "", photo || null, utcNow.toISOString(), String(ip), String(userAgent), latitude || null, longitude || null, assignedTo, 'New');
       
       const newTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(info.lastInsertRowid) as any;
       

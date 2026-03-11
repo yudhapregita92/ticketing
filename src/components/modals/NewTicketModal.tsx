@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { 
   X, 
   Ticket, 
@@ -10,7 +10,9 @@ import {
   MessageSquare, 
   Camera,
   Trash2,
-  Send
+  Send,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 interface NewTicketModalProps {
@@ -33,7 +35,7 @@ interface NewTicketModalProps {
   handleSubmit: (e: React.FormEvent) => void;
   isSubmitting: boolean;
   primaryColor: string;
-  masterUsers: {id: number, full_name: string, department: string, phone: string}[];
+  masterUsers: {id: number, full_name: string, department: string, phone: string, employee_index?: string}[];
 }
 
 export const NewTicketModal = React.memo(({
@@ -52,6 +54,9 @@ export const NewTicketModal = React.memo(({
   masterUsers
 }: NewTicketModalProps) => {
   const [showUserDropdown, setShowUserDropdown] = React.useState(false);
+  const [inputIndex, setInputIndex] = React.useState('');
+  const [correctIndex, setCorrectIndex] = React.useState('');
+  const [showIndex, setShowIndex] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -79,12 +84,26 @@ export const NewTicketModal = React.memo(({
       department: user.department,
       phone: user.phone
     });
+    setCorrectIndex(user.employee_index || '');
     setShowUserDropdown(false);
   };
 
   const handleNameChange = (name: string) => {
     setNewTicket({ ...newTicket, name });
     setShowUserDropdown(true);
+  };
+
+  const onFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!correctIndex) {
+      alert('Silakan cari dan pilih nama Anda dari daftar terlebih dahulu.');
+      return;
+    }
+    if (inputIndex !== correctIndex) {
+      alert('Indek Karyawan yang Anda masukkan salah. Mohon periksa kembali.');
+      return;
+    }
+    handleSubmit(e);
   };
 
   return (
@@ -122,7 +141,7 @@ export const NewTicketModal = React.memo(({
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto custom-scrollbar space-y-4 sm:space-y-5">
+        <form onSubmit={onFormSubmit} className="p-4 sm:p-6 overflow-y-auto custom-scrollbar space-y-4 sm:space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5 relative" ref={dropdownRef}>
               <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
@@ -146,7 +165,7 @@ export const NewTicketModal = React.memo(({
                       onClick={() => handleSelectUser(user)}
                     >
                       <div className={`text-xs font-bold ${themeClasses.text}`}>{user.full_name}</div>
-                      <div className={`text-[10px] ${themeClasses.textMuted}`}>{user.department} • {user.phone}</div>
+                      <div className={`text-[10px] ${themeClasses.textMuted}`}>{user.department}</div>
                     </div>
                   ))}
                 </div>
@@ -167,20 +186,7 @@ export const NewTicketModal = React.memo(({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                <Phone className="w-3 h-3" /> Nomor Telepon / WA
-              </label>
-              <input 
-                required
-                type="tel"
-                placeholder="0812xxxx"
-                className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
-                value={newTicket.phone}
-                onChange={e => setNewTicket({...newTicket, phone: e.target.value})}
-              />
-            </div>
+          <div className="grid grid-cols-1 gap-4">
             <div className="space-y-1.5">
               <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                 <Layers className="w-3 h-3" /> Kategori Masalah
@@ -246,12 +252,44 @@ export const NewTicketModal = React.memo(({
             </div>
           </div>
 
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+              <Ticket className="w-3 h-3" /> Indek Karyawan
+            </label>
+            <div className="relative">
+              <input 
+                required
+                type={showIndex ? "text" : "password"}
+                placeholder="Masukkan Indek Karyawan Anda..."
+                className={`w-full px-4 py-2.5 pr-12 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text} ${inputIndex && inputIndex !== correctIndex ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
+                value={inputIndex}
+                onChange={e => setInputIndex(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowIndex(!showIndex)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-emerald-500 transition-colors"
+              >
+                {showIndex ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {inputIndex && inputIndex !== correctIndex ? (
+              <p className="text-[9px] font-bold text-rose-500 uppercase tracking-tight ml-1 animate-pulse">
+                ⚠ Indek Karyawan tidak sesuai!
+              </p>
+            ) : (
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight ml-1">
+                * Verifikasi identitas untuk mengirim tiket
+              </p>
+            )}
+          </div>
+
           <div className="pt-2">
             <button 
               type="submit"
-              disabled={isSubmitting}
-              style={{ backgroundColor: primaryColor }}
-              className={`w-full py-3 sm:py-4 rounded-2xl text-white font-black uppercase tracking-widest text-xs sm:text-sm shadow-xl shadow-emerald-900/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+              disabled={isSubmitting || !inputIndex}
+              style={{ backgroundColor: inputIndex ? primaryColor : '#94a3b8' }}
+              className={`w-full py-3 sm:py-4 rounded-2xl text-white font-black uppercase tracking-widest text-xs sm:text-sm shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:cursor-not-allowed`}
             >
               {isSubmitting ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
