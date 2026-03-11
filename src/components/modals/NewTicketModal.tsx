@@ -33,6 +33,7 @@ interface NewTicketModalProps {
   handleSubmit: (e: React.FormEvent) => void;
   isSubmitting: boolean;
   primaryColor: string;
+  masterUsers: {id: number, full_name: string, department: string, phone: string}[];
 }
 
 export const NewTicketModal = React.memo(({
@@ -47,9 +48,44 @@ export const NewTicketModal = React.memo(({
   handlePhotoChange,
   handleSubmit,
   isSubmitting,
-  primaryColor
+  primaryColor,
+  masterUsers
 }: NewTicketModalProps) => {
+  const [showUserDropdown, setShowUserDropdown] = React.useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowUserDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filteredUsers = React.useMemo(() => {
+    if (!Array.isArray(masterUsers)) return [];
+    const search = newTicket.name || '';
+    return masterUsers.filter(u => u.full_name.toLowerCase().includes(search.toLowerCase()));
+  }, [masterUsers, newTicket.name]);
+
   if (!showForm) return null;
+
+  const handleSelectUser = (user: any) => {
+    setNewTicket({
+      ...newTicket,
+      name: user.full_name,
+      department: user.department,
+      phone: user.phone
+    });
+    setShowUserDropdown(false);
+  };
+
+  const handleNameChange = (name: string) => {
+    setNewTicket({ ...newTicket, name });
+    setShowUserDropdown(true);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -88,32 +124,46 @@ export const NewTicketModal = React.memo(({
 
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto custom-scrollbar space-y-4 sm:space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 relative" ref={dropdownRef}>
               <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                 <User className="w-3 h-3" /> Nama Lengkap
               </label>
               <input 
                 required
                 type="text"
-                placeholder="Contoh: Budi Santoso"
+                placeholder="Cari Nama User..."
                 className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                 value={newTicket.name}
-                onChange={e => setNewTicket({...newTicket, name: e.target.value})}
+                onChange={e => handleNameChange(e.target.value)}
+                onFocus={() => setShowUserDropdown(true)}
               />
+              {showUserDropdown && filteredUsers.length > 0 && (
+                <div className={`absolute top-full left-0 z-50 w-full mt-1 max-h-48 overflow-y-auto rounded-xl border shadow-xl ${isDark ? 'bg-slate-900' : 'bg-white'} ${themeClasses.border}`}>
+                  {filteredUsers.map(user => (
+                    <div 
+                      key={user.id} 
+                      className={`px-4 py-2 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors border-b last:border-0 ${themeClasses.border}`}
+                      onClick={() => handleSelectUser(user)}
+                    >
+                      <div className={`text-xs font-bold ${themeClasses.text}`}>{user.full_name}</div>
+                      <div className={`text-[10px] ${themeClasses.textMuted}`}>{user.department} • {user.phone}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="space-y-1.5">
               <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                 <Building2 className="w-3 h-3" /> Bagian / Unit
               </label>
-              <select 
+              <input 
                 required
+                type="text"
+                placeholder="Otomatis terisi..."
                 className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                 value={newTicket.department}
                 onChange={e => setNewTicket({...newTicket, department: e.target.value})}
-              >
-                <option value="">Pilih Bagian...</option>
-                {DEPARTMENTS.map(dept => <option key={dept} value={dept}>{dept}</option>)}
-              </select>
+              />
             </div>
           </div>
 
@@ -142,7 +192,7 @@ export const NewTicketModal = React.memo(({
                 onChange={e => setNewTicket({...newTicket, category: e.target.value})}
               >
                 <option value="">Pilih Kategori...</option>
-                {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                {Array.isArray(CATEGORIES) && CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
               </select>
             </div>
           </div>

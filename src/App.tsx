@@ -127,8 +127,10 @@ export default function App() {
   const [ticketLogs, setTicketLogs] = useState<any[]>([]); // Riwayat tiket
   const [itPersonnel, setItPersonnel] = useState<{id: number, name: string}[]>([]);
   const [users, setUsers] = useState<{id: number, username: string, full_name: string, role: string}[]>([]);
+  const [adminUsers, setAdminUsers] = useState<{id: number, username: string, full_name: string, role: string}[]>([]);
   const [departments, setDepartments] = useState<{id: number, name: string}[]>([]);
   const [categories, setCategories] = useState<{id: number, name: string}[]>([]);
+  const [masterUsers, setMasterUsers] = useState<{id: number, full_name: string, department: string, phone: string}[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<ITicket | null>(null); // Tiket yang sedang dilihat detailnya
   const [modalStatus, setModalStatus] = useState<string>(''); // Status sementara di modal detail
 
@@ -175,7 +177,7 @@ export default function App() {
   const [showTakeoverConfirm, setShowTakeoverConfirm] = useState<{id: number, type: 'takeover' | 'reassign', targetUser?: string} | null>(null);
   const [showDistribution, setShowDistribution] = useState(false); // Toggle distribusi masalah
   const [pendingUpdate, setPendingUpdate] = useState<{id: number, status: string, assigned_to: string | null, admin_reply: string | null, internal_notes: string | null} | null>(null); // Data update yang menunggu konfirmasi
-  const [addingType, setAddingType] = useState<'it' | 'dept' | 'cat' | null>(null);
+  const [addingType, setAddingType] = useState<'it' | 'dept' | 'cat' | 'master-user' | null>(null);
   const [newItemName, setNewItemName] = useState('');
   const [newEmailInput, setNewEmailInput] = useState('');
   const [showEmailInput, setShowEmailInput] = useState(false);
@@ -289,6 +291,7 @@ export default function App() {
    * Menghitung statistik kategori untuk Pie Chart
    */
   const categoryStats = useMemo(() => {
+    if (!Array.isArray(categories)) return [];
     const stats = categories.map(cat => ({
       name: cat.name,
       value: tickets.filter(t => t.category === cat.name).length
@@ -486,7 +489,7 @@ export default function App() {
     if (showLoading) setLoading(true);
     try {
       const url = adminUser 
-        ? `/api/tickets?username=${adminUser.username}&role=${adminUser.role}`
+        ? `/api/tickets?username=${encodeURIComponent(adminUser.username)}&role=${encodeURIComponent(adminUser.role)}`
         : '/api/tickets';
       const res = await fetch(url);
       const data = await res.json();
@@ -536,14 +539,16 @@ export default function App() {
   const fetchManagementData = async () => {
     try {
       console.log('Fetching management data...');
-      const [itRes, deptRes, catRes, usersRes] = await Promise.all([
+      const [itRes, deptRes, catRes, usersRes, masterUsersRes, adminUsersRes] = await Promise.all([
         fetch('/api/it-personnel'),
         fetch('/api/departments'),
         fetch('/api/categories'),
-        fetch('/api/users')
+        fetch('/api/users'),
+        fetch('/api/master-users'),
+        fetch('/api/admin-users')
       ]);
       
-      if (!itRes.ok || !deptRes.ok || !catRes.ok || !usersRes.ok) {
+      if (!itRes.ok || !deptRes.ok || !catRes.ok || !usersRes.ok || !masterUsersRes.ok || !adminUsersRes.ok) {
         throw new Error('Gagal mengambil data manajemen');
       }
 
@@ -551,13 +556,17 @@ export default function App() {
       const depts = await deptRes.json();
       const cats = await catRes.json();
       const usersData = await usersRes.json();
+      const masterUsersData = await masterUsersRes.json();
+      const adminUsersData = await adminUsersRes.json();
       
-      console.log('Management data fetched:', { its, depts, cats, usersData });
+      console.log('Management data fetched:', { its, depts, cats, usersData, masterUsersData, adminUsersData });
       
       setItPersonnel(its);
       setDepartments(depts);
       setCategories(cats);
       setUsers(usersData);
+      setMasterUsers(masterUsersData);
+      setAdminUsers(adminUsersData);
     } catch (err) {
       console.error('Failed to fetch management data:', err);
     }
@@ -586,6 +595,34 @@ export default function App() {
     } catch (err) {
       console.error('Failed to fetch settings:', err);
     }
+  };
+
+  const handleUploadExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/master-users/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Berhasil mengunggah ${data.count} user.`);
+        fetchManagementData();
+      } else {
+        alert(`Gagal: ${data.error}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Terjadi kesalahan saat mengunggah file.');
+    }
+    
+    // reset input
+    e.target.value = '';
   };
 
   /**
@@ -658,7 +695,7 @@ export default function App() {
         }
         
         // Re-fetch tickets with user context
-        const url = `/api/tickets?username=${data.user.username}&role=${data.user.role}`;
+        const url = `/api/tickets?username=${encodeURIComponent(data.user.username)}&role=${encodeURIComponent(data.user.role)}`;
         const ticketRes = await fetch(url);
         const ticketData = await ticketRes.json();
         setTickets(ticketData);
@@ -734,7 +771,26 @@ export default function App() {
     } catch (err) { alert('Gagal menghapus tiket'); }
   };
 
-  const handleManagementAction = async (type: 'it' | 'dept' | 'cat', action: 'add' | 'delete', data?: any) => {
+  const handleManagementAction = async (type: 'it' | 'dept' | 'cat' | 'master-user' | 'admin-user', action: 'add' | 'delete' | 'refresh', data?: any) => {
+    if (type === 'master-user') {
+      // For master-user, we just refresh the data since the actual add/delete 
+      // is handled inside SettingsModal for simplicity with multiple fields
+      const res = await fetch('/api/master-users');
+      const masterUsersData = await res.json();
+      setMasterUsers(masterUsersData);
+      return;
+    }
+    
+    if (type === 'admin-user') {
+      const [adminRes, usersRes] = await Promise.all([
+        fetch('/api/admin-users'),
+        fetch('/api/users')
+      ]);
+      setAdminUsers(await adminRes.json());
+      setUsers(await usersRes.json());
+      return;
+    }
+
     const endpoint = type === 'it' ? 'it-personnel' : type === 'dept' ? 'departments' : 'categories';
     const label = type === 'it' ? 'IT' : type === 'dept' ? 'Departemen' : 'Kategori';
     
@@ -1138,19 +1194,19 @@ export default function App() {
                   className={`w-full border rounded-xl py-2 pl-8 pr-4 text-[10px] sm:text-xs font-bold outline-none transition-all ${themeClasses.input}`}
                 />
               </div>
-              <div className="flex-1 relative">
-                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                <select 
-                  value={filterDept}
-                  onChange={(e) => setFilterDept(e.target.value)}
-                  className={`w-full border rounded-xl py-2 pl-8 pr-4 text-[10px] sm:text-xs font-bold outline-none appearance-none cursor-pointer transition-all ${themeClasses.input}`}
-                >
-                  <option value="">Semua Bagian</option>
-                  {departments.map(dept => (
-                    <option key={dept.id} value={dept.name}>{dept.name}</option>
-                  ))}
-                </select>
-              </div>
+                  <div className="flex-1 relative">
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                    <select 
+                      value={filterDept}
+                      onChange={(e) => setFilterDept(e.target.value)}
+                      className={`w-full border rounded-xl py-2 pl-8 pr-4 text-[10px] sm:text-xs font-bold outline-none appearance-none cursor-pointer transition-all ${themeClasses.input}`}
+                    >
+                      <option value="">Semua Bagian</option>
+                      {Array.isArray(departments) && departments.map(dept => (
+                        <option key={dept.id} value={dept.name}>{dept.name}</option>
+                      ))}
+                    </select>
+                  </div>
               <div className="flex-1 relative">
                 <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                 <select 
@@ -1251,7 +1307,7 @@ export default function App() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                       transition={{ duration: 0.2 }}
-                      className="flex flex-col gap-3"
+                      className="flex flex-col gap-2"
                     >
                       {paginatedTickets.map((ticket, index) => (
                             <motion.div
@@ -1259,23 +1315,23 @@ export default function App() {
                               initial={{ opacity: 0, y: 20 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.95 }}
-                              whileHover={{ y: -2, scale: 1.01, rotate: 0.5 }}
-                              transition={{ delay: index * 0.05 }}
-                              className={`${themeClasses.card} rounded-2xl p-3 shadow-sm hover:shadow-md transition-all group cursor-pointer relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between ${
+                              whileHover={{ y: -1, scale: 1.005 }}
+                              transition={{ delay: index * 0.03 }}
+                              className={`${themeClasses.card} rounded-xl p-2 shadow-sm hover:shadow-md transition-all group cursor-pointer relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 ${
                                 getSLAColor(ticket.created_at, ticket.status) || (isDark ? 'hover:border-emerald-900' : 'hover:border-emerald-100')
                               }`}
                               onClick={() => handleSelectTicket(ticket)}
                             >
                             <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                             
-                            <div className="flex items-start gap-3 min-w-0 sm:w-1/2">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
                               <div className="flex-shrink-0">
                                 <motion.div 
                                   whileHover={{ scale: 1.1 }}
                                   whileTap={{ scale: 0.9 }}
                                   animate={ticket.status === 'New' ? {
-                                    scale: [1, 1.1, 1],
-                                    boxShadow: ["0 0 0px rgba(245, 158, 11, 0)", "0 0 10px rgba(245, 158, 11, 0.4)", "0 0 0px rgba(245, 158, 11, 0)"]
+                                    scale: [1, 1.05, 1],
+                                    boxShadow: ["0 0 0px rgba(245, 158, 11, 0)", "0 0 8px rgba(245, 158, 11, 0.3)", "0 0 0px rgba(245, 158, 11, 0)"]
                                   } : {}}
                                   transition={{ repeat: Infinity, duration: 2 }}
                                   className={`w-8 h-8 rounded-lg flex items-center justify-center border ${
@@ -1289,74 +1345,67 @@ export default function App() {
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center justify-between gap-2 mb-0.5">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1.5">
                                     <span className="text-[9px] font-black text-slate-400 tracking-tighter">#{ticket.ticket_no || ticket.id.toString().padStart(4, '0')}</span>
                                     {adminUser?.role === 'Super Admin' && ticket.assigned_to && (
-                                      <span className="text-[8px] font-black bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded uppercase">[{ticket.assigned_to}]</span>
+                                      <span className="text-[8px] font-black bg-slate-100 text-slate-600 px-1 py-0.5 rounded uppercase leading-none">@{ticket.assigned_to}</span>
                                     )}
                                     {getSLALabel(ticket.created_at, ticket.status) && (
-                                      <span className="text-[8px] font-black px-1.5 py-0.5 rounded uppercase bg-rose-500 text-white">{getSLALabel(ticket.created_at, ticket.status)}</span>
+                                      <span className="text-[8px] font-black px-1.5 py-0.5 rounded uppercase bg-rose-500 text-white leading-none">{getSLALabel(ticket.created_at, ticket.status)}</span>
                                     )}
                                   </div>
+                                  <span className="flex items-center gap-1 text-[9px] text-slate-400 font-medium">
+                                    <Calendar className="w-2.5 h-2.5 shrink-0" /> {formatDate(ticket.created_at)}
+                                  </span>
                                 </div>
-                                <h3 className="text-xs font-black text-slate-900 truncate group-hover:text-emerald-600 transition-colors mb-1.5">
+                                <h3 className="text-[11px] font-black text-slate-900 truncate group-hover:text-emerald-600 transition-colors mb-1">
                                   {ticket.category} Request
                                 </h3>
                                 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-1 text-[10px] text-slate-500 font-medium">
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-slate-500 font-medium">
                                   <span className="flex items-center gap-1 truncate">
                                     <User className="w-2.5 h-2.5 text-slate-400 shrink-0" /> {ticket.name}
                                   </span>
-                                  <div className="flex items-center gap-2">
-                                    <span className="flex items-center gap-1 truncate">
-                                      <Building2 className="w-2.5 h-2.5 text-slate-400 shrink-0" /> {ticket.department}
-                                    </span>
-                                    <span className={`sm:hidden px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${getStatusColor(ticket.status)}`}>
-                                      {ticket.status}
-                                    </span>
-                                  </div>
+                                  <span className="flex items-center gap-1 truncate">
+                                    <Building2 className="w-2.5 h-2.5 text-slate-400 shrink-0" /> {ticket.department}
+                                  </span>
+                                  <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${getStatusColor(ticket.status)}`}>
+                                    {ticket.status}
+                                  </span>
                                 </div>
                               </div>
                             </div>
 
-                            <div className="mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 sm:border-l border-slate-50 sm:pl-4 flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 sm:w-1/3">
-                              <div className="flex flex-col items-start sm:items-end gap-1">
-                                <span className={`hidden sm:inline-block px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${getStatusColor(ticket.status)}`}>
-                                  {ticket.status}
-                                </span>
-                                <span className="flex items-center gap-1 text-[9px] text-slate-400">
-                                  <Calendar className="w-2.5 h-2.5 shrink-0" /> {formatDate(ticket.created_at)}
-                                </span>
-                              </div>
+                            <div className="flex items-center justify-end gap-1.5 sm:pl-3 sm:border-l border-slate-50">
+                              {adminUser?.role === 'Super Admin' && (
+                                <div className="flex items-center gap-1">
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleIntervention(ticket.id, 'takeover');
+                                    }}
+                                    className="px-2 py-1 bg-emerald-500 text-white text-[8px] font-black uppercase rounded hover:bg-emerald-600 transition-colors"
+                                  >
+                                    Ambil
+                                  </button>
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleIntervention(ticket.id, 'reassign');
+                                    }}
+                                    className="px-2 py-1 bg-blue-500 text-white text-[8px] font-black uppercase rounded hover:bg-blue-600 transition-colors"
+                                  >
+                                    Pindah
+                                  </button>
+                                </div>
+                              )}
                               <div className="flex items-center gap-1">
-                                {adminUser?.role === 'Super Admin' && (
-                                  <div className="flex items-center gap-1">
-                                    <button 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleIntervention(ticket.id, 'takeover');
-                                      }}
-                                      className="px-2 py-1 bg-emerald-500 text-white text-[8px] font-black uppercase rounded hover:bg-emerald-600"
-                                    >
-                                      Ambil Alih
-                                    </button>
-                                    <button 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleIntervention(ticket.id, 'reassign');
-                                      }}
-                                      className="px-2 py-1 bg-blue-500 text-white text-[8px] font-black uppercase rounded hover:bg-blue-600"
-                                    >
-                                      Pindahkan
-                                    </button>
-                                  </div>
-                                )}
                                 <button 
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleSelectTicket(ticket);
                                   }}
-                                  className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-all border border-transparent hover:border-emerald-100"
+                                  className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-all"
                                   title="View Details"
                                 >
                                   <Eye className="w-4 h-4" />
@@ -1367,7 +1416,7 @@ export default function App() {
                                       e.stopPropagation();
                                       handleDeleteTicket(ticket.id);
                                     }}
-                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all border border-transparent hover:border-rose-100"
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all"
                                     title="Delete Ticket"
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -1500,12 +1549,13 @@ export default function App() {
             themeClasses={themeClasses}
             newTicket={formData}
             setNewTicket={setFormData}
-            DEPARTMENTS={departments.map(d => d.name)}
-            CATEGORIES={categories.map(c => c.name)}
+            DEPARTMENTS={Array.isArray(departments) ? departments.map(d => d.name) : []}
+            CATEGORIES={Array.isArray(categories) ? categories.map(c => c.name) : []}
             handlePhotoChange={handlePhotoUpload}
             handleSubmit={handleSubmit}
             isSubmitting={submitting}
             primaryColor={primaryColor}
+            masterUsers={masterUsers}
           />
         )}
 
@@ -1585,6 +1635,9 @@ export default function App() {
             newItemName={newItemName}
             setNewItemName={setNewItemName}
             handleManagementAction={handleManagementAction}
+            masterUsers={masterUsers}
+            adminUsers={adminUsers}
+            handleUploadExcel={handleUploadExcel}
           />
         )}
 

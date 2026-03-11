@@ -277,7 +277,7 @@ export const TicketDetailModal = React.memo(({
                   <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">Riwayat Tiket</span>
                 </div>
                 <div className={`rounded-2xl border p-2.5 sm:p-3.5 space-y-2.5 sm:space-y-3.5 max-h-[180px] sm:max-h-[250px] overflow-y-auto custom-scrollbar ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
-                  {ticketLogs.length === 0 ? (
+                  {(!Array.isArray(ticketLogs) || ticketLogs.length === 0) ? (
                     <p className="text-[8px] sm:text-[9px] text-slate-400 italic text-center py-3">Belum ada riwayat aktivitas.</p>
                   ) : (
                     <div className="space-y-2.5 sm:space-y-3.5 relative before:absolute before:left-[6px] before:top-1.5 before:bottom-1.5 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-700">
@@ -337,7 +337,7 @@ export const TicketDetailModal = React.memo(({
                           defaultValue={selectedTicket.assigned_to || ''}
                         >
                           <option value="">Pilih IT...</option>
-                          {users.map(u => (
+                          {Array.isArray(users) && users.map(u => (
                             <option key={u.id} value={u.username}>{u.full_name || u.username}</option>
                           ))}
                         </select>
@@ -359,7 +359,7 @@ export const TicketDetailModal = React.memo(({
                     <div className="space-y-0.5">
                       <label className="text-[7px] sm:text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
                       <div className="flex gap-1 bg-slate-800 p-0.5 rounded-xl border border-slate-700 overflow-x-auto no-scrollbar">
-                        {STATUSES.map(status => (
+                        {Array.isArray(STATUSES) && STATUSES.map(status => (
                           <button
                             key={status}
                             onClick={() => setModalStatus(status)}

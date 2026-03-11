@@ -135,8 +135,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="text-white px-3 py-1.5 rounded-full text-[10px] sm:text-sm font-bold shadow-lg flex items-center gap-1.5 active:scale-95"
           >
             <Plus className="w-3 h-3 sm:w-4 h-4" />
-            <span className="hidden xs:inline">New Ticket</span>
-            <span className="xs:hidden">New</span>
+            <span className="font-bold">New Ticket</span>
           </motion.button>
         </div>
       </div>

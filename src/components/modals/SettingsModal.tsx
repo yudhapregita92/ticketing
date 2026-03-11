@@ -35,11 +35,14 @@ interface SettingsModalProps {
   itPersonnel: any[];
   departments: any[];
   categories: any[];
-  addingType: 'it' | 'dept' | 'cat' | null;
-  setAddingType: (type: 'it' | 'dept' | 'cat' | null) => void;
+  addingType: 'it' | 'dept' | 'cat' | 'master-user' | 'admin-user' | null;
+  setAddingType: (type: 'it' | 'dept' | 'cat' | 'master-user' | 'admin-user' | null) => void;
   newItemName: string;
   setNewItemName: (name: string) => void;
-  handleManagementAction: (type: 'it' | 'dept' | 'cat', action: 'add' | 'delete', item?: any) => void;
+  handleManagementAction: (type: 'it' | 'dept' | 'cat' | 'master-user' | 'admin-user', action: 'add' | 'delete', item?: any) => void;
+  masterUsers: any[];
+  adminUsers: any[];
+  handleUploadExcel: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export const SettingsModal = React.memo(({
@@ -66,9 +69,108 @@ export const SettingsModal = React.memo(({
   setAddingType,
   newItemName,
   setNewItemName,
-  handleManagementAction
+  handleManagementAction,
+  masterUsers,
+  adminUsers,
+  handleUploadExcel
 }: SettingsModalProps) => {
   if (!showSettings) return null;
+
+  const [masterUserName, setMasterUserName] = React.useState('');
+  const [masterUserDept, setMasterUserDept] = React.useState('');
+  const [masterUserPhone, setMasterUserPhone] = React.useState('');
+
+  const [adminUserUsername, setAdminUserUsername] = React.useState('');
+  const [adminUserPassword, setAdminUserPassword] = React.useState('');
+  const [adminUserFullName, setAdminUserFullName] = React.useState('');
+  const [adminUserRole, setAdminUserRole] = React.useState('Staff IT Support');
+
+  const handleAddAdminUser = async () => {
+    if (!adminUserUsername || !adminUserPassword || !adminUserFullName || !adminUserRole) {
+      alert('Semua kolom wajib diisi');
+      return;
+    }
+    try {
+      const res = await fetch('/api/admin-users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          username: adminUserUsername, 
+          password: adminUserPassword, 
+          full_name: adminUserFullName,
+          role: adminUserRole
+        })
+      });
+      if (res.ok) {
+        setAddingType(null);
+        setAdminUserUsername('');
+        setAdminUserPassword('');
+        setAdminUserFullName('');
+        setAdminUserRole('Staff IT Support');
+        handleManagementAction('admin-user', 'add');
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Gagal menambah admin');
+      }
+    } catch (err) {
+      alert('Gagal menambah admin');
+    }
+  };
+
+  const handleDeleteAdminUser = async (id: number) => {
+    if (!confirm('Hapus admin ini?')) return;
+    try {
+      const res = await fetch(`/api/admin-users/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        handleManagementAction('admin-user', 'delete', { id });
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Gagal menghapus admin');
+      }
+    } catch (err) {
+      alert('Gagal menghapus admin');
+    }
+  };
+
+  const handleAddMasterUser = async () => {
+    if (!masterUserName || !masterUserDept || !masterUserPhone) {
+      alert('Semua kolom wajib diisi');
+      return;
+    }
+    try {
+      const res = await fetch('/api/master-users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          full_name: masterUserName, 
+          department: masterUserDept, 
+          phone: masterUserPhone 
+        })
+      });
+      if (res.ok) {
+        setAddingType(null);
+        setMasterUserName('');
+        setMasterUserDept('');
+        setMasterUserPhone('');
+        // We'll rely on the parent to refresh data, or just call handleManagementAction if we can
+        handleManagementAction('master-user', 'add');
+      }
+    } catch (err) {
+      alert('Gagal menambah user');
+    }
+  };
+
+  const handleDeleteMasterUser = async (id: number) => {
+    if (!confirm('Hapus user ini?')) return;
+    try {
+      const res = await fetch(`/api/master-users/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        handleManagementAction('master-user', 'delete', { id });
+      }
+    } catch (err) {
+      alert('Gagal menghapus user');
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -83,7 +185,7 @@ export const SettingsModal = React.memo(({
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className={`relative rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] transition-colors ${themeClasses.card} ${themeClasses.text}`}
+        className={`relative rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh] transition-colors ${themeClasses.card} ${themeClasses.text}`}
       >
         <div className={`p-4 sm:p-6 border-b shrink-0 ${themeClasses.border}`}>
           <div className="flex items-center justify-between">
@@ -107,36 +209,36 @@ export const SettingsModal = React.memo(({
 
         <div className="flex flex-col sm:flex-row flex-1 overflow-hidden">
           {/* Sidebar Tabs */}
-          <div className={`w-full sm:w-48 border-b sm:border-b-0 sm:border-r p-2 sm:p-4 space-y-1 ${themeClasses.border}`}>
+          <div className={`w-full sm:w-64 border-b sm:border-b-0 sm:border-r p-2 sm:p-6 space-y-2 ${themeClasses.border} ${themeClasses.bgSecondary}`}>
             <button 
               onClick={() => setSettingsTab('general')}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${settingsTab === 'general' ? 'bg-emerald-600 text-white' : `text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800`}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${settingsTab === 'general' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Layout className="w-4 h-4" /> Umum
             </button>
             <button 
               onClick={() => setSettingsTab('branding')}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${settingsTab === 'branding' ? 'bg-emerald-600 text-white' : `text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800`}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${settingsTab === 'branding' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Palette className="w-4 h-4" /> Branding
             </button>
             <button 
               onClick={() => setSettingsTab('notifications')}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${settingsTab === 'notifications' ? 'bg-emerald-600 text-white' : `text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800`}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${settingsTab === 'notifications' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Bell className="w-4 h-4" /> Notifikasi
             </button>
             <button 
               onClick={() => setSettingsTab('data')}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${settingsTab === 'data' ? 'bg-emerald-600 text-white' : `text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800`}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${settingsTab === 'data' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Database className="w-4 h-4" /> Data & API
             </button>
           </div>
 
           {/* Tab Content */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar">
-            <form onSubmit={handleUpdateSettings} className="space-y-6">
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <form id="settings-form" onSubmit={handleUpdateSettings} className="p-4 sm:p-6 space-y-6">
               {settingsTab === 'general' && (
                 <div className="space-y-4">
                   <div className="space-y-1.5">
@@ -289,7 +391,7 @@ export const SettingsModal = React.memo(({
                     )}
 
                     <div className="space-y-2">
-                      {appSettings.notification_emails.length === 0 ? (
+                      {(!appSettings.notification_emails || appSettings.notification_emails.length === 0) ? (
                         <p className="text-xs text-slate-400 italic text-center py-4">Belum ada email notifikasi.</p>
                       ) : (
                         appSettings.notification_emails.map((email: string) => (
@@ -346,144 +448,319 @@ export const SettingsModal = React.memo(({
                     </div>
                   </div>
 
-                  {/* IT Personnel */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className={`text-[10px] font-black ${themeClasses.textMuted} uppercase tracking-widest ml-1`}>Tim IT</label>
-                      <button 
-                        type="button"
-                        onClick={() => setAddingType(addingType === 'it' ? null : 'it')} 
-                        className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
-                      >
-                        {addingType === 'it' ? 'Batal' : '+ Tambah IT'}
-                      </button>
-                    </div>
-                    
-                    {addingType === 'it' && (
-                      <div className="flex gap-2">
-                        <input 
-                          autoFocus
-                          type="text"
-                          value={newItemName}
-                          onChange={e => setNewItemName(e.target.value)}
-                          placeholder="Nama IT baru..."
-                          className={`flex-1 border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
-                          onKeyDown={e => e.key === 'Enter' && handleManagementAction('it', 'add')}
-                        />
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* IT Personnel */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className={`text-[10px] font-black ${themeClasses.textMuted} uppercase tracking-widest ml-1`}>Tim IT</label>
                         <button 
                           type="button"
-                          onClick={() => handleManagementAction('it', 'add')}
-                          className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase"
+                          onClick={() => setAddingType(addingType === 'it' ? null : 'it')} 
+                          className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
                         >
-                          Simpan
+                          {addingType === 'it' ? 'Batal' : '+ Tambah IT'}
                         </button>
                       </div>
-                    )}
-
-                    <div className="flex flex-wrap gap-2">
-                      {itPersonnel.map(it => (
-                        <div key={it.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
-                          <span className={`text-xs font-bold ${themeClasses.text}`}>{it.name}</span>
-                          <button type="button" onClick={() => handleManagementAction('it', 'delete', it)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Trash2 className="w-3 h-3" />
+                      
+                      {addingType === 'it' && (
+                        <div className="flex gap-2">
+                          <input 
+                            autoFocus
+                            type="text"
+                            value={newItemName}
+                            onChange={e => setNewItemName(e.target.value)}
+                            placeholder="Nama IT baru..."
+                            className={`flex-1 border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
+                            onKeyDown={e => e.key === 'Enter' && handleManagementAction('it', 'add')}
+                          />
+                          <button 
+                            type="button"
+                            onClick={() => handleManagementAction('it', 'add')}
+                            className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase"
+                          >
+                            Simpan
                           </button>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      )}
 
-                  {/* Departments */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className={`text-[10px] font-black ${themeClasses.textMuted} uppercase tracking-widest ml-1`}>Departemen</label>
-                      <button 
-                        type="button"
-                        onClick={() => setAddingType(addingType === 'dept' ? null : 'dept')} 
-                        className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
-                      >
-                        {addingType === 'dept' ? 'Batal' : '+ Tambah Departemen'}
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        {Array.isArray(itPersonnel) && itPersonnel.map(it => (
+                          <div key={it.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
+                            <span className={`text-xs font-bold ${themeClasses.text}`}>{it.name}</span>
+                            <button type="button" onClick={() => handleManagementAction('it', 'delete', it)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
-                    {addingType === 'dept' && (
-                      <div className="flex gap-2">
-                        <input 
-                          autoFocus
-                          type="text"
-                          value={newItemName}
-                          onChange={e => setNewItemName(e.target.value)}
-                          placeholder="Nama Departemen baru..."
-                          className={`flex-1 border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
-                          onKeyDown={e => e.key === 'Enter' && handleManagementAction('dept', 'add')}
-                        />
+                    {/* Departments */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className={`text-[10px] font-black ${themeClasses.textMuted} uppercase tracking-widest ml-1`}>Departemen</label>
                         <button 
                           type="button"
-                          onClick={() => handleManagementAction('dept', 'add')}
-                          className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase"
+                          onClick={() => setAddingType(addingType === 'dept' ? null : 'dept')} 
+                          className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
                         >
-                          Simpan
+                          {addingType === 'dept' ? 'Batal' : '+ Tambah Departemen'}
                         </button>
                       </div>
-                    )}
 
-                    <div className="flex flex-wrap gap-2">
-                      {departments.map(dept => (
-                        <div key={dept.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
-                          <span className={`text-xs font-bold ${themeClasses.text}`}>{dept.name}</span>
-                          <button type="button" onClick={() => handleManagementAction('dept', 'delete', dept)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Trash2 className="w-3 h-3" />
+                      {addingType === 'dept' && (
+                        <div className="flex gap-2">
+                          <input 
+                            autoFocus
+                            type="text"
+                            value={newItemName}
+                            onChange={e => setNewItemName(e.target.value)}
+                            placeholder="Nama Departemen baru..."
+                            className={`flex-1 border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
+                            onKeyDown={e => e.key === 'Enter' && handleManagementAction('dept', 'add')}
+                          />
+                          <button 
+                            type="button"
+                            onClick={() => handleManagementAction('dept', 'add')}
+                            className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase"
+                          >
+                            Simpan
                           </button>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      )}
 
-                  {/* Categories */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className={`text-[10px] font-black ${themeClasses.textMuted} uppercase tracking-widest ml-1`}>Kategori</label>
-                      <button 
-                        type="button"
-                        onClick={() => setAddingType(addingType === 'cat' ? null : 'cat')} 
-                        className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
-                      >
-                        {addingType === 'cat' ? 'Batal' : '+ Tambah Kategori'}
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        {Array.isArray(departments) && departments.map(dept => (
+                          <div key={dept.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
+                            <span className={`text-xs font-bold ${themeClasses.text}`}>{dept.name}</span>
+                            <button type="button" onClick={() => handleManagementAction('dept', 'delete', dept)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
-                    {addingType === 'cat' && (
-                      <div className="flex gap-2">
-                        <input 
-                          autoFocus
-                          type="text"
-                          value={newItemName}
-                          onChange={e => setNewItemName(e.target.value)}
-                          placeholder="Nama Kategori baru..."
-                          className={`flex-1 border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
-                          onKeyDown={e => e.key === 'Enter' && handleManagementAction('cat', 'add')}
-                        />
+                    {/* Categories */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className={`text-[10px] font-black ${themeClasses.textMuted} uppercase tracking-widest ml-1`}>Kategori</label>
                         <button 
                           type="button"
-                          onClick={() => handleManagementAction('cat', 'add')}
-                          className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase"
+                          onClick={() => setAddingType(addingType === 'cat' ? null : 'cat')} 
+                          className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
                         >
-                          Simpan
+                          {addingType === 'cat' ? 'Batal' : '+ Tambah Kategori'}
                         </button>
                       </div>
-                    )}
 
-                    <div className="flex flex-wrap gap-2">
-                      {categories.map(cat => (
-                        <div key={cat.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
-                          <span className={`text-xs font-bold ${themeClasses.text}`}>{cat.name}</span>
-                          <button type="button" onClick={() => handleManagementAction('cat', 'delete', cat)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Trash2 className="w-3 h-3" />
+                      {addingType === 'cat' && (
+                        <div className="flex gap-2">
+                          <input 
+                            autoFocus
+                            type="text"
+                            value={newItemName}
+                            onChange={e => setNewItemName(e.target.value)}
+                            placeholder="Nama Kategori baru..."
+                            className={`flex-1 border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
+                            onKeyDown={e => e.key === 'Enter' && handleManagementAction('cat', 'add')}
+                          />
+                          <button 
+                            type="button"
+                            onClick={() => handleManagementAction('cat', 'add')}
+                            className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase"
+                          >
+                            Simpan
                           </button>
                         </div>
-                      ))}
+                      )}
+
+                      <div className="flex flex-wrap gap-2">
+                        {Array.isArray(categories) && categories.map(cat => (
+                          <div key={cat.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
+                            <span className={`text-xs font-bold ${themeClasses.text}`}>{cat.name}</span>
+                            <button type="button" onClick={() => handleManagementAction('cat', 'delete', cat)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                   
+                  <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Master Data User</h3>
+                      <div className="flex items-center gap-3">
+                        <label className="text-[10px] font-black text-blue-600 hover:text-blue-700 uppercase tracking-widest cursor-pointer flex items-center gap-1">
+                          Upload Excel
+                          <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleUploadExcel} />
+                        </label>
+                        <button 
+                          type="button"
+                          onClick={() => setAddingType('master-user')}
+                          className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 uppercase tracking-widest"
+                        >
+                          + Tambah User
+                        </button>
+                      </div>
+                    </div>
+
+                    {addingType === 'master-user' && (
+                      <div className={`p-4 rounded-xl border-2 border-emerald-500/30 space-y-3 ${themeClasses.bgSecondary}`}>
+                        <input 
+                          autoFocus
+                          type="text"
+                          placeholder="Nama Lengkap"
+                          className={`w-full px-3 py-2 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                          value={masterUserName}
+                          onChange={e => setMasterUserName(e.target.value)}
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <select 
+                            className={`w-full px-3 py-2 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                            value={masterUserDept}
+                            onChange={e => setMasterUserDept(e.target.value)}
+                          >
+                            <option value="">Pilih Bagian...</option>
+                            {Array.isArray(departments) && departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+                          </select>
+                          <input 
+                            type="text"
+                            placeholder="No. Telepon"
+                            className={`w-full px-3 py-2 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                            value={masterUserPhone}
+                            onChange={e => setMasterUserPhone(e.target.value)}
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            type="button"
+                            onClick={handleAddMasterUser}
+                            className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest"
+                          >
+                            Simpan User
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => setAddingType(null)}
+                            className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest border ${themeClasses.border} ${themeClasses.textMuted}`}
+                          >
+                            Batal
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                      {Array.isArray(masterUsers) && masterUsers.map(user => (
+                        <div key={user.id} className={`flex items-center justify-between p-2.5 rounded-xl border ${themeClasses.border} ${themeClasses.bgSecondary}`}>
+                          <div className="flex flex-col">
+                            <span className="text-[11px] font-bold">{user.full_name}</span>
+                            <span className="text-[9px] text-slate-400 uppercase font-black">{user.department} • {user.phone}</span>
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={() => handleDeleteMasterUser(user.id)}
+                            className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Admin Users */}
+                  <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Akun Admin IT</h3>
+                      <button 
+                        type="button"
+                        onClick={() => setAddingType('admin-user')}
+                        className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 uppercase tracking-widest"
+                      >
+                        + Tambah Admin
+                      </button>
+                    </div>
+
+                    {addingType === 'admin-user' && (
+                      <div className={`p-4 rounded-xl border-2 border-emerald-500/30 space-y-3 ${themeClasses.bgSecondary}`}>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input 
+                            autoFocus
+                            type="text"
+                            placeholder="Username"
+                            className={`w-full px-3 py-2 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                            value={adminUserUsername}
+                            onChange={e => setAdminUserUsername(e.target.value)}
+                          />
+                          <input 
+                            type="password"
+                            placeholder="Password"
+                            className={`w-full px-3 py-2 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                            value={adminUserPassword}
+                            onChange={e => setAdminUserPassword(e.target.value)}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input 
+                            type="text"
+                            placeholder="Nama Lengkap"
+                            className={`w-full px-3 py-2 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                            value={adminUserFullName}
+                            onChange={e => setAdminUserFullName(e.target.value)}
+                          />
+                          <select 
+                            className={`w-full px-3 py-2 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                            value={adminUserRole}
+                            onChange={e => setAdminUserRole(e.target.value)}
+                          >
+                            <option value="Staff IT Support">Staff IT Support</option>
+                            <option value="Staff App Support">Staff App Support</option>
+                            <option value="Super Admin">Super Admin</option>
+                          </select>
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            type="button"
+                            onClick={handleAddAdminUser}
+                            className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest"
+                          >
+                            Simpan Admin
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => setAddingType(null)}
+                            className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest border ${themeClasses.border} ${themeClasses.textMuted}`}
+                          >
+                            Batal
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                      {Array.isArray(adminUsers) && adminUsers.map(user => (
+                        <div key={user.id} className={`flex items-center justify-between p-2.5 rounded-xl border ${themeClasses.border} ${themeClasses.bgSecondary}`}>
+                          <div className="flex flex-col">
+                            <span className="text-[11px] font-bold">{user.full_name} ({user.username})</span>
+                            <span className="text-[9px] text-slate-400 uppercase font-black">{user.role}</span>
+                          </div>
+                          {user.role !== 'Super Admin' && (
+                            <button 
+                              type="button"
+                              onClick={() => handleDeleteAdminUser(user.id)}
+                              className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                     <button 
                       type="button"
@@ -504,17 +781,19 @@ export const SettingsModal = React.memo(({
                 </div>
               )}
 
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                <button 
-                  type="submit"
-                  style={{ backgroundColor: primaryColor }}
-                  className="w-full py-3 sm:py-4 rounded-2xl text-white font-black uppercase tracking-widest text-xs sm:text-sm shadow-xl shadow-emerald-900/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-                >
-                  <Save className="w-4 h-4" /> Simpan Konfigurasi
-                </button>
-              </div>
             </form>
           </div>
+        </div>
+
+        <div className={`p-4 sm:p-6 border-t shrink-0 flex justify-end ${themeClasses.border} ${themeClasses.bgCard}`}>
+          <button 
+            form="settings-form"
+            type="submit"
+            style={{ backgroundColor: primaryColor }}
+            className="w-full sm:w-auto px-8 py-3 sm:py-3 rounded-2xl text-white font-black uppercase tracking-widest text-xs sm:text-sm shadow-xl shadow-emerald-900/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+          >
+            <Save className="w-4 h-4" /> Simpan Konfigurasi
+          </button>
         </div>
       </motion.div>
     </div>

@@ -6,6 +6,8 @@ import nodemailer from "nodemailer";
 import cors from "cors";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import multer from "multer";
+import * as xlsx from "xlsx";
 
 const db = new Database("tickets.db");
 
@@ -220,6 +222,13 @@ async function startServer() {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
       );
+
+      CREATE TABLE IF NOT EXISTS master_users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        full_name TEXT UNIQUE NOT NULL,
+        department TEXT NOT NULL,
+        phone TEXT NOT NULL
+      );
     `);
 
     // Migration: Check for missing columns in tickets table
@@ -266,6 +275,16 @@ async function startServer() {
     if (catCount.count === 0) {
       const insert = db.prepare("INSERT INTO categories (name) VALUES (?)");
       ['Synergi', 'SCM', 'MKT', 'Hardware', 'Jaringan'].forEach(name => insert.run(name));
+    }
+
+    const masterUserCount = db.prepare("SELECT COUNT(*) as count FROM master_users").get() as { count: number };
+    if (masterUserCount.count === 0) {
+      const insert = db.prepare("INSERT INTO master_users (full_name, department, phone) VALUES (?, ?, ?)");
+      [
+        ['Budi Santoso', 'HRGA', '081234567890'],
+        ['Siti Aminah', 'CE Business', '081234567891'],
+        ['Andi Wijaya', 'Fleet Business', '081234567892']
+      ].forEach(u => insert.run(u[0], u[1], u[2]));
     }
 
     // Add new columns if they don't exist (for existing databases)
@@ -460,6 +479,44 @@ async function startServer() {
   });
 
   // Management Routes
+  app.get("/api/admin-users", (req, res) => {
+    try {
+      const users = db.prepare("SELECT id, username, full_name, role FROM users ORDER BY id ASC").all();
+      res.json(users);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/admin-users", (req, res) => {
+    const { username, password, full_name, role } = req.body;
+    try {
+      db.prepare("INSERT INTO users (username, password, full_name, role) VALUES (?, ?, ?, ?)").run(username, password, full_name, role);
+      res.json({ success: true });
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  app.put("/api/admin-users/:id", (req, res) => {
+    const { id } = req.params;
+    const { username, password, full_name, role } = req.body;
+    try {
+      if (password) {
+        db.prepare("UPDATE users SET username = ?, password = ?, full_name = ?, role = ? WHERE id = ?").run(username, password, full_name, role, id);
+      } else {
+        db.prepare("UPDATE users SET username = ?, full_name = ?, role = ? WHERE id = ?").run(username, full_name, role, id);
+      }
+      res.json({ success: true });
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  app.delete("/api/admin-users/:id", (req, res) => {
+    const { id } = req.params;
+    try {
+      db.prepare("DELETE FROM users WHERE id = ?").run(id);
+      res.json({ success: true });
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
   app.get("/api/users", (req, res) => {
     try {
       // Return users who are not Super Admin (for assignment)
@@ -515,7 +572,59 @@ async function startServer() {
     res.json({ success: true });
   });
 
+  app.get("/api/master-users", (req, res) => {
+    res.json(db.prepare("SELECT * FROM master_users ORDER BY full_name ASC").all());
+  });
+  app.post("/api/master-users", (req, res) => {
+    const { full_name, department, phone } = req.body;
+    try {
+      db.prepare("INSERT INTO master_users (full_name, department, phone) VALUES (?, ?, ?)").run(full_name, department, phone);
+      res.json({ success: true });
+    } catch (e: any) { res.status(400).json({ error: e.message }); }
+  });
+
+  const upload = multer({ storage: multer.memoryStorage() });
+  app.post("/api/master-users/upload", upload.single('file'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      
+      const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const data = xlsx.utils.sheet_to_json(sheet);
+      
+      const insert = db.prepare("INSERT OR REPLACE INTO master_users (full_name, department, phone) VALUES (?, ?, ?)");
+      
+      let count = 0;
+      db.transaction(() => {
+        for (const row of data as any[]) {
+          const fullName = row['Nama'] || row['Nama Lengkap'] || row['full_name'] || row['name'] || row['Nama User'];
+          const department = row['Bagian'] || row['Departemen'] || row['department'] || row['dept'] || row['Unit'];
+          const phone = row['No HP'] || row['Telepon'] || row['phone'] || row['no_hp'] || row['No Telepon'];
+          
+          if (fullName && department && phone) {
+            insert.run(String(fullName).trim(), String(department).trim(), String(phone).trim());
+            count++;
+          }
+        }
+      })();
+      
+      res.json({ success: true, count });
+    } catch (error: any) {
+      console.error("Error uploading master users:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/master-users/:id", (req, res) => {
+    db.prepare("DELETE FROM master_users WHERE id = ?").run(req.params.id);
+    res.json({ success: true });
+  });
+
   app.get("/api/tickets", (req, res) => {
+    console.log('GET /api/tickets', req.query);
     try {
       const { username, role } = req.query;
       // Exclude 'photo' from the list to keep payload small
@@ -648,65 +757,6 @@ async function startServer() {
     } catch (err: any) {
       console.error('Error creating ticket:', err);
       res.status(500).json({ error: err.message || "Internal server error" });
-    }
-  });
-
-  app.post("/api/tickets/bulk", (req, res) => {
-    try {
-      const { tickets } = req.body;
-      if (!Array.isArray(tickets)) {
-        return res.status(400).json({ error: "Invalid data format. Expected an array of tickets." });
-      }
-
-      const insert = db.prepare(`
-        INSERT INTO tickets (ticket_no, name, department, phone, category, description, assigned_to, status, created_at) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-
-      const insertMany = db.transaction((ticketsToInsert) => {
-        for (const t of ticketsToInsert) {
-          // Generate ticket_no if not provided
-          let ticketNo = t.ticket_no;
-          if (!ticketNo) {
-            const utcNow = new Date();
-            const jakartaNow = new Date(utcNow.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
-            const year = jakartaNow.getFullYear().toString().slice(-2);
-            const month = (jakartaNow.getMonth() + 1).toString().padStart(2, '0');
-            const day = jakartaNow.getDate().toString().padStart(2, '0');
-            const datePrefix = `${year}${month}${day}`;
-            
-            const lastTicket = db.prepare("SELECT ticket_no FROM tickets WHERE ticket_no LIKE ? ORDER BY ticket_no DESC LIMIT 1")
-              .get(`${datePrefix}%`) as { ticket_no: string } | undefined;
-
-            let sequence = 1;
-            if (lastTicket && lastTicket.ticket_no) {
-              const lastSeq = parseInt(lastTicket.ticket_no.slice(-3));
-              if (!isNaN(lastSeq)) {
-                sequence = lastSeq + 1;
-              }
-            }
-            ticketNo = `${datePrefix}${sequence.toString().padStart(3, '0')}`;
-          }
-
-          insert.run(
-            ticketNo,
-            t.name || "Unknown",
-            t.department || "Other",
-            t.phone || "-",
-            t.category || "Other",
-            t.description || "",
-            t.assigned_to || null,
-            t.status || "New",
-            t.created_at || new Date().toISOString()
-          );
-        }
-      });
-
-      insertMany(tickets);
-      res.json({ success: true, count: tickets.length });
-    } catch (err: any) {
-      console.error('Bulk import error:', err);
-      res.status(500).json({ error: err.message });
     }
   });
 
