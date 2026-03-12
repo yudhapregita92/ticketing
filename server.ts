@@ -126,6 +126,70 @@ async function sendTelegramNotification(ticket: any, botToken: string, chatIds: 
   }
 }
 
+async function sendUserNotificationEmail(ticket: any, type: 'submit' | 'done') {
+  try {
+    const masterUser = db.prepare("SELECT email FROM master_users WHERE full_name = ?").get(ticket.name) as { email: string } | undefined;
+    if (!masterUser || !masterUser.email) {
+      console.log(`Skipping user email notification: No email found for user ${ticket.name}`);
+      return;
+    }
+
+    const smtpFrom = db.prepare("SELECT value FROM settings WHERE key = 'smtp_from'").get() as { value: string } | undefined;
+    const smtpUser = db.prepare("SELECT value FROM settings WHERE key = 'smtp_user'").get() as { value: string } | undefined;
+    const fromName = smtpFrom?.value || "IT Support Portal";
+    const fromEmail = smtpUser?.value || process.env.SMTP_USER || 'itk3dk2026@gmail.com';
+
+    const transporter = await getTransporter();
+
+    let subject = '';
+    let html = '';
+
+    if (type === 'submit') {
+      subject = `[Tiket Diterima] ${ticket.ticket_no} - ${ticket.category}`;
+      html = `
+        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; color: #333;">
+          <h2 style="color: #10b981; margin-top: 0;">Tiket Anda Telah Diterima</h2>
+          <p>Halo ${ticket.name}, laporan Anda telah masuk ke sistem kami dan akan segera ditinjau oleh tim IT.</p>
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0; font-weight: bold; width: 120px;">No Tiket:</td><td>${ticket.ticket_no}</td></tr>
+            <tr><td style="padding: 8px 0; font-weight: bold;">Kategori:</td><td>${ticket.category}</td></tr>
+            <tr><td style="padding: 8px 0; font-weight: bold;">Deskripsi:</td><td>${ticket.description || '-'}</td></tr>
+          </table>
+          <p style="margin-top: 20px; font-size: 12px; color: #666;">Terima kasih telah menggunakan layanan IT Support.</p>
+        </div>
+      `;
+    } else if (type === 'done') {
+      subject = `[Tiket Selesai] ${ticket.ticket_no} - ${ticket.category}`;
+      html = `
+        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; color: #333;">
+          <h2 style="color: #10b981; margin-top: 0;">Tiket Anda Telah Selesai</h2>
+          <p>Halo ${ticket.name}, permintaan Anda pada tiket <b>${ticket.ticket_no}</b> telah selesai dikerjakan oleh tim IT.</p>
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0; font-weight: bold; width: 120px;">No Tiket:</td><td>${ticket.ticket_no}</td></tr>
+            <tr><td style="padding: 8px 0; font-weight: bold;">Kategori:</td><td>${ticket.category}</td></tr>
+            <tr><td style="padding: 8px 0; font-weight: bold;">Pesan dari IT:</td><td>${ticket.admin_reply || '-'}</td></tr>
+          </table>
+          <p style="margin-top: 20px; font-size: 12px; color: #666;">Terima kasih telah menggunakan layanan IT Support.</p>
+        </div>
+      `;
+    }
+
+    const mailOptions = {
+      from: `"${fromName}" <${fromEmail}>`,
+      to: masterUser.email,
+      subject,
+      html
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`User notification email sent successfully to: ${masterUser.email}`);
+  } catch (error) {
+    console.error(`Error sending user notification email for ticket ${ticket.ticket_no}:`, error);
+  }
+}
+
 // Create default users if not exists
 // (Moved inside startServer)
 
@@ -266,6 +330,10 @@ async function startServer() {
     if (!masterColumns.includes('employee_index')) {
       console.log("Adding missing column: employee_index to master_users");
       db.exec("ALTER TABLE master_users ADD COLUMN employee_index TEXT");
+    }
+    if (!masterColumns.includes('email')) {
+      console.log("Adding missing column: email to master_users");
+      db.exec("ALTER TABLE master_users ADD COLUMN email TEXT");
     }
 
     console.log("Database tables checked/created.");
@@ -598,9 +666,9 @@ async function startServer() {
     res.json(db.prepare("SELECT * FROM master_users ORDER BY full_name ASC").all());
   });
   app.post("/api/master-users", (req, res) => {
-    const { full_name, department, phone, employee_index } = req.body;
+    const { full_name, department, phone, employee_index, email } = req.body;
     try {
-      db.prepare("INSERT INTO master_users (full_name, department, phone, employee_index) VALUES (?, ?, ?, ?)").run(full_name, department, phone, employee_index);
+      db.prepare("INSERT INTO master_users (full_name, department, phone, employee_index, email) VALUES (?, ?, ?, ?, ?)").run(full_name, department, phone, employee_index, email || null);
       res.json({ success: true });
     } catch (e: any) { res.status(400).json({ error: e.message }); }
   });
@@ -617,7 +685,12 @@ async function startServer() {
       const sheet = workbook.Sheets[sheetName];
       const data = xlsx.utils.sheet_to_json(sheet);
       
-      const insert = db.prepare("INSERT OR REPLACE INTO master_users (full_name, department, phone, employee_index) VALUES (?, ?, ?, ?)");
+      console.log("Excel upload received. Total rows:", data.length);
+      if (data.length > 0) {
+        console.log("Sample row (first row):", data[0]);
+      }
+
+      const insert = db.prepare("INSERT OR REPLACE INTO master_users (full_name, department, phone, employee_index, email) VALUES (?, ?, ?, ?, ?)");
       
       let count = 0;
       db.transaction(() => {
@@ -626,9 +699,10 @@ async function startServer() {
           const department = row['Bagian'] || row['Departemen'] || row['department'] || row['dept'] || row['Unit'];
           const phone = row['No HP'] || row['Telepon'] || row['phone'] || row['no_hp'] || row['No Telepon'];
           const employeeIndex = row['Indek'] || row['Indeks'] || row['Index'] || row['employee_index'] || row['NIK'];
+          const email = row['Email'] || row['email'] || row['Alamat Email'] || null;
           
           if (fullName && department && phone && employeeIndex) {
-            insert.run(String(fullName).trim(), String(department).trim(), String(phone).trim(), String(employeeIndex).trim());
+            insert.run(String(fullName).trim(), String(department).trim(), String(phone).trim(), String(employeeIndex).trim(), email ? String(email).trim() : null);
             count++;
           }
         }
@@ -776,6 +850,9 @@ async function startServer() {
         }
       }
 
+      // Send Email to User (Submit)
+      sendUserNotificationEmail(newTicket, 'submit');
+
       res.status(201).json(newTicket);
       io.emit("ticket_created", newTicket);
     } catch (err: any) {
@@ -841,6 +918,12 @@ async function startServer() {
     logs.forEach(log => {
       insertLog.run(id, log.action, log.note, log.performed_by);
     });
+
+    // Send email to user if status changed to Completed
+    if (newStatus === 'Completed' && currentTicket.status !== 'Completed') {
+      const updatedTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(id) as any;
+      sendUserNotificationEmail(updatedTicket, 'done');
+    }
 
     res.json({ success: true });
     io.emit("ticket_updated", { id, status: newStatus, assigned_to: newAssignedTo });

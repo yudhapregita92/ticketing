@@ -84,6 +84,7 @@ export const SettingsModal = React.memo(({
   const [masterUserDept, setMasterUserDept] = React.useState('');
   const [masterUserPhone, setMasterUserPhone] = React.useState('');
   const [masterUserIndex, setMasterUserIndex] = React.useState('');
+  const [masterUserEmail, setMasterUserEmail] = React.useState('');
 
   const [adminUserUsername, setAdminUserUsername] = React.useState('');
   const [adminUserPassword, setAdminUserPassword] = React.useState('');
@@ -139,7 +140,7 @@ export const SettingsModal = React.memo(({
 
   const handleAddMasterUser = async () => {
     if (!masterUserName || !masterUserDept || !masterUserPhone || !masterUserIndex) {
-      alert('Semua kolom wajib diisi');
+      alert('Semua kolom wajib diisi (kecuali email)');
       return;
     }
     try {
@@ -150,7 +151,8 @@ export const SettingsModal = React.memo(({
           full_name: masterUserName, 
           department: masterUserDept, 
           phone: masterUserPhone,
-          employee_index: masterUserIndex
+          employee_index: masterUserIndex,
+          email: masterUserEmail || null
         })
       });
       if (res.ok) {
@@ -159,6 +161,7 @@ export const SettingsModal = React.memo(({
         setMasterUserDept('');
         setMasterUserPhone('');
         setMasterUserIndex('');
+        setMasterUserEmail('');
         // We'll rely on the parent to refresh data, or just call handleManagementAction if we can
         handleManagementAction('master-user', 'add');
       }
@@ -667,6 +670,13 @@ export const SettingsModal = React.memo(({
                           value={masterUserIndex}
                           onChange={e => setMasterUserIndex(e.target.value)}
                         />
+                        <input 
+                          type="email"
+                          placeholder="Email (Opsional)"
+                          className={`w-full px-3 py-2 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                          value={masterUserEmail}
+                          onChange={e => setMasterUserEmail(e.target.value)}
+                        />
                         <div className="flex gap-2">
                           <button 
                             type="button"
@@ -691,7 +701,7 @@ export const SettingsModal = React.memo(({
                         <div key={user.id} className={`flex items-center justify-between p-2.5 rounded-xl border ${themeClasses.border} ${themeClasses.bgSecondary}`}>
                           <div className="flex flex-col">
                             <span className="text-[11px] font-bold">{user.full_name}</span>
-                            <span className="text-[9px] text-slate-400 uppercase font-black">{user.department} • {user.phone} • Indek: {user.employee_index}</span>
+                            <span className="text-[9px] text-slate-400 uppercase font-black">{user.department} • {user.phone} • Indek: {user.employee_index} {user.email ? `• ${user.email}` : ''}</span>
                           </div>
                           <button 
                             type="button"
