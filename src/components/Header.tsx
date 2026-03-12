@@ -65,7 +65,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+        <div className="hidden md:flex items-center gap-2 sm:gap-4 shrink-0">
           {adminUser ? (
             <div className="flex items-center gap-2">
               <div className="hidden sm:flex flex-col items-end mr-2">

@@ -52,6 +52,7 @@ import { NewTicketModal } from './components/modals/NewTicketModal';
 import { LoginModal } from './components/modals/LoginModal';
 import { SettingsModal } from './components/modals/SettingsModal';
 import { ConfirmModal } from './components/modals/ConfirmModal';
+import { BottomNav } from './components/BottomNav';
 import { TakeoverModal } from './components/modals/TakeoverModal';
 import { SuccessModal } from './components/modals/SuccessModal';
 import { MobileFilterModal } from './components/modals/MobileFilterModal';
@@ -184,7 +185,9 @@ export default function App() {
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [gpsError, setGpsError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'today' | 'all'>('today');
+  const [viewMode, setViewMode] = useState<'today' | 'all' | 'my_tickets'>(() => {
+    return localStorage.getItem('adminUser') ? 'all' : 'today';
+  });
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [tempFilters, setTempFilters] = useState({ dept: '', status: '', date: '', search: '' });
   const [appSettings, setAppSettings] = useState({ 
@@ -232,11 +235,13 @@ export default function App() {
    */
   const filteredTickets = useMemo(() => {
     return tickets.filter(ticket => {
-      // View Mode Filter (Today vs All)
+      // View Mode Filter (Today vs All vs My Tickets)
       if (viewMode === 'today') {
         const ticketDate = new Date(ticket.created_at).toLocaleDateString('en-CA'); // YYYY-MM-DD
         const today = new Date().toLocaleDateString('en-CA');
         if (ticketDate !== today) return false;
+      } else if (viewMode === 'my_tickets' && adminUser) {
+        if (ticket.assigned_to !== adminUser.username && ticket.assigned_to !== adminUser.full_name) return false;
       }
 
       const matchDept = filterDept ? ticket.department === filterDept : true;
@@ -689,6 +694,7 @@ export default function App() {
         localStorage.setItem('adminUser', JSON.stringify(data.user));
         setShowLogin(false);
         setLoginData({ username: '', password: '' });
+        setViewMode('all');
         
         // Request Notification Permission
         if ("Notification" in window && Notification.permission === "default") {
@@ -745,6 +751,7 @@ export default function App() {
   const handleLogout = () => {
     setAdminUser(null);
     localStorage.removeItem('adminUser');
+    setViewMode('today');
   };
 
   /**
@@ -1105,25 +1112,69 @@ export default function App() {
         requestNotificationPermission={requestNotificationPermission}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 md:pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
           {/* --- SIDEBAR: STATS & INFO --- */}
-          <Sidebar 
-            isDark={isDark}
-            themeClasses={themeClasses}
-            tickets={tickets}
-            adminUser={adminUser}
-            setShowDistribution={setShowDistribution}
-            primaryColor={primaryColor}
-            filteredTickets={filteredTickets}
-            categoryStats={categoryStats}
-            showDistribution={showDistribution}
-            setShowForm={setShowForm}
-            fetchTickets={fetchTickets}
-          />
+          <div className="hidden md:block">
+            <Sidebar 
+              isDark={isDark}
+              themeClasses={themeClasses}
+              tickets={tickets}
+              adminUser={adminUser}
+              setShowDistribution={setShowDistribution}
+              primaryColor={primaryColor}
+              filteredTickets={filteredTickets}
+              categoryStats={categoryStats}
+              showDistribution={showDistribution}
+              setShowForm={setShowForm}
+              fetchTickets={fetchTickets}
+            />
+          </div>
 
           {/* --- MAIN CONTENT: TICKET LIST --- */}
           <div className="lg:col-span-2 space-y-3 sm:space-y-4">
+            {/* Mobile Status Overview */}
+            <div className="md:hidden mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className={`text-sm font-bold ${themeClasses.text}`}>Status Antrian</h2>
+                <BarChart3 className="w-4 h-4 text-slate-300" />
+              </div>
+              <div className="grid grid-cols-4 gap-1.5">
+                <motion.div 
+                  whileHover={{ y: -2, scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-slate-50 border border-slate-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
+                >
+                  <Counter value={filteredTickets.length} className="text-base font-black text-slate-900 leading-none mb-0.5" />
+                  <span className="text-[7px] font-bold text-slate-400 uppercase tracking-wider">Total</span>
+                </motion.div>
+                <motion.div 
+                  whileHover={{ y: -2, scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-amber-50 border border-amber-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
+                >
+                  <Counter value={filteredTickets.filter(t => t.status === 'New').length} className="text-base font-black text-amber-500 leading-none mb-0.5" />
+                  <span className="text-[7px] font-bold text-amber-500 uppercase tracking-wider">Wait</span>
+                </motion.div>
+                <motion.div 
+                  whileHover={{ y: -2, scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-blue-50 border border-blue-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
+                >
+                  <Counter value={filteredTickets.filter(t => t.status === 'In Progress').length} className="text-base font-black text-blue-500 leading-none mb-0.5" />
+                  <span className="text-[7px] font-bold text-blue-500 uppercase tracking-wider">Active</span>
+                </motion.div>
+                <motion.div 
+                  whileHover={{ y: -2, scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-emerald-50 border border-emerald-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
+                >
+                  <Counter value={filteredTickets.filter(t => t.status === 'Completed').length} className="text-base font-black text-emerald-500 leading-none mb-0.5" />
+                  <span className="text-[7px] font-bold text-emerald-500 uppercase tracking-wider">Done</span>
+                </motion.div>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between gap-2 mb-2 sm:mb-4 border-b border-slate-100 pb-1">
               <div className="flex items-center gap-3 sm:gap-6">
                 <button 
@@ -1148,6 +1199,19 @@ export default function App() {
                     <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full" />
                   )}
                 </button>
+                {adminUser && (
+                  <button 
+                    onClick={() => setViewMode('my_tickets')}
+                    className={`relative pb-2 text-[12px] sm:text-sm font-bold transition-all ${
+                      viewMode === 'my_tickets' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    Tiket Saya
+                    {viewMode === 'my_tickets' && (
+                      <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full" />
+                    )}
+                  </button>
+                )}
               </div>
               
               {/* Filter Controls */}
@@ -1699,6 +1763,18 @@ export default function App() {
           />
         )}
       </AnimatePresence>
+
+      <BottomNav 
+        adminUser={adminUser}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        setShowForm={setShowForm}
+        setShowLogin={setShowLogin}
+        setShowSettings={setShowSettings}
+        handleLogout={handleLogout}
+        primaryColor={primaryColor}
+        isDark={isDark}
+      />
 
       <style>{`
         @keyframes spin-slow {

@@ -119,39 +119,39 @@ export const NewTicketModal = React.memo(({
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className={`relative rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] transition-colors ${themeClasses.card} ${themeClasses.text}`}
+        className={`relative rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh] transition-colors ${themeClasses.card} ${themeClasses.text}`}
       >
-        <div className={`p-4 sm:p-6 border-b shrink-0 ${themeClasses.border}`}>
+        <div className={`p-3 sm:p-5 border-b shrink-0 ${themeClasses.border}`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
-                <Ticket className="w-5 h-5" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
+                <Ticket className="w-4 h-4" />
               </div>
               <div>
-                <h2 className={`text-lg font-black tracking-tight ${themeClasses.text}`}>Buat Tiket Baru</h2>
-                <p className={`text-[10px] font-bold uppercase tracking-widest ${themeClasses.textMuted}`}>Layanan Bantuan IT</p>
+                <h2 className={`text-base font-black tracking-tight ${themeClasses.text}`}>Buat Tiket Baru</h2>
+                <p className={`text-[9px] font-bold uppercase tracking-widest ${themeClasses.textMuted}`}>Layanan Bantuan IT</p>
               </div>
             </div>
             <button 
               onClick={() => setShowForm(false)}
-              className={`p-2 rounded-full transition-all ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+              className={`p-1.5 rounded-full transition-all ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        <form onSubmit={onFormSubmit} className="p-4 sm:p-6 overflow-y-auto custom-scrollbar space-y-4 sm:space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5 relative" ref={dropdownRef}>
-              <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                <User className="w-3 h-3" /> Nama Lengkap
+        <form onSubmit={onFormSubmit} className="p-3 sm:p-5 overflow-y-auto custom-scrollbar space-y-3 sm:space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1 relative" ref={dropdownRef}>
+              <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                <User className="w-2.5 h-2.5" /> Nama Lengkap
               </label>
               <input 
                 required
                 type="text"
                 placeholder="Cari Nama User..."
-                className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                className={`w-full px-3 py-2 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                 value={newTicket.name}
                 onChange={e => handleNameChange(e.target.value)}
                 onFocus={() => setShowUserDropdown(true)}
@@ -171,29 +171,29 @@ export const NewTicketModal = React.memo(({
                 </div>
               )}
             </div>
-            <div className="space-y-1.5">
-              <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                <Building2 className="w-3 h-3" /> Bagian / Unit
+            <div className="space-y-1">
+              <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                <Building2 className="w-2.5 h-2.5" /> Bagian / Unit
               </label>
               <input 
                 required
                 type="text"
                 placeholder="Otomatis terisi..."
-                className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                className={`w-full px-3 py-2 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                 value={newTicket.department}
                 onChange={e => setNewTicket({...newTicket, department: e.target.value})}
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4">
-            <div className="space-y-1.5">
-              <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                <Layers className="w-3 h-3" /> Kategori Masalah
+          <div className="grid grid-cols-1 gap-3">
+            <div className="space-y-1">
+              <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                <Layers className="w-2.5 h-2.5" /> Kategori Masalah
               </label>
               <select 
                 required
-                className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                className={`w-full px-3 py-2 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                 value={newTicket.category}
                 onChange={e => setNewTicket({...newTicket, category: e.target.value})}
               >
@@ -203,28 +203,28 @@ export const NewTicketModal = React.memo(({
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-              <MessageSquare className="w-3 h-3" /> Detail Masalah
+          <div className="space-y-1">
+            <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+              <MessageSquare className="w-2.5 h-2.5" /> Detail Masalah
             </label>
             <textarea 
               required
-              rows={4}
+              rows={3}
               placeholder="Jelaskan kendala Anda secara detail..."
-              className={`w-full px-4 py-3 rounded-2xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all resize-none ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+              className={`w-full px-3 py-2 rounded-2xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all resize-none ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
               value={newTicket.description}
               onChange={e => setNewTicket({...newTicket, description: e.target.value})}
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-              <Camera className="w-3 h-3" /> Lampiran Foto (Opsional)
+          <div className="space-y-1">
+            <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+              <Camera className="w-2.5 h-2.5" /> Lampiran Foto (Opsional)
             </label>
-            <div className="flex items-center gap-4">
-              <label className={`flex-1 flex flex-col items-center justify-center gap-2 px-4 py-6 border-2 border-dashed rounded-2xl cursor-pointer transition-all hover:bg-emerald-50/50 group ${isDark ? 'border-slate-700 hover:border-emerald-500' : 'border-slate-200 hover:border-emerald-500'}`}>
-                <Camera className="w-6 h-6 text-slate-400 group-hover:text-emerald-500 transition-colors" />
-                <span className="text-[10px] font-bold text-slate-500 group-hover:text-emerald-600">Klik untuk upload foto</span>
+            <div className="flex items-center gap-3">
+              <label className={`flex-1 flex flex-col items-center justify-center gap-1 px-3 py-4 border-2 border-dashed rounded-2xl cursor-pointer transition-all hover:bg-emerald-50/50 group ${isDark ? 'border-slate-700 hover:border-emerald-500' : 'border-slate-200 hover:border-emerald-500'}`}>
+                <Camera className="w-5 h-5 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+                <span className="text-[9px] font-bold text-slate-500 group-hover:text-emerald-600">Klik untuk upload foto</span>
                 <input 
                   type="file" 
                   accept="image/*" 
@@ -233,7 +233,7 @@ export const NewTicketModal = React.memo(({
                 />
               </label>
               {newTicket.photo && (
-                <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-lg group">
+                <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-lg group">
                   <img 
                     src={newTicket.photo} 
                     alt="Preview" 
@@ -252,16 +252,16 @@ export const NewTicketModal = React.memo(({
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-              <Ticket className="w-3 h-3" /> Indek Karyawan
+          <div className="space-y-1">
+            <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+              <Ticket className="w-2.5 h-2.5" /> Indek Karyawan
             </label>
             <div className="relative">
               <input 
                 required
                 type={showIndex ? "text" : "password"}
                 placeholder="Masukkan Indek Karyawan Anda..."
-                className={`w-full px-4 py-2.5 pr-12 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text} ${inputIndex && inputIndex !== correctIndex ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
+                className={`w-full px-3 py-2 pr-10 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text} ${inputIndex && inputIndex !== correctIndex ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
                 value={inputIndex}
                 onChange={e => setInputIndex(e.target.value)}
               />
@@ -284,12 +284,12 @@ export const NewTicketModal = React.memo(({
             )}
           </div>
 
-          <div className="pt-2">
+          <div className="pt-1">
             <button 
               type="submit"
               disabled={isSubmitting || !inputIndex}
               style={{ backgroundColor: inputIndex ? primaryColor : '#94a3b8' }}
-              className={`w-full py-3 sm:py-4 rounded-2xl text-white font-black uppercase tracking-widest text-xs sm:text-sm shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:cursor-not-allowed`}
+              className={`w-full py-2.5 sm:py-3 rounded-2xl text-white font-black uppercase tracking-widest text-xs sm:text-sm shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:cursor-not-allowed`}
             >
               {isSubmitting ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
