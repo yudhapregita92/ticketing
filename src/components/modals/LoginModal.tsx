@@ -94,7 +94,7 @@ export const LoginModal = React.memo(({
               style={{ backgroundColor: primaryColor }}
               className={`w-full py-3 sm:py-4 rounded-2xl text-white font-black uppercase tracking-widest text-xs sm:text-sm shadow-xl shadow-emerald-900/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2`}
             >
-              <LogIn className="w-4 h-4" /> Masuk Sekarang
+              <ShieldCheck className="w-4 h-4" /> Masuk Sekarang
             </button>
           </div>
         </form>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Toaster, toast } from 'react-hot-toast';
 import { 
   ShieldCheck, 
   Plus, 
@@ -78,6 +79,7 @@ interface ITicket {
   latitude?: number | null;
   longitude?: number | null;
   internal_notes?: string | null;
+  priority: 'Low' | 'Medium' | 'High' | 'Urgent';
 }
 
 const STATUSES = ['New', 'In Progress', 'Completed', 'Cancelled'];
@@ -134,6 +136,7 @@ export default function App() {
   const [masterUsers, setMasterUsers] = useState<{id: number, full_name: string, department: string, phone: string}[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<ITicket | null>(null); // Tiket yang sedang dilihat detailnya
   const [modalStatus, setModalStatus] = useState<string>(''); // Status sementara di modal detail
+  const [modalPriority, setModalPriority] = useState<string>(''); // Priority sementara di modal detail
 
   const handleSelectTicket = async (ticket: ITicket) => {
     setSelectedTicket(ticket);
@@ -215,6 +218,7 @@ export default function App() {
     department: '',
     category: '',
     phone: '',
+    priority: 'Medium',
     description: '',
     photo: '',
     latitude: null as number | null,
@@ -905,18 +909,19 @@ export default function App() {
         body: JSON.stringify(formData)
       });
       if (res.ok) {
-        setFormData({ name: '', department: '', category: '', phone: '', description: '', photo: '' });
+        setFormData({ name: '', department: '', category: '', phone: '', priority: 'Medium', description: '', photo: '', latitude: null, longitude: null });
         setShowForm(false);
+        toast.success('Tiket berhasil dikirim!');
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 3000);
         fetchTickets();
       } else {
         const errorData = await res.json();
-        alert('Gagal mengirim tiket: ' + (errorData.error || 'Terjadi kesalahan pada server'));
+        toast.error('Gagal mengirim tiket: ' + (errorData.error || 'Terjadi kesalahan'));
       }
     } catch (err) {
       console.error('Failed to submit ticket:', err);
-      alert('Terjadi kesalahan koneksi saat mengirim tiket.');
+      toast.error('Terjadi kesalahan koneksi.');
     } finally {
       setSubmitting(false);
     }
@@ -925,12 +930,12 @@ export default function App() {
   /**
    * Membuka konfirmasi update tiket (Hanya Admin)
    */
-  const handleUpdateClick = (id: number, status: string, assigned_to: string | null, admin_reply: string | null, internal_notes: string | null) => {
+  const handleUpdateClick = (id: number, status: string, assigned_to: string | null, admin_reply: string | null, internal_notes: string | null, priority?: string) => {
     if (!assigned_to) {
-      alert('Silakan pilih IT yang menangani terlebih dahulu.');
+      toast.error('Silakan pilih IT yang menangani terlebih dahulu.');
       return;
     }
-    setPendingUpdate({ id, status, assigned_to, admin_reply, internal_notes });
+    setPendingUpdate({ id, status, assigned_to, admin_reply, internal_notes, priority } as any);
   };
 
   /**
@@ -947,21 +952,26 @@ export default function App() {
           assigned_to: pendingUpdate.assigned_to, 
           admin_reply: pendingUpdate.admin_reply,
           internal_notes: pendingUpdate.internal_notes,
+          priority: (pendingUpdate as any).priority,
           performed_by: adminUser.username
         })
       });
       if (res.ok) {
+        toast.success('Tiket berhasil diperbarui!');
         setPendingUpdate(null);
         fetchTickets();
+      } else {
+        toast.error('Gagal memperbarui tiket.');
       }
     } catch (err) {
       console.error('Failed to update ticket:', err);
+      toast.error('Terjadi kesalahan koneksi.');
     }
   };
 
-  const updateTicket = async (id: number, status: string, assigned_to: string | null, admin_reply: string | null, internal_notes: string | null) => {
+  const updateTicket = async (id: number, status: string, assigned_to: string | null, admin_reply: string | null, internal_notes: string | null, priority?: string) => {
     // This is now handled by handleUpdateClick and confirmUpdate
-    handleUpdateClick(id, status, assigned_to, admin_reply, internal_notes);
+    handleUpdateClick(id, status, assigned_to, admin_reply, internal_notes, priority);
   };
 
   /**
@@ -988,11 +998,11 @@ export default function App() {
    */
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'New': return 'bg-amber-100 text-amber-700 border-amber-200';
-      case 'In Progress': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'Completed': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      case 'Cancelled': return 'bg-rose-100 text-rose-700 border-rose-200';
-      default: return 'bg-slate-100 text-slate-700 border-slate-200';
+      case 'New': return 'bg-amber-500 text-white border-amber-600';
+      case 'In Progress': return 'bg-blue-500 text-white border-blue-600';
+      case 'Completed': return 'bg-emerald-600 text-white border-emerald-700';
+      case 'Cancelled': return 'bg-rose-500 text-white border-rose-600';
+      default: return 'bg-slate-500 text-white border-slate-600';
     }
   };
 
@@ -1096,6 +1106,7 @@ export default function App() {
 
   return (
     <div className={`min-h-screen font-sans transition-colors duration-300 ${themeClasses.bg} ${themeClasses.selection}`} style={{ '--primary': primaryColor } as any}>
+      <Toaster position="top-center" reverseOrder={false} />
       {/* --- HEADER SECTION --- */}
       <Header 
         appSettings={appSettings}
@@ -1612,6 +1623,8 @@ export default function App() {
             ticketLogs={ticketLogs}
             modalStatus={modalStatus}
             setModalStatus={setModalStatus}
+            modalPriority={modalPriority}
+            setModalPriority={setModalPriority}
             handleIntervention={handleIntervention}
             handleUpdateClick={handleUpdateClick}
             formatDate={formatDate}

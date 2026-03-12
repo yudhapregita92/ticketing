@@ -41,6 +41,16 @@ export const getSLALabel = (createdAt: string, status: string) => {
   return null;
 };
 
+export const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'New': return 'bg-amber-500 text-white';
+    case 'In Progress': return 'bg-blue-500 text-white';
+    case 'Completed': return 'bg-emerald-600 text-white';
+    case 'Cancelled': return 'bg-rose-500 text-white';
+    default: return 'bg-slate-500 text-white';
+  }
+};
+
 export const getThemeClasses = (isDark: boolean) => ({
   card: isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-slate-200',
   header: isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-white/80 border-slate-200',

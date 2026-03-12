@@ -235,6 +235,7 @@ async function startServer() {
         assigned_to TEXT,
         admin_reply TEXT,
         status TEXT DEFAULT 'New',
+        priority TEXT DEFAULT 'Medium',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         responded_at DATETIME,
@@ -316,6 +317,10 @@ async function startServer() {
     if (!columns.includes('resolved_at')) {
       console.log("Adding missing column: resolved_at");
       db.exec("ALTER TABLE tickets ADD COLUMN resolved_at DATETIME");
+    }
+    if (!columns.includes('priority')) {
+      console.log("Adding missing column: priority");
+      db.exec("ALTER TABLE tickets ADD COLUMN priority TEXT DEFAULT 'Medium'");
     }
 
     const catTableInfo = db.prepare("PRAGMA table_info(categories)").all() as any[];
@@ -774,7 +779,7 @@ async function startServer() {
 
   app.post("/api/tickets", (req, res) => {
     try {
-      const { name, department, phone, category, description, photo, latitude, longitude } = req.body;
+      const { name, department, phone, category, description, photo, latitude, longitude, priority } = req.body;
       console.log('Incoming ticket data:', { name, department, phone, category, hasPhoto: !!photo, lat: latitude, lng: longitude });
       
       if (!name || !department || !category) {
@@ -817,8 +822,8 @@ async function startServer() {
       }
 
       const info = db.prepare(
-        "INSERT INTO tickets (ticket_no, name, department, phone, category, description, photo, created_at, ip_address, user_agent, latitude, longitude, assigned_to, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-      ).run(ticketNo, name, department, finalPhone, category, description || "", photo || null, utcNow.toISOString(), String(ip), String(userAgent), latitude || null, longitude || null, assignedTo, 'New');
+        "INSERT INTO tickets (ticket_no, name, department, phone, category, description, photo, created_at, ip_address, user_agent, latitude, longitude, assigned_to, status, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      ).run(ticketNo, name, department, finalPhone, category, description || "", photo || null, utcNow.toISOString(), String(ip), String(userAgent), latitude || null, longitude || null, assignedTo, 'New', priority || 'Medium');
       
       const newTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(info.lastInsertRowid) as any;
       
@@ -863,7 +868,7 @@ async function startServer() {
 
   app.patch("/api/tickets/:id", (req, res) => {
     const { id } = req.params;
-    const { status, assigned_to, admin_reply, internal_notes, takeover_by, reassign_to, performed_by, note } = req.body;
+    const { status, assigned_to, admin_reply, internal_notes, takeover_by, reassign_to, performed_by, note, priority } = req.body;
     
     const currentTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(id) as any;
     if (!currentTicket) return res.status(404).json({ error: "Ticket not found" });
@@ -872,6 +877,7 @@ async function startServer() {
     let resolvedAt = currentTicket.resolved_at;
     let newStatus = status || currentTicket.status;
     let newAssignedTo = assigned_to || currentTicket.assigned_to;
+    let newPriority = priority || currentTicket.priority;
 
     const logs = [];
 
@@ -884,6 +890,10 @@ async function startServer() {
       newAssignedTo = reassign_to;
       logs.push({ action: 'Reassigned', note: `Ticket reassigned to ${reassign_to}`, performed_by: performed_by || 'System' });
       console.log(`[INTERVENTION] Ticket ${currentTicket.ticket_no} reassigned to ${reassign_to}`);
+    }
+
+    if (priority && priority !== currentTicket.priority) {
+      logs.push({ action: 'Priority Changed', note: `Priority changed from ${currentTicket.priority} to ${priority}`, performed_by: performed_by || 'System' });
     }
 
     if (status && status !== currentTicket.status) {
@@ -910,8 +920,8 @@ async function startServer() {
       resolvedAt = null; // Reset if reopened
     }
 
-    db.prepare("UPDATE tickets SET status = ?, assigned_to = ?, admin_reply = ?, internal_notes = ?, responded_at = ?, resolved_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
-      .run(newStatus, newAssignedTo, admin_reply || currentTicket.admin_reply, internal_notes || currentTicket.internal_notes, respondedAt, resolvedAt, id);
+    db.prepare("UPDATE tickets SET status = ?, assigned_to = ?, admin_reply = ?, internal_notes = ?, priority = ?, responded_at = ?, resolved_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+      .run(newStatus, newAssignedTo, admin_reply || currentTicket.admin_reply, internal_notes || currentTicket.internal_notes, newPriority, respondedAt, resolvedAt, id);
     
     // Insert logs
     const insertLog = db.prepare("INSERT INTO ticket_logs (ticket_id, action, note, performed_by) VALUES (?, ?, ?, ?)");
@@ -926,7 +936,7 @@ async function startServer() {
     }
 
     res.json({ success: true });
-    io.emit("ticket_updated", { id, status: newStatus, assigned_to: newAssignedTo });
+    io.emit("ticket_updated", { id, status: newStatus, assigned_to: newAssignedTo, priority: newPriority });
   });
 
   // Vite middleware for development

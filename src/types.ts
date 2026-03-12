@@ -27,6 +27,7 @@ export interface ITicket {
   latitude?: number | null;
   longitude?: number | null;
   internal_notes?: string | null;
+  priority: 'Low' | 'Medium' | 'High' | 'Urgent';
 }
 
 export interface IAppSettings {
@@ -57,6 +58,13 @@ export interface IAdminUser {
 }
 
 export const STATUSES = ['New', 'In Progress', 'Completed', 'Cancelled'];
+
+export const PRIORITIES = [
+  { id: 'Low', label: 'Low', color: 'bg-slate-400' },
+  { id: 'Medium', label: 'Medium', color: 'bg-blue-500' },
+  { id: 'High', label: 'High', color: 'bg-amber-500' },
+  { id: 'Urgent', label: 'Urgent', color: 'bg-rose-600' }
+];
 
 export const LOGO_OPTIONS = [
   { id: 'ShieldCheck', icon: ShieldCheck },

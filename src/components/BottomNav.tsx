@@ -3,11 +3,11 @@ import { motion } from 'framer-motion';
 import { 
   Home, 
   Send, 
-  LogIn, 
+  ShieldCheck, 
   LogOut, 
-  Settings, 
-  List, 
-  UserCircle 
+  Settings2, 
+  ClipboardList, 
+  UserCog 
 } from 'lucide-react';
 import { IAdminUser } from '../types';
 
@@ -47,8 +47,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             onClick={() => setViewMode('all')}
             className={`flex flex-col items-center justify-center w-1/5 gap-1 ${viewMode === 'all' ? activeTextClass : textClass}`}
           >
-            <List className={`w-5 h-5 ${viewMode === 'all' ? 'stroke-[2.5px]' : 'stroke-2'}`} style={{ color: viewMode === 'all' ? primaryColor : undefined }} />
-            <span className="text-[10px] font-medium">Semua Tiket</span>
+            <ClipboardList className={`w-5 h-5 ${viewMode === 'all' ? 'stroke-[2.5px]' : 'stroke-2'}`} style={{ color: viewMode === 'all' ? primaryColor : undefined }} />
+            <span className="text-[10px] font-bold">Semua Tiket</span>
           </motion.button>
           
           <motion.button 
@@ -56,8 +56,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             onClick={() => setViewMode('my_tickets')}
             className={`flex flex-col items-center justify-center w-1/5 gap-1 ${viewMode === 'my_tickets' ? activeTextClass : textClass}`}
           >
-            <UserCircle className={`w-5 h-5 ${viewMode === 'my_tickets' ? 'stroke-[2.5px]' : 'stroke-2'}`} style={{ color: viewMode === 'my_tickets' ? primaryColor : undefined }} />
-            <span className="text-[10px] font-medium">Tiket Saya</span>
+            <UserCog className={`w-5 h-5 ${viewMode === 'my_tickets' ? 'stroke-[2.5px]' : 'stroke-2'}`} style={{ color: viewMode === 'my_tickets' ? primaryColor : undefined }} />
+            <span className="text-[10px] font-bold">Tiket Saya</span>
           </motion.button>
 
           <motion.button 
@@ -65,8 +65,20 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             onClick={() => setShowForm(true)}
             className={`flex flex-col items-center justify-center w-1/5 gap-1 ${textClass}`}
           >
-            <Send className="w-5 h-5 stroke-2" style={{ color: primaryColor }} />
-            <span className="text-[10px] font-medium" style={{ color: primaryColor }}>Buat Tiket</span>
+            <motion.div
+              animate={{ 
+                scale: [1, 1.15, 1],
+                filter: ["drop-shadow(0 0 0px rgba(0,0,0,0))", `drop-shadow(0 0 8px ${primaryColor}44)`, "drop-shadow(0 0 0px rgba(0,0,0,0))"]
+              }}
+              transition={{ 
+                repeat: Infinity, 
+                duration: 2,
+                ease: "easeInOut"
+              }}
+            >
+              <Send className="w-5 h-5 stroke-[2.5px]" style={{ color: primaryColor }} />
+            </motion.div>
+            <span className="text-[10px] font-bold" style={{ color: primaryColor }}>Buat Tiket</span>
           </motion.button>
 
           <motion.button 
@@ -74,8 +86,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             onClick={() => setShowSettings(true)}
             className={`flex flex-col items-center justify-center w-1/5 gap-1 ${textClass}`}
           >
-            <Settings className="w-5 h-5 stroke-2" />
-            <span className="text-[10px] font-medium">Pengaturan</span>
+            <Settings2 className="w-5 h-5 stroke-2" />
+            <span className="text-[10px] font-bold">Pengaturan</span>
           </motion.button>
 
           <motion.button 
@@ -84,7 +96,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             className={`flex flex-col items-center justify-center w-1/5 gap-1 ${textClass}`}
           >
             <LogOut className="w-5 h-5 stroke-2" />
-            <span className="text-[10px] font-medium">Logout</span>
+            <span className="text-[10px] font-bold">Logout</span>
           </motion.button>
         </div>
       </div>
@@ -100,7 +112,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           className={`flex flex-col items-center justify-center w-1/3 gap-1 ${viewMode === 'today' ? activeTextClass : textClass}`}
         >
           <Home className={`w-6 h-6 ${viewMode === 'today' ? 'stroke-[2.5px]' : 'stroke-2'}`} style={{ color: viewMode === 'today' ? primaryColor : undefined }} />
-          <span className="text-[10px] font-medium">Beranda</span>
+          <span className="text-[10px] font-bold">Beranda</span>
         </motion.button>
 
         <motion.button 
@@ -108,8 +120,21 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           onClick={() => setShowForm(true)}
           className={`flex flex-col items-center justify-center w-1/3 gap-1 ${textClass}`}
         >
-          <Send className="w-6 h-6 stroke-2" style={{ color: primaryColor }} />
-          <span className="text-[10px] font-medium" style={{ color: primaryColor }}>Buat Tiket</span>
+          <motion.div
+            animate={{ 
+              scale: [1, 1.2, 1],
+              filter: ["drop-shadow(0 0 0px rgba(0,0,0,0))", `drop-shadow(0 0 12px ${primaryColor}66)`, "drop-shadow(0 0 0px rgba(0,0,0,0))"]
+            }}
+            transition={{ 
+              repeat: Infinity, 
+              duration: 2,
+              ease: "easeInOut"
+            }}
+            className="relative"
+          >
+            <Send className="w-7 h-7 stroke-[2.5px]" style={{ color: primaryColor }} />
+          </motion.div>
+          <span className="text-[10px] font-bold" style={{ color: primaryColor }}>Buat Tiket</span>
         </motion.button>
 
         <motion.button 
@@ -117,8 +142,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           onClick={() => setShowLogin(true)}
           className={`flex flex-col items-center justify-center w-1/3 gap-1 ${textClass}`}
         >
-          <LogIn className="w-6 h-6 stroke-2" />
-          <span className="text-[10px] font-medium">Login IT</span>
+          <ShieldCheck className="w-6 h-6 stroke-2" />
+          <span className="text-[10px] font-bold">Login IT</span>
         </motion.button>
       </div>
     </div>

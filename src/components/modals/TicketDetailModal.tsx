@@ -19,28 +19,7 @@ import {
   Trash2
 } from 'lucide-react';
 
-interface ITicket {
-  id: number;
-  ticket_no: string;
-  name: string;
-  department: string;
-  phone: string;
-  category: string;
-  description: string;
-  assigned_to: string | null;
-  admin_reply: string | null;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  responded_at?: string | null;
-  resolved_at?: string | null;
-  photo?: string | null;
-  ip_address?: string | null;
-  user_agent?: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
-  internal_notes?: string | null;
-}
+import { ITicket, PRIORITIES } from '../../types';
 
 interface TicketDetailModalProps {
   selectedTicket: ITicket | null;
@@ -56,7 +35,9 @@ interface TicketDetailModalProps {
   STATUSES: string[];
   modalStatus: string;
   setModalStatus: (status: string) => void;
-  handleUpdateClick: (id: number, status: string, assigned_to: string | null, reply: string | null, internal: string | null) => void;
+  modalPriority: string;
+  setModalPriority: (priority: string) => void;
+  handleUpdateClick: (id: number, status: string, assigned_to: string | null, reply: string | null, internal: string | null, priority?: string) => void;
   handleIntervention: (id: number, type: 'takeover' | 'reassign') => void;
   primaryColor: string;
 }
@@ -75,11 +56,15 @@ export const TicketDetailModal = React.memo(({
   STATUSES,
   modalStatus,
   setModalStatus,
+  modalPriority,
+  setModalPriority,
   handleUpdateClick,
   handleIntervention,
   primaryColor
 }: TicketDetailModalProps) => {
   if (!selectedTicket) return null;
+
+  const priorityInfo = PRIORITIES.find((p: any) => p.id === (selectedTicket.priority || 'Medium')) || PRIORITIES[1];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -107,6 +92,9 @@ export const TicketDetailModal = React.memo(({
                   <span className={`text-[8px] sm:text-[9px] font-bold ${themeClasses.textMuted}`}>#{selectedTicket.ticket_no || selectedTicket.id.toString().padStart(4, '0')}</span>
                   <span className={`px-1.5 py-0.5 rounded-full text-[7px] sm:text-[8px] font-bold uppercase tracking-wider border ${getStatusColor(selectedTicket.status)}`}>
                     {selectedTicket.status}
+                  </span>
+                  <span className={`px-1.5 py-0.5 rounded-full text-[7px] sm:text-[8px] font-bold uppercase tracking-wider text-white ${priorityInfo.color}`}>
+                    {priorityInfo.label}
                   </span>
                 </div>
                 <h2 className={`text-xs sm:text-base font-black tracking-tight ${themeClasses.text}`}>{selectedTicket.category} Request</h2>
@@ -359,6 +347,24 @@ export const TicketDetailModal = React.memo(({
                       )}
                     </div>
                     <div className="space-y-0.5">
+                      <label className="text-[7px] sm:text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Prioritas</label>
+                      <div className="flex gap-1 bg-slate-800 p-0.5 rounded-xl border border-slate-700 overflow-x-auto no-scrollbar">
+                        {PRIORITIES.map((p: any) => (
+                          <button
+                            key={p.id}
+                            onClick={() => setModalPriority(p.id)}
+                            className={`flex-1 min-w-[50px] py-1 rounded-lg text-[6px] sm:text-[7px] font-black uppercase tracking-tighter transition-all ${
+                              (modalPriority || selectedTicket.priority || 'Medium') === p.id 
+                              ? `${p.color} text-white shadow-lg` 
+                              : 'text-slate-400 hover:text-white hover:bg-slate-700'
+                            }`}
+                          >
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-0.5">
                       <label className="text-[7px] sm:text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
                       <div className="flex gap-1 bg-slate-800 p-0.5 rounded-xl border border-slate-700 overflow-x-auto no-scrollbar">
                         {Array.isArray(STATUSES) && STATUSES.map(status => (
@@ -367,7 +373,12 @@ export const TicketDetailModal = React.memo(({
                             onClick={() => setModalStatus(status)}
                             className={`flex-1 min-w-[50px] py-1 rounded-lg text-[6px] sm:text-[7px] font-black uppercase tracking-tighter transition-all ${
                               (modalStatus || selectedTicket.status) === status 
-                              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' 
+                              ? (
+                                status === 'New' ? 'bg-amber-500 text-white shadow-lg shadow-amber-900/40' :
+                                status === 'In Progress' ? 'bg-blue-500 text-white shadow-lg shadow-blue-900/40' :
+                                status === 'Completed' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' :
+                                'bg-rose-500 text-white shadow-lg shadow-rose-900/40'
+                              )
                               : 'text-slate-400 hover:text-white hover:bg-slate-700'
                             }`}
                           >
@@ -408,9 +419,11 @@ export const TicketDetailModal = React.memo(({
                       const reply = (document.getElementById(`modal-reply-${selectedTicket.id}`) as HTMLTextAreaElement).value;
                       const internal = (document.getElementById(`modal-internal-${selectedTicket.id}`) as HTMLTextAreaElement).value;
                       const status = modalStatus || selectedTicket.status;
-                      handleUpdateClick(selectedTicket.id, status, assignee, reply, internal);
+                      const priority = modalPriority || selectedTicket.priority || 'Medium';
+                      handleUpdateClick(selectedTicket.id, status, assignee, reply, internal, priority);
                       setSelectedTicket(null);
                       setModalStatus('');
+                      setModalPriority('');
                     }}
                     style={{ backgroundColor: primaryColor }}
                     className="w-full text-white font-black py-2.5 sm:py-3 rounded-xl hover:opacity-90 transition-all shadow-xl active:scale-[0.98] uppercase tracking-widest text-[9px] sm:text-[10px]"

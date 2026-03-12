@@ -6,7 +6,7 @@ import {
   Settings2, 
   Trash2, 
   LogOut, 
-  LogIn, 
+  ShieldCheck, 
   Plus 
 } from 'lucide-react';
 import { IAppSettings, IAdminUser, ITicket, LOGO_OPTIONS } from '../types';
@@ -123,7 +123,7 @@ export const Header: React.FC<HeaderProps> = ({
               className={`p-2 rounded-lg transition-all ${isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
               title="Login"
             >
-              <LogIn className="w-5 h-5" />
+              <ShieldCheck className="w-5 h-5" />
             </motion.button>
           )}
           
