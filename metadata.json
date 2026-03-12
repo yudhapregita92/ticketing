@@ -1,5 +1,5 @@
 {
   "name": "IT Helpdesk Pro",
   "description": "Professional IT Support Ticketing System for efficient request management and tracking.",
-  "requestFramePermissions": ["geolocation"]
+  "requestFramePermissions": ["geolocation", "camera"]
 }

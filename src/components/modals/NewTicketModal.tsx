@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
   Ticket, 
@@ -13,7 +13,9 @@ import {
   Navigation,
   Eye,
   EyeOff,
-  AlertTriangle
+  AlertTriangle,
+  Scan,
+  CheckCircle2
 } from 'lucide-react';
 import { PRIORITIES } from '../../types';
 
@@ -60,7 +62,57 @@ export const NewTicketModal = React.memo(({
   const [inputIndex, setInputIndex] = React.useState('');
   const [correctIndex, setCorrectIndex] = React.useState('');
   const [showIndex, setShowIndex] = React.useState(false);
+  const [isScanning, setIsScanning] = React.useState(false);
+  const [scanComplete, setScanComplete] = React.useState(false);
+  const [cameraError, setCameraError] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const streamRef = React.useRef<MediaStream | null>(null);
+
+  React.useEffect(() => {
+    const startCamera = async () => {
+      try {
+        setCameraError(false);
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: 'user' } 
+        });
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (err) {
+        console.error("Error accessing camera:", err);
+        setCameraError(true);
+      }
+    };
+
+    const stopCamera = () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+    };
+
+    if (showForm) {
+      setIsScanning(true);
+      setScanComplete(false);
+      startCamera();
+
+      const timer = setTimeout(() => {
+        setScanComplete(true);
+        const closeTimer = setTimeout(() => {
+          setIsScanning(false);
+          stopCamera();
+        }, 1500);
+        return () => clearTimeout(closeTimer);
+      }, 3000); // Slightly longer for realistic feel
+
+      return () => {
+        clearTimeout(timer);
+        stopCamera();
+      };
+    }
+  }, [showForm]);
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -124,6 +176,105 @@ export const NewTicketModal = React.memo(({
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         className={`relative rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh] transition-colors ${themeClasses.card} ${themeClasses.text}`}
       >
+        <AnimatePresence>
+          {isScanning && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-[60] bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center"
+            >
+              <div className="relative w-48 h-48 mb-6">
+                <motion.div
+                  animate={{ 
+                    borderColor: scanComplete ? '#10b981' : primaryColor,
+                    scale: scanComplete ? [1, 1.05, 1] : 1
+                  }}
+                  className="absolute inset-0 border-2 rounded-3xl border-dashed opacity-50"
+                />
+                
+                <div className="absolute inset-4 flex items-center justify-center overflow-hidden rounded-2xl bg-slate-800">
+                  {cameraError ? (
+                    <div className="flex flex-col items-center justify-center p-4 text-slate-500">
+                      <Camera className="w-12 h-12 mb-2 opacity-20" />
+                      <p className="text-[10px] font-bold uppercase tracking-tight">Kamera Tidak Tersedia</p>
+                    </div>
+                  ) : (
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className={`w-full h-full object-cover transition-opacity duration-500 ${scanComplete ? 'opacity-20' : 'opacity-100'}`}
+                    />
+                  )}
+                  
+                  {scanComplete ? (
+                    <motion.div
+                      initial={{ scale: 0, rotate: -20 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      className="absolute inset-0 flex items-center justify-center text-emerald-500 z-20"
+                    >
+                      <CheckCircle2 className="w-24 h-24" />
+                    </motion.div>
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <motion.div
+                        animate={{ 
+                          opacity: [0.1, 0.3, 0.1],
+                          scale: [0.9, 1.1, 0.9]
+                        }}
+                        transition={{ repeat: Infinity, duration: 2 }}
+                        className="text-white/10"
+                      >
+                        <Scan className="w-32 h-32" />
+                      </motion.div>
+                    </div>
+                  )}
+                </div>
+
+                {!scanComplete && (
+                  <motion.div
+                    animate={{ top: ['0%', '100%', '0%'] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                    className="absolute left-0 right-0 h-0.5 bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.8)] z-10"
+                  />
+                )}
+              </div>
+
+              <motion.div
+                key={scanComplete ? 'complete' : 'scanning'}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-2"
+              >
+                <h3 className={`text-xl font-black tracking-tight ${scanComplete ? 'text-emerald-500' : 'text-white'}`}>
+                  {scanComplete ? 'Identitas Terverifikasi' : 'Memindai Wajah...'}
+                </h3>
+                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">
+                  {scanComplete ? 'Wajah anda telah direkam' : 'Mohon hadap ke kamera perangkat'}
+                </p>
+              </motion.div>
+
+              <div className="absolute bottom-8 left-0 right-0 flex justify-center">
+                <div className="flex gap-1">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      animate={{ 
+                        scale: [1, 1.5, 1],
+                        opacity: [0.3, 1, 0.3]
+                      }}
+                      transition={{ repeat: Infinity, duration: 1, delay: i * 0.2 }}
+                      className="w-1.5 h-1.5 rounded-full bg-emerald-500"
+                    />
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className={`p-3 sm:p-5 border-b shrink-0 ${themeClasses.border}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
