@@ -65,54 +65,86 @@ export const NewTicketModal = React.memo(({
   const [isScanning, setIsScanning] = React.useState(false);
   const [scanComplete, setScanComplete] = React.useState(false);
   const [cameraError, setCameraError] = React.useState(false);
+  const [permissionDenied, setPermissionDenied] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const streamRef = React.useRef<MediaStream | null>(null);
 
-  React.useEffect(() => {
-    const startCamera = async () => {
-      try {
-        setCameraError(false);
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: 'user' } 
-        });
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (err) {
-        console.error("Error accessing camera:", err);
-        setCameraError(true);
-      }
-    };
+  const scanTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const closeTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
-    const stopCamera = () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-        streamRef.current = null;
-      }
-    };
+  const stopCamera = React.useCallback(() => {
+    if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  }, []);
 
-    if (showForm) {
-      setIsScanning(true);
+  const startCamera = React.useCallback(async () => {
+    try {
+      if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+
+      setCameraError(false);
+      setPermissionDenied(false);
       setScanComplete(false);
-      startCamera();
+      setIsScanning(true);
 
-      const timer = setTimeout(() => {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'user',
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        } 
+      });
+      
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            console.error("Auto-play was prevented:", error);
+          });
+        }
+      }
+
+      // Start scanning process only if camera is successful
+      scanTimerRef.current = setTimeout(() => {
         setScanComplete(true);
-        const closeTimer = setTimeout(() => {
+        closeTimerRef.current = setTimeout(() => {
           setIsScanning(false);
           stopCamera();
         }, 1500);
-        return () => clearTimeout(closeTimer);
-      }, 3000); // Slightly longer for realistic feel
+      }, 3000);
 
-      return () => {
-        clearTimeout(timer);
-        stopCamera();
-      };
+    } catch (err: any) {
+      console.error("Error accessing camera:", err);
+      setCameraError(true);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setPermissionDenied(true);
+      }
     }
-  }, [showForm]);
+  }, [stopCamera]);
+
+  React.useEffect(() => {
+    if (showForm) {
+      startCamera();
+    }
+    return () => {
+      stopCamera();
+    };
+  }, [showForm, startCamera, stopCamera]);
+
+  const handleRetryCamera = () => {
+    startCamera();
+  };
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -195,9 +227,22 @@ export const NewTicketModal = React.memo(({
                 
                 <div className="absolute inset-4 flex items-center justify-center overflow-hidden rounded-2xl bg-slate-800">
                   {cameraError ? (
-                    <div className="flex flex-col items-center justify-center p-4 text-slate-500">
-                      <Camera className="w-12 h-12 mb-2 opacity-20" />
-                      <p className="text-[10px] font-bold uppercase tracking-tight">Kamera Tidak Tersedia</p>
+                    <div className="flex flex-col items-center justify-center p-6 text-center">
+                      <div className="w-16 h-16 bg-rose-500/20 rounded-full flex items-center justify-center text-rose-500 mb-4">
+                        <AlertTriangle className="w-8 h-8" />
+                      </div>
+                      <h4 className="text-sm font-black text-white uppercase mb-1">Kamera Wajib Aktif</h4>
+                      <p className="text-[10px] font-bold text-slate-400 mb-4">
+                        {permissionDenied 
+                          ? "Izin kamera ditolak. Mohon izinkan akses kamera di pengaturan browser Anda." 
+                          : "Gagal mengakses kamera. Pastikan kamera tidak sedang digunakan aplikasi lain."}
+                      </p>
+                      <button
+                        onClick={handleRetryCamera}
+                        className="px-4 py-2 bg-emerald-500 text-white text-[10px] font-black rounded-xl uppercase tracking-widest shadow-lg active:scale-95 transition-all"
+                      >
+                        Coba Lagi
+                      </button>
                     </div>
                   ) : (
                     <video
@@ -209,31 +254,33 @@ export const NewTicketModal = React.memo(({
                     />
                   )}
                   
-                  {scanComplete ? (
-                    <motion.div
-                      initial={{ scale: 0, rotate: -20 }}
-                      animate={{ scale: 1, rotate: 0 }}
-                      className="absolute inset-0 flex items-center justify-center text-emerald-500 z-20"
-                    >
-                      <CheckCircle2 className="w-24 h-24" />
-                    </motion.div>
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  {!cameraError && (
+                    scanComplete ? (
                       <motion.div
-                        animate={{ 
-                          opacity: [0.1, 0.3, 0.1],
-                          scale: [0.9, 1.1, 0.9]
-                        }}
-                        transition={{ repeat: Infinity, duration: 2 }}
-                        className="text-white/10"
+                        initial={{ scale: 0, rotate: -20 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        className="absolute inset-0 flex items-center justify-center text-emerald-500 z-20"
                       >
-                        <Scan className="w-32 h-32" />
+                        <CheckCircle2 className="w-24 h-24" />
                       </motion.div>
-                    </div>
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <motion.div
+                          animate={{ 
+                            opacity: [0.1, 0.3, 0.1],
+                            scale: [0.9, 1.1, 0.9]
+                          }}
+                          transition={{ repeat: Infinity, duration: 2 }}
+                          className="text-white/10"
+                        >
+                          <Scan className="w-32 h-32" />
+                        </motion.div>
+                      </div>
+                    )
                   )}
                 </div>
 
-                {!scanComplete && (
+                {!scanComplete && !cameraError && (
                   <motion.div
                     animate={{ top: ['0%', '100%', '0%'] }}
                     transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
@@ -243,17 +290,25 @@ export const NewTicketModal = React.memo(({
               </div>
 
               <motion.div
-                key={scanComplete ? 'complete' : 'scanning'}
+                key={cameraError ? 'error' : (scanComplete ? 'complete' : 'scanning')}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-2"
               >
-                <h3 className={`text-xl font-black tracking-tight ${scanComplete ? 'text-emerald-500' : 'text-white'}`}>
-                  {scanComplete ? 'Identitas Terverifikasi' : 'Memindai Wajah...'}
-                </h3>
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">
-                  {scanComplete ? 'Wajah anda telah direkam' : 'Mohon hadap ke kamera perangkat'}
-                </p>
+                {cameraError ? (
+                  <div className="px-4 py-2 bg-rose-500/10 rounded-xl border border-rose-500/20">
+                    <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Verifikasi Gagal</p>
+                  </div>
+                ) : (
+                  <>
+                    <h3 className={`text-xl font-black tracking-tight ${scanComplete ? 'text-emerald-500' : 'text-white'}`}>
+                      {scanComplete ? 'Identitas Terverifikasi' : 'Memindai Wajah...'}
+                    </h3>
+                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">
+                      {scanComplete ? 'Wajah anda telah direkam' : 'Mohon hadap ke kamera perangkat'}
+                    </p>
+                  </>
+                )}
               </motion.div>
 
               <div className="absolute bottom-8 left-0 right-0 flex justify-center">
