@@ -1352,7 +1352,26 @@ export default function App() {
                 </button>
               </div>
             ) : (
-              <div className="space-y-4">
+              <motion.div 
+                className="space-y-4"
+                drag="x"
+                dragDirectionLock
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.1}
+                style={{ touchAction: 'pan-y' }}
+                onDragEnd={(_, info) => {
+                  const swipeThreshold = 50;
+                  if (info.offset.x > swipeThreshold) {
+                    // Swipe Right -> Previous Tab
+                    if (viewMode === 'all') setViewMode('today');
+                    else if (viewMode === 'my_tickets') setViewMode('all');
+                  } else if (info.offset.x < -swipeThreshold) {
+                    // Swipe Left -> Next Tab
+                    if (viewMode === 'today') setViewMode('all');
+                    else if (viewMode === 'all' && adminUser) setViewMode('my_tickets');
+                  }
+                }}
+              >
                 <AnimatePresence mode="popLayout">
                   {filteredTickets.length === 0 ? (
                     <motion.div 
@@ -1383,9 +1402,9 @@ export default function App() {
                   ) : (
                     <motion.div 
                       key={viewMode}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -10 }}
                       transition={{ duration: 0.2 }}
                       className="flex flex-col gap-2"
                     >
@@ -1580,7 +1599,7 @@ export default function App() {
                     </button>
                   </div>
                 )}
-              </div>
+              </motion.div>
             )}
 
             {/* Help CTA - Visible on mobile at the bottom */}
