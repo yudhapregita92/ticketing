@@ -1,5 +1,4 @@
 import React from 'react';
-import * as faceapi from '@vladmandic/face-api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -67,25 +66,12 @@ export const NewTicketModal = React.memo(({
   const [scanComplete, setScanComplete] = React.useState(false);
   const [cameraError, setCameraError] = React.useState(false);
   const [permissionDenied, setPermissionDenied] = React.useState(false);
-  const [modelsLoaded, setModelsLoaded] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const streamRef = React.useRef<MediaStream | null>(null);
 
   const scanTimerRef = React.useRef<NodeJS.Timeout | null>(null);
   const closeTimerRef = React.useRef<NodeJS.Timeout | null>(null);
-
-  React.useEffect(() => {
-    const loadModels = async () => {
-      try {
-        await faceapi.nets.tinyFaceDetector.loadFromUri('/model');
-        setModelsLoaded(true);
-      } catch (e) {
-        console.error("Failed to load face-api models", e);
-      }
-    };
-    loadModels();
-  }, []);
 
   const stopCamera = React.useCallback(() => {
     if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
@@ -135,53 +121,16 @@ export const NewTicketModal = React.memo(({
     }
   }, [stopCamera]);
 
-  const captureFace = React.useCallback(async () => {
+  const captureFace = React.useCallback(() => {
     if (!videoRef.current || !streamRef.current) return;
     
-    try {
-      let faceDetected = false;
-      
-      if (videoRef.current.readyState >= 2 && videoRef.current.videoWidth > 0) {
-        if (modelsLoaded) {
-          const detections = await faceapi.detectAllFaces(
-            videoRef.current, 
-            new faceapi.TinyFaceDetectorOptions()
-          );
-          if (detections.length > 0) {
-            faceDetected = true;
-          }
-        } else if ('FaceDetector' in window) {
-          // @ts-ignore
-          const faceDetector = new window.FaceDetector();
-          const faces = await faceDetector.detect(videoRef.current);
-          if (faces.length > 0) {
-            faceDetected = true;
-          }
-        } else {
-          // Fallback if no detection available
-          faceDetected = true;
-        }
-      }
-
-      if (faceDetected) {
-        setScanComplete(true);
-        closeTimerRef.current = setTimeout(() => {
-          setIsScanning(false);
-          stopCamera();
-        }, 1500);
-      } else {
-        alert("Wajah tidak terdeteksi. Pastikan wajah Anda berada di dalam garis panduan.");
-      }
-    } catch (e) {
-      console.error("Face detection error:", e);
-      // Fallback on error to allow user to proceed
-      setScanComplete(true);
-      closeTimerRef.current = setTimeout(() => {
-        setIsScanning(false);
-        stopCamera();
-      }, 1500);
-    }
-  }, [modelsLoaded, stopCamera]);
+    // Manual capture, bypass AI detection
+    setScanComplete(true);
+    closeTimerRef.current = setTimeout(() => {
+      setIsScanning(false);
+      stopCamera();
+    }, 1500);
+  }, [stopCamera]);
 
   React.useEffect(() => {
     if (showForm) {
@@ -357,7 +306,7 @@ export const NewTicketModal = React.memo(({
                 ) : (
                   <>
                     <h3 className={`text-xl font-black tracking-tight ${scanComplete ? 'text-emerald-500' : 'text-white'}`}>
-                      {scanComplete ? 'Wajah Anda Sudah Terekam' : (!modelsLoaded ? 'Memuat Model AI...' : 'Posisikan Wajah Anda')}
+                      {scanComplete ? 'Wajah Anda Sudah Terekam' : 'Posisikan Wajah Anda'}
                     </h3>
                     <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">
                       {scanComplete ? 'Identitas terverifikasi' : 'Mohon hadap ke kamera dan paskan dengan garis'}
@@ -366,7 +315,6 @@ export const NewTicketModal = React.memo(({
                     {!scanComplete && (
                       <button
                         onClick={captureFace}
-                        disabled={!modelsLoaded}
                         className="mt-4 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full max-w-[200px] mx-auto flex items-center justify-center gap-2"
                       >
                         <Camera className="w-5 h-5" />
