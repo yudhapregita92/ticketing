@@ -32,6 +32,7 @@ interface NewTicketModalProps {
     priority: string;
     description: string;
     photo: string | null;
+    face_photo?: string | null;
   };
   setNewTicket: (ticket: any) => void;
   DEPARTMENTS: string[];
@@ -124,13 +125,32 @@ export const NewTicketModal = React.memo(({
   const captureFace = React.useCallback(() => {
     if (!videoRef.current || !streamRef.current) return;
     
+    // Capture image from video
+    const canvas = document.createElement('canvas');
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+      
+      // Compress to stay under 30KB
+      let quality = 0.6;
+      let base64 = canvas.toDataURL('image/jpeg', quality);
+      while (base64.length > 40000 && quality > 0.1) {
+        quality -= 0.1;
+        base64 = canvas.toDataURL('image/jpeg', quality);
+      }
+      
+      setNewTicket({ ...newTicket, face_photo: base64 });
+    }
+
     // Manual capture, bypass AI detection
     setScanComplete(true);
     closeTimerRef.current = setTimeout(() => {
       setIsScanning(false);
       stopCamera();
     }, 1500);
-  }, [stopCamera]);
+  }, [stopCamera, newTicket, setNewTicket]);
 
   React.useEffect(() => {
     if (showForm) {

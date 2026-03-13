@@ -7,7 +7,8 @@ import {
   Trash2, 
   LogOut, 
   ShieldCheck, 
-  Plus 
+  Plus,
+  Image as ImageIcon
 } from 'lucide-react';
 import { IAppSettings, IAdminUser, ITicket, LOGO_OPTIONS } from '../types';
 
@@ -19,6 +20,7 @@ interface HeaderProps {
   notificationPermission: NotificationPermission;
   requestNotificationPermission: () => void;
   setShowSettings: (show: boolean) => void;
+  setShowImageManager?: (show: boolean) => void;
   setShowResetConfirm: (show: boolean) => void;
   handleLogout: () => void;
   setShowLogin: (show: boolean) => void;
@@ -34,6 +36,7 @@ export const Header: React.FC<HeaderProps> = ({
   notificationPermission,
   requestNotificationPermission,
   setShowSettings,
+  setShowImageManager,
   setShowResetConfirm,
   handleLogout,
   setShowLogin,
@@ -93,6 +96,18 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                   <Settings2 className="w-4 h-4" />
                 </motion.button>
+
+                {setShowImageManager && (
+                  <motion.button 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowImageManager(true)}
+                    className={`p-1.5 rounded-lg transition-all ${isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
+                    title="Manage Images"
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                  </motion.button>
+                )}
 
                 <motion.button 
                   whileHover={{ scale: 1.05 }}

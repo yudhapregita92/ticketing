@@ -384,7 +384,7 @@ async function startServer() {
 
     // Add new columns if they don't exist (for existing databases)
     const columnsToEnsure = [
-      "ticket_no TEXT", "description TEXT", "photo TEXT", "assigned_to TEXT", 
+      "ticket_no TEXT", "description TEXT", "photo TEXT", "face_photo TEXT", "assigned_to TEXT", 
       "admin_reply TEXT", "internal_notes TEXT", "responded_at DATETIME", 
       "resolved_at DATETIME", "updated_at DATETIME DEFAULT CURRENT_TIMESTAMP",
       "ip_address TEXT", "user_agent TEXT", "latitude REAL", "longitude REAL"
@@ -767,6 +767,81 @@ async function startServer() {
     }
   });
 
+  app.get("/api/tickets/:id/face_photo", (req, res) => {
+    try {
+      const { id } = req.params;
+      const ticket = db.prepare("SELECT face_photo FROM tickets WHERE id = ?").get(id) as { face_photo: string } | undefined;
+      if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+      res.json({ face_photo: ticket.face_photo });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Image Management Routes
+  app.get("/api/images", (req, res) => {
+    try {
+      // Fetch tickets that have photos, excluding the actual photo data to keep payload small
+      // We will fetch the photo data on demand or use a separate endpoint
+      const images = db.prepare(`
+        SELECT id, ticket_no, name, created_at, 
+               CASE WHEN photo IS NOT NULL AND photo != '' THEN 1 ELSE 0 END as has_photo,
+               CASE WHEN face_photo IS NOT NULL AND face_photo != '' THEN 1 ELSE 0 END as has_face_photo
+        FROM tickets 
+        WHERE (photo IS NOT NULL AND photo != '') OR (face_photo IS NOT NULL AND face_photo != '')
+        ORDER BY created_at DESC
+      `).all();
+      res.json(images);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/images/:id", (req, res) => {
+    try {
+      const { id } = req.params;
+      const { type } = req.query; // 'photo' or 'face_photo' or 'both'
+      
+      if (type === 'photo') {
+        db.prepare("UPDATE tickets SET photo = NULL WHERE id = ?").run(id);
+      } else if (type === 'face_photo') {
+        db.prepare("UPDATE tickets SET face_photo = NULL WHERE id = ?").run(id);
+      } else {
+        db.prepare("UPDATE tickets SET photo = NULL, face_photo = NULL WHERE id = ?").run(id);
+      }
+      
+      // Optional: Vacuum database to reclaim space
+      // db.exec("VACUUM"); // Note: VACUUM can lock the DB, use with caution in production
+      
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/images/cleanup", (req, res) => {
+    try {
+      // Delete photos older than 24 hours
+      const result = db.prepare(`
+        UPDATE tickets 
+        SET photo = NULL, face_photo = NULL
+        WHERE ((photo IS NOT NULL AND photo != '') OR (face_photo IS NOT NULL AND face_photo != ''))
+        AND created_at <= datetime('now', '-1 day')
+      `).run();
+      
+      // Reclaim space
+      try {
+        db.exec("VACUUM");
+      } catch (e) {
+        console.error("Vacuum failed:", e);
+      }
+      
+      res.json({ success: true, count: result.changes });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.get("/api/tickets/:id/logs", (req, res) => {
     try {
       const { id } = req.params;
@@ -779,8 +854,8 @@ async function startServer() {
 
   app.post("/api/tickets", (req, res) => {
     try {
-      const { name, department, phone, category, description, photo, latitude, longitude, priority } = req.body;
-      console.log('Incoming ticket data:', { name, department, phone, category, hasPhoto: !!photo, lat: latitude, lng: longitude });
+      const { name, department, phone, category, description, photo, face_photo, latitude, longitude, priority } = req.body;
+      console.log('Incoming ticket data:', { name, department, phone, category, hasPhoto: !!photo, hasFacePhoto: !!face_photo, lat: latitude, lng: longitude });
       
       if (!name || !department || !category) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -822,8 +897,8 @@ async function startServer() {
       }
 
       const info = db.prepare(
-        "INSERT INTO tickets (ticket_no, name, department, phone, category, description, photo, created_at, ip_address, user_agent, latitude, longitude, assigned_to, status, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-      ).run(ticketNo, name, department, finalPhone, category, description || "", photo || null, utcNow.toISOString(), String(ip), String(userAgent), latitude || null, longitude || null, assignedTo, 'New', priority || 'Medium');
+        "INSERT INTO tickets (ticket_no, name, department, phone, category, description, photo, face_photo, created_at, ip_address, user_agent, latitude, longitude, assigned_to, status, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      ).run(ticketNo, name, department, finalPhone, category, description || "", photo || null, face_photo || null, utcNow.toISOString(), String(ip), String(userAgent), latitude || null, longitude || null, assignedTo, 'New', priority || 'Medium');
       
       const newTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(info.lastInsertRowid) as any;
       

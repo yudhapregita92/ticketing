@@ -16,7 +16,8 @@ import {
   Calendar,
   Image as ImageIcon,
   Eye,
-  Trash2
+  Trash2,
+  Scan
 } from 'lucide-react';
 
 import { ITicket, PRIORITIES } from '../../types';
@@ -246,20 +247,41 @@ export const TicketDetailModal = React.memo(({
 
             {/* Right Column: Photo & Admin Actions */}
             <div className="lg:col-span-5 space-y-3 sm:space-y-5">
-              {selectedTicket.photo && (
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <ImageIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                    <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">Lampiran Foto</span>
-                  </div>
-                  <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 aspect-video flex items-center justify-center">
-                    <img 
-                      src={selectedTicket.photo} 
-                      alt="Ticket attachment" 
-                      className="max-w-full max-h-full object-contain"
-                      referrerPolicy="no-referrer"
-                    />
-                  </div>
+              {(selectedTicket.photo || selectedTicket.face_photo) && (
+                <div className="space-y-3">
+                  {selectedTicket.photo && (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <ImageIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                        <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">Lampiran Foto</span>
+                      </div>
+                      <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 aspect-video flex items-center justify-center">
+                        <img 
+                          src={selectedTicket.photo} 
+                          alt="Ticket attachment" 
+                          className="max-w-full max-h-full object-contain"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedTicket.face_photo && (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <Scan className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                        <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">Foto Verifikasi Wajah</span>
+                      </div>
+                      <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 aspect-video flex items-center justify-center">
+                        <img 
+                          src={selectedTicket.face_photo} 
+                          alt="Face verification" 
+                          className="max-w-full max-h-full object-contain"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

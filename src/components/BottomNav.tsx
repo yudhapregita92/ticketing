@@ -7,7 +7,8 @@ import {
   LogOut, 
   Settings2, 
   ClipboardList, 
-  UserCog 
+  UserCog,
+  Image as ImageIcon
 } from 'lucide-react';
 import { IAdminUser } from '../types';
 
@@ -18,6 +19,7 @@ interface BottomNavProps {
   setShowForm: (show: boolean) => void;
   setShowLogin: (show: boolean) => void;
   setShowSettings: (show: boolean) => void;
+  setShowImageManager?: (show: boolean) => void;
   handleLogout: () => void;
   primaryColor: string;
   isDark: boolean;
@@ -30,6 +32,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   setShowForm,
   setShowLogin,
   setShowSettings,
+  setShowImageManager,
   handleLogout,
   primaryColor,
   isDark
@@ -45,25 +48,25 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           <motion.button 
             whileTap={{ scale: 0.9 }}
             onClick={() => setViewMode('all')}
-            className={`flex flex-col items-center justify-center w-1/5 gap-1 ${viewMode === 'all' ? activeTextClass : textClass}`}
+            className={`flex flex-col items-center justify-center w-1/6 gap-1 ${viewMode === 'all' ? activeTextClass : textClass}`}
           >
             <ClipboardList className={`w-5 h-5 ${viewMode === 'all' ? 'stroke-[2.5px]' : 'stroke-2'}`} style={{ color: viewMode === 'all' ? primaryColor : undefined }} />
-            <span className="text-[10px] font-bold">Semua Tiket</span>
+            <span className="text-[10px] font-bold">Semua</span>
           </motion.button>
           
           <motion.button 
             whileTap={{ scale: 0.9 }}
             onClick={() => setViewMode('my_tickets')}
-            className={`flex flex-col items-center justify-center w-1/5 gap-1 ${viewMode === 'my_tickets' ? activeTextClass : textClass}`}
+            className={`flex flex-col items-center justify-center w-1/6 gap-1 ${viewMode === 'my_tickets' ? activeTextClass : textClass}`}
           >
             <UserCog className={`w-5 h-5 ${viewMode === 'my_tickets' ? 'stroke-[2.5px]' : 'stroke-2'}`} style={{ color: viewMode === 'my_tickets' ? primaryColor : undefined }} />
-            <span className="text-[10px] font-bold">Tiket Saya</span>
+            <span className="text-[10px] font-bold">Saya</span>
           </motion.button>
 
           <motion.button 
             whileTap={{ scale: 0.9 }}
             onClick={() => setShowForm(true)}
-            className={`flex flex-col items-center justify-center w-1/5 gap-1 ${textClass}`}
+            className={`flex flex-col items-center justify-center w-1/6 gap-1 ${textClass}`}
           >
             <motion.div
               animate={{ 
@@ -78,25 +81,36 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             >
               <Send className="w-5 h-5 stroke-[2.5px]" style={{ color: primaryColor }} />
             </motion.div>
-            <span className="text-[10px] font-bold" style={{ color: primaryColor }}>Buat Tiket</span>
+            <span className="text-[10px] font-bold" style={{ color: primaryColor }}>Buat</span>
           </motion.button>
+
+          {setShowImageManager && (
+            <motion.button 
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setShowImageManager(true)}
+              className={`flex flex-col items-center justify-center w-1/6 gap-1 ${textClass}`}
+            >
+              <ImageIcon className="w-5 h-5 stroke-2" />
+              <span className="text-[10px] font-bold">Gambar</span>
+            </motion.button>
+          )}
 
           <motion.button 
             whileTap={{ scale: 0.9 }}
             onClick={() => setShowSettings(true)}
-            className={`flex flex-col items-center justify-center w-1/5 gap-1 ${textClass}`}
+            className={`flex flex-col items-center justify-center w-1/6 gap-1 ${textClass}`}
           >
             <Settings2 className="w-5 h-5 stroke-2" />
-            <span className="text-[10px] font-bold">Pengaturan</span>
+            <span className="text-[10px] font-bold">Seting</span>
           </motion.button>
 
           <motion.button 
             whileTap={{ scale: 0.9 }}
             onClick={handleLogout}
-            className={`flex flex-col items-center justify-center w-1/5 gap-1 ${textClass}`}
+            className={`flex flex-col items-center justify-center w-1/6 gap-1 ${textClass}`}
           >
             <LogOut className="w-5 h-5 stroke-2" />
-            <span className="text-[10px] font-bold">Logout</span>
+            <span className="text-[10px] font-bold">Keluar</span>
           </motion.button>
         </div>
       </div>

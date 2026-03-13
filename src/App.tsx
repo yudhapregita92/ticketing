@@ -57,6 +57,7 @@ import { BottomNav } from './components/BottomNav';
 import { TakeoverModal } from './components/modals/TakeoverModal';
 import { SuccessModal } from './components/modals/SuccessModal';
 import { MobileFilterModal } from './components/modals/MobileFilterModal';
+import { ImageManagerModal } from './components/modals/ImageManagerModal';
 
 interface ITicket {
   id: number;
@@ -142,15 +143,25 @@ export default function App() {
     setSelectedTicket(ticket);
     setTicketLogs([]);
     try {
-      const [photoRes, logsRes] = await Promise.all([
+      const [photoRes, facePhotoRes, logsRes] = await Promise.all([
         fetch(`/api/tickets/${ticket.id}/photo`),
+        fetch(`/api/tickets/${ticket.id}/face_photo`),
         fetch(`/api/tickets/${ticket.id}/logs`)
       ]);
       
       const photoData = await photoRes.json();
-      if (photoData.photo) {
-        setSelectedTicket(prev => prev && prev.id === ticket.id ? { ...prev, photo: photoData.photo } : prev);
-      }
+      const facePhotoData = await facePhotoRes.json();
+      
+      setSelectedTicket(prev => {
+        if (prev && prev.id === ticket.id) {
+          return { 
+            ...prev, 
+            photo: photoData.photo || null,
+            face_photo: facePhotoData.face_photo || null
+          };
+        }
+        return prev;
+      });
 
       const logsData = await logsRes.json();
       if (Array.isArray(logsData)) {
@@ -176,6 +187,7 @@ export default function App() {
   const [showSuccess, setShowSuccess] = useState(false); // Toggle modal sukses
   const [showLogin, setShowLogin] = useState(false); // Toggle modal login admin
   const [showSettings, setShowSettings] = useState(false); // Toggle modal pengaturan aplikasi
+  const [showImageManager, setShowImageManager] = useState(false); // Toggle modal manajemen gambar
   const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'notifications' | 'data'>('general');
   const [showResetConfirm, setShowResetConfirm] = useState(false); // Toggle konfirmasi reset data
   const [showTakeoverConfirm, setShowTakeoverConfirm] = useState<{id: number, type: 'takeover' | 'reassign', targetUser?: string} | null>(null);
@@ -221,6 +233,7 @@ export default function App() {
     priority: 'Medium',
     description: '',
     photo: '',
+    face_photo: '',
     latitude: null as number | null,
     longitude: null as number | null
   });
@@ -422,8 +435,8 @@ export default function App() {
             const ctx = canvas.getContext('2d');
             if (!ctx) return;
 
-            // Set dimensions (max 800px width/height for reasonable size)
-            const maxDim = 800;
+            // Set dimensions (max 400px width/height for smaller size)
+            const maxDim = 400;
             let width = img.width;
             let height = img.height;
             if (width > height) {
@@ -445,8 +458,8 @@ export default function App() {
 
             // Draw watermark background
             ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-            const padding = 10;
-            const fontSize = Math.max(12, Math.floor(width / 40));
+            const padding = 8;
+            const fontSize = Math.max(9, Math.floor(width / 40));
             ctx.font = `${fontSize}px sans-serif`;
             const text1 = `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
             const text2 = `Time: ${new Date().toLocaleString()}`;
@@ -466,12 +479,12 @@ export default function App() {
             ctx.fillText(text1, padding, height - bgHeight + fontSize * 2 + padding / 2 - 2);
             ctx.fillText(text2, padding, height - bgHeight + fontSize * 3 + padding - 2);
 
-            // Compress to stay under 100KB
-            let quality = 0.7;
+            // Compress to stay under 30KB to save space
+            let quality = 0.6;
             let base64 = canvas.toDataURL('image/jpeg', quality);
             
             // Iteratively reduce quality if still too large
-            while (base64.length > 133333 && quality > 0.1) { // 133333 chars in base64 is approx 100KB
+            while (base64.length > 40000 && quality > 0.1) { // 40000 chars in base64 is approx 30KB
               quality -= 0.1;
               base64 = canvas.toDataURL('image/jpeg', quality);
             }
@@ -909,7 +922,7 @@ export default function App() {
         body: JSON.stringify(formData)
       });
       if (res.ok) {
-        setFormData({ name: '', department: '', category: '', phone: '', priority: 'Medium', description: '', photo: '', latitude: null, longitude: null });
+        setFormData({ name: '', department: '', category: '', phone: '', priority: 'Medium', description: '', photo: '', face_photo: '', latitude: null, longitude: null });
         setShowForm(false);
         toast.success('Tiket berhasil dikirim!');
         setShowSuccess(true);
@@ -1114,6 +1127,7 @@ export default function App() {
         isDark={isDark}
         adminUser={adminUser}
         setShowSettings={setShowSettings}
+        setShowImageManager={setShowImageManager}
         setShowResetConfirm={setShowResetConfirm}
         handleLogout={handleLogout}
         setShowLogin={setShowLogin}
@@ -1804,6 +1818,18 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {showImageManager && (
+          <ImageManagerModal 
+            show={showImageManager}
+            setShow={setShowImageManager}
+            isDark={isDark}
+            themeClasses={themeClasses}
+            primaryColor={primaryColor}
+          />
+        )}
+      </AnimatePresence>
+
       <BottomNav 
         adminUser={adminUser}
         viewMode={viewMode}
@@ -1811,6 +1837,7 @@ export default function App() {
         setShowForm={setShowForm}
         setShowLogin={setShowLogin}
         setShowSettings={setShowSettings}
+        setShowImageManager={setShowImageManager}
         handleLogout={handleLogout}
         primaryColor={primaryColor}
         isDark={isDark}

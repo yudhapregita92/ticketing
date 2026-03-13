@@ -22,6 +22,7 @@ export interface ITicket {
   responded_at?: string | null;
   resolved_at?: string | null;
   photo?: string | null;
+  face_photo?: string | null;
   ip_address?: string | null;
   user_agent?: string | null;
   latitude?: number | null;
