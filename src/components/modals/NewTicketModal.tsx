@@ -78,7 +78,7 @@ export const NewTicketModal = React.memo(({
   React.useEffect(() => {
     const loadModels = async () => {
       try {
-        await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+        await faceapi.nets.tinyFaceDetector.loadFromUri('/model');
         setModelsLoaded(true);
       } catch (e) {
         console.error("Failed to load face-api models", e);
@@ -129,20 +129,24 @@ export const NewTicketModal = React.memo(({
         
         try {
           let faceDetected = false;
-          if (modelsLoaded) {
-            const detections = await faceapi.detectAllFaces(
-              videoRef.current, 
-              new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 })
-            );
-            if (detections.length > 0) {
-              faceDetected = true;
-            }
-          } else if ('FaceDetector' in window) {
-            // @ts-ignore
-            const faceDetector = new window.FaceDetector();
-            const faces = await faceDetector.detect(videoRef.current);
-            if (faces.length > 0) {
-              faceDetected = true;
+          
+          // Only attempt detection if video is playing and has data
+          if (videoRef.current.readyState >= 2 && videoRef.current.videoWidth > 0) {
+            if (modelsLoaded) {
+              const detections = await faceapi.detectAllFaces(
+                videoRef.current, 
+                new faceapi.TinyFaceDetectorOptions()
+              );
+              if (detections.length > 0) {
+                faceDetected = true;
+              }
+            } else if ('FaceDetector' in window) {
+              // @ts-ignore
+              const faceDetector = new window.FaceDetector();
+              const faces = await faceDetector.detect(videoRef.current);
+              if (faces.length > 0) {
+                faceDetected = true;
+              }
             }
           }
 
@@ -291,6 +295,8 @@ export const NewTicketModal = React.memo(({
                       autoPlay
                       playsInline
                       muted
+                      width={640}
+                      height={480}
                       className={`w-full h-full object-cover transition-opacity duration-500 ${scanComplete ? 'opacity-20' : 'opacity-100'}`}
                     />
                   )}
@@ -343,7 +349,7 @@ export const NewTicketModal = React.memo(({
                 ) : (
                   <>
                     <h3 className={`text-xl font-black tracking-tight ${scanComplete ? 'text-emerald-500' : 'text-white'}`}>
-                      {scanComplete ? 'Wajah Anda Sudah Terekam' : 'Memindai Wajah...'}
+                      {scanComplete ? 'Wajah Anda Sudah Terekam' : (!modelsLoaded ? 'Memuat Model AI...' : 'Memindai Wajah...')}
                     </h3>
                     <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">
                       {scanComplete ? 'Identitas terverifikasi' : 'Mohon hadap ke kamera perangkat'}
