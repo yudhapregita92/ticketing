@@ -1165,7 +1165,7 @@ export default function App() {
                   className="bg-amber-50 border border-amber-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
                 >
                   <Counter value={filteredTickets.filter(t => t.status === 'New').length} className="text-base font-black text-amber-500 leading-none mb-0.5" />
-                  <span className="text-[7px] font-bold text-amber-500 uppercase tracking-wider">Wait</span>
+                  <span className="text-[7px] font-bold text-amber-500 uppercase tracking-wider">Baru</span>
                 </motion.div>
                 <motion.div 
                   whileHover={{ y: -2, scale: 1.05 }}
@@ -1173,7 +1173,7 @@ export default function App() {
                   className="bg-blue-50 border border-blue-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
                 >
                   <Counter value={filteredTickets.filter(t => t.status === 'In Progress').length} className="text-base font-black text-blue-500 leading-none mb-0.5" />
-                  <span className="text-[7px] font-bold text-blue-500 uppercase tracking-wider">Active</span>
+                  <span className="text-[7px] font-bold text-blue-500 uppercase tracking-wider">Progres</span>
                 </motion.div>
                 <motion.div 
                   whileHover={{ y: -2, scale: 1.05 }}
@@ -1181,7 +1181,7 @@ export default function App() {
                   className="bg-emerald-50 border border-emerald-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
                 >
                   <Counter value={filteredTickets.filter(t => t.status === 'Completed').length} className="text-base font-black text-emerald-500 leading-none mb-0.5" />
-                  <span className="text-[7px] font-bold text-emerald-500 uppercase tracking-wider">Done</span>
+                  <span className="text-[7px] font-bold text-emerald-500 uppercase tracking-wider">Selesai</span>
                 </motion.div>
               </div>
             </div>
@@ -1296,7 +1296,12 @@ export default function App() {
                 >
                   <option value="">Semua Status</option>
                   {STATUSES.map(status => (
-                    <option key={status} value={status}>{status}</option>
+                    <option key={status} value={status}>
+                      {status === 'In Progress' ? 'Progres' : 
+                       status === 'Completed' ? 'Selesai' : 
+                       status === 'Cancelled' ? 'Batal' : 
+                       status === 'New' ? 'Baru' : status}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -1479,8 +1484,11 @@ export default function App() {
                                   <span className="flex items-center gap-1 truncate">
                                     <Building2 className="w-2.5 h-2.5 text-slate-400 shrink-0" /> {ticket.department}
                                   </span>
-                                  <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${getStatusColor(ticket.status)}`}>
-                                    {ticket.status}
+                                  <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border text-center min-w-[65px] inline-block ${getStatusColor(ticket.status)}`}>
+                                    {ticket.status === 'In Progress' ? 'PROGRES' : 
+                                     ticket.status === 'Completed' ? 'SELESAI' : 
+                                     ticket.status === 'Cancelled' ? 'BATAL' : 
+                                     ticket.status === 'New' ? 'BARU' : ticket.status}
                                   </span>
                                 </div>
                               </div>

@@ -77,8 +77,11 @@ export const TicketCard: React.FC<TicketCardProps> = ({
             </div>
             
             <div className="flex items-center gap-2">
-              <span className={`px-1.5 py-0.5 ${getStatusColor(ticket.status)} text-[7px] font-black rounded-full uppercase`}>
-                {ticket.status}
+              <span className={`px-1.5 py-0.5 ${getStatusColor(ticket.status)} text-[7px] font-black rounded-full uppercase text-center min-w-[65px] inline-block`}>
+                {ticket.status === 'In Progress' ? 'PROGRES' : 
+                 ticket.status === 'Completed' ? 'SELESAI' : 
+                 ticket.status === 'Cancelled' ? 'BATAL' : 
+                 ticket.status === 'New' ? 'BARU' : ticket.status}
               </span>
               <Eye className="w-3.5 h-3.5 text-slate-300" />
             </div>

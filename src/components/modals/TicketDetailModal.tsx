@@ -90,8 +90,11 @@ export const TicketDetailModal = React.memo(({
               <div>
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <span className={`text-[8px] sm:text-[9px] font-bold ${themeClasses.textMuted}`}>#{selectedTicket.ticket_no || selectedTicket.id.toString().padStart(4, '0')}</span>
-                  <span className={`px-1.5 py-0.5 rounded-full text-[7px] sm:text-[8px] font-bold uppercase tracking-wider border ${getStatusColor(selectedTicket.status)}`}>
-                    {selectedTicket.status}
+                  <span className={`px-1.5 py-0.5 rounded-full text-[7px] sm:text-[8px] font-bold uppercase tracking-wider border text-center min-w-[65px] inline-block ${getStatusColor(selectedTicket.status)}`}>
+                    {selectedTicket.status === 'In Progress' ? 'PROGRES' : 
+                     selectedTicket.status === 'Completed' ? 'SELESAI' : 
+                     selectedTicket.status === 'Cancelled' ? 'BATAL' : 
+                     selectedTicket.status === 'New' ? 'BARU' : selectedTicket.status}
                   </span>
                   <span className={`px-1.5 py-0.5 rounded-full text-[7px] sm:text-[8px] font-bold uppercase tracking-wider text-white ${priorityInfo.color}`}>
                     {priorityInfo.label}
@@ -382,7 +385,10 @@ export const TicketDetailModal = React.memo(({
                               : 'text-slate-400 hover:text-white hover:bg-slate-700'
                             }`}
                           >
-                            {status}
+                            {status === 'In Progress' ? 'PROGRES' : 
+                             status === 'Completed' ? 'SELESAI' : 
+                             status === 'Cancelled' ? 'BATAL' : 
+                             status === 'New' ? 'BARU' : status}
                           </button>
                         ))}
                       </div>

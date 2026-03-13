@@ -136,7 +136,10 @@ export const MobileFilterModal: React.FC<MobileFilterModalProps> = ({
                           : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'
                       }`}
                     >
-                      {status}
+                      {status === 'In Progress' ? 'Progres' : 
+                       status === 'Completed' ? 'Selesai' : 
+                       status === 'Cancelled' ? 'Batal' : 
+                       status === 'New' ? 'Baru' : status}
                     </button>
                   ))}
                 </div>

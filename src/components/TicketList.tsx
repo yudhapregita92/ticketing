@@ -163,9 +163,10 @@ export const TicketList: React.FC<TicketListProps> = ({
               }`}
             >
               <option value="">Semua Status</option>
-              <option value="New">Waiting</option>
-              <option value="In Progress">Active</option>
-              <option value="Completed">Done</option>
+              <option value="New">Baru</option>
+              <option value="In Progress">Progres</option>
+              <option value="Completed">Selesai</option>
+              <option value="Cancelled">Batal</option>
             </select>
 
             <input

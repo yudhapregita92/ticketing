@@ -155,7 +155,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="bg-amber-50 border border-amber-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
           >
             <Counter value={filteredTickets.filter(t => t.status === 'New').length} className="text-base font-black text-amber-500 leading-none mb-0.5" />
-            <span className="text-[7px] font-bold text-amber-500 uppercase tracking-wider">Wait</span>
+            <span className="text-[7px] font-bold text-amber-500 uppercase tracking-wider">Baru</span>
           </motion.div>
           <motion.div 
             whileHover={{ y: -2, scale: 1.05 }}
@@ -163,7 +163,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="bg-blue-50 border border-blue-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
           >
             <Counter value={filteredTickets.filter(t => t.status === 'In Progress').length} className="text-base font-black text-blue-500 leading-none mb-0.5" />
-            <span className="text-[7px] font-bold text-blue-500 uppercase tracking-wider">Active</span>
+            <span className="text-[7px] font-bold text-blue-500 uppercase tracking-wider">Progres</span>
           </motion.div>
           <motion.div 
             whileHover={{ y: -2, scale: 1.05 }}
@@ -171,7 +171,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="bg-emerald-50 border border-emerald-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
           >
             <Counter value={filteredTickets.filter(t => t.status === 'Completed').length} className="text-base font-black text-emerald-500 leading-none mb-0.5" />
-            <span className="text-[7px] font-bold text-emerald-500 uppercase tracking-wider">Done</span>
+            <span className="text-[7px] font-bold text-emerald-500 uppercase tracking-wider">Selesai</span>
           </motion.div>
         </div>
       </section>

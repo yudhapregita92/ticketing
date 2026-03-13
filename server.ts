@@ -788,11 +788,11 @@ async function startServer() {
 
       const finalPhone = phone || "-";
 
-      // Generate ticket_no: YYMMDDNNN
+      // Generate ticket_no: YYYYMMDDNNN
       const utcNow = new Date();
       const jakartaNow = new Date(utcNow.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
       // Use local time for the ticket number prefix as requested by user format
-      const year = jakartaNow.getFullYear().toString().slice(-2);
+      const year = jakartaNow.getFullYear().toString();
       const month = (jakartaNow.getMonth() + 1).toString().padStart(2, '0');
       const day = jakartaNow.getDate().toString().padStart(2, '0');
       const datePrefix = `${year}${month}${day}`;

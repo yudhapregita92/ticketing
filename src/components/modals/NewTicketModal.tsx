@@ -1,4 +1,5 @@
 import React from 'react';
+import * as faceapi from '@vladmandic/face-api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -66,12 +67,25 @@ export const NewTicketModal = React.memo(({
   const [scanComplete, setScanComplete] = React.useState(false);
   const [cameraError, setCameraError] = React.useState(false);
   const [permissionDenied, setPermissionDenied] = React.useState(false);
+  const [modelsLoaded, setModelsLoaded] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const streamRef = React.useRef<MediaStream | null>(null);
 
   const scanTimerRef = React.useRef<NodeJS.Timeout | null>(null);
   const closeTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  React.useEffect(() => {
+    const loadModels = async () => {
+      try {
+        await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+        setModelsLoaded(true);
+      } catch (e) {
+        console.error("Failed to load face-api models", e);
+      }
+    };
+    loadModels();
+  }, []);
 
   const stopCamera = React.useCallback(() => {
     if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
@@ -107,22 +121,49 @@ export const NewTicketModal = React.memo(({
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        const playPromise = videoRef.current.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(error => {
-            console.error("Auto-play was prevented:", error);
-          });
-        }
       }
 
       // Start scanning process only if camera is successful
-      scanTimerRef.current = setTimeout(() => {
-        setScanComplete(true);
-        closeTimerRef.current = setTimeout(() => {
-          setIsScanning(false);
-          stopCamera();
-        }, 1500);
-      }, 3000);
+      const detectFace = async () => {
+        if (!videoRef.current || !streamRef.current) return;
+        
+        try {
+          let faceDetected = false;
+          if (modelsLoaded) {
+            const detections = await faceapi.detectAllFaces(
+              videoRef.current, 
+              new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 })
+            );
+            if (detections.length > 0) {
+              faceDetected = true;
+            }
+          } else if ('FaceDetector' in window) {
+            // @ts-ignore
+            const faceDetector = new window.FaceDetector();
+            const faces = await faceDetector.detect(videoRef.current);
+            if (faces.length > 0) {
+              faceDetected = true;
+            }
+          }
+
+          if (faceDetected) {
+            setScanComplete(true);
+            closeTimerRef.current = setTimeout(() => {
+              setIsScanning(false);
+              stopCamera();
+            }, 1500);
+            return; // Stop the loop
+          }
+        } catch (e) {
+          console.error("Face detection error:", e);
+        }
+        
+        // Keep checking every 500ms
+        scanTimerRef.current = setTimeout(detectFace, 500);
+      };
+      
+      // Give video time to start playing before detecting
+      scanTimerRef.current = setTimeout(detectFace, 1000);
 
     } catch (err: any) {
       console.error("Error accessing camera:", err);
@@ -131,7 +172,7 @@ export const NewTicketModal = React.memo(({
         setPermissionDenied(true);
       }
     }
-  }, [stopCamera]);
+  }, [stopCamera, modelsLoaded]);
 
   React.useEffect(() => {
     if (showForm) {
@@ -302,10 +343,10 @@ export const NewTicketModal = React.memo(({
                 ) : (
                   <>
                     <h3 className={`text-xl font-black tracking-tight ${scanComplete ? 'text-emerald-500' : 'text-white'}`}>
-                      {scanComplete ? 'Identitas Terverifikasi' : 'Memindai Wajah...'}
+                      {scanComplete ? 'Wajah Anda Sudah Terekam' : 'Memindai Wajah...'}
                     </h3>
                     <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">
-                      {scanComplete ? 'Wajah anda telah direkam' : 'Mohon hadap ke kamera perangkat'}
+                      {scanComplete ? 'Identitas terverifikasi' : 'Mohon hadap ke kamera perangkat'}
                     </p>
                   </>
                 )}
