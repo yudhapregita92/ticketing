@@ -124,50 +124,7 @@ export const NewTicketModal = React.memo(({
       }
 
       // Start scanning process only if camera is successful
-      const detectFace = async () => {
-        if (!videoRef.current || !streamRef.current) return;
-        
-        try {
-          let faceDetected = false;
-          
-          // Only attempt detection if video is playing and has data
-          if (videoRef.current.readyState >= 2 && videoRef.current.videoWidth > 0) {
-            if (modelsLoaded) {
-              const detections = await faceapi.detectAllFaces(
-                videoRef.current, 
-                new faceapi.TinyFaceDetectorOptions()
-              );
-              if (detections.length > 0) {
-                faceDetected = true;
-              }
-            } else if ('FaceDetector' in window) {
-              // @ts-ignore
-              const faceDetector = new window.FaceDetector();
-              const faces = await faceDetector.detect(videoRef.current);
-              if (faces.length > 0) {
-                faceDetected = true;
-              }
-            }
-          }
-
-          if (faceDetected) {
-            setScanComplete(true);
-            closeTimerRef.current = setTimeout(() => {
-              setIsScanning(false);
-              stopCamera();
-            }, 1500);
-            return; // Stop the loop
-          }
-        } catch (e) {
-          console.error("Face detection error:", e);
-        }
-        
-        // Keep checking every 500ms
-        scanTimerRef.current = setTimeout(detectFace, 500);
-      };
-      
-      // Give video time to start playing before detecting
-      scanTimerRef.current = setTimeout(detectFace, 1000);
+      // We no longer auto-detect. Wait for user to click capture.
 
     } catch (err: any) {
       console.error("Error accessing camera:", err);
@@ -176,7 +133,55 @@ export const NewTicketModal = React.memo(({
         setPermissionDenied(true);
       }
     }
-  }, [stopCamera, modelsLoaded]);
+  }, [stopCamera]);
+
+  const captureFace = React.useCallback(async () => {
+    if (!videoRef.current || !streamRef.current) return;
+    
+    try {
+      let faceDetected = false;
+      
+      if (videoRef.current.readyState >= 2 && videoRef.current.videoWidth > 0) {
+        if (modelsLoaded) {
+          const detections = await faceapi.detectAllFaces(
+            videoRef.current, 
+            new faceapi.TinyFaceDetectorOptions()
+          );
+          if (detections.length > 0) {
+            faceDetected = true;
+          }
+        } else if ('FaceDetector' in window) {
+          // @ts-ignore
+          const faceDetector = new window.FaceDetector();
+          const faces = await faceDetector.detect(videoRef.current);
+          if (faces.length > 0) {
+            faceDetected = true;
+          }
+        } else {
+          // Fallback if no detection available
+          faceDetected = true;
+        }
+      }
+
+      if (faceDetected) {
+        setScanComplete(true);
+        closeTimerRef.current = setTimeout(() => {
+          setIsScanning(false);
+          stopCamera();
+        }, 1500);
+      } else {
+        alert("Wajah tidak terdeteksi. Pastikan wajah Anda berada di dalam garis panduan.");
+      }
+    } catch (e) {
+      console.error("Face detection error:", e);
+      // Fallback on error to allow user to proceed
+      setScanComplete(true);
+      closeTimerRef.current = setTimeout(() => {
+        setIsScanning(false);
+        stopCamera();
+      }, 1500);
+    }
+  }, [modelsLoaded, stopCamera]);
 
   React.useEffect(() => {
     if (showForm) {
@@ -311,14 +316,17 @@ export const NewTicketModal = React.memo(({
                         <CheckCircle2 className="w-24 h-24" />
                       </motion.div>
                     ) : (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                        <svg width="200" height="250" viewBox="0 0 200 250" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <ellipse cx="100" cy="125" rx="80" ry="110" stroke="rgba(16, 185, 129, 0.8)" strokeWidth="4" strokeDasharray="10 10" />
+                        </svg>
                         <motion.div
                           animate={{ 
                             opacity: [0.1, 0.3, 0.1],
                             scale: [0.9, 1.1, 0.9]
                           }}
                           transition={{ repeat: Infinity, duration: 2 }}
-                          className="text-white/10"
+                          className="absolute text-white/10"
                         >
                           <Scan className="w-32 h-32" />
                         </motion.div>
@@ -340,7 +348,7 @@ export const NewTicketModal = React.memo(({
                 key={cameraError ? 'error' : (scanComplete ? 'complete' : 'scanning')}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="space-y-2"
+                className="space-y-2 relative z-20"
               >
                 {cameraError ? (
                   <div className="px-4 py-2 bg-rose-500/10 rounded-xl border border-rose-500/20">
@@ -349,16 +357,27 @@ export const NewTicketModal = React.memo(({
                 ) : (
                   <>
                     <h3 className={`text-xl font-black tracking-tight ${scanComplete ? 'text-emerald-500' : 'text-white'}`}>
-                      {scanComplete ? 'Wajah Anda Sudah Terekam' : (!modelsLoaded ? 'Memuat Model AI...' : 'Memindai Wajah...')}
+                      {scanComplete ? 'Wajah Anda Sudah Terekam' : (!modelsLoaded ? 'Memuat Model AI...' : 'Posisikan Wajah Anda')}
                     </h3>
                     <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">
-                      {scanComplete ? 'Identitas terverifikasi' : 'Mohon hadap ke kamera perangkat'}
+                      {scanComplete ? 'Identitas terverifikasi' : 'Mohon hadap ke kamera dan paskan dengan garis'}
                     </p>
+                    
+                    {!scanComplete && (
+                      <button
+                        onClick={captureFace}
+                        disabled={!modelsLoaded}
+                        className="mt-4 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full max-w-[200px] mx-auto flex items-center justify-center gap-2"
+                      >
+                        <Camera className="w-5 h-5" />
+                        Ambil Gambar
+                      </button>
+                    )}
                   </>
                 )}
               </motion.div>
 
-              <div className="absolute bottom-8 left-0 right-0 flex justify-center">
+              <div className="absolute bottom-4 left-0 right-0 flex justify-center">
                 <div className="flex gap-1">
                   {[0, 1, 2].map((i) => (
                     <motion.div
