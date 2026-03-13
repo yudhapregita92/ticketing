@@ -41,12 +41,17 @@ import {
   SlidersHorizontal,
   History,
   ShieldAlert,
-  UserPlus
+  UserPlus,
+  Moon,
+  Sun,
+  Inbox,
+  Activity
 } from 'lucide-react';
 
 // Import modular components
 import { Counter, Shimmer } from './components/Common';
 import { Header } from './components/Header';
+import { Logo } from './components/Logo';
 import { Sidebar } from './components/Sidebar';
 import { TicketDetailModal } from './components/modals/TicketDetailModal';
 import { NewTicketModal } from './components/modals/NewTicketModal';
@@ -89,7 +94,8 @@ const LOGO_OPTIONS = [
   { id: 'Cpu', icon: Cpu },
   { id: 'Globe', icon: Globe },
   { id: 'Zap', icon: Zap },
-  { id: 'Ticket', icon: Ticket }
+  { id: 'Ticket', icon: Ticket },
+  { id: 'Send', icon: Logo }
 ];
 
 const getDeviceInfo = (ua: string) => {
@@ -112,6 +118,41 @@ const getDeviceInfo = (ua: string) => {
 
   return `${os} (${browser})`;
 };
+
+const HighlightText = ({ text, highlight, isDark }: { text: string, highlight: string, isDark: boolean }) => {
+  if (!highlight.trim()) return <>{text}</>;
+  const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
+  return (
+    <>
+      {parts.map((part, i) => 
+        part.toLowerCase() === highlight.toLowerCase() ? (
+          <mark key={i} className={`${isDark ? 'bg-emerald-500/30 text-emerald-300' : 'bg-emerald-100 text-emerald-900'} px-0.5 rounded`}>
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+};
+
+const SkeletonTicket: React.FC<{ isDark: boolean }> = ({ isDark }) => (
+  <div className={`animate-pulse rounded-xl p-2 border ${isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-100'} flex items-center gap-3`}>
+    <div className={`w-8 h-8 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+    <div className="flex-1 space-y-2">
+      <div className="flex justify-between">
+        <div className={`h-2 w-16 rounded ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+        <div className={`h-2 w-20 rounded ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+      </div>
+      <div className={`h-3 w-32 rounded ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+      <div className="flex gap-2">
+        <div className={`h-2 w-24 rounded ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+        <div className={`h-2 w-24 rounded ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+      </div>
+    </div>
+  </div>
+);
 
 /**
  * IT Helpdesk Pro - Main Application Component
@@ -138,6 +179,19 @@ export default function App() {
   const [selectedTicket, setSelectedTicket] = useState<ITicket | null>(null); // Tiket yang sedang dilihat detailnya
   const [modalStatus, setModalStatus] = useState<string>(''); // Status sementara di modal detail
   const [modalPriority, setModalPriority] = useState<string>(''); // Priority sementara di modal detail
+  const [formData, setFormData] = useState({
+    name: '',
+    department: '',
+    category: '',
+    phone: '',
+    priority: 'Medium' as 'Low' | 'Medium' | 'High' | 'Urgent',
+    description: '',
+    photo: '',
+    face_photo: '',
+    latitude: null as number | null,
+    longitude: null as number | null
+  });
+  const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
 
   const handleSelectTicket = async (ticket: ITicket) => {
     setSelectedTicket(ticket);
@@ -186,6 +240,7 @@ export default function App() {
   const [showForm, setShowForm] = useState(false); // Toggle modal buat tiket baru
   const [showSuccess, setShowSuccess] = useState(false); // Toggle modal sukses
   const [showLogin, setShowLogin] = useState(false); // Toggle modal login admin
+  const [loginData, setLoginData] = useState({ username: '', password: '' });
   const [showSettings, setShowSettings] = useState(false); // Toggle modal pengaturan aplikasi
   const [showImageManager, setShowImageManager] = useState(false); // Toggle modal manajemen gambar
   const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'notifications' | 'data'>('general');
@@ -207,7 +262,7 @@ export default function App() {
   const [tempFilters, setTempFilters] = useState({ dept: '', status: '', date: '', search: '' });
   const [appSettings, setAppSettings] = useState({ 
     app_name: 'IT Helpdesk Pro', 
-    logo_type: 'ShieldCheck',
+    logo_type: 'Send',
     theme_mode: 'light', // 'light' or 'dark'
     primary_color: '#10b981', // emerald-600
     admin_theme_mode: 'light', // 'light' or 'dark'
@@ -224,19 +279,48 @@ export default function App() {
     smtp_from: ''
   }); // Pengaturan nama & logo app
 
-  const [loginData, setLoginData] = useState({ username: '', password: '' }); // Form data login
-  const [formData, setFormData] = useState({ // Form data tiket baru
-    name: '',
-    department: '',
-    category: '',
-    phone: '',
-    priority: 'Medium',
-    description: '',
-    photo: '',
-    face_photo: '',
-    latitude: null as number | null,
-    longitude: null as number | null
-  });
+  const toggleTheme = () => {
+    const newMode = appSettings.theme_mode === 'light' ? 'dark' : 'light';
+    setAppSettings(prev => ({ ...prev, theme_mode: newMode }));
+    // If admin is logged in, sync admin theme too for convenience
+    if (adminUser) {
+      setAppSettings(prev => ({ ...prev, admin_theme_mode: newMode }));
+    }
+  };
+
+  // --- Draft Ticket Logic ---
+  useEffect(() => {
+    const savedDraft = localStorage.getItem('ticket_draft');
+    if (savedDraft) {
+      try {
+        setFormData(prev => ({ ...prev, ...JSON.parse(savedDraft) }));
+      } catch (e) {
+        console.error("Failed to load draft", e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (formData.name || formData.description) {
+      localStorage.setItem('ticket_draft', JSON.stringify(formData));
+    }
+  }, [formData]);
+
+  const clearDraft = () => {
+    localStorage.removeItem('ticket_draft');
+    setFormData({
+      name: '',
+      department: '',
+      category: '',
+      phone: '',
+      priority: 'Medium',
+      description: '',
+      photo: '',
+      face_photo: '',
+      latitude: null,
+      longitude: null
+    });
+  };
   const [submitting, setSubmitting] = useState(false); // Loading state saat kirim tiket
   const [filterDept, setFilterDept] = useState<string>(''); // Filter departemen
   const [filterStatus, setFilterStatus] = useState<string>(''); // Filter status
@@ -922,7 +1006,7 @@ export default function App() {
         body: JSON.stringify(formData)
       });
       if (res.ok) {
-        setFormData({ name: '', department: '', category: '', phone: '', priority: 'Medium', description: '', photo: '', face_photo: '', latitude: null, longitude: null });
+        clearDraft();
         setShowForm(false);
         toast.success('Tiket berhasil dikirim!');
         setShowSuccess(true);
@@ -979,6 +1063,32 @@ export default function App() {
     } catch (err) {
       console.error('Failed to update ticket:', err);
       toast.error('Terjadi kesalahan koneksi.');
+    }
+  };
+
+  const handleBulkAction = async (status: string) => {
+    if (selectedTickets.length === 0) return;
+    if (!confirm(`Update ${selectedTickets.length} tiket menjadi ${status}?`)) return;
+    
+    setLoading(true);
+    try {
+      await Promise.all(selectedTickets.map(id => 
+        fetch(`/api/tickets/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            status, 
+            performed_by: adminUser.username 
+          })
+        })
+      ));
+      toast.success(`${selectedTickets.length} tiket berhasil diperbarui!`);
+      setSelectedTickets([]);
+      fetchTickets();
+    } catch (err) {
+      toast.error('Gagal memperbarui beberapa tiket.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1135,6 +1245,7 @@ export default function App() {
         tickets={tickets}
         notificationPermission={notificationPermission}
         requestNotificationPermission={requestNotificationPermission}
+        toggleTheme={toggleTheme}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 md:pb-8">
@@ -1270,11 +1381,54 @@ export default function App() {
                   onClick={() => fetchTickets(true)}
                   className="p-2 text-slate-400 hover:text-emerald-600 transition-colors"
                   title="Segarkan Antrian"
+                  aria-label="Refresh tickets"
                 >
                   <RefreshCcw className="w-5 h-5" />
                 </button>
               </div>
             </div>
+
+            {/* Dashboard Analytics - Admin Only */}
+            {adminUser && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                <div className={`${themeClasses.card} p-3 rounded-2xl border shadow-sm flex items-center gap-3`}>
+                  <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Baru</p>
+                    <p className="text-lg font-black text-slate-900">{tickets.filter(t => t.status === 'New').length}</p>
+                  </div>
+                </div>
+                <div className={`${themeClasses.card} p-3 rounded-2xl border shadow-sm flex items-center gap-3`}>
+                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+                    <Activity className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Progres</p>
+                    <p className="text-lg font-black text-slate-900">{tickets.filter(t => t.status === 'In Progress').length}</p>
+                  </div>
+                </div>
+                <div className={`${themeClasses.card} p-3 rounded-2xl border shadow-sm flex items-center gap-3`}>
+                  <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selesai</p>
+                    <p className="text-lg font-black text-slate-900">{tickets.filter(t => t.status === 'Completed').length}</p>
+                  </div>
+                </div>
+                <div className={`${themeClasses.card} p-3 rounded-2xl border shadow-sm flex items-center gap-3`}>
+                  <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600">
+                    <AlertCircle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Urgent</p>
+                    <p className="text-lg font-black text-slate-900">{tickets.filter(t => t.priority === 'Urgent' && t.status !== 'Completed').length}</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Filters - Hidden on mobile, replaced by modal */}
             <div className={`hidden sm:flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6 p-2 sm:p-4 rounded-2xl border shadow-sm transition-colors ${themeClasses.card}`}>
@@ -1392,7 +1546,11 @@ export default function App() {
                 }}
               >
                 <AnimatePresence mode="popLayout">
-                  {filteredTickets.length === 0 ? (
+                  {loading ? (
+                    <div className="flex flex-col gap-2">
+                      {[1, 2, 3, 4, 5].map(i => <SkeletonTicket key={i} isDark={isDark} />)}
+                    </div>
+                  ) : filteredTickets.length === 0 ? (
                     <motion.div 
                       key="no-match"
                       initial={{ opacity: 0 }}
@@ -1412,6 +1570,7 @@ export default function App() {
                           setFilterDept('');
                           setFilterStatus('');
                           setFilterDate('');
+                          setSearchQuery('');
                         }}
                         className="mt-4 text-emerald-600 font-bold text-sm hover:underline"
                       >
@@ -1419,14 +1578,24 @@ export default function App() {
                       </button>
                     </motion.div>
                   ) : (
-                    <motion.div 
-                      key={viewMode}
-                      initial={{ opacity: 0, x: 10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -10 }}
-                      transition={{ duration: 0.2 }}
-                      className="flex flex-col gap-2"
-                    >
+                    <div className="flex flex-col gap-2">
+                      {adminUser && filteredTickets.length > 0 && (
+                        <div className="flex items-center gap-2 px-2 mb-1">
+                          <input 
+                            type="checkbox"
+                            checked={selectedTickets.length === paginatedTickets.length && paginatedTickets.length > 0}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedTickets(paginatedTickets.map(t => t.id));
+                              } else {
+                                setSelectedTickets([]);
+                              }
+                            }}
+                            className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          <span className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider`}>Pilih Semua di Halaman Ini</span>
+                        </div>
+                      )}
                       {paginatedTickets.map((ticket, index) => (
                             <motion.div
                               key={ticket.id}
@@ -1447,6 +1616,8 @@ export default function App() {
                                 damping: 20
                               }}
                               className={`${themeClasses.card} rounded-xl p-2 shadow-sm hover:shadow-md transition-all group cursor-pointer relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 ${
+                                selectedTickets.includes(ticket.id) ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
+                              } ${
                                 getSLAColor(ticket.created_at, ticket.status) || (isDark ? 'hover:border-emerald-900' : 'hover:border-emerald-100')
                               }`}
                               onClick={() => handleSelectTicket(ticket)}
@@ -1454,6 +1625,22 @@ export default function App() {
                             <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                             
                             <div className="flex items-center gap-3 min-w-0 flex-1">
+                              {adminUser && (
+                                <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                                  <input 
+                                    type="checkbox"
+                                    checked={selectedTickets.includes(ticket.id)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedTickets(prev => [...prev, ticket.id]);
+                                      } else {
+                                        setSelectedTickets(prev => prev.filter(id => id !== ticket.id));
+                                      }
+                                    }}
+                                    className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                  />
+                                </div>
+                              )}
                               <div className="flex-shrink-0">
                                 <motion.div 
                                   whileHover={{ scale: 1.1 }}
@@ -1475,7 +1662,9 @@ export default function App() {
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center justify-between gap-2 mb-0.5">
                                   <div className="flex items-center gap-1.5">
-                                    <span className="text-[9px] font-black text-slate-400 tracking-tighter">#{ticket.ticket_no || ticket.id.toString().padStart(4, '0')}</span>
+                                    <span className="text-[9px] font-black text-slate-400 tracking-tighter">
+                                      #<HighlightText text={ticket.ticket_no || ticket.id.toString().padStart(4, '0')} highlight={searchQuery} isDark={isDark} />
+                                    </span>
                                     {adminUser?.role === 'Super Admin' && ticket.assigned_to && (
                                       <span className="text-[8px] font-black bg-slate-100 text-slate-600 px-1 py-0.5 rounded uppercase leading-none">@{ticket.assigned_to}</span>
                                     )}
@@ -1488,12 +1677,12 @@ export default function App() {
                                   </span>
                                 </div>
                                 <h3 className="text-[11px] font-black text-slate-900 truncate group-hover:text-emerald-600 transition-colors mb-1">
-                                  {ticket.category} Request
+                                  <HighlightText text={`${ticket.category} Request`} highlight={searchQuery} isDark={isDark} />
                                 </h3>
                                 
                                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-slate-500 font-medium">
                                   <span className="flex items-center gap-1 truncate">
-                                    <User className="w-2.5 h-2.5 text-slate-400 shrink-0" /> {ticket.name}
+                                    <User className="w-2.5 h-2.5 text-slate-400 shrink-0" /> <HighlightText text={ticket.name} highlight={searchQuery} isDark={isDark} />
                                   </span>
                                   <span className="flex items-center gap-1 truncate">
                                     <Building2 className="w-2.5 h-2.5 text-slate-400 shrink-0" /> {ticket.department}
@@ -1558,7 +1747,7 @@ export default function App() {
                             </div>
                           </motion.div>
                         ))}
-                      </motion.div>
+                      </div>
                   )}
                 </AnimatePresence>
 
@@ -1621,6 +1810,48 @@ export default function App() {
                     </button>
                   </div>
                 )}
+
+                {/* Bulk Action Bar */}
+                <AnimatePresence>
+                  {selectedTickets.length > 0 && (
+                    <motion.div 
+                      initial={{ y: 100, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: 100, opacity: 0 }}
+                      className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 w-[90%] max-w-lg bg-slate-900 text-white rounded-2xl p-4 shadow-2xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-900/40">
+                          <CheckCircle2 className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-widest">{selectedTickets.length} Tiket Terpilih</p>
+                          <p className="text-[10px] text-slate-400 font-medium">Lakukan aksi massal untuk tiket ini</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <button 
+                          onClick={() => handleBulkAction('In Progress')}
+                          className="flex-1 sm:flex-none px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95"
+                        >
+                          Progres
+                        </button>
+                        <button 
+                          onClick={() => handleBulkAction('Completed')}
+                          className="flex-1 sm:flex-none px-3 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95"
+                        >
+                          Selesai
+                        </button>
+                        <button 
+                          onClick={() => setSelectedTickets([])}
+                          className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition-all"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             )}
 
@@ -1841,6 +2072,8 @@ export default function App() {
         handleLogout={handleLogout}
         primaryColor={primaryColor}
         isDark={isDark}
+        toggleTheme={toggleTheme}
+        onSearchClick={() => setShowMobileFilter(true)}
       />
 
       <style>{`

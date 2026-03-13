@@ -245,8 +245,16 @@ async function startServer() {
         user_agent TEXT,
         latitude REAL,
         longitude REAL,
-        internal_notes TEXT
+        internal_notes TEXT,
+        face_photo TEXT
       );
+
+      // Add face_photo column if it doesn't exist
+      try {
+        db.prepare("ALTER TABLE tickets ADD COLUMN face_photo TEXT").run();
+      } catch (e) {
+        // Column already exists or other error
+      }
 
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

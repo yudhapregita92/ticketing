@@ -3,7 +3,8 @@ import {
   Cpu, 
   Globe, 
   Zap, 
-  Ticket 
+  Ticket,
+  Send
 } from 'lucide-react';
 
 export interface ITicket {
@@ -68,6 +69,7 @@ export const PRIORITIES = [
 ];
 
 export const LOGO_OPTIONS = [
+  { id: 'Send', icon: Send },
   { id: 'ShieldCheck', icon: ShieldCheck },
   { id: 'Cpu', icon: Cpu },
   { id: 'Globe', icon: Globe },

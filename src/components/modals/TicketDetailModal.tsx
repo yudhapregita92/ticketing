@@ -269,16 +269,25 @@ export const TicketDetailModal = React.memo(({
                   {selectedTicket.face_photo && (
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2 text-slate-400">
-                        <Scan className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                        <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">Foto Verifikasi Wajah</span>
+                        <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                        <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">Verifikasi Wajah</span>
                       </div>
-                      <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 aspect-video flex items-center justify-center">
-                        <img 
-                          src={selectedTicket.face_photo} 
-                          alt="Face verification" 
-                          className="max-w-full max-h-full object-contain"
-                          referrerPolicy="no-referrer"
-                        />
+                      <div className={`p-2 rounded-xl border flex items-center justify-between gap-2 ${isDark ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span className="text-[9px] font-bold">Foto verifikasi wajah telah tersimpan</span>
+                        </div>
+                        {adminUser && (
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden border border-emerald-500/30 bg-black/20 flex-shrink-0">
+                            <img 
+                              src={selectedTicket.face_photo} 
+                              alt="Face preview" 
+                              className="w-full h-full object-cover cursor-pointer hover:scale-110 transition-transform"
+                              referrerPolicy="no-referrer"
+                              onClick={() => window.open(selectedTicket.face_photo!, '_blank')}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

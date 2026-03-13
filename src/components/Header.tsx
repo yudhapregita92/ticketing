@@ -8,9 +8,12 @@ import {
   LogOut, 
   ShieldCheck, 
   Plus,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { IAppSettings, IAdminUser, ITicket, LOGO_OPTIONS } from '../types';
+import { Logo } from './Logo';
 
 interface HeaderProps {
   appSettings: IAppSettings;
@@ -26,6 +29,7 @@ interface HeaderProps {
   setShowLogin: (show: boolean) => void;
   setShowForm: (show: boolean) => void;
   tickets: ITicket[];
+  toggleTheme: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -41,7 +45,8 @@ export const Header: React.FC<HeaderProps> = ({
   handleLogout,
   setShowLogin,
   setShowForm,
-  tickets
+  tickets,
+  toggleTheme
 }) => {
   const CurrentLogo = LOGO_OPTIONS.find(l => l.id === appSettings.logo_type)?.icon || LOGO_OPTIONS[0].icon;
 
@@ -60,7 +65,11 @@ export const Header: React.FC<HeaderProps> = ({
             {appSettings.custom_logo ? (
               <img src={appSettings.custom_logo} alt="Logo" className="w-6 h-6 object-contain" referrerPolicy="no-referrer" />
             ) : (
-              <CurrentLogo className="text-white w-6 h-6" />
+              appSettings.logo_type === 'Send' ? (
+                <Logo className="text-white w-6 h-6" color="white" />
+              ) : (
+                <CurrentLogo className="text-white w-6 h-6" />
+              )
             )}
           </div>
           <div className="min-w-0">
@@ -77,6 +86,16 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
               
               <div className="flex items-center gap-1">
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={toggleTheme}
+                  className={`p-1.5 rounded-lg transition-all ${isDark ? 'text-amber-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
+                  title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                >
+                  {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                </motion.button>
+
                 <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
