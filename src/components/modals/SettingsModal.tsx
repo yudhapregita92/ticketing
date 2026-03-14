@@ -12,7 +12,9 @@ import {
   Save,
   Mail,
   MessageCircle,
-  Send
+  Send,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -358,6 +360,96 @@ export const SettingsModal = React.memo(({
                       </div>
                     </div>
                   )}
+
+                  <div className="space-y-1.5 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Icon Shortcut (PWA - iPhone & Android)</label>
+                    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
+                      <div className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shadow-sm">
+                        {appSettings.custom_logo ? (
+                          <img src={appSettings.custom_logo} alt="Shortcut Icon" className="w-full h-full object-cover" />
+                        ) : (
+                          <ImageIcon className="w-8 h-8 text-slate-300" />
+                        )}
+                      </div>
+                      <div className="flex-1 text-center sm:text-left">
+                        <p className="text-[10px] font-bold text-slate-500 mb-2">Upload icon (512x512px) untuk shortcut di layar utama ponsel.</p>
+                        <div className="flex flex-wrap justify-center sm:justify-start gap-2">
+                          <label className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-[10px] font-black capitalize tracking-widest cursor-pointer hover:bg-emerald-700 transition-all flex items-center gap-2">
+                            <Upload className="w-3 h-3" /> Pilih Gambar
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              className="hidden" 
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    setAppSettings({...appSettings, custom_logo: reader.result as string});
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }} 
+                            />
+                          </label>
+                          {appSettings.custom_logo && (
+                            <button 
+                              type="button"
+                              onClick={() => setAppSettings({...appSettings, custom_logo: ''})}
+                              className="px-4 py-2 bg-rose-500/10 text-rose-500 rounded-xl text-[10px] font-black capitalize tracking-widest hover:bg-rose-500 hover:text-white transition-all"
+                            >
+                              Reset Icon
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Favicon (Browser Icon)</label>
+                    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
+                      <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shadow-sm">
+                        {appSettings.custom_favicon ? (
+                          <img src={appSettings.custom_favicon} alt="Favicon" className="w-full h-full object-contain p-2" />
+                        ) : (
+                          <ImageIcon className="w-6 h-6 text-slate-300" />
+                        )}
+                      </div>
+                      <div className="flex-1 text-center sm:text-left">
+                        <p className="text-[10px] font-bold text-slate-500 mb-2">Upload icon (32x32px atau 64x64px) untuk tab browser.</p>
+                        <div className="flex flex-wrap justify-center sm:justify-start gap-2">
+                          <label className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-[10px] font-black capitalize tracking-widest cursor-pointer hover:bg-emerald-700 transition-all flex items-center gap-2">
+                            <Upload className="w-3 h-3" /> Pilih Favicon
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              className="hidden" 
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    setAppSettings({...appSettings, custom_favicon: reader.result as string});
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }} 
+                            />
+                          </label>
+                          {appSettings.custom_favicon && (
+                            <button 
+                              type="button"
+                              onClick={() => setAppSettings({...appSettings, custom_favicon: ''})}
+                              className="px-4 py-2 bg-rose-500/10 text-rose-500 rounded-xl text-[10px] font-black capitalize tracking-widest hover:bg-rose-500 hover:text-white transition-all"
+                            >
+                              Reset Favicon
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
