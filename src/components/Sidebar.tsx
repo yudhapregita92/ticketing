@@ -62,13 +62,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Bell className={`w-24 h-24 ${isDark ? 'text-white' : 'text-slate-900'}`} />
           </div>
           <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border ${isDark ? 'bg-rose-900/30 text-rose-400 border-rose-800' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
-                <Bell className="w-5 h-5" />
+            <div className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center border ${isDark ? 'bg-rose-900/30 text-rose-400 border-rose-800' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                <Bell className="w-4 h-4" />
               </div>
               <div>
-                <h2 className={`text-sm font-bold capitalize tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>Smart Notifications</h2>
-                <p className="text-[10px] text-slate-400 font-medium">Real-time system alerts</p>
+                <h2 className={`text-xs font-bold capitalize tracking-tight ${isDark ? 'text-white' : 'text-slate-900'} whitespace-nowrap`}>Smart Notifications</h2>
+                <p className="text-[9px] text-slate-400 font-medium">Real-time system alerts</p>
               </div>
             </div>
             {typeof window !== 'undefined' && "Notification" in window && Notification.permission !== "granted" && (
@@ -86,9 +86,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           
           <div className="space-y-3">
             {tickets.filter(t => t.status === 'New').length > 0 ? (
-              <div className="p-4 bg-rose-50/50 rounded-2xl border border-rose-100 group hover:bg-rose-50 transition-all">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="flex items-center gap-1.5 text-[10px] font-bold text-rose-600 capitalize tracking-widest">
+              <div className="p-3 bg-rose-50/50 rounded-2xl border border-rose-100 group hover:bg-rose-50 transition-all">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="flex items-center gap-1.5 text-[9px] font-bold text-rose-600 capitalize tracking-wider whitespace-nowrap">
                     <motion.div
                       animate={{ rotate: [-10, 10, -10, 10, 0] }}
                       transition={{ repeat: Infinity, duration: 0.5, repeatDelay: 2 }}
@@ -97,11 +97,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </motion.div>
                     Action Required
                   </span>
-                  <span className="px-2 py-0.5 bg-rose-600 text-white text-[10px] font-bold rounded-full animate-pulse shadow-sm shadow-rose-200">
+                  <span className="px-1.5 py-0.5 bg-rose-600 text-white text-[9px] font-bold rounded-full animate-pulse shadow-sm shadow-rose-200">
                     {tickets.filter(t => t.status === 'New').length}
                   </span>
                 </div>
-                <p className="text-xs text-rose-700 font-semibold leading-relaxed">Ada tiket yang menunggu respon Anda segera.</p>
+                <p className="text-[10px] text-rose-700 font-semibold leading-tight">Ada tiket yang menunggu respon Anda segera.</p>
               </div>
             ) : (
               <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100">
@@ -116,16 +116,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
               const newToday = tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === today).length;
               if (newToday > 0) {
                 return (
-                  <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 group hover:bg-blue-50 transition-all">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 capitalize tracking-widest">
+                  <div className="p-3 bg-blue-50/50 rounded-2xl border border-blue-100 group hover:bg-blue-50 transition-all">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="flex items-center gap-1.5 text-[9px] font-bold text-blue-600 capitalize tracking-wider whitespace-nowrap">
                         <TrendingUp className="w-3 h-3" /> Traffic Update
                       </span>
-                      <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full shadow-sm shadow-blue-200">
+                      <span className="px-1.5 py-0.5 bg-blue-600 text-white text-[9px] font-bold rounded-full shadow-sm shadow-blue-200">
                         {newToday}
                       </span>
                     </div>
-                    <p className="text-xs text-blue-700 font-semibold leading-relaxed">Tiket baru masuk hari ini.</p>
+                    <p className="text-[10px] text-blue-700 font-semibold leading-tight">Tiket baru masuk hari ini.</p>
                   </div>
                 );
               }
@@ -145,34 +145,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <motion.div 
             whileHover={{ y: -2, scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className={`${themeClasses.card} ${themeClasses.border} border rounded-xl p-2 flex flex-col items-center justify-center text-center`}
+            className={`${themeClasses.card} ${themeClasses.border} border rounded-xl p-1.5 flex flex-col items-center justify-center text-center`}
           >
-            <Counter value={filteredTickets.length} className={`text-base font-black leading-none mb-0.5 ${themeClasses.text}`} />
-            <span className="text-[7px] font-bold text-slate-400 capitalize tracking-wider">Total</span>
+            <Counter value={filteredTickets.length} className={`text-sm font-black leading-none mb-0.5 ${themeClasses.text}`} />
+            <span className="text-[8px] font-bold text-slate-400 capitalize tracking-tight whitespace-nowrap">Total</span>
           </motion.div>
           <motion.div 
             whileHover={{ y: -2, scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className={`${isDark ? 'bg-amber-500/10 border-amber-500/20' : 'bg-amber-50 border-amber-100'} border rounded-xl p-2 flex flex-col items-center justify-center text-center`}
+            className={`${isDark ? 'bg-amber-500/10 border-amber-500/20' : 'bg-amber-50 border-amber-100'} border rounded-xl p-1.5 flex flex-col items-center justify-center text-center`}
           >
-            <Counter value={filteredTickets.filter(t => t.status === 'New').length} className="text-base font-black text-amber-500 leading-none mb-0.5" />
-            <span className="text-[7px] font-bold text-amber-500 capitalize tracking-wider">Baru</span>
+            <Counter value={filteredTickets.filter(t => t.status === 'New').length} className="text-sm font-black text-amber-500 leading-none mb-0.5" />
+            <span className="text-[8px] font-bold text-amber-500 capitalize tracking-tight whitespace-nowrap">Baru</span>
           </motion.div>
           <motion.div 
             whileHover={{ y: -2, scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className={`${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'} border rounded-xl p-2 flex flex-col items-center justify-center text-center`}
+            className={`${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'} border rounded-xl p-1.5 flex flex-col items-center justify-center text-center`}
           >
-            <Counter value={filteredTickets.filter(t => t.status === 'In Progress').length} className="text-base font-black text-blue-500 leading-none mb-0.5" />
-            <span className="text-[7px] font-bold text-blue-500 capitalize tracking-wider">Progres</span>
+            <Counter value={filteredTickets.filter(t => t.status === 'In Progress').length} className="text-sm font-black text-blue-500 leading-none mb-0.5" />
+            <span className="text-[8px] font-bold text-blue-500 capitalize tracking-tight whitespace-nowrap">Progres</span>
           </motion.div>
           <motion.div 
             whileHover={{ y: -2, scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className={`${isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100'} border rounded-xl p-2 flex flex-col items-center justify-center text-center`}
+            className={`${isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100'} border rounded-xl p-1.5 flex flex-col items-center justify-center text-center`}
           >
-            <Counter value={filteredTickets.filter(t => t.status === 'Completed').length} className="text-base font-black text-emerald-500 leading-none mb-0.5" />
-            <span className="text-[7px] font-bold text-emerald-500 capitalize tracking-wider">Selesai</span>
+            <Counter value={filteredTickets.filter(t => t.status === 'Completed').length} className="text-sm font-black text-emerald-500 leading-none mb-0.5" />
+            <span className="text-[8px] font-bold text-emerald-500 capitalize tracking-tight whitespace-nowrap">Selesai</span>
           </motion.div>
         </div>
       </section>

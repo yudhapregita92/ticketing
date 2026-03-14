@@ -46,50 +46,50 @@ export const TicketCard: React.FC<TicketCardProps> = ({
           )}
         </div>
         
-        <div className="flex-1 min-w-0 flex justify-between gap-2">
+        <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 mb-1">
+            <div className="flex flex-wrap items-center gap-1.5 mb-1">
               <span className="text-[8px] font-bold text-slate-400 capitalize tracking-tight">
                 #{ticket.ticket_no.replace('TKT-', '')}
               </span>
               {slaLabel && (
-                <span className="px-1 py-0.5 bg-rose-500 text-white text-[6px] font-black rounded capitalize tracking-tighter">
+                <span className="px-1 py-0.5 bg-rose-500 text-white text-[6px] font-black rounded capitalize tracking-tighter whitespace-nowrap">
                   {slaLabel}
                 </span>
               )}
-              <span className={`px-1 py-0.5 ${priorityInfo.color} text-white text-[6px] font-black rounded capitalize tracking-tighter`}>
+              <span className={`px-1 py-0.5 ${priorityInfo.color} text-white text-[6px] font-black rounded capitalize tracking-tighter whitespace-nowrap`}>
                 {priorityInfo.label}
               </span>
             </div>
             
             <h3 className={`text-xs font-black mb-1 truncate ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{ticket.category} Request</h3>
             
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <div className="flex items-center gap-1 text-[9px] font-bold text-slate-400">
                 <User className="w-2.5 h-2.5" />
-                <span className="truncate max-w-[60px]">{ticket.name.toLowerCase()}</span>
+                <span className="truncate max-w-[80px]">{ticket.name.toLowerCase()}</span>
               </div>
               <div className="flex items-center gap-1 text-[9px] font-bold text-slate-400">
                 <Building2 className="w-2.5 h-2.5" />
-                <span className="truncate max-w-[80px]">{ticket.department}</span>
+                <span className="truncate max-w-[100px]">{ticket.department}</span>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col items-end justify-between py-0.5 shrink-0">
+          <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center py-0.5 shrink-0 gap-2">
             <div className="flex flex-col items-end gap-1">
-              <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-400">
+              <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-400 whitespace-nowrap">
                 <Clock className="w-2 h-2" />
                 <span>{new Date(ticket.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}, {new Date(ticket.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
               </div>
-              <span className={`px-1.5 py-0.5 ${getStatusColor(ticket.status)} text-[7px] font-black rounded-full capitalize text-center min-w-[65px] inline-block`}>
+              <span className={`px-1.5 py-0.5 ${getStatusColor(ticket.status)} text-[7px] font-black rounded-full capitalize text-center min-w-[55px] sm:min-w-[65px] inline-block`}>
                 {ticket.status === 'In Progress' ? 'Progres' : 
                  ticket.status === 'Completed' ? 'Selesai' : 
                  ticket.status === 'Cancelled' ? 'Batal' : 
                  ticket.status === 'New' ? 'Baru' : ticket.status}
               </span>
             </div>
-            <Eye className="w-3.5 h-3.5 text-slate-400 mt-1" />
+            <Eye className="w-3.5 h-3.5 text-slate-400 sm:mt-1" />
           </div>
         </div>
 

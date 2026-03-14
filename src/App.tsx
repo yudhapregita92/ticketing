@@ -1394,51 +1394,51 @@ export default function App() {
             {/* Dashboard Analytics - Admin Only */}
             {adminUser && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                <div className={`${themeClasses.card} p-3 rounded-2xl border shadow-sm flex items-center gap-3`}>
-                  <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
-                    <Clock className="w-5 h-5" />
+                <div className={`${themeClasses.card} p-2.5 rounded-2xl border shadow-sm flex items-center gap-2.5`}>
+                  <div className="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 shrink-0">
+                    <Clock className="w-4.5 h-4.5" />
                   </div>
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 capitalize tracking-widest">Baru</p>
+                  <div className="min-w-0">
+                    <p className="text-[9px] font-black text-slate-400 capitalize tracking-wider whitespace-nowrap">Baru</p>
                     <RollingNumber 
                       value={tickets.filter(t => t.status === 'New').length} 
-                      className={`text-lg font-black ${themeClasses.text}`} 
+                      className={`text-base font-black ${themeClasses.text}`} 
                     />
                   </div>
                 </div>
-                <div className={`${themeClasses.card} p-3 rounded-2xl border shadow-sm flex items-center gap-3`}>
-                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
-                    <Activity className="w-5 h-5" />
+                <div className={`${themeClasses.card} p-2.5 rounded-2xl border shadow-sm flex items-center gap-2.5`}>
+                  <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 shrink-0">
+                    <Activity className="w-4.5 h-4.5" />
                   </div>
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 capitalize tracking-widest">Progres</p>
+                  <div className="min-w-0">
+                    <p className="text-[9px] font-black text-slate-400 capitalize tracking-wider whitespace-nowrap">Progres</p>
                     <RollingNumber 
                       value={tickets.filter(t => t.status === 'In Progress').length} 
-                      className={`text-lg font-black ${themeClasses.text}`} 
+                      className={`text-base font-black ${themeClasses.text}`} 
                     />
                   </div>
                 </div>
-                <div className={`${themeClasses.card} p-3 rounded-2xl border shadow-sm flex items-center gap-3`}>
-                  <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
-                    <CheckCircle2 className="w-5 h-5" />
+                <div className={`${themeClasses.card} p-2.5 rounded-2xl border shadow-sm flex items-center gap-2.5`}>
+                  <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 shrink-0">
+                    <CheckCircle2 className="w-4.5 h-4.5" />
                   </div>
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 capitalize tracking-widest">Selesai</p>
+                  <div className="min-w-0">
+                    <p className="text-[9px] font-black text-slate-400 capitalize tracking-wider whitespace-nowrap">Selesai</p>
                     <RollingNumber 
                       value={tickets.filter(t => t.status === 'Completed').length} 
-                      className={`text-lg font-black ${themeClasses.text}`} 
+                      className={`text-base font-black ${themeClasses.text}`} 
                     />
                   </div>
                 </div>
-                <div className={`${themeClasses.card} p-3 rounded-2xl border shadow-sm flex items-center gap-3`}>
-                  <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600">
-                    <AlertCircle className="w-5 h-5" />
+                <div className={`${themeClasses.card} p-2.5 rounded-2xl border shadow-sm flex items-center gap-2.5`}>
+                  <div className="w-9 h-9 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600 shrink-0">
+                    <AlertCircle className="w-4.5 h-4.5" />
                   </div>
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 capitalize tracking-widest">Urgent</p>
+                  <div className="min-w-0">
+                    <p className="text-[9px] font-black text-slate-400 capitalize tracking-wider whitespace-nowrap">Urgent</p>
                     <RollingNumber 
                       value={tickets.filter(t => t.priority === 'Urgent' && t.status !== 'Completed').length} 
-                      className={`text-lg font-black ${themeClasses.text}`} 
+                      className={`text-base font-black ${themeClasses.text}`} 
                     />
                   </div>
                 </div>
@@ -1636,8 +1636,8 @@ export default function App() {
                                 </motion.div>
                               </div>
                               <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between gap-2 mb-0.5">
-                                  <div className="flex items-center gap-1.5">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 mb-1">
+                                  <div className="flex flex-wrap items-center gap-1.5">
                                     <span className="text-[9px] font-black text-slate-400 tracking-tighter">
                                       #<HighlightText text={ticket.ticket_no || ticket.id.toString().padStart(4, '0')} highlight={searchQuery} isDark={isDark} />
                                     </span>
@@ -1645,14 +1645,14 @@ export default function App() {
                                       <span className={`text-[8px] font-black px-1 py-0.5 rounded capitalize leading-none ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>@{ticket.assigned_to}</span>
                                     )}
                                     {getSLALabel(ticket.created_at, ticket.status) && (
-                                      <span className="text-[8px] font-black px-1.5 py-0.5 rounded capitalize bg-rose-500 text-white leading-none">{getSLALabel(ticket.created_at, ticket.status)}</span>
+                                      <span className="text-[8px] font-black px-1.5 py-0.5 rounded capitalize bg-rose-500 text-white leading-none whitespace-nowrap">{getSLALabel(ticket.created_at, ticket.status)}</span>
                                     )}
                                   </div>
-                                  <div className="flex flex-col items-end gap-1">
-                                    <span className="flex items-center gap-1 text-[9px] text-slate-400 font-medium">
+                                  <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 sm:gap-1">
+                                    <span className="flex items-center gap-1 text-[8px] sm:text-[9px] text-slate-400 font-medium whitespace-nowrap">
                                       <Calendar className="w-2.5 h-2.5 shrink-0" /> {formatDate(ticket.created_at)}
                                     </span>
-                                    <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-black capitalize tracking-widest border text-center min-w-[65px] inline-block ${getStatusColor(ticket.status)}`}>
+                                    <span className={`px-1.5 py-0.5 rounded-full text-[7px] sm:text-[8px] font-black capitalize tracking-widest border text-center min-w-[55px] sm:min-w-[65px] inline-block ${getStatusColor(ticket.status)}`}>
                                       {ticket.status === 'In Progress' ? 'Progres' : 
                                        ticket.status === 'Completed' ? 'Selesai' : 
                                        ticket.status === 'Cancelled' ? 'Batal' : 
