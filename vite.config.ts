@@ -5,6 +5,7 @@ import {defineConfig, loadEnv} from 'vite';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
+  
   return {
     plugins: [react(), tailwindcss()],
     define: {
@@ -16,8 +17,14 @@ export default defineConfig(({mode}) => {
       },
     },
     server: {
+      // Mengizinkan akses dari domain kustom dan ngrok
+      allowedHosts: [
+        'intromissible-stingily-verla.ngrok-free.dev',
+        'www.itk3dk.my.id',
+        'itk3dk.my.id'
+      ],
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modify—file watching is disabled to prevent flickering during agent edits.
+      // Menjaga stabilitas saat editing otomatis oleh agent.
       hmr: process.env.DISABLE_HMR !== 'true',
     },
   };

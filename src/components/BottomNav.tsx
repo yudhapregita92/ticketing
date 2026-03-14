@@ -152,9 +152,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         <motion.button 
           whileTap={{ scale: 0.9 }}
           onClick={() => setViewMode('today')}
-          className={`flex flex-col items-center justify-center w-1/5 gap-1 ${viewMode === 'today' ? activeTextClass : textClass}`}
+          className={`flex flex-col items-center justify-center w-1/5 gap-1 ${textClass}`}
         >
-          <Home className={`w-6 h-6 ${viewMode === 'today' ? 'stroke-[2.5px]' : 'stroke-2'}`} style={{ color: viewMode === 'today' ? primaryColor : undefined }} />
+          <Home className="w-6 h-6 stroke-2" />
           <span className="text-[10px] font-bold">Beranda</span>
         </motion.button>
 
