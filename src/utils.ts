@@ -36,8 +36,8 @@ export const getSLALabel = (createdAt: string, status: string) => {
   const now = new Date().getTime();
   const diffHours = (now - created) / (1000 * 60 * 60);
 
-  if (diffHours > 5) return 'CRITICAL (>5h)';
-  if (diffHours > 2) return 'DELAYED (>2h)';
+  if (diffHours > 5) return 'Critical (>5h)';
+  if (diffHours > 2) return 'Delayed (>2h)';
   return null;
 };
 

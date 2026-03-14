@@ -89,7 +89,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             <button 
               disabled={loading}
               onClick={onClose}
-              className={`w-full font-bold py-3 text-xs sm:text-sm transition-all uppercase tracking-widest ${isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`w-full font-bold py-3 text-xs sm:text-sm transition-all capitalize tracking-widest ${isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-slate-400 hover:text-slate-600'}`}
             >
               Batal
             </button>

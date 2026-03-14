@@ -76,7 +76,7 @@ export const TakeoverModal: React.FC<TakeoverModalProps> = ({
             <div className="flex gap-3">
               <button 
                 onClick={() => setShowTakeoverConfirm(null)}
-                className={`flex-1 py-4 font-black text-xs uppercase tracking-widest rounded-2xl transition-all ${
+                className={`flex-1 py-4 font-black text-xs capitalize tracking-widest rounded-2xl transition-all ${
                   isDark ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-750' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                 }`}
               >
@@ -84,7 +84,7 @@ export const TakeoverModal: React.FC<TakeoverModalProps> = ({
               </button>
               <button 
                 onClick={() => executeIntervention(showTakeoverConfirm.id, showTakeoverConfirm.type, showTakeoverConfirm.targetUser)}
-                className={`flex-1 py-4 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg transition-all active:scale-[0.98] ${
+                className={`flex-1 py-4 text-white font-black text-xs capitalize tracking-widest rounded-2xl shadow-lg transition-all active:scale-[0.98] ${
                   showTakeoverConfirm.type === 'takeover' ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-900/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-900/20'
                 }`}
               >
@@ -96,7 +96,7 @@ export const TakeoverModal: React.FC<TakeoverModalProps> = ({
           {showTakeoverConfirm.type === 'reassign' && !showTakeoverConfirm.targetUser && (
             <button 
               onClick={() => setShowTakeoverConfirm(null)}
-              className={`w-full py-4 font-black text-xs uppercase tracking-widest rounded-2xl transition-all ${
+              className={`w-full py-4 font-black text-xs capitalize tracking-widest rounded-2xl transition-all ${
                 isDark ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-750' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
               }`}
             >

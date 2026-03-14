@@ -44,25 +44,25 @@ export const TicketCard: React.FC<TicketCardProps> = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-0.5">
             <div className="flex items-center gap-1.5">
-              <span className="text-[8px] font-bold text-slate-300 uppercase tracking-tight">
+              <span className="text-[8px] font-bold text-slate-400 capitalize tracking-tight">
                 #{ticket.ticket_no.replace('TKT-', '')}
               </span>
               {slaLabel && (
-                <span className="px-1 py-0.5 bg-rose-500 text-white text-[6px] font-black rounded uppercase tracking-tighter">
+                <span className="px-1 py-0.5 bg-rose-500 text-white text-[6px] font-black rounded capitalize tracking-tighter">
                   {slaLabel}
                 </span>
               )}
-              <span className={`px-1 py-0.5 ${priorityInfo.color} text-white text-[6px] font-black rounded uppercase tracking-tighter`}>
+              <span className={`px-1 py-0.5 ${priorityInfo.color} text-white text-[6px] font-black rounded capitalize tracking-tighter`}>
                 {priorityInfo.label}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-300">
+            <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-400">
               <Clock className="w-2 h-2" />
               <span>{new Date(ticket.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}, {new Date(ticket.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
           </div>
           
-          <h3 className="text-xs font-black text-slate-700 mb-1 truncate">{ticket.category} Request</h3>
+          <h3 className={`text-xs font-black mb-1 truncate ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{ticket.category} Request</h3>
           
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -77,13 +77,13 @@ export const TicketCard: React.FC<TicketCardProps> = ({
             </div>
             
             <div className="flex items-center gap-2">
-              <span className={`px-1.5 py-0.5 ${getStatusColor(ticket.status)} text-[7px] font-black rounded-full uppercase text-center min-w-[65px] inline-block`}>
-                {ticket.status === 'In Progress' ? 'PROGRES' : 
-                 ticket.status === 'Completed' ? 'SELESAI' : 
-                 ticket.status === 'Cancelled' ? 'BATAL' : 
-                 ticket.status === 'New' ? 'BARU' : ticket.status}
+              <span className={`px-1.5 py-0.5 ${getStatusColor(ticket.status)} text-[7px] font-black rounded-full capitalize text-center min-w-[65px] inline-block`}>
+                {ticket.status === 'In Progress' ? 'Progres' : 
+                 ticket.status === 'Completed' ? 'Selesai' : 
+                 ticket.status === 'Cancelled' ? 'Batal' : 
+                 ticket.status === 'New' ? 'Baru' : ticket.status}
               </span>
-              <Eye className="w-3.5 h-3.5 text-slate-300" />
+              <Eye className="w-3.5 h-3.5 text-slate-400" />
             </div>
           </div>
 

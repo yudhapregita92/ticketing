@@ -38,7 +38,7 @@ export const SuccessModal: React.FC<SuccessModalProps> = ({ show, themeClasses }
           Laporan Anda telah berhasil masuk ke antrian IT. Tim kami akan segera memprosesnya.
         </p>
         <motion.div 
-          className="mt-8 h-1 bg-slate-100 rounded-full overflow-hidden"
+          className="mt-8 h-1 bg-slate-100 rounded-full overflow-hidden flex justify-end"
         >
           <motion.div 
             initial={{ width: '100%' }}

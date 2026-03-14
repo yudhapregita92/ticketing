@@ -249,13 +249,6 @@ async function startServer() {
         face_photo TEXT
       );
 
-      // Add face_photo column if it doesn't exist
-      try {
-        db.prepare("ALTER TABLE tickets ADD COLUMN face_photo TEXT").run();
-      } catch (e) {
-        // Column already exists or other error
-      }
-
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
@@ -305,6 +298,13 @@ async function startServer() {
         employee_index TEXT
       );
     `);
+
+    // Add face_photo column if it doesn't exist
+    try {
+      db.prepare("ALTER TABLE tickets ADD COLUMN face_photo TEXT").run();
+    } catch (e) {
+      // Column already exists or other error
+    }
 
     // Migration: Check for missing columns in tickets table
     const tableInfo = db.prepare("PRAGMA table_info(tickets)").all() as any[];

@@ -81,8 +81,8 @@ export const Header: React.FC<HeaderProps> = ({
           {adminUser ? (
             <div className="flex items-center gap-2">
               <div className="hidden sm:flex flex-col items-end mr-2">
-                <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>{adminUser.full_name}</span>
-                <span className="text-[8px] font-bold text-emerald-500 uppercase tracking-widest">{adminUser.role}</span>
+                <span className={`text-[10px] font-bold capitalize tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>{adminUser.full_name}</span>
+                <span className="text-[8px] font-bold text-emerald-500 capitalize tracking-widest">{adminUser.role}</span>
               </div>
               
               <div className="flex items-center gap-1">

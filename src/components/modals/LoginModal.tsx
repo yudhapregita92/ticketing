@@ -48,7 +48,7 @@ export const LoginModal = React.memo(({
               </div>
               <div>
                 <h2 className={`text-lg font-black tracking-tight ${themeClasses.text}`}>Portal Admin</h2>
-                <p className={`text-[10px] font-bold uppercase tracking-widest ${themeClasses.textMuted}`}>Login untuk mengelola tiket</p>
+                <p className={`text-[10px] font-bold capitalize tracking-widest ${themeClasses.textMuted}`}>Login untuk mengelola tiket</p>
               </div>
             </div>
             <button 
@@ -62,7 +62,7 @@ export const LoginModal = React.memo(({
 
         <form onSubmit={handleLogin} className="p-4 sm:p-6 space-y-4">
           <div className="space-y-1.5">
-            <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+            <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">
               <User className="w-3 h-3" /> Username
             </label>
             <input 
@@ -75,7 +75,7 @@ export const LoginModal = React.memo(({
             />
           </div>
           <div className="space-y-1.5">
-            <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+            <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">
               <Lock className="w-3 h-3" /> Password
             </label>
             <input 
@@ -92,7 +92,7 @@ export const LoginModal = React.memo(({
             <button 
               type="submit"
               style={{ backgroundColor: primaryColor }}
-              className={`w-full py-3 sm:py-4 rounded-2xl text-white font-black uppercase tracking-widest text-xs sm:text-sm shadow-xl shadow-emerald-900/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2`}
+              className={`w-full py-3 sm:py-4 rounded-2xl text-white font-black capitalize tracking-widest text-xs sm:text-sm shadow-xl shadow-emerald-900/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2`}
             >
               <ShieldCheck className="w-4 h-4" /> Masuk Sekarang
             </button>

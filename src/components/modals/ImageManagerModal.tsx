@@ -122,7 +122,7 @@ export const ImageManagerModal: React.FC<ImageManagerModalProps> = ({
             </div>
             <div>
               <h2 className={`text-lg font-black tracking-tight ${themeClasses.text}`}>Manajemen Gambar</h2>
-              <p className={`text-[10px] font-bold uppercase tracking-widest ${themeClasses.textMuted}`}>Kelola foto tiket yang tersimpan</p>
+              <p className={`text-[10px] font-bold capitalize tracking-widest ${themeClasses.textMuted}`}>Kelola foto tiket yang tersimpan</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

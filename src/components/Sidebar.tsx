@@ -66,7 +66,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Bell className="w-5 h-5" />
               </div>
               <div>
-                <h2 className={`text-sm font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>Smart Notifications</h2>
+                <h2 className={`text-sm font-bold capitalize tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>Smart Notifications</h2>
                 <p className="text-[10px] text-slate-400 font-medium">Real-time system alerts</p>
               </div>
             </div>
@@ -87,7 +87,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {tickets.filter(t => t.status === 'New').length > 0 ? (
               <div className="p-4 bg-rose-50/50 rounded-2xl border border-rose-100 group hover:bg-rose-50 transition-all">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="flex items-center gap-1.5 text-[10px] font-bold text-rose-600 uppercase tracking-widest">
+                  <span className="flex items-center gap-1.5 text-[10px] font-bold text-rose-600 capitalize tracking-widest">
                     <motion.div
                       animate={{ rotate: [-10, 10, -10, 10, 0] }}
                       transition={{ repeat: Infinity, duration: 0.5, repeatDelay: 2 }}
@@ -117,7 +117,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 return (
                   <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 group hover:bg-blue-50 transition-all">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 uppercase tracking-widest">
+                      <span className="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 capitalize tracking-widest">
                         <TrendingUp className="w-3 h-3" /> Traffic Update
                       </span>
                       <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full shadow-sm shadow-blue-200">
@@ -144,34 +144,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <motion.div 
             whileHover={{ y: -2, scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="bg-slate-50 border border-slate-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
+            className={`${themeClasses.card} ${themeClasses.border} border rounded-xl p-2 flex flex-col items-center justify-center text-center`}
           >
-            <Counter value={filteredTickets.length} className="text-base font-black text-slate-900 leading-none mb-0.5" />
-            <span className="text-[7px] font-bold text-slate-400 uppercase tracking-wider">Total</span>
+            <Counter value={filteredTickets.length} className={`text-base font-black leading-none mb-0.5 ${themeClasses.text}`} />
+            <span className="text-[7px] font-bold text-slate-400 capitalize tracking-wider">Total</span>
           </motion.div>
           <motion.div 
             whileHover={{ y: -2, scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="bg-amber-50 border border-amber-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
+            className={`${isDark ? 'bg-amber-500/10 border-amber-500/20' : 'bg-amber-50 border-amber-100'} border rounded-xl p-2 flex flex-col items-center justify-center text-center`}
           >
             <Counter value={filteredTickets.filter(t => t.status === 'New').length} className="text-base font-black text-amber-500 leading-none mb-0.5" />
-            <span className="text-[7px] font-bold text-amber-500 uppercase tracking-wider">Baru</span>
+            <span className="text-[7px] font-bold text-amber-500 capitalize tracking-wider">Baru</span>
           </motion.div>
           <motion.div 
             whileHover={{ y: -2, scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="bg-blue-50 border border-blue-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
+            className={`${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'} border rounded-xl p-2 flex flex-col items-center justify-center text-center`}
           >
             <Counter value={filteredTickets.filter(t => t.status === 'In Progress').length} className="text-base font-black text-blue-500 leading-none mb-0.5" />
-            <span className="text-[7px] font-bold text-blue-500 uppercase tracking-wider">Progres</span>
+            <span className="text-[7px] font-bold text-blue-500 capitalize tracking-wider">Progres</span>
           </motion.div>
           <motion.div 
             whileHover={{ y: -2, scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="bg-emerald-50 border border-emerald-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
+            className={`${isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100'} border rounded-xl p-2 flex flex-col items-center justify-center text-center`}
           >
             <Counter value={filteredTickets.filter(t => t.status === 'Completed').length} className="text-base font-black text-emerald-500 leading-none mb-0.5" />
-            <span className="text-[7px] font-bold text-emerald-500 uppercase tracking-wider">Selesai</span>
+            <span className="text-[7px] font-bold text-emerald-500 capitalize tracking-wider">Selesai</span>
           </motion.div>
         </div>
       </section>
@@ -184,7 +184,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className={`${themeClasses.card} rounded-3xl border p-4 sm:p-6 shadow-sm`}
         >
           <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <h2 className={`text-sm font-bold uppercase tracking-wider ${themeClasses.text}`}>Distribusi Masalah</h2>
+            <h2 className={`text-sm font-bold capitalize tracking-wider ${themeClasses.text}`}>Distribusi Masalah</h2>
             <button 
               onClick={() => setShowDistribution(!showDistribution)}
               className={`p-2 rounded-xl transition-all ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}
@@ -229,7 +229,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {categoryStats.map((stat, idx) => (
               <div key={stat.name} className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
-                <span className="text-[10px] font-bold text-slate-500 uppercase truncate">{stat.name}</span>
+                <span className={`text-[10px] font-bold capitalize truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{stat.name}</span>
               </div>
             ))}
           </div>

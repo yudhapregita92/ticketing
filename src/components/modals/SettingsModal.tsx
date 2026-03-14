@@ -205,7 +205,7 @@ export const SettingsModal = React.memo(({
               </div>
               <div>
                 <h2 className={`text-lg font-black tracking-tight ${themeClasses.text}`}>Pengaturan Sistem</h2>
-                <p className={`text-[10px] font-bold uppercase tracking-widest ${themeClasses.textMuted}`}>Konfigurasi aplikasi & branding</p>
+                <p className={`text-[10px] font-bold capitalize tracking-widest ${themeClasses.textMuted}`}>Konfigurasi aplikasi & branding</p>
               </div>
             </div>
             <button 
@@ -222,25 +222,25 @@ export const SettingsModal = React.memo(({
           <div className={`w-full sm:w-64 border-b sm:border-b-0 sm:border-r p-2 sm:p-6 space-y-2 ${themeClasses.border} ${themeClasses.bgSecondary}`}>
             <button 
               onClick={() => setSettingsTab('general')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${settingsTab === 'general' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'general' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Layout className="w-4 h-4" /> Umum
             </button>
             <button 
               onClick={() => setSettingsTab('branding')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${settingsTab === 'branding' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'branding' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Palette className="w-4 h-4" /> Branding
             </button>
             <button 
               onClick={() => setSettingsTab('notifications')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${settingsTab === 'notifications' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'notifications' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Bell className="w-4 h-4" /> Notifikasi
             </button>
             <button 
               onClick={() => setSettingsTab('data')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${settingsTab === 'data' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'data' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Database className="w-4 h-4" /> Data & API
             </button>
@@ -252,7 +252,7 @@ export const SettingsModal = React.memo(({
               {settingsTab === 'general' && (
                 <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Aplikasi</label>
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Nama Aplikasi</label>
                     <input 
                       type="text"
                       className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
@@ -261,7 +261,7 @@ export const SettingsModal = React.memo(({
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Logo Default</label>
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Logo Default</label>
                     <div className="grid grid-cols-5 gap-2">
                       {LOGO_OPTIONS.map(logo => (
                         <button
@@ -281,7 +281,7 @@ export const SettingsModal = React.memo(({
               {settingsTab === 'branding' && (
                 <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Warna Utama (Public)</label>
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Warna Utama (Public)</label>
                     <div className="flex items-center gap-3">
                       <input 
                         type="color"
@@ -298,19 +298,19 @@ export const SettingsModal = React.memo(({
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tema Default (Public)</label>
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Tema Default (Public)</label>
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={() => setAppSettings({...appSettings, theme_mode: 'light'})}
-                        className={`flex-1 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${appSettings.theme_mode === 'light' ? 'bg-emerald-600 text-white border-emerald-600' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
+                        className={`flex-1 py-2 rounded-xl border text-[10px] font-black capitalize tracking-widest transition-all ${appSettings.theme_mode === 'light' ? 'bg-emerald-600 text-white border-emerald-600' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
                       >
                         Light Mode
                       </button>
                       <button
                         type="button"
                         onClick={() => setAppSettings({...appSettings, theme_mode: 'dark'})}
-                        className={`flex-1 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${appSettings.theme_mode === 'dark' ? 'bg-emerald-600 text-white border-emerald-600' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
+                        className={`flex-1 py-2 rounded-xl border text-[10px] font-black capitalize tracking-widest transition-all ${appSettings.theme_mode === 'dark' ? 'bg-emerald-600 text-white border-emerald-600' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
                       >
                         Dark Mode
                       </button>
@@ -319,9 +319,9 @@ export const SettingsModal = React.memo(({
 
                   {adminUser && (
                     <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
-                      <h3 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Preferensi Admin ({adminUser.username})</h3>
+                      <h3 className="text-[10px] font-black text-emerald-600 capitalize tracking-widest">Preferensi Admin ({adminUser.username})</h3>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Warna Utama Admin</label>
+                        <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Warna Utama Admin</label>
                         <div className="flex items-center gap-3">
                           <input 
                             type="color"
@@ -338,19 +338,19 @@ export const SettingsModal = React.memo(({
                         </div>
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tema Admin</label>
+                        <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Tema Admin</label>
                         <div className="flex gap-2">
                           <button
                             type="button"
                             onClick={() => setAppSettings({...appSettings, admin_theme_mode: 'light'})}
-                            className={`flex-1 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${appSettings.admin_theme_mode === 'light' ? 'bg-emerald-600 text-white border-emerald-600' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
+                            className={`flex-1 py-2 rounded-xl border text-[10px] font-black capitalize tracking-widest transition-all ${appSettings.admin_theme_mode === 'light' ? 'bg-emerald-600 text-white border-emerald-600' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
                           >
                             Light Mode
                           </button>
                           <button
                             type="button"
                             onClick={() => setAppSettings({...appSettings, admin_theme_mode: 'dark'})}
-                            className={`flex-1 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${appSettings.admin_theme_mode === 'dark' ? 'bg-emerald-600 text-white border-emerald-600' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
+                            className={`flex-1 py-2 rounded-xl border text-[10px] font-black capitalize tracking-widest transition-all ${appSettings.admin_theme_mode === 'dark' ? 'bg-emerald-600 text-white border-emerald-600' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
                           >
                             Dark Mode
                           </button>
@@ -365,11 +365,11 @@ export const SettingsModal = React.memo(({
                 <div className="space-y-6">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Notifikasi</label>
+                      <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Email Notifikasi</label>
                       <button 
                         type="button"
                         onClick={() => setShowEmailInput(true)}
-                        className="text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:underline flex items-center gap-1"
+                        className="text-[10px] font-black text-emerald-600 capitalize tracking-widest hover:underline flex items-center gap-1"
                       >
                         <Plus className="w-3 h-3" /> Tambah Email
                       </button>
@@ -424,10 +424,10 @@ export const SettingsModal = React.memo(({
                   </div>
 
                   <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Integrasi Telegram</label>
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Integrasi Telegram</label>
                     <div className="space-y-4">
                       <div className="space-y-1.5">
-                        <label className="text-[9px] font-bold text-slate-500 ml-1">Bot Token</label>
+                        <label className={`text-[9px] font-bold ml-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Bot Token</label>
                         <div className="relative">
                           <Send className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                           <input 
@@ -450,7 +450,7 @@ export const SettingsModal = React.memo(({
                     <div className="flex gap-3">
                       <Database className="w-5 h-5 text-amber-600 shrink-0" />
                       <div>
-                        <h4 className="text-xs font-black text-amber-900 uppercase tracking-widest">Data Management</h4>
+                        <h4 className="text-xs font-black text-amber-900 capitalize tracking-widest">Data Management</h4>
                         <p className="text-[10px] text-amber-700 font-medium leading-relaxed mt-1">
                           Kelola personil IT, departemen, kategori, dan ekspor data.
                         </p>
@@ -462,11 +462,11 @@ export const SettingsModal = React.memo(({
                     {/* IT Personnel */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <label className={`text-[10px] font-black ${themeClasses.textMuted} uppercase tracking-widest ml-1`}>Tim IT</label>
+                        <label className={`text-[10px] font-black ${themeClasses.textMuted} capitalize tracking-widest ml-1`}>Tim IT</label>
                         <button 
                           type="button"
                           onClick={() => setAddingType(addingType === 'it' ? null : 'it')} 
-                          className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
+                          className="text-[10px] font-black text-emerald-500 capitalize tracking-widest hover:underline"
                         >
                           {addingType === 'it' ? 'Batal' : '+ Tambah IT'}
                         </button>
@@ -486,7 +486,7 @@ export const SettingsModal = React.memo(({
                           <button 
                             type="button"
                             onClick={() => handleManagementAction('it', 'add')}
-                            className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase"
+                            className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black capitalize"
                           >
                             Simpan
                           </button>
@@ -508,11 +508,11 @@ export const SettingsModal = React.memo(({
                     {/* Departments */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <label className={`text-[10px] font-black ${themeClasses.textMuted} uppercase tracking-widest ml-1`}>Departemen</label>
+                        <label className={`text-[10px] font-black ${themeClasses.textMuted} capitalize tracking-widest ml-1`}>Departemen</label>
                         <button 
                           type="button"
                           onClick={() => setAddingType(addingType === 'dept' ? null : 'dept')} 
-                          className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
+                          className="text-[10px] font-black text-emerald-500 capitalize tracking-widest hover:underline"
                         >
                           {addingType === 'dept' ? 'Batal' : '+ Tambah Departemen'}
                         </button>
@@ -532,7 +532,7 @@ export const SettingsModal = React.memo(({
                           <button 
                             type="button"
                             onClick={() => handleManagementAction('dept', 'add')}
-                            className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase"
+                            className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black capitalize"
                           >
                             Simpan
                           </button>
@@ -554,11 +554,11 @@ export const SettingsModal = React.memo(({
                     {/* Categories */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <label className={`text-[10px] font-black ${themeClasses.textMuted} uppercase tracking-widest ml-1`}>Kategori</label>
+                        <label className={`text-[10px] font-black ${themeClasses.textMuted} capitalize tracking-widest ml-1`}>Kategori</label>
                         <button 
                           type="button"
                           onClick={() => setAddingType(addingType === 'cat' ? null : 'cat')} 
-                          className="text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
+                          className="text-[10px] font-black text-emerald-500 capitalize tracking-widest hover:underline"
                         >
                           {addingType === 'cat' ? 'Batal' : '+ Tambah Kategori'}
                         </button>
@@ -590,7 +590,7 @@ export const SettingsModal = React.memo(({
                             <button 
                               type="button"
                               onClick={() => handleManagementAction('cat', 'add')}
-                              className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase"
+                              className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black capitalize"
                             >
                               Simpan
                             </button>
@@ -608,7 +608,7 @@ export const SettingsModal = React.memo(({
                               </button>
                             </div>
                             {cat.assigned_to && (
-                              <span className="text-[9px] font-black text-emerald-500 uppercase tracking-tighter">
+                              <span className="text-[9px] font-black text-emerald-500 capitalize tracking-tighter">
                                 PIC: {cat.assigned_to}
                               </span>
                             )}
@@ -620,16 +620,16 @@ export const SettingsModal = React.memo(({
                   
                   <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Master Data User</h3>
+                      <h3 className="text-xs font-black capitalize tracking-widest text-slate-400">Master Data User</h3>
                       <div className="flex items-center gap-3">
-                        <label className="text-[10px] font-black text-blue-600 hover:text-blue-700 uppercase tracking-widest cursor-pointer flex items-center gap-1">
+                        <label className="text-[10px] font-black text-blue-600 hover:text-blue-700 capitalize tracking-widest cursor-pointer flex items-center gap-1">
                           Upload Excel
                           <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleUploadExcel} />
                         </label>
                         <button 
                           type="button"
                           onClick={() => setAddingType('master-user')}
-                          className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 uppercase tracking-widest"
+                          className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 capitalize tracking-widest"
                         >
                           + Tambah User
                         </button>
@@ -681,14 +681,14 @@ export const SettingsModal = React.memo(({
                           <button 
                             type="button"
                             onClick={handleAddMasterUser}
-                            className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest"
+                            className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-bold capitalize tracking-widest"
                           >
                             Simpan User
                           </button>
                           <button 
                             type="button"
                             onClick={() => setAddingType(null)}
-                            className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest border ${themeClasses.border} ${themeClasses.textMuted}`}
+                            className={`flex-1 py-2 rounded-lg text-[10px] font-bold capitalize tracking-widest border ${themeClasses.border} ${themeClasses.textMuted}`}
                           >
                             Batal
                           </button>
@@ -701,7 +701,7 @@ export const SettingsModal = React.memo(({
                         <div key={user.id} className={`flex items-center justify-between p-2.5 rounded-xl border ${themeClasses.border} ${themeClasses.bgSecondary}`}>
                           <div className="flex flex-col">
                             <span className="text-[11px] font-bold">{user.full_name}</span>
-                            <span className="text-[9px] text-slate-400 uppercase font-black">{user.department} • {user.phone} • Indek: {user.employee_index} {user.email ? `• ${user.email}` : ''}</span>
+                            <span className="text-[9px] text-slate-400 capitalize font-black">{user.department} • {user.phone} • Indek: {user.employee_index} {user.email ? `• ${user.email}` : ''}</span>
                           </div>
                           <button 
                             type="button"
@@ -718,11 +718,11 @@ export const SettingsModal = React.memo(({
                   {/* Admin Users */}
                   <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Akun Admin IT</h3>
+                      <h3 className="text-xs font-black capitalize tracking-widest text-slate-400">Akun Admin IT</h3>
                       <button 
                         type="button"
                         onClick={() => setAddingType('admin-user')}
-                        className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 uppercase tracking-widest"
+                        className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 capitalize tracking-widest"
                       >
                         + Tambah Admin
                       </button>
@@ -769,14 +769,14 @@ export const SettingsModal = React.memo(({
                           <button 
                             type="button"
                             onClick={handleAddAdminUser}
-                            className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest"
+                            className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-bold capitalize tracking-widest"
                           >
                             Simpan Admin
                           </button>
                           <button 
                             type="button"
                             onClick={() => setAddingType(null)}
-                            className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest border ${themeClasses.border} ${themeClasses.textMuted}`}
+                            className={`flex-1 py-2 rounded-lg text-[10px] font-bold capitalize tracking-widest border ${themeClasses.border} ${themeClasses.textMuted}`}
                           >
                             Batal
                           </button>
@@ -789,7 +789,7 @@ export const SettingsModal = React.memo(({
                         <div key={user.id} className={`flex items-center justify-between p-2.5 rounded-xl border ${themeClasses.border} ${themeClasses.bgSecondary}`}>
                           <div className="flex flex-col">
                             <span className="text-[11px] font-bold">{user.full_name} ({user.username})</span>
-                            <span className="text-[9px] text-slate-400 uppercase font-black">{user.role}</span>
+                            <span className="text-[9px] text-slate-400 capitalize font-black">{user.role}</span>
                           </div>
                           {user.role !== 'Super Admin' && (
                             <button 
@@ -812,14 +812,14 @@ export const SettingsModal = React.memo(({
                       className={`flex flex-col items-center justify-center gap-2 p-6 rounded-2xl border transition-all hover:border-emerald-500 hover:bg-emerald-50 group ${themeClasses.bgSecondary} ${themeClasses.border}`}
                     >
                       <Save className="w-6 h-6 text-slate-400 group-hover:text-emerald-600" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-600 group-hover:text-emerald-700">Export CSV</span>
+                      <span className="text-[10px] font-black capitalize tracking-widest text-slate-600 group-hover:text-emerald-700">Export CSV</span>
                     </button>
                     <button 
                       type="button"
                       className={`flex flex-col items-center justify-center gap-2 p-6 rounded-2xl border transition-all hover:border-blue-500 hover:bg-blue-50 group ${themeClasses.bgSecondary} ${themeClasses.border}`}
                     >
                       <MessageCircle className="w-6 h-6 text-slate-400 group-hover:text-blue-600" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-600 group-hover:text-blue-700">API Docs</span>
+                      <span className="text-[10px] font-black capitalize tracking-widest text-slate-600 group-hover:text-blue-700">API Docs</span>
                     </button>
                   </div>
                 </div>
@@ -834,7 +834,7 @@ export const SettingsModal = React.memo(({
             form="settings-form"
             type="submit"
             style={{ backgroundColor: primaryColor }}
-            className="w-full sm:w-auto px-8 py-3 sm:py-3 rounded-2xl text-white font-black uppercase tracking-widest text-xs sm:text-sm shadow-xl shadow-emerald-900/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-8 py-3 sm:py-3 rounded-2xl text-white font-black capitalize tracking-widest text-xs sm:text-sm shadow-xl shadow-emerald-900/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
           >
             <Save className="w-4 h-4" /> Simpan Konfigurasi
           </button>

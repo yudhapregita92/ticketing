@@ -389,8 +389,8 @@ export default function App() {
     const now = new Date().getTime();
     const diffHours = (now - created) / (1000 * 60 * 60);
 
-    if (diffHours > 5) return 'CRITICAL (>5h)';
-    if (diffHours > 2) return 'DELAYED (>2h)';
+    if (diffHours > 5) return 'Critical (>5h)';
+    if (diffHours > 2) return 'Delayed (>2h)';
     return null;
   };
 
@@ -1279,44 +1279,44 @@ export default function App() {
                 <motion.div 
                   whileHover={{ y: -2, scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-slate-50 border border-slate-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
+                  className={`${themeClasses.card} ${themeClasses.border} border rounded-xl p-2 flex flex-col items-center justify-center text-center`}
                 >
-                  <Counter value={filteredTickets.length} className="text-base font-black text-slate-900 leading-none mb-0.5" />
-                  <span className="text-[7px] font-bold text-slate-400 uppercase tracking-wider">Total</span>
+                  <Counter value={filteredTickets.length} className={`text-base font-black leading-none mb-0.5 ${themeClasses.text}`} />
+                  <span className="text-[7px] font-bold text-slate-400 capitalize tracking-wider">Total</span>
                 </motion.div>
                 <motion.div 
                   whileHover={{ y: -2, scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-amber-50 border border-amber-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
+                  className={`${isDark ? 'bg-amber-500/10 border-amber-500/20' : 'bg-amber-50 border-amber-100'} border rounded-xl p-2 flex flex-col items-center justify-center text-center`}
                 >
                   <Counter value={filteredTickets.filter(t => t.status === 'New').length} className="text-base font-black text-amber-500 leading-none mb-0.5" />
-                  <span className="text-[7px] font-bold text-amber-500 uppercase tracking-wider">Baru</span>
+                  <span className="text-[7px] font-bold text-amber-500 capitalize tracking-wider">Baru</span>
                 </motion.div>
                 <motion.div 
                   whileHover={{ y: -2, scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-blue-50 border border-blue-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
+                  className={`${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'} border rounded-xl p-2 flex flex-col items-center justify-center text-center`}
                 >
                   <Counter value={filteredTickets.filter(t => t.status === 'In Progress').length} className="text-base font-black text-blue-500 leading-none mb-0.5" />
-                  <span className="text-[7px] font-bold text-blue-500 uppercase tracking-wider">Progres</span>
+                  <span className="text-[7px] font-bold text-blue-500 capitalize tracking-wider">Progres</span>
                 </motion.div>
                 <motion.div 
                   whileHover={{ y: -2, scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-emerald-50 border border-emerald-100 rounded-xl p-2 flex flex-col items-center justify-center text-center"
+                  className={`${isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100'} border rounded-xl p-2 flex flex-col items-center justify-center text-center`}
                 >
                   <Counter value={filteredTickets.filter(t => t.status === 'Completed').length} className="text-base font-black text-emerald-500 leading-none mb-0.5" />
-                  <span className="text-[7px] font-bold text-emerald-500 uppercase tracking-wider">Selesai</span>
+                  <span className="text-[7px] font-bold text-emerald-500 capitalize tracking-wider">Selesai</span>
                 </motion.div>
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-2 mb-2 sm:mb-4 border-b border-slate-100 pb-1">
-              <div className="flex items-center gap-3 sm:gap-6">
+            <div className="flex items-center justify-between gap-2 mb-2 sm:mb-4 border-b border-slate-100 pb-1 overflow-hidden">
+              <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-hide pb-1">
                 <button 
                   onClick={() => setViewMode('today')}
-                  className={`relative pb-2 text-[12px] sm:text-sm font-bold transition-all ${
-                    viewMode === 'today' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'
+                  className={`relative pb-1 text-[10px] sm:text-xs whitespace-nowrap font-bold transition-all ${
+                    viewMode === 'today' ? 'text-emerald-600' : isDark ? 'text-slate-400 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'
                   }`}
                 >
                   Antrian Hari Ini
@@ -1326,8 +1326,8 @@ export default function App() {
                 </button>
                 <button 
                   onClick={() => setViewMode('all')}
-                  className={`relative pb-2 text-[12px] sm:text-sm font-bold transition-all ${
-                    viewMode === 'all' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'
+                  className={`relative pb-1 text-[10px] sm:text-xs whitespace-nowrap font-bold transition-all ${
+                    viewMode === 'all' ? 'text-emerald-600' : isDark ? 'text-slate-400 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'
                   }`}
                 >
                   Semua Antrian
@@ -1338,8 +1338,8 @@ export default function App() {
                 {adminUser && (
                   <button 
                     onClick={() => setViewMode('my_tickets')}
-                    className={`relative pb-2 text-[12px] sm:text-sm font-bold transition-all ${
-                      viewMode === 'my_tickets' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'
+                    className={`relative pb-1 text-[10px] sm:text-xs whitespace-nowrap font-bold transition-all ${
+                      viewMode === 'my_tickets' ? 'text-emerald-600' : isDark ? 'text-slate-400 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'
                     }`}
                   >
                     Tiket Saya
@@ -1357,10 +1357,10 @@ export default function App() {
                     setTempFilters({ dept: filterDept, status: filterStatus, date: filterDate, search: searchQuery });
                     setShowMobileFilter(true);
                   }}
-                  className={`sm:hidden flex items-center gap-1 px-2 py-1 border rounded-lg text-[9px] font-black uppercase tracking-tighter shadow-sm active:scale-95 transition-all ${
+                  className={`sm:hidden flex items-center gap-1 px-2 py-1 border rounded-lg text-[9px] font-black capitalize tracking-tighter shadow-sm active:scale-95 transition-all ${
                     (filterDept || filterStatus || filterDate || searchQuery)
                     ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
-                    : 'bg-white border-slate-200 text-slate-500'
+                    : isDark ? 'bg-zinc-900 border-zinc-800 text-slate-400' : 'bg-white border-slate-200 text-slate-500'
                   }`}
                 >
                   <SlidersHorizontal className="w-3 h-3" />
@@ -1373,7 +1373,7 @@ export default function App() {
                     setFilterStatus('');
                     setFilterDate('');
                   }}
-                  className="hidden sm:block text-[10px] font-bold text-slate-400 hover:text-emerald-600 uppercase tracking-wider"
+                  className="hidden sm:block text-[10px] font-bold text-slate-400 hover:text-emerald-600 capitalize tracking-wider"
                 >
                   Atur Ulang Filter
                 </button>
@@ -1396,8 +1396,8 @@ export default function App() {
                     <Clock className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Baru</p>
-                    <p className="text-lg font-black text-slate-900">{tickets.filter(t => t.status === 'New').length}</p>
+                    <p className="text-[10px] font-black text-slate-400 capitalize tracking-widest">Baru</p>
+                    <p className={`text-lg font-black ${themeClasses.text}`}>{tickets.filter(t => t.status === 'New').length}</p>
                   </div>
                 </div>
                 <div className={`${themeClasses.card} p-3 rounded-2xl border shadow-sm flex items-center gap-3`}>
@@ -1405,8 +1405,8 @@ export default function App() {
                     <Activity className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Progres</p>
-                    <p className="text-lg font-black text-slate-900">{tickets.filter(t => t.status === 'In Progress').length}</p>
+                    <p className="text-[10px] font-black text-slate-400 capitalize tracking-widest">Progres</p>
+                    <p className={`text-lg font-black ${themeClasses.text}`}>{tickets.filter(t => t.status === 'In Progress').length}</p>
                   </div>
                 </div>
                 <div className={`${themeClasses.card} p-3 rounded-2xl border shadow-sm flex items-center gap-3`}>
@@ -1414,8 +1414,8 @@ export default function App() {
                     <CheckCircle2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selesai</p>
-                    <p className="text-lg font-black text-slate-900">{tickets.filter(t => t.status === 'Completed').length}</p>
+                    <p className="text-[10px] font-black text-slate-400 capitalize tracking-widest">Selesai</p>
+                    <p className={`text-lg font-black ${themeClasses.text}`}>{tickets.filter(t => t.status === 'Completed').length}</p>
                   </div>
                 </div>
                 <div className={`${themeClasses.card} p-3 rounded-2xl border shadow-sm flex items-center gap-3`}>
@@ -1423,80 +1423,35 @@ export default function App() {
                     <AlertCircle className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Urgent</p>
-                    <p className="text-lg font-black text-slate-900">{tickets.filter(t => t.priority === 'Urgent' && t.status !== 'Completed').length}</p>
+                    <p className="text-[10px] font-black text-slate-400 capitalize tracking-widest">Urgent</p>
+                    <p className={`text-lg font-black ${themeClasses.text}`}>{tickets.filter(t => t.priority === 'Urgent' && t.status !== 'Completed').length}</p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Filters - Hidden on mobile, replaced by modal */}
-            <div className={`hidden sm:flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6 p-2 sm:p-4 rounded-2xl border shadow-sm transition-colors ${themeClasses.card}`}>
-              <div className="flex-[2] relative">
-                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                <input 
-                  type="text"
-                  placeholder="Cari ID, Nama, atau Masalah..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`w-full border rounded-xl py-2 pl-8 pr-4 text-[10px] sm:text-xs font-bold outline-none transition-all ${themeClasses.input}`}
-                />
-              </div>
-                  <div className="flex-1 relative">
-                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                    <select 
-                      value={filterDept}
-                      onChange={(e) => setFilterDept(e.target.value)}
-                      className={`w-full border rounded-xl py-2 pl-8 pr-4 text-[10px] sm:text-xs font-bold outline-none appearance-none cursor-pointer transition-all ${themeClasses.input}`}
-                    >
-                      <option value="">Semua Bagian</option>
-                      {Array.isArray(departments) && departments.map(dept => (
-                        <option key={dept.id} value={dept.name}>{dept.name}</option>
-                      ))}
-                    </select>
-                  </div>
-              <div className="flex-1 relative">
-                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                <select 
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className={`w-full border rounded-xl py-2 pl-8 pr-4 text-[10px] sm:text-xs font-bold outline-none appearance-none cursor-pointer transition-all ${themeClasses.input}`}
-                >
-                  <option value="">Semua Status</option>
-                  {STATUSES.map(status => (
-                    <option key={status} value={status}>
-                      {status === 'In Progress' ? 'Progres' : 
-                       status === 'Completed' ? 'Selesai' : 
-                       status === 'Cancelled' ? 'Batal' : 
-                       status === 'New' ? 'Baru' : status}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex-1 relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                <input 
-                  type="date"
-                  value={filterDate}
-                  onChange={(e) => setFilterDate(e.target.value)}
-                  className={`w-full border rounded-xl py-2 pl-8 pr-4 text-[10px] sm:text-xs font-bold outline-none cursor-pointer transition-all ${themeClasses.input}`}
-                />
-              </div>
-            </div>
-
-            {/* Results Summary */}
+            {/* Results Summary & Filter Toggle */}
             <div className="flex items-center justify-between mb-4 px-1">
               <p className={`text-[10px] sm:text-xs font-bold ${themeClasses.textMuted}`}>
                 Menampilkan <span className={themeClasses.text}>{Math.min((currentPage - 1) * itemsPerPage + 1, filteredTickets.length)}</span> - <span className={themeClasses.text}>{Math.min(currentPage * itemsPerPage, filteredTickets.length)}</span> dari <span className={themeClasses.text}>{filteredTickets.length}</span> tiket
               </p>
-              {searchQuery && (
-                <button 
-                  onClick={() => setSearchQuery('')}
-                  className="text-[10px] font-bold text-rose-500 hover:underline"
+              <div className="flex items-center gap-3">
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery('')}
+                    className="text-[10px] font-bold text-rose-500 hover:underline"
+                  >
+                    Hapus Pencarian
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowMobileFilter(true)}
+                  className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border ${themeClasses.card} ${themeClasses.border} hover:border-emerald-500 hover:text-emerald-500 ${themeClasses.text}`}
                 >
-                  Hapus Pencarian
+                  <Filter className="w-3.5 h-3.5" />
+                  Filter Antrian
                 </button>
-              )}
+              </div>
             </div>
 
             {loading ? (
@@ -1516,7 +1471,7 @@ export default function App() {
             ) : tickets.length === 0 ? (
               <div className={`flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
                 <CurrentLogo className="w-12 h-12 text-slate-200 mb-4" />
-                <p className="text-slate-500 font-medium">No tickets in queue</p>
+                <p className={`font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>No tickets in queue</p>
                 <button 
                   onClick={() => setShowForm(true)}
                   className="mt-4 text-emerald-600 font-bold text-sm hover:underline"
@@ -1564,7 +1519,7 @@ export default function App() {
                       >
                         <Filter className="w-12 h-12 text-slate-200 mb-4" />
                       </motion.div>
-                      <p className="text-slate-500 font-medium">No tickets match your filter</p>
+                      <p className={`font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>No tickets match your filter</p>
                       <button 
                         onClick={() => {
                           setFilterDept('');
@@ -1593,7 +1548,7 @@ export default function App() {
                             }}
                             className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                           />
-                          <span className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider`}>Pilih Semua di Halaman Ini</span>
+                          <span className={`text-[10px] font-bold ${themeClasses.textMuted} capitalize tracking-wider`}>Pilih Semua di Halaman Ini</span>
                         </div>
                       )}
                       {paginatedTickets.map((ticket, index) => (
@@ -1666,32 +1621,32 @@ export default function App() {
                                       #<HighlightText text={ticket.ticket_no || ticket.id.toString().padStart(4, '0')} highlight={searchQuery} isDark={isDark} />
                                     </span>
                                     {adminUser?.role === 'Super Admin' && ticket.assigned_to && (
-                                      <span className="text-[8px] font-black bg-slate-100 text-slate-600 px-1 py-0.5 rounded uppercase leading-none">@{ticket.assigned_to}</span>
+                                      <span className={`text-[8px] font-black px-1 py-0.5 rounded capitalize leading-none ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>@{ticket.assigned_to}</span>
                                     )}
                                     {getSLALabel(ticket.created_at, ticket.status) && (
-                                      <span className="text-[8px] font-black px-1.5 py-0.5 rounded uppercase bg-rose-500 text-white leading-none">{getSLALabel(ticket.created_at, ticket.status)}</span>
+                                      <span className="text-[8px] font-black px-1.5 py-0.5 rounded capitalize bg-rose-500 text-white leading-none">{getSLALabel(ticket.created_at, ticket.status)}</span>
                                     )}
                                   </div>
                                   <span className="flex items-center gap-1 text-[9px] text-slate-400 font-medium">
                                     <Calendar className="w-2.5 h-2.5 shrink-0" /> {formatDate(ticket.created_at)}
                                   </span>
                                 </div>
-                                <h3 className="text-[11px] font-black text-slate-900 truncate group-hover:text-emerald-600 transition-colors mb-1">
+                                <h3 className={`text-[11px] font-black truncate group-hover:text-emerald-600 transition-colors mb-1 ${themeClasses.text}`}>
                                   <HighlightText text={`${ticket.category} Request`} highlight={searchQuery} isDark={isDark} />
                                 </h3>
                                 
-                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-slate-500 font-medium">
+                                <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                                   <span className="flex items-center gap-1 truncate">
                                     <User className="w-2.5 h-2.5 text-slate-400 shrink-0" /> <HighlightText text={ticket.name} highlight={searchQuery} isDark={isDark} />
                                   </span>
                                   <span className="flex items-center gap-1 truncate">
                                     <Building2 className="w-2.5 h-2.5 text-slate-400 shrink-0" /> {ticket.department}
                                   </span>
-                                  <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border text-center min-w-[65px] inline-block ${getStatusColor(ticket.status)}`}>
-                                    {ticket.status === 'In Progress' ? 'PROGRES' : 
-                                     ticket.status === 'Completed' ? 'SELESAI' : 
-                                     ticket.status === 'Cancelled' ? 'BATAL' : 
-                                     ticket.status === 'New' ? 'BARU' : ticket.status}
+                                  <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-black capitalize tracking-widest border text-center min-w-[65px] inline-block ${getStatusColor(ticket.status)}`}>
+                                    {ticket.status === 'In Progress' ? 'Progres' : 
+                                     ticket.status === 'Completed' ? 'Selesai' : 
+                                     ticket.status === 'Cancelled' ? 'Batal' : 
+                                     ticket.status === 'New' ? 'Baru' : ticket.status}
                                   </span>
                                 </div>
                               </div>
@@ -1705,7 +1660,7 @@ export default function App() {
                                       e.stopPropagation();
                                       handleIntervention(ticket.id, 'takeover');
                                     }}
-                                    className="px-2 py-1 bg-emerald-500 text-white text-[8px] font-black uppercase rounded hover:bg-emerald-600 transition-colors"
+                                    className="px-2 py-1 bg-emerald-500 text-white text-[8px] font-black capitalize rounded hover:bg-emerald-600 transition-colors"
                                   >
                                     Ambil
                                   </button>
@@ -1714,7 +1669,7 @@ export default function App() {
                                       e.stopPropagation();
                                       handleIntervention(ticket.id, 'reassign');
                                     }}
-                                    className="px-2 py-1 bg-blue-500 text-white text-[8px] font-black uppercase rounded hover:bg-blue-600 transition-colors"
+                                    className="px-2 py-1 bg-blue-500 text-white text-[8px] font-black capitalize rounded hover:bg-blue-600 transition-colors"
                                   >
                                     Pindah
                                   </button>
@@ -1726,7 +1681,7 @@ export default function App() {
                                     e.stopPropagation();
                                     handleSelectTicket(ticket);
                                   }}
-                                  className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-all"
+                                  className={`p-1.5 rounded-md transition-all ${isDark ? 'text-slate-400 hover:text-emerald-400 hover:bg-emerald-900/30' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
                                   title="View Details"
                                 >
                                   <Eye className="w-4 h-4" />
@@ -1737,7 +1692,7 @@ export default function App() {
                                       e.stopPropagation();
                                       handleDeleteTicket(ticket.id);
                                     }}
-                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all"
+                                    className={`p-1.5 rounded-md transition-all ${isDark ? 'text-slate-400 hover:text-rose-400 hover:bg-rose-900/30' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'}`}
                                     title="Delete Ticket"
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -1760,7 +1715,7 @@ export default function App() {
                       className={`p-2 rounded-xl border transition-all ${
                         currentPage === 1 
                         ? 'opacity-30 cursor-not-allowed' 
-                        : 'hover:bg-emerald-50 hover:border-emerald-200 text-slate-600'
+                        : isDark ? 'hover:bg-emerald-900/30 hover:border-emerald-800 text-slate-300' : 'hover:bg-emerald-50 hover:border-emerald-200 text-slate-600'
                       } ${themeClasses.card}`}
                     >
                       <ChevronRight className="w-4 h-4 rotate-180" />
@@ -1803,7 +1758,7 @@ export default function App() {
                       className={`p-2 rounded-xl border transition-all ${
                         currentPage === totalPages 
                         ? 'opacity-30 cursor-not-allowed' 
-                        : 'hover:bg-emerald-50 hover:border-emerald-200 text-slate-600'
+                        : isDark ? 'hover:bg-emerald-900/30 hover:border-emerald-800 text-slate-300' : 'hover:bg-emerald-50 hover:border-emerald-200 text-slate-600'
                       } ${themeClasses.card}`}
                     >
                       <ChevronRight className="w-4 h-4" />
@@ -1825,20 +1780,20 @@ export default function App() {
                           <CheckCircle2 className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                          <p className="text-xs font-black uppercase tracking-widest">{selectedTickets.length} Tiket Terpilih</p>
+                          <p className="text-xs font-black capitalize tracking-widest">{selectedTickets.length} Tiket Terpilih</p>
                           <p className="text-[10px] text-slate-400 font-medium">Lakukan aksi massal untuk tiket ini</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 w-full sm:w-auto">
                         <button 
                           onClick={() => handleBulkAction('In Progress')}
-                          className="flex-1 sm:flex-none px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95"
+                          className="flex-1 sm:flex-none px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-xl text-[9px] font-black capitalize tracking-widest transition-all active:scale-95"
                         >
                           Progres
                         </button>
                         <button 
                           onClick={() => handleBulkAction('Completed')}
-                          className="flex-1 sm:flex-none px-3 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95"
+                          className="flex-1 sm:flex-none px-3 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-xl text-[9px] font-black capitalize tracking-widest transition-all active:scale-95"
                         >
                           Selesai
                         </button>
@@ -1926,7 +1881,7 @@ export default function App() {
           />
         )}
 
-        {/* --- MODAL: MOBILE FILTER --- */}
+        {/* --- MODAL: MOBILE Filter --- */}
         {showMobileFilter && (
           <MobileFilterModal 
             show={showMobileFilter}

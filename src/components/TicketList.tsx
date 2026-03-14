@@ -102,11 +102,11 @@ export const TicketList: React.FC<TicketListProps> = ({
               className={`flex items-center gap-1.5 px-3 py-1 rounded-full border transition-all text-[9px] font-bold shadow-sm ${
                 showFilters 
                   ? 'bg-emerald-500 text-white border-emerald-500' 
-                  : 'bg-white text-slate-600 border-slate-200'
+                  : isDark ? 'bg-zinc-900 text-slate-300 border-zinc-800' : 'bg-white text-slate-600 border-slate-200'
               }`}
             >
               <Filter className="w-3 h-3" />
-              FILTER
+              Filter
             </button>
             <button 
               onClick={() => {
@@ -115,7 +115,7 @@ export const TicketList: React.FC<TicketListProps> = ({
                 setFilterStatus('');
                 setFilterDate('');
               }}
-              className="p-1 rounded-full text-slate-400 hover:text-slate-600 transition-all"
+              className={`p-1 rounded-full transition-all ${isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}
             >
               <RotateCcw className="w-4 h-4" />
             </button>
@@ -181,8 +181,8 @@ export const TicketList: React.FC<TicketListProps> = ({
         )}
       </div>
 
-      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">
-        Menampilkan <span className="text-slate-900">{paginatedTickets.length > 0 ? (currentPage - 1) * 10 + 1 : 0} - {Math.min(currentPage * 10, filteredTickets.length)}</span> dari <span className="text-slate-900">{filteredTickets.length}</span> tiket
+      <div className="text-[9px] font-bold text-slate-400 capitalize tracking-tight">
+        Menampilkan <span className={isDark ? 'text-white' : 'text-slate-900'}>{paginatedTickets.length > 0 ? (currentPage - 1) * 10 + 1 : 0} - {Math.min(currentPage * 10, filteredTickets.length)}</span> dari <span className={isDark ? 'text-white' : 'text-slate-900'}>{filteredTickets.length}</span> tiket
       </div>
 
       {/* Ticket List */}

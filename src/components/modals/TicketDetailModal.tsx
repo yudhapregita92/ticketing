@@ -91,13 +91,13 @@ export const TicketDetailModal = React.memo(({
               <div>
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <span className={`text-[8px] sm:text-[9px] font-bold ${themeClasses.textMuted}`}>#{selectedTicket.ticket_no || selectedTicket.id.toString().padStart(4, '0')}</span>
-                  <span className={`px-1.5 py-0.5 rounded-full text-[7px] sm:text-[8px] font-bold uppercase tracking-wider border text-center min-w-[65px] inline-block ${getStatusColor(selectedTicket.status)}`}>
-                    {selectedTicket.status === 'In Progress' ? 'PROGRES' : 
-                     selectedTicket.status === 'Completed' ? 'SELESAI' : 
-                     selectedTicket.status === 'Cancelled' ? 'BATAL' : 
-                     selectedTicket.status === 'New' ? 'BARU' : selectedTicket.status}
+                  <span className={`px-1.5 py-0.5 rounded-full text-[7px] sm:text-[8px] font-bold capitalize tracking-wider border text-center min-w-[65px] inline-block ${getStatusColor(selectedTicket.status)}`}>
+                    {selectedTicket.status === 'In Progress' ? 'Progres' : 
+                     selectedTicket.status === 'Completed' ? 'Selesai' : 
+                     selectedTicket.status === 'Cancelled' ? 'Batal' : 
+                     selectedTicket.status === 'New' ? 'Baru' : selectedTicket.status}
                   </span>
-                  <span className={`px-1.5 py-0.5 rounded-full text-[7px] sm:text-[8px] font-bold uppercase tracking-wider text-white ${priorityInfo.color}`}>
+                  <span className={`px-1.5 py-0.5 rounded-full text-[7px] sm:text-[8px] font-bold capitalize tracking-wider text-white ${priorityInfo.color}`}>
                     {priorityInfo.label}
                   </span>
                 </div>
@@ -121,21 +121,21 @@ export const TicketDetailModal = React.memo(({
                 <div className={`p-1.5 sm:p-2.5 rounded-xl border flex items-center gap-2 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
                   <User className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0" />
                   <div className="min-w-0">
-                    <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} uppercase tracking-widest truncate`}>Pengguna</p>
+                    <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} capitalize tracking-widest truncate`}>Pengguna</p>
                     <p className={`text-[9px] sm:text-[11px] font-bold ${themeClasses.text} truncate`}>{selectedTicket.name}</p>
                   </div>
                 </div>
                 <div className={`p-1.5 sm:p-2.5 rounded-xl border flex items-center gap-2 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
                   <Building2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0" />
                   <div className="min-w-0">
-                    <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} uppercase tracking-widest truncate`}>Bagian</p>
+                    <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} capitalize tracking-widest truncate`}>Bagian</p>
                     <p className={`text-[9px] sm:text-[11px] font-bold ${themeClasses.text} truncate`}>{selectedTicket.department}</p>
                   </div>
                 </div>
                 <div className={`p-1.5 sm:p-2.5 rounded-xl border flex items-center gap-2 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
                   <Phone className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0" />
                   <div className="min-w-0">
-                    <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} uppercase tracking-widest truncate`}>Telepon</p>
+                    <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} capitalize tracking-widest truncate`}>Telepon</p>
                     <p className={`text-[9px] sm:text-[11px] font-bold ${themeClasses.text} truncate`}>
                       {adminUser ? selectedTicket.phone : '••••••••'}
                     </p>
@@ -144,7 +144,7 @@ export const TicketDetailModal = React.memo(({
                 <div className={`p-1.5 sm:p-2.5 rounded-xl border flex items-center gap-2 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
                   <Layers className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0" />
                   <div className="min-w-0">
-                    <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} uppercase tracking-widest truncate`}>Kategori</p>
+                    <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} capitalize tracking-widest truncate`}>Kategori</p>
                     <p className={`text-[9px] sm:text-[11px] font-bold ${themeClasses.text} truncate`}>{selectedTicket.category}</p>
                   </div>
                 </div>
@@ -153,7 +153,7 @@ export const TicketDetailModal = React.memo(({
               <div className={`p-2.5 sm:p-3.5 rounded-2xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
                 <div className="flex items-center gap-2 text-slate-400 mb-1 sm:mb-1.5">
                   <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">Masalah / Detail</span>
+                  <span className="text-[8px] sm:text-[9px] font-bold capitalize tracking-wider">Masalah / Detail</span>
                 </div>
                 <p className={`text-[11px] sm:text-xs whitespace-pre-wrap leading-relaxed ${themeClasses.text}`}>
                   {selectedTicket.description}
@@ -164,23 +164,23 @@ export const TicketDetailModal = React.memo(({
                 <div className={`p-2.5 sm:p-3.5 rounded-2xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
                   <div className="flex items-center gap-2 text-slate-400 mb-1.5 sm:mb-2">
                     <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                    <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">Audit Log</span>
+                    <span className="text-[8px] sm:text-[9px] font-bold capitalize tracking-wider">Audit Log</span>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                     <div>
-                      <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>IP</p>
+                      <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} capitalize tracking-widest`}>IP</p>
                       <p className={`text-[8px] sm:text-[9px] font-mono font-bold ${themeClasses.text}`}>
                         {selectedTicket.ip_address || 'Unknown'}
                       </p>
                     </div>
                     <div>
-                      <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} uppercase tracking-widest`}>Device</p>
+                      <p className={`text-[6px] sm:text-[7px] font-bold ${themeClasses.textMuted} capitalize tracking-widest`}>Device</p>
                       <p className={`text-[8px] sm:text-[9px] font-mono font-bold ${themeClasses.text} truncate`}>
                         {getDeviceInfo(selectedTicket.user_agent || '')}
                       </p>
                     </div>
                     <div className="col-span-2 sm:col-span-1">
-                      <p className="text-[6px] sm:text-[7px] font-bold text-slate-400 uppercase tracking-widest">GPS</p>
+                      <p className="text-[6px] sm:text-[7px] font-bold text-slate-400 capitalize tracking-widest">GPS</p>
                       {selectedTicket.latitude ? (
                         <a 
                           href={`https://www.google.com/maps?q=${selectedTicket.latitude},${selectedTicket.longitude}`}
@@ -204,7 +204,7 @@ export const TicketDetailModal = React.memo(({
                   <div className="bg-emerald-100/50 px-3 py-1 border-b border-emerald-200 flex items-center justify-between">
                     <div className="flex items-center gap-2 text-emerald-700">
                       <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                      <span className="text-[7px] sm:text-[8px] font-black uppercase tracking-widest">Tim Respon IT</span>
+                      <span className="text-[7px] sm:text-[8px] font-black capitalize tracking-widest">Tim Respon IT</span>
                     </div>
                   </div>
                   <div className="p-2.5 sm:p-3.5">
@@ -213,7 +213,7 @@ export const TicketDetailModal = React.memo(({
                         <p className="text-[11px] sm:text-xs text-emerald-900 leading-relaxed font-semibold italic">
                           "{selectedTicket.admin_reply}"
                         </p>
-                        <p className="text-[7px] sm:text-[8px] text-emerald-600 font-black uppercase tracking-widest pt-1 border-t border-emerald-100">Balasan Resmi</p>
+                        <p className="text-[7px] sm:text-[8px] text-emerald-600 font-black capitalize tracking-widest pt-1 border-t border-emerald-100">Balasan Resmi</p>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 text-emerald-600/70">
@@ -229,18 +229,18 @@ export const TicketDetailModal = React.memo(({
                 </div>
               )}
 
-              <div className="grid grid-cols-3 gap-1 p-2 bg-white rounded-xl border border-slate-100">
+              <div className={`grid grid-cols-3 gap-1 p-2 rounded-xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
                 <div className="flex flex-col">
-                  <span className="text-[6px] sm:text-[7px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Diajukan</span>
-                  <span className="text-[8px] sm:text-[9px] font-medium text-slate-600 truncate">{formatDate(selectedTicket.created_at)}</span>
+                  <span className="text-[6px] sm:text-[7px] font-bold text-slate-400 capitalize tracking-widest mb-0.5">Diajukan</span>
+                  <span className={`text-[8px] sm:text-[9px] font-medium truncate ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{formatDate(selectedTicket.created_at)}</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[6px] sm:text-[7px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Respon</span>
-                  <span className="text-[8px] sm:text-[9px] font-medium text-slate-600 truncate">{selectedTicket.responded_at ? formatDate(selectedTicket.responded_at) : '-'}</span>
+                  <span className="text-[6px] sm:text-[7px] font-bold text-slate-400 capitalize tracking-widest mb-0.5">Respon</span>
+                  <span className={`text-[8px] sm:text-[9px] font-medium truncate ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{selectedTicket.responded_at ? formatDate(selectedTicket.responded_at) : '-'}</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[6px] sm:text-[7px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Selesai</span>
-                  <span className="text-[8px] sm:text-[9px] font-medium text-slate-600 truncate">{selectedTicket.resolved_at ? formatDate(selectedTicket.resolved_at) : '-'}</span>
+                  <span className="text-[6px] sm:text-[7px] font-bold text-slate-400 capitalize tracking-widest mb-0.5">Selesai</span>
+                  <span className={`text-[8px] sm:text-[9px] font-medium truncate ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{selectedTicket.resolved_at ? formatDate(selectedTicket.resolved_at) : '-'}</span>
                 </div>
               </div>
             </div>
@@ -253,9 +253,9 @@ export const TicketDetailModal = React.memo(({
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2 text-slate-400">
                         <ImageIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                        <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">Lampiran Foto</span>
+                        <span className="text-[8px] sm:text-[9px] font-bold capitalize tracking-wider">Lampiran Foto</span>
                       </div>
-                      <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 aspect-video flex items-center justify-center">
+                      <div className={`relative rounded-2xl overflow-hidden border aspect-video flex items-center justify-center ${isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-100'}`}>
                         <img 
                           src={selectedTicket.photo} 
                           alt="Ticket attachment" 
@@ -270,7 +270,7 @@ export const TicketDetailModal = React.memo(({
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2 text-slate-400">
                         <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                        <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">Verifikasi Wajah</span>
+                        <span className="text-[8px] sm:text-[9px] font-bold capitalize tracking-wider">Verifikasi Wajah</span>
                       </div>
                       <div className={`p-2 rounded-xl border flex items-center justify-between gap-2 ${isDark ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
                         <div className="flex items-center gap-2">
@@ -298,7 +298,7 @@ export const TicketDetailModal = React.memo(({
               <div className="space-y-1.5 sm:space-y-2">
                 <div className="flex items-center gap-2 text-slate-400">
                   <History className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider">Riwayat Tiket</span>
+                  <span className="text-[8px] sm:text-[9px] font-bold capitalize tracking-wider">Riwayat Tiket</span>
                 </div>
                 <div className={`rounded-2xl border p-2.5 sm:p-3.5 space-y-2.5 sm:space-y-3.5 max-h-[180px] sm:max-h-[250px] overflow-y-auto custom-scrollbar ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
                   {(!Array.isArray(ticketLogs) || ticketLogs.length === 0) ? (
@@ -320,7 +320,7 @@ export const TicketDetailModal = React.memo(({
                               <p className={`text-[8px] sm:text-[9px] font-black ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{log.action}</p>
                               <span className="text-[6px] sm:text-[7px] font-bold text-slate-400 whitespace-nowrap">{formatDate(log.created_at)}</span>
                             </div>
-                            <p className="text-[7px] sm:text-[8px] font-medium text-slate-500 leading-relaxed">
+                            <p className={`text-[7px] sm:text-[8px] font-medium leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                               Oleh: <span className="font-bold text-slate-600 dark:text-slate-400">{log.performed_by}</span>
                             </p>
                             {log.note && (
@@ -340,20 +340,20 @@ export const TicketDetailModal = React.memo(({
                 <div className="bg-slate-900 rounded-2xl p-3.5 sm:p-4.5 shadow-xl space-y-2.5 sm:space-y-3.5">
                   <div className="flex items-center gap-2 text-white mb-0.5">
                     <Settings2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400" />
-                    <h3 className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest">Tindakan Admin</h3>
+                    <h3 className="text-[8px] sm:text-[9px] font-black capitalize tracking-widest">Tindakan Admin</h3>
                   </div>
 
                   <div className="grid grid-cols-1 gap-2.5 sm:gap-3.5">
                     {adminUser.role === 'Super Admin' && selectedTicket.assigned_to && selectedTicket.assigned_to !== adminUser.username && (
                       <button
                         onClick={() => handleIntervention(selectedTicket.id, 'takeover')}
-                        className="w-full bg-amber-500 text-white font-black py-1.5 sm:py-2 rounded-xl hover:bg-amber-600 transition-all uppercase tracking-widest text-[7px] sm:text-[8px] shadow-lg shadow-amber-900/20 active:scale-[0.98]"
+                        className="w-full bg-amber-500 text-white font-black py-1.5 sm:py-2 rounded-xl hover:bg-amber-600 transition-all capitalize tracking-widest text-[7px] sm:text-[8px] shadow-lg shadow-amber-900/20 active:scale-[0.98]"
                       >
                         Ambil Alih Tiket
                       </button>
                     )}
                     <div className="space-y-0.5">
-                      <label className="text-[7px] sm:text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Tugaskan IT</label>
+                      <label className="text-[7px] sm:text-[8px] font-black text-slate-400 capitalize tracking-widest ml-1">Tugaskan IT</label>
                       {adminUser.role === 'Super Admin' ? (
                         <select 
                           id={`modal-assignee-${selectedTicket.id}`}
@@ -381,13 +381,13 @@ export const TicketDetailModal = React.memo(({
                       )}
                     </div>
                     <div className="space-y-0.5">
-                      <label className="text-[7px] sm:text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Prioritas</label>
+                      <label className="text-[7px] sm:text-[8px] font-black text-slate-400 capitalize tracking-widest ml-1">Prioritas</label>
                       <div className="flex gap-1 bg-slate-800 p-0.5 rounded-xl border border-slate-700 overflow-x-auto no-scrollbar">
                         {PRIORITIES.map((p: any) => (
                           <button
                             key={p.id}
                             onClick={() => setModalPriority(p.id)}
-                            className={`flex-1 min-w-[50px] py-1 rounded-lg text-[6px] sm:text-[7px] font-black uppercase tracking-tighter transition-all ${
+                            className={`flex-1 min-w-[50px] py-1 rounded-lg text-[6px] sm:text-[7px] font-black capitalize tracking-tighter transition-all ${
                               (modalPriority || selectedTicket.priority || 'Medium') === p.id 
                               ? `${p.color} text-white shadow-lg` 
                               : 'text-slate-400 hover:text-white hover:bg-slate-700'
@@ -399,13 +399,13 @@ export const TicketDetailModal = React.memo(({
                       </div>
                     </div>
                     <div className="space-y-0.5">
-                      <label className="text-[7px] sm:text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
+                      <label className="text-[7px] sm:text-[8px] font-black text-slate-400 capitalize tracking-widest ml-1">Status</label>
                       <div className="flex gap-1 bg-slate-800 p-0.5 rounded-xl border border-slate-700 overflow-x-auto no-scrollbar">
                         {Array.isArray(STATUSES) && STATUSES.map(status => (
                           <button
                             key={status}
                             onClick={() => setModalStatus(status)}
-                            className={`flex-1 min-w-[50px] py-1 rounded-lg text-[6px] sm:text-[7px] font-black uppercase tracking-tighter transition-all ${
+                            className={`flex-1 min-w-[50px] py-1 rounded-lg text-[6px] sm:text-[7px] font-black capitalize tracking-tighter transition-all ${
                               (modalStatus || selectedTicket.status) === status 
                               ? (
                                 status === 'New' ? 'bg-amber-500 text-white shadow-lg shadow-amber-900/40' :
@@ -416,10 +416,10 @@ export const TicketDetailModal = React.memo(({
                               : 'text-slate-400 hover:text-white hover:bg-slate-700'
                             }`}
                           >
-                            {status === 'In Progress' ? 'PROGRES' : 
-                             status === 'Completed' ? 'SELESAI' : 
-                             status === 'Cancelled' ? 'BATAL' : 
-                             status === 'New' ? 'BARU' : status}
+                            {status === 'In Progress' ? 'Progres' : 
+                             status === 'Completed' ? 'Selesai' : 
+                             status === 'Cancelled' ? 'Batal' : 
+                             status === 'New' ? 'Baru' : status}
                           </button>
                         ))}
                       </div>
@@ -427,7 +427,7 @@ export const TicketDetailModal = React.memo(({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Balasan Resolusi (Publik)</label>
+                    <label className="text-[8px] sm:text-[9px] font-black text-slate-400 capitalize tracking-widest ml-1">Balasan Resolusi (Publik)</label>
                     <textarea 
                       id={`modal-reply-${selectedTicket.id}`}
                       className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl py-2.5 sm:py-3 px-3 sm:px-4 text-[10px] sm:text-xs outline-none focus:ring-2 focus:ring-emerald-500 resize-none transition-all font-medium placeholder:text-slate-600"
@@ -438,7 +438,7 @@ export const TicketDetailModal = React.memo(({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Catatan Internal (Private)</label>
+                    <label className="text-[8px] sm:text-[9px] font-black text-slate-400 capitalize tracking-widest ml-1">Catatan Internal (Private)</label>
                     <textarea 
                       id={`modal-internal-${selectedTicket.id}`}
                       className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl py-2.5 sm:py-3 px-3 sm:px-4 text-[10px] sm:text-xs outline-none focus:ring-2 focus:ring-blue-500 resize-none transition-all font-medium placeholder:text-slate-600"
@@ -463,7 +463,7 @@ export const TicketDetailModal = React.memo(({
                       setModalPriority('');
                     }}
                     style={{ backgroundColor: primaryColor }}
-                    className="w-full text-white font-black py-2.5 sm:py-3 rounded-xl hover:opacity-90 transition-all shadow-xl active:scale-[0.98] uppercase tracking-widest text-[9px] sm:text-[10px]"
+                    className="w-full text-white font-black py-2.5 sm:py-3 rounded-xl hover:opacity-90 transition-all shadow-xl active:scale-[0.98] capitalize tracking-widest text-[9px] sm:text-[10px]"
                   >
                     Simpan Perubahan
                   </button>
