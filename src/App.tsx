@@ -1627,27 +1627,41 @@ export default function App() {
                                       <span className="text-[8px] font-black px-1.5 py-0.5 rounded capitalize bg-rose-500 text-white leading-none">{getSLALabel(ticket.created_at, ticket.status)}</span>
                                     )}
                                   </div>
-                                  <span className="flex items-center gap-1 text-[9px] text-slate-400 font-medium">
-                                    <Calendar className="w-2.5 h-2.5 shrink-0" /> {formatDate(ticket.created_at)}
-                                  </span>
+                                  <div className="flex flex-col items-end gap-1">
+                                    <span className="flex items-center gap-1 text-[9px] text-slate-400 font-medium">
+                                      <Calendar className="w-2.5 h-2.5 shrink-0" /> {formatDate(ticket.created_at)}
+                                    </span>
+                                    <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-black capitalize tracking-widest border text-center min-w-[65px] inline-block ${getStatusColor(ticket.status)}`}>
+                                      {ticket.status === 'In Progress' ? 'Progres' : 
+                                       ticket.status === 'Completed' ? 'Selesai' : 
+                                       ticket.status === 'Cancelled' ? 'Batal' : 
+                                       ticket.status === 'New' ? 'Baru' : ticket.status}
+                                    </span>
+                                  </div>
                                 </div>
                                 <h3 className={`text-[11px] font-black truncate group-hover:text-emerald-600 transition-colors mb-1 ${themeClasses.text}`}>
                                   <HighlightText text={`${ticket.category} Request`} highlight={searchQuery} isDark={isDark} />
                                 </h3>
                                 
-                                <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                  <span className="flex items-center gap-1 truncate">
-                                    <User className="w-2.5 h-2.5 text-slate-400 shrink-0" /> <HighlightText text={ticket.name} highlight={searchQuery} isDark={isDark} />
-                                  </span>
-                                  <span className="flex items-center gap-1 truncate">
-                                    <Building2 className="w-2.5 h-2.5 text-slate-400 shrink-0" /> {ticket.department}
-                                  </span>
-                                  <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-black capitalize tracking-widest border text-center min-w-[65px] inline-block ${getStatusColor(ticket.status)}`}>
-                                    {ticket.status === 'In Progress' ? 'Progres' : 
-                                     ticket.status === 'Completed' ? 'Selesai' : 
-                                     ticket.status === 'Cancelled' ? 'Batal' : 
-                                     ticket.status === 'New' ? 'Baru' : ticket.status}
-                                  </span>
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                    <span className="flex items-center gap-1 truncate">
+                                      <User className="w-2.5 h-2.5 text-slate-400 shrink-0" /> <HighlightText text={ticket.name} highlight={searchQuery} isDark={isDark} />
+                                    </span>
+                                    <span className="flex items-center gap-1 truncate">
+                                      <Building2 className="w-2.5 h-2.5 text-slate-400 shrink-0" /> {ticket.department}
+                                    </span>
+                                  </div>
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSelectTicket(ticket);
+                                    }}
+                                    className={`p-1 rounded-md transition-all ${isDark ? 'text-slate-400 hover:text-emerald-400' : 'text-slate-400 hover:text-emerald-600'}`}
+                                    title="View Details"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                  </button>
                                 </div>
                               </div>
                             </div>
@@ -1676,16 +1690,6 @@ export default function App() {
                                 </div>
                               )}
                               <div className="flex items-center gap-1">
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleSelectTicket(ticket);
-                                  }}
-                                  className={`p-1.5 rounded-md transition-all ${isDark ? 'text-slate-400 hover:text-emerald-400 hover:bg-emerald-900/30' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
-                                  title="View Details"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </button>
                                 {adminUser && (
                                   <button 
                                     onClick={(e) => {
