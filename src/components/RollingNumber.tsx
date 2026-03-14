@@ -10,10 +10,10 @@ export const RollingNumber: React.FC<RollingNumberProps> = ({ value, className }
   const digits = value.toString().split('');
 
   return (
-    <div className={`flex items-center overflow-hidden ${className}`} style={{ height: '1.5em' }}>
+    <span className={`inline-flex items-center overflow-hidden ${className}`} style={{ height: '1.5em' }}>
       <AnimatePresence mode="popLayout" initial={false}>
         {digits.map((digit, index) => (
-          <div key={digits.length - index} className="relative inline-flex flex-col h-full overflow-hidden" style={{ width: '0.65em' }}>
+          <span key={digits.length - index} className="relative inline-flex flex-col h-full overflow-hidden" style={{ width: '0.65em' }}>
             <motion.span
               key={digit}
               initial={{ y: '100%', opacity: 0 }}
@@ -28,9 +28,9 @@ export const RollingNumber: React.FC<RollingNumberProps> = ({ value, className }
             >
               {digit}
             </motion.span>
-          </div>
+          </span>
         ))}
       </AnimatePresence>
-    </div>
+    </span>
   );
 };

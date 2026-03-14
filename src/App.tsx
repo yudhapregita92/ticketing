@@ -1137,7 +1137,7 @@ export default function App() {
    */
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'New': return <Send className="w-4 h-4 text-emerald-500 animate-pulse" />;
+      case 'New': return <Clock className="w-4 h-4" />;
       case 'In Progress': return <RefreshCcw className="w-4 h-4 animate-spin-slow" />;
       case 'Completed': return <CheckCircle2 className="w-4 h-4" />;
       case 'Cancelled': return <AlertCircle className="w-4 h-4" />;
@@ -1447,7 +1447,7 @@ export default function App() {
 
             {/* Results Summary & Filter Toggle */}
             <div className="flex items-center justify-between mb-4 px-1">
-              <p className={`text-[10px] sm:text-xs font-bold ${themeClasses.textMuted} flex items-center gap-1`}>
+              <div className={`text-[10px] sm:text-xs font-bold ${themeClasses.textMuted} flex items-center gap-1`}>
                 Menampilkan 
                 <RollingNumber value={Math.min((currentPage - 1) * itemsPerPage + 1, filteredTickets.length)} className={themeClasses.text} /> 
                 - 
@@ -1455,7 +1455,7 @@ export default function App() {
                 dari 
                 <RollingNumber value={filteredTickets.length} className={themeClasses.text} /> 
                 tiket
-              </p>
+              </div>
               <div className="flex items-center gap-3">
                 {searchQuery && (
                   <button 
@@ -1851,10 +1851,19 @@ export default function App() {
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowForm(true)}
-                className={`w-full font-bold py-3 rounded-2xl text-xs transition-all shadow-lg active:scale-95 ${
+                className={`w-full font-bold py-3 rounded-2xl text-xs transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 ${
                   isDark ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-white text-slate-900 hover:bg-slate-50'
                 }`}
               >
+                <motion.div
+                  animate={{ 
+                    scale: [1, 1.2, 1],
+                    opacity: [1, 0.8, 1]
+                  }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                >
+                  <Send className="w-4 h-4 text-emerald-500" />
+                </motion.div>
                 Buat Tiket Sekarang
               </motion.button>
             </section>

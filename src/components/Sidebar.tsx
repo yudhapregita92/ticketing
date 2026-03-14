@@ -8,7 +8,8 @@ import {
   BarChart3, 
   ChevronUp, 
   ChevronDown, 
-  Zap 
+  Zap,
+  Send
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -250,10 +251,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </p>
         <button 
           onClick={() => setShowForm(true)}
-          className={`w-full font-bold py-3.5 rounded-2xl text-sm transition-all shadow-lg active:scale-95 ${
+          className={`w-full font-bold py-3.5 rounded-2xl text-sm transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 ${
             isDark ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-white text-slate-900 hover:bg-slate-50'
           }`}
         >
+          <motion.div
+            animate={{ 
+              scale: [1, 1.2, 1],
+              opacity: [1, 0.8, 1]
+            }}
+            transition={{ repeat: Infinity, duration: 2 }}
+          >
+            <Send className="w-4 h-4 text-emerald-500" />
+          </motion.div>
           Buat Tiket Sekarang
         </button>
       </section>

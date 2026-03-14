@@ -90,8 +90,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           >
             <motion.div
               animate={{ 
-                scale: [1, 1.15, 1],
-                filter: ["drop-shadow(0 0 0px rgba(0,0,0,0))", `drop-shadow(0 0 8px ${primaryColor}44)`, "drop-shadow(0 0 0px rgba(0,0,0,0))"]
+                scale: [1, 1.2, 1],
+                filter: ["drop-shadow(0 0 0px rgba(0,0,0,0))", "drop-shadow(0 0 8px rgba(34,197,94,0.4))", "drop-shadow(0 0 0px rgba(0,0,0,0))"]
               }}
               transition={{ 
                 repeat: Infinity, 
@@ -99,9 +99,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                 ease: "easeInOut"
               }}
             >
-              <Logo className="w-5 h-5" color={primaryColor} />
+              <Send className="w-5 h-5 text-emerald-500" />
             </motion.div>
-            <span className="text-[10px] font-bold" style={{ color: primaryColor }}>Buat</span>
+            <span className="text-[10px] font-bold text-emerald-500">Buat</span>
           </motion.button>
 
           {setShowImageManager && (
@@ -175,7 +175,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           <motion.div
             animate={{ 
               scale: [1, 1.2, 1],
-              filter: ["drop-shadow(0 0 0px rgba(0,0,0,0))", `drop-shadow(0 0 12px ${primaryColor}66)`, "drop-shadow(0 0 0px rgba(0,0,0,0))"]
+              filter: ["drop-shadow(0 0 0px rgba(0,0,0,0))", "drop-shadow(0 0 12px rgba(34,197,94,0.5))", "drop-shadow(0 0 0px rgba(0,0,0,0))"]
             }}
             transition={{ 
               repeat: Infinity, 
@@ -184,9 +184,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             }}
             className="relative"
           >
-            <Logo className="w-7 h-7" color={primaryColor} />
+            <Send className="w-7 h-7 text-emerald-500" />
           </motion.div>
-          <span className="text-[10px] font-bold" style={{ color: primaryColor }}>Buat Tiket</span>
+          <span className="text-[10px] font-bold text-emerald-500">Buat Tiket</span>
         </motion.button>
 
         <motion.button 
