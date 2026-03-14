@@ -49,6 +49,7 @@ export interface IAppSettings {
   smtp_user: string;
   smtp_pass: string;
   smtp_from: string;
+  photo_cleanup_duration: string;
 }
 
 export interface IAdminUser {

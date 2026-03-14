@@ -408,13 +408,14 @@ async function startServer() {
 
     // Initialize default settings
     const initSettings = db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)");
-    initSettings.run('app_name', 'IT Helpdesk Pro');
+    initSettings.run('app_name', 'IT Helpdesk K3DK');
     initSettings.run('logo_type', 'ShieldCheck');
     initSettings.run('notification_emails', '[]');
     initSettings.run('telegram_bot_token', '');
     initSettings.run('telegram_chat_ids', '[]');
     initSettings.run('custom_logo', '');
     initSettings.run('custom_favicon', '');
+    initSettings.run('photo_cleanup_duration', '24');
 
     // Create or update default users
     const usersToCreate = [
@@ -462,7 +463,7 @@ async function startServer() {
     }, {});
 
     const manifest = {
-      name: s.app_name || "IT Helpdesk Pro",
+      name: s.app_name || "IT Helpdesk K3DK",
       short_name: (s.app_name || "IT Helpdesk").split(' ')[0],
       description: "Professional IT Helpdesk Ticketing System",
       start_url: "/",
@@ -829,13 +830,16 @@ async function startServer() {
 
   app.post("/api/images/cleanup", (req, res) => {
     try {
-      // Delete photos older than 24 hours
+      const durationSetting = db.prepare("SELECT value FROM settings WHERE key = 'photo_cleanup_duration'").get() as { value: string } | undefined;
+      const hours = parseInt(durationSetting?.value || '24');
+      
+      // Delete photos older than the configured hours
       const result = db.prepare(`
         UPDATE tickets 
         SET photo = NULL, face_photo = NULL
         WHERE ((photo IS NOT NULL AND photo != '') OR (face_photo IS NOT NULL AND face_photo != ''))
-        AND created_at <= datetime('now', '-1 day')
-      `).run();
+        AND created_at <= datetime('now', ? || ' hours')
+      `).run(`-${hours}`);
       
       // Reclaim space
       try {

@@ -155,7 +155,7 @@ const SkeletonTicket: React.FC<{ isDark: boolean }> = ({ isDark }) => (
 );
 
 /**
- * IT Helpdesk Pro - Main Application Component
+ * IT Helpdesk K3DK - Main Application Component
  * 
  * Flow Aplikasi:
  * 1. User: Membuat tiket melalui modal "New Ticket".
@@ -165,6 +165,8 @@ const SkeletonTicket: React.FC<{ isDark: boolean }> = ({ isDark }) => (
  * 5. Admin: Melihat statistik distribusi masalah (Pie Chart) dan notifikasi real-time.
  * 6. Admin: Memperbarui status tiket, menugaskan IT, dan memberikan balasan resolusi.
  */
+
+import { RollingNumber } from './components/RollingNumber';
 
 export default function App() {
   // --- State Management ---
@@ -261,7 +263,7 @@ export default function App() {
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [tempFilters, setTempFilters] = useState({ dept: '', status: '', date: '', search: '' });
   const [appSettings, setAppSettings] = useState({ 
-    app_name: 'IT Helpdesk Pro', 
+    app_name: 'IT Helpdesk K3DK', 
     logo_type: 'Send',
     theme_mode: 'light', // 'light' or 'dark'
     primary_color: '#10b981', // emerald-600
@@ -276,7 +278,8 @@ export default function App() {
     smtp_port: '465',
     smtp_user: '',
     smtp_pass: '',
-    smtp_from: ''
+    smtp_from: '',
+    photo_cleanup_duration: '24'
   }); // Pengaturan nama & logo app
 
   const toggleTheme = () => {
@@ -1134,7 +1137,7 @@ export default function App() {
    */
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'New': return <Clock className="w-4 h-4" />;
+      case 'New': return <Send className="w-4 h-4 text-emerald-500 animate-pulse" />;
       case 'In Progress': return <RefreshCcw className="w-4 h-4 animate-spin-slow" />;
       case 'Completed': return <CheckCircle2 className="w-4 h-4" />;
       case 'Cancelled': return <AlertCircle className="w-4 h-4" />;
@@ -1397,7 +1400,10 @@ export default function App() {
                   </div>
                   <div>
                     <p className="text-[10px] font-black text-slate-400 capitalize tracking-widest">Baru</p>
-                    <p className={`text-lg font-black ${themeClasses.text}`}>{tickets.filter(t => t.status === 'New').length}</p>
+                    <RollingNumber 
+                      value={tickets.filter(t => t.status === 'New').length} 
+                      className={`text-lg font-black ${themeClasses.text}`} 
+                    />
                   </div>
                 </div>
                 <div className={`${themeClasses.card} p-3 rounded-2xl border shadow-sm flex items-center gap-3`}>
@@ -1406,7 +1412,10 @@ export default function App() {
                   </div>
                   <div>
                     <p className="text-[10px] font-black text-slate-400 capitalize tracking-widest">Progres</p>
-                    <p className={`text-lg font-black ${themeClasses.text}`}>{tickets.filter(t => t.status === 'In Progress').length}</p>
+                    <RollingNumber 
+                      value={tickets.filter(t => t.status === 'In Progress').length} 
+                      className={`text-lg font-black ${themeClasses.text}`} 
+                    />
                   </div>
                 </div>
                 <div className={`${themeClasses.card} p-3 rounded-2xl border shadow-sm flex items-center gap-3`}>
@@ -1415,7 +1424,10 @@ export default function App() {
                   </div>
                   <div>
                     <p className="text-[10px] font-black text-slate-400 capitalize tracking-widest">Selesai</p>
-                    <p className={`text-lg font-black ${themeClasses.text}`}>{tickets.filter(t => t.status === 'Completed').length}</p>
+                    <RollingNumber 
+                      value={tickets.filter(t => t.status === 'Completed').length} 
+                      className={`text-lg font-black ${themeClasses.text}`} 
+                    />
                   </div>
                 </div>
                 <div className={`${themeClasses.card} p-3 rounded-2xl border shadow-sm flex items-center gap-3`}>
@@ -1424,7 +1436,10 @@ export default function App() {
                   </div>
                   <div>
                     <p className="text-[10px] font-black text-slate-400 capitalize tracking-widest">Urgent</p>
-                    <p className={`text-lg font-black ${themeClasses.text}`}>{tickets.filter(t => t.priority === 'Urgent' && t.status !== 'Completed').length}</p>
+                    <RollingNumber 
+                      value={tickets.filter(t => t.priority === 'Urgent' && t.status !== 'Completed').length} 
+                      className={`text-lg font-black ${themeClasses.text}`} 
+                    />
                   </div>
                 </div>
               </div>
@@ -1432,8 +1447,14 @@ export default function App() {
 
             {/* Results Summary & Filter Toggle */}
             <div className="flex items-center justify-between mb-4 px-1">
-              <p className={`text-[10px] sm:text-xs font-bold ${themeClasses.textMuted}`}>
-                Menampilkan <span className={themeClasses.text}>{Math.min((currentPage - 1) * itemsPerPage + 1, filteredTickets.length)}</span> - <span className={themeClasses.text}>{Math.min(currentPage * itemsPerPage, filteredTickets.length)}</span> dari <span className={themeClasses.text}>{filteredTickets.length}</span> tiket
+              <p className={`text-[10px] sm:text-xs font-bold ${themeClasses.textMuted} flex items-center gap-1`}>
+                Menampilkan 
+                <RollingNumber value={Math.min((currentPage - 1) * itemsPerPage + 1, filteredTickets.length)} className={themeClasses.text} /> 
+                - 
+                <RollingNumber value={Math.min(currentPage * itemsPerPage, filteredTickets.length)} className={themeClasses.text} /> 
+                dari 
+                <RollingNumber value={filteredTickets.length} className={themeClasses.text} /> 
+                tiket
               </p>
               <div className="flex items-center gap-3">
                 {searchQuery && (

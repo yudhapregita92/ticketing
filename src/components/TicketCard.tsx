@@ -6,7 +6,8 @@ import {
   AlertCircle, 
   User, 
   Building2, 
-  Eye
+  Eye,
+  Send
 } from 'lucide-react';
 import { ITicket, PRIORITIES } from '../types';
 import { getSLAColor, getSLALabel, getStatusColor } from '../utils';
@@ -37,8 +38,12 @@ export const TicketCard: React.FC<TicketCardProps> = ({
       className={`${themeClasses.card} rounded-2xl border border-slate-100 p-3 shadow-sm hover:shadow-md transition-all cursor-pointer group relative overflow-hidden`}
     >
       <div className="flex items-start gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-amber-50/50 flex items-center justify-center shrink-0">
-          <Clock className="w-4 h-4 text-amber-500/70" />
+        <div className={`w-8 h-8 rounded-lg ${ticket.status === 'New' ? 'bg-emerald-50/50' : 'bg-amber-50/50'} flex items-center justify-center shrink-0`}>
+          {ticket.status === 'New' ? (
+            <Send className="w-4 h-4 text-emerald-500 animate-pulse" />
+          ) : (
+            <Clock className="w-4 h-4 text-amber-500/70" />
+          )}
         </div>
         
         <div className="flex-1 min-w-0 flex justify-between gap-2">

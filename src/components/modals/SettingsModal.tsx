@@ -458,6 +458,26 @@ export const SettingsModal = React.memo(({
                     </div>
                   </div>
 
+                  <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Otomatis Hapus Foto</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className={`text-[9px] font-bold ml-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Durasi Penyimpanan Foto</label>
+                        <select 
+                          className={`w-full px-4 py-2.5 rounded-xl border text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                          value={appSettings.photo_cleanup_duration || '24'}
+                          onChange={e => setAppSettings({...appSettings, photo_cleanup_duration: e.target.value})}
+                        >
+                          <option value="24">24 Jam (1 Hari)</option>
+                          <option value="48">48 Jam (2 Hari)</option>
+                          <option value="60">60 Jam (2.5 Hari)</option>
+                          <option value="168">1 Minggu (7 Hari)</option>
+                        </select>
+                        <p className="text-[9px] text-slate-400 italic ml-1">Foto tiket akan dihapus otomatis setelah durasi ini terlewati.</p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* IT Personnel */}
                     <div className="space-y-3">
