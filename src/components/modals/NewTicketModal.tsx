@@ -539,7 +539,7 @@ export const NewTicketModal = React.memo(({
                 required
                 type={showIndex ? "text" : "password"}
                 placeholder="Masukkan Indek Karyawan Anda..."
-                className={`w-full px-3 py-1.5 pr-10 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text} ${inputIndex && inputIndex === correctIndex ? 'border-emerald-500 ring-2 ring-emerald-500/20' : inputIndex && inputIndex !== correctIndex ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
+                className={`w-full px-3 py-1.5 pr-10 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text} ${inputIndex && correctIndex && inputIndex === correctIndex ? 'border-emerald-500 ring-2 ring-emerald-500/20' : inputIndex && correctIndex && inputIndex !== correctIndex ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
                 value={inputIndex}
                 onChange={e => setInputIndex(e.target.value)}
               />
@@ -551,19 +551,51 @@ export const NewTicketModal = React.memo(({
                 {showIndex ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
               </button>
             </div>
-            {inputIndex && inputIndex === correctIndex ? (
-              <p className="text-[8px] font-bold text-emerald-500 capitalize tracking-tight ml-0.5">
-                * indek yang anda ketik sudah benar
-              </p>
-            ) : inputIndex && inputIndex !== correctIndex ? (
-              <p className="text-[8px] font-bold text-rose-500 capitalize tracking-tight ml-0.5 animate-pulse">
-                ⚠ Indek Karyawan tidak sesuai!
-              </p>
-            ) : (
-              <p className="text-[8px] font-bold text-rose-500 capitalize tracking-tight ml-0.5">
-                * Verifikasi indek untuk mengirim tiket
-              </p>
-            )}
+            <div className="min-h-[12px] mt-1">
+              <AnimatePresence mode="wait">
+                {!correctIndex ? (
+                  <motion.p 
+                    key="no-user"
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    className="text-[8px] font-bold text-rose-500 capitalize tracking-tight ml-0.5"
+                  >
+                    * Pilih nama Anda dari daftar di atas terlebih dahulu
+                  </motion.p>
+                ) : !inputIndex ? (
+                  <motion.p 
+                    key="empty-input"
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    className="text-[8px] font-bold text-rose-500 capitalize tracking-tight ml-0.5"
+                  >
+                    * Masukkan indek karyawan untuk verifikasi
+                  </motion.p>
+                ) : inputIndex === correctIndex ? (
+                  <motion.p 
+                    key="correct"
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    className="text-[8px] font-bold text-emerald-500 capitalize tracking-tight ml-0.5 flex items-center gap-1"
+                  >
+                    <CheckCircle2 className="w-2 h-2" /> Indek yang Anda ketik sudah benar
+                  </motion.p>
+                ) : (
+                  <motion.p 
+                    key="incorrect"
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    className="text-[8px] font-bold text-rose-500 capitalize tracking-tight ml-0.5 animate-pulse"
+                  >
+                    ⚠ Indek Karyawan tidak sesuai!
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
           <div className="pt-0.5">
