@@ -14,16 +14,21 @@ import {
   MessageCircle,
   Send,
   Upload,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Info,
+  RefreshCw,
+  History
 } from 'lucide-react';
+
+import { APP_VERSION, BUILD_DATE, UPDATE_HISTORY, getEnvironment } from '../../version';
 
 interface SettingsModalProps {
   showSettings: boolean;
   setShowSettings: (show: boolean) => void;
   isDark: boolean;
   themeClasses: any;
-  settingsTab: 'general' | 'branding' | 'notifications' | 'data';
-  setSettingsTab: (tab: 'general' | 'branding' | 'notifications' | 'data') => void;
+  settingsTab: 'general' | 'branding' | 'notifications' | 'data' | 'system';
+  setSettingsTab: (tab: 'general' | 'branding' | 'notifications' | 'data' | 'system') => void;
   appSettings: any;
   setAppSettings: (settings: any) => void;
   LOGO_OPTIONS: any[];
@@ -245,6 +250,12 @@ export const SettingsModal = React.memo(({
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'data' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Database className="w-4 h-4" /> Data & API
+            </button>
+            <button 
+              onClick={() => setSettingsTab('system')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'system' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+            >
+              <Settings2 className="w-4 h-4" /> Sistem
             </button>
           </div>
 
@@ -917,6 +928,7 @@ export const SettingsModal = React.memo(({
                     </div>
                   </div>
 
+                  {/* System Maintenance */}
                   <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                     <button 
                       type="button"
@@ -933,6 +945,119 @@ export const SettingsModal = React.memo(({
                       <MessageCircle className="w-6 h-6 text-slate-400 group-hover:text-blue-600" />
                       <span className="text-[10px] font-black capitalize tracking-widest text-slate-600 group-hover:text-blue-700">API Docs</span>
                     </button>
+                  </div>
+                </div>
+              )}
+
+              {settingsTab === 'system' && (
+                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  {/* Version Info */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black capitalize tracking-widest text-slate-400 flex items-center gap-2">
+                      <Info className="w-3 h-3" /> Informasi Versi
+                    </h3>
+                    <div className={`p-6 rounded-3xl border ${themeClasses.border} ${themeClasses.bgSecondary} relative overflow-hidden`}>
+                      <div className="relative z-10 flex items-center justify-between">
+                        <div>
+                          <div className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-1">Current Version</div>
+                          <div className="text-4xl font-black tracking-tighter flex items-baseline gap-2">
+                            v{APP_VERSION}
+                            <span className={`text-xs font-black px-2 py-0.5 rounded-md uppercase tracking-widest ${
+                              getEnvironment() === 'Staging' 
+                                ? 'bg-amber-500/10 text-amber-500' 
+                                : 'bg-emerald-500/10 text-emerald-500'
+                            }`}>
+                              {getEnvironment()}
+                            </span>
+                          </div>
+                          <div className="mt-4 flex items-center gap-4">
+                            <div className="flex flex-col">
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Build Date</span>
+                              <span className="text-xs font-bold">{BUILD_DATE}</span>
+                            </div>
+                            <div className="w-px h-8 bg-slate-200 dark:bg-slate-800" />
+                            <div className="flex flex-col">
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Environment</span>
+                              <span className="text-xs font-bold">Production</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="hidden sm:block">
+                          <div className="w-24 h-24 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                            <Settings2 className="w-12 h-12 text-emerald-500 opacity-20" />
+                          </div>
+                        </div>
+                      </div>
+                      {/* Decorative background element */}
+                      <div className="absolute -right-8 -bottom-8 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Update History */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black capitalize tracking-widest text-slate-400 flex items-center gap-2">
+                      <History className="w-3 h-3" /> Riwayat Pembaruan
+                    </h3>
+                    <div className="space-y-3">
+                      {UPDATE_HISTORY.map((update, idx) => (
+                        <div key={idx} className={`p-4 rounded-2xl border ${themeClasses.border} ${themeClasses.bgSecondary} hover:border-emerald-500/30 transition-colors group`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[9px] font-black tracking-widest">
+                                v{update.version}
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-400">{update.date}</span>
+                            </div>
+                            {idx === 0 && (
+                              <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Latest</span>
+                            )}
+                          </div>
+                          <ul className="space-y-1">
+                            {update.changes.map((change, cIdx) => (
+                              <li key={cIdx} className="text-[11px] text-slate-600 dark:text-slate-400 flex items-start gap-2">
+                                <span className="mt-1.5 w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700 shrink-0" />
+                                {change}
+                              </li>
+                            ))}
+                          </ul>
+                          {idx > 0 && (
+                            <button 
+                              type="button"
+                              onClick={() => alert(`Fitur Rollback ke v${update.version} sedang dalam pengembangan.`)}
+                              className="mt-4 w-full py-2 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-emerald-600 hover:border-emerald-500/50 transition-all opacity-0 group-hover:opacity-100"
+                            >
+                              Rollback ke Versi Ini
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* System Maintenance */}
+                  <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <h3 className="text-xs font-black capitalize tracking-widest text-slate-400">Pemeliharaan Sistem</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          localStorage.clear();
+                          window.location.reload();
+                        }}
+                        className={`flex flex-col items-center justify-center gap-2 p-6 rounded-2xl border transition-all hover:border-rose-500 hover:bg-rose-50 group ${themeClasses.bgSecondary} ${themeClasses.border}`}
+                      >
+                        <Trash2 className="w-6 h-6 text-slate-400 group-hover:text-rose-600" />
+                        <span className="text-[10px] font-black capitalize tracking-widest text-slate-600 group-hover:text-rose-700">Bersihkan Cache</span>
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => window.location.reload()}
+                        className={`flex flex-col items-center justify-center gap-2 p-6 rounded-2xl border transition-all hover:border-blue-500 hover:bg-blue-50 group ${themeClasses.bgSecondary} ${themeClasses.border}`}
+                      >
+                        <RefreshCw className="w-6 h-6 text-slate-400 group-hover:text-blue-600" />
+                        <span className="text-[10px] font-black capitalize tracking-widest text-slate-600 group-hover:text-blue-700">Muat Ulang Paksa</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

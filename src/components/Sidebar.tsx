@@ -20,6 +20,7 @@ import {
 } from 'recharts';
 import { IAdminUser, ITicket, COLORS } from '../types';
 import { Counter } from './Common';
+import { APP_VERSION, getEnvironment } from '../version';
 
 interface SidebarProps {
   adminUser: IAdminUser | null;
@@ -276,6 +277,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           Buat Tiket Sekarang
         </button>
       </section>
+
+      {/* App Version Info */}
+      <div className="flex flex-col items-center justify-center py-2 opacity-30">
+        <p className={`text-[9px] font-bold tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+          IT HELPDESK K3DK v{APP_VERSION} ({getEnvironment()})
+        </p>
+        <p className={`text-[7px] font-medium ${isDark ? 'text-slate-600' : 'text-slate-500'}`}>
+          © 2026 Professional Ticketing System
+        </p>
+      </div>
     </div>
   );
 };
