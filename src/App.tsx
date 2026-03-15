@@ -1306,30 +1306,35 @@ export default function App() {
 
   return (
     <div className={`min-h-screen font-sans transition-colors duration-300 ${themeClasses.bg} ${themeClasses.selection}`} style={{ '--primary': primaryColor } as any}>
-      <AnimatePresence>
-        {loading && (
-          <SplashScreen appName={appSettings.app_name} primaryColor={primaryColor} />
-        )}
-      </AnimatePresence>
-
-      <Toaster position="top-center" reverseOrder={false} />
-      {/* --- HEADER SECTION --- */}
-      <Header 
-        appSettings={appSettings}
-        primaryColor={primaryColor}
-        isDark={isDark}
-        adminUser={adminUser}
-        setShowSettings={setShowSettings}
-        setShowImageManager={setShowImageManager}
-        setShowResetConfirm={setShowResetConfirm}
-        handleLogout={handleLogout}
-        setShowLogin={setShowLogin}
-        setShowForm={setShowForm}
-        tickets={tickets}
-        notificationPermission={notificationPermission}
-        requestNotificationPermission={requestNotificationPermission}
-        toggleTheme={toggleTheme}
-      />
+      <AnimatePresence mode="wait">
+        {loading ? (
+          <SplashScreen key="splash" appName={appSettings.app_name} primaryColor={primaryColor} />
+        ) : (
+          <motion.div 
+            key="content"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="flex flex-col min-h-screen"
+          >
+            <Toaster position="top-center" reverseOrder={false} />
+            {/* --- HEADER SECTION --- */}
+            <Header 
+              appSettings={appSettings}
+              primaryColor={primaryColor}
+              isDark={isDark}
+              adminUser={adminUser}
+              setShowSettings={setShowSettings}
+              setShowImageManager={setShowImageManager}
+              setShowResetConfirm={setShowResetConfirm}
+              handleLogout={handleLogout}
+              setShowLogin={setShowLogin}
+              setShowForm={setShowForm}
+              tickets={tickets}
+              notificationPermission={notificationPermission}
+              requestNotificationPermission={requestNotificationPermission}
+              toggleTheme={toggleTheme}
+            />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 md:pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
@@ -2154,6 +2159,9 @@ export default function App() {
           animation: spin-slow 3s linear infinite;
         }
       `}</style>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
