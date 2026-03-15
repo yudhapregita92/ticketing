@@ -217,6 +217,14 @@ async function startServer() {
     res.json({ status: "ok", time: new Date().toISOString() });
   });
 
+  // Request logging middleware
+  app.use((req, res, next) => {
+    if (req.url.startsWith('/api')) {
+      console.log(`${new Date().toISOString()} - [API] ${req.method} ${req.url}`);
+    }
+    next();
+  });
+
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
   app.use(cors());
@@ -1024,6 +1032,12 @@ async function startServer() {
 
     res.json({ success: true });
     io.emit("ticket_updated", { id, status: newStatus, assigned_to: newAssignedTo, priority: newPriority });
+  });
+
+  // Catch-all for API routes to avoid falling through to SPA fallback
+  app.all("/api/*", (req, res) => {
+    console.warn(`[API 404] ${req.method} ${req.url}`);
+    res.status(404).json({ error: `API route not found: ${req.method} ${req.url}` });
   });
 
   // Vite middleware for development

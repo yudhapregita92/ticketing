@@ -168,6 +168,17 @@ const SkeletonTicket: React.FC<{ isDark: boolean }> = ({ isDark }) => (
 
 import { RollingNumber } from './components/RollingNumber';
 
+/**
+ * Helper to safely parse date strings for Safari compatibility
+ */
+const parseSafeDate = (dateString: string): Date => {
+  if (!dateString) return new Date();
+  const normalizedDate = dateString.includes('T') || dateString.includes('Z') 
+    ? dateString 
+    : dateString.replace(' ', 'T');
+  return new Date(normalizedDate);
+};
+
 export default function App() {
   // --- State Management ---
   const [tickets, setTickets] = useState<ITicket[]>([]); // Daftar semua tiket
@@ -228,13 +239,17 @@ export default function App() {
     }
   };
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
-    typeof window !== 'undefined' ? Notification.permission : 'default'
+    (typeof window !== 'undefined' && "Notification" in window) ? Notification.permission : 'default'
   );
 
   const requestNotificationPermission = async () => {
-    if (!("Notification" in window)) return;
-    const permission = await Notification.requestPermission();
-    setNotificationPermission(permission);
+    if (typeof window === 'undefined' || !("Notification" in window)) return;
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+    } catch (e) {
+      console.error('Failed to request notification permission:', e);
+    }
   };
 
   const [loading, setLoading] = useState(true); // Loading state untuk fetch data awal
@@ -341,7 +356,7 @@ export default function App() {
     return tickets.filter(ticket => {
       // View Mode Filter (Today vs All vs My Tickets)
       if (viewMode === 'today') {
-        const ticketDate = new Date(ticket.created_at).toLocaleDateString('en-CA'); // YYYY-MM-DD
+        const ticketDate = parseSafeDate(ticket.created_at).toLocaleDateString('en-CA'); // YYYY-MM-DD
         const today = new Date().toLocaleDateString('en-CA');
         if (ticketDate !== today) return false;
       } else if (viewMode === 'my_tickets' && adminUser) {
@@ -350,7 +365,7 @@ export default function App() {
 
       const matchDept = filterDept ? ticket.department === filterDept : true;
       const matchStatus = filterStatus ? ticket.status === filterStatus : true;
-      const matchDate = filterDate ? new Date(ticket.created_at).toLocaleDateString('en-CA') === filterDate : true;
+      const matchDate = filterDate ? parseSafeDate(ticket.created_at).toLocaleDateString('en-CA') === filterDate : true;
       const matchSearch = searchQuery ? (
         ticket.ticket_no.toLowerCase().includes(searchQuery.toLowerCase()) || 
         ticket.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -377,7 +392,7 @@ export default function App() {
 
   const getSLAColor = (createdAt: string, status: string) => {
     if (status !== 'New') return '';
-    const created = new Date(createdAt).getTime();
+    const created = parseSafeDate(createdAt).getTime();
     const now = new Date().getTime();
     const diffHours = (now - created) / (1000 * 60 * 60);
 
@@ -388,7 +403,7 @@ export default function App() {
 
   const getSLALabel = (createdAt: string, status: string) => {
     if (status !== 'New') return null;
-    const created = new Date(createdAt).getTime();
+    const created = parseSafeDate(createdAt).getTime();
     const now = new Date().getTime();
     const diffHours = (now - created) / (1000 * 60 * 60);
 
@@ -592,6 +607,24 @@ export default function App() {
     );
   };
 
+  // API Health Check
+  useEffect(() => {
+    const checkHealth = async () => {
+      try {
+        const res = await fetch('/api/health');
+        if (res.ok) {
+          const data = await res.json();
+          console.log('API Health Check OK:', data);
+        } else {
+          console.error('API Health Check Failed with status:', res.status);
+        }
+      } catch (err) {
+        console.error('API Health Check Error:', err);
+      }
+    };
+    checkHealth();
+  }, []);
+
   /**
    * Mengambil data tiket dari server
    */
@@ -601,15 +634,36 @@ export default function App() {
       const url = adminUser 
         ? `/api/tickets?username=${encodeURIComponent(adminUser.username)}&role=${encodeURIComponent(adminUser.role)}`
         : '/api/tickets';
+      
+      console.log(`Fetching tickets from: ${url}`);
       const res = await fetch(url);
+      
+      if (!res.ok) {
+        const text = await res.text();
+        console.error(`Fetch tickets failed with status ${res.status}: ${text.substring(0, 100)}`);
+        toast.error(`Gagal mengambil tiket: Server error ${res.status}`);
+        setTickets([]);
+        return;
+      }
+      
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await res.text();
+        console.error(`API returned non-JSON response from ${url}: ${text.substring(0, 100)}`);
+        toast.error("Gagal mengambil tiket: Format data tidak valid (Bukan JSON)");
+        setTickets([]);
+        return;
+      }
+
       const data = await res.json();
       if (Array.isArray(data)) {
+        console.log(`Successfully fetched ${data.length} tickets.`);
         // Notification logic for Admin
         if (adminUser && lastTicketIdRef.current !== null && data.length > 0) {
           const newTickets = data.filter(t => t.id > lastTicketIdRef.current!);
           if (newTickets.length > 0) {
             newTickets.forEach(ticket => {
-              if (Notification.permission === "granted") {
+              if (typeof window !== 'undefined' && "Notification" in window && Notification.permission === "granted") {
                 try {
                   new Notification(`Tiket Baru: ${ticket.ticket_no}`, {
                     body: `${ticket.name} - ${ticket.category}\n${ticket.description}`,
@@ -801,7 +855,7 @@ export default function App() {
         setViewMode('all');
         
         // Request Notification Permission
-        if ("Notification" in window && Notification.permission === "default") {
+        if (typeof window !== 'undefined' && "Notification" in window && Notification.permission === "default") {
           Notification.requestPermission();
         }
         
@@ -1105,11 +1159,7 @@ export default function App() {
    */
   const formatDate = (dateString: string) => {
     if (!dateString) return '-';
-    const normalizedDate = dateString.includes('T') || dateString.includes('Z') 
-      ? dateString 
-      : dateString.replace(' ', 'T') + 'Z';
-    
-    return new Date(normalizedDate).toLocaleString('id-ID', {
+    return parseSafeDate(dateString).toLocaleString('id-ID', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -1273,44 +1323,54 @@ export default function App() {
           {/* --- MAIN CONTENT: TICKET LIST --- */}
           <div className="lg:col-span-2 space-y-3 sm:space-y-4">
             {/* Mobile Status Overview */}
-            <div className="md:hidden mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className={`text-sm font-bold ${themeClasses.text}`}>Status Antrian</h2>
-                <BarChart3 className="w-4 h-4 text-slate-300" />
+            <div className="md:hidden mb-6">
+              <div className="flex items-center justify-between mb-3 px-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <h2 className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Live Dashboard</h2>
+                </div>
+                <Activity className="w-3 h-3 text-emerald-500/50" />
               </div>
-              <div className="grid grid-cols-4 gap-1.5">
+              
+              <div className="grid grid-cols-2 gap-3 mb-3">
                 <motion.div 
-                  whileHover={{ y: -2, scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`${themeClasses.card} ${themeClasses.border} border rounded-xl p-2 flex flex-col items-center justify-center text-center`}
+                  whileTap={{ scale: 0.98 }}
+                  className={`${themeClasses.card} rounded-2xl border p-3 shadow-sm relative overflow-hidden`}
                 >
-                  <Counter value={filteredTickets.length} className={`text-base font-black leading-none mb-0.5 ${themeClasses.text}`} />
-                  <span className="text-[7px] font-bold text-slate-400 capitalize tracking-wider">Total</span>
+                  <p className={`text-[8px] font-bold uppercase tracking-wider mb-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Total Antrian</p>
+                  <div className="flex items-end gap-1">
+                    <Counter value={tickets.length} className={`text-xl font-black ${themeClasses.text}`} />
+                    <span className="text-[8px] font-bold text-emerald-500 mb-1 uppercase">Live</span>
+                  </div>
                 </motion.div>
                 <motion.div 
-                  whileHover={{ y: -2, scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`${isDark ? 'bg-amber-500/10 border-amber-500/20' : 'bg-amber-50 border-amber-100'} border rounded-xl p-2 flex flex-col items-center justify-center text-center`}
+                  whileTap={{ scale: 0.98 }}
+                  className={`${themeClasses.card} rounded-2xl border p-3 shadow-sm relative overflow-hidden`}
                 >
-                  <Counter value={filteredTickets.filter(t => t.status === 'New').length} className="text-base font-black text-amber-500 leading-none mb-0.5" />
-                  <span className="text-[7px] font-bold text-amber-500 capitalize tracking-wider">Baru</span>
+                  <p className={`text-[8px] font-bold uppercase tracking-wider mb-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Traffic Hari Ini</p>
+                  <div className="flex items-end gap-1">
+                    <Counter 
+                      value={tickets.filter(t => parseSafeDate(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length} 
+                      className={`text-xl font-black ${themeClasses.text}`} 
+                    />
+                    <span className="text-[8px] font-bold text-blue-500 mb-1 uppercase">New</span>
+                  </div>
                 </motion.div>
-                <motion.div 
-                  whileHover={{ y: -2, scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'} border rounded-xl p-2 flex flex-col items-center justify-center text-center`}
-                >
-                  <Counter value={filteredTickets.filter(t => t.status === 'In Progress').length} className="text-base font-black text-blue-500 leading-none mb-0.5" />
-                  <span className="text-[7px] font-bold text-blue-500 capitalize tracking-wider">Progres</span>
-                </motion.div>
-                <motion.div 
-                  whileHover={{ y: -2, scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`${isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100'} border rounded-xl p-2 flex flex-col items-center justify-center text-center`}
-                >
-                  <Counter value={filteredTickets.filter(t => t.status === 'Completed').length} className="text-base font-black text-emerald-500 leading-none mb-0.5" />
-                  <span className="text-[7px] font-bold text-emerald-500 capitalize tracking-wider">Selesai</span>
-                </motion.div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div className={`p-2.5 rounded-xl border ${isDark ? 'bg-amber-500/5 border-amber-500/10' : 'bg-amber-50/50 border-amber-100'} flex flex-col items-center`}>
+                  <p className="text-[7px] font-bold text-amber-500 uppercase tracking-tighter mb-0.5">Baru</p>
+                  <Counter value={tickets.filter(t => t.status === 'New').length} className="text-sm font-black text-amber-500" />
+                </div>
+                <div className={`p-2.5 rounded-xl border ${isDark ? 'bg-blue-500/5 border-blue-500/10' : 'bg-blue-50/50 border-blue-100'} flex flex-col items-center`}>
+                  <p className="text-[7px] font-bold text-blue-500 uppercase tracking-tighter mb-0.5">Progres</p>
+                  <Counter value={tickets.filter(t => t.status === 'In Progress').length} className="text-sm font-black text-blue-500" />
+                </div>
+                <div className={`p-2.5 rounded-xl border ${isDark ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-emerald-50/50 border-emerald-100'} flex flex-col items-center`}>
+                  <p className="text-[7px] font-bold text-emerald-500 uppercase tracking-tighter mb-0.5">Selesai</p>
+                  <Counter value={tickets.filter(t => t.status === 'Completed').length} className="text-sm font-black text-emerald-500" />
+                </div>
               </div>
             </div>
 

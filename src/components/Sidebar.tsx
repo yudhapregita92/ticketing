@@ -9,7 +9,10 @@ import {
   ChevronUp, 
   ChevronDown, 
   Zap,
-  Send
+  Send,
+  Layers,
+  Activity,
+  Inbox
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -34,6 +37,15 @@ interface SidebarProps {
   setShowForm: (show: boolean) => void;
   fetchTickets: (showLoading?: boolean) => void;
 }
+
+// Helper to safely parse date strings for Safari compatibility
+const parseSafeDate = (dateString: string): Date => {
+  if (!dateString) return new Date();
+  const normalizedDate = dateString.includes('T') || dateString.includes('Z') 
+    ? dateString 
+    : dateString.replace(' ', 'T');
+  return new Date(normalizedDate);
+};
 
 export const Sidebar: React.FC<SidebarProps> = ({
   adminUser,
@@ -135,45 +147,103 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </motion.section>
       )}
 
-      {/* Queue Statistics */}
-      <section className={`${themeClasses.card} rounded-[1.5rem] border p-5 shadow-sm`}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className={`text-sm font-bold ${themeClasses.text}`}>Status Antrian</h2>
-          <BarChart3 className="w-4 h-4 text-slate-300" />
+      {/* Enhanced Queue Statistics */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <h2 className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Live Dashboard</h2>
+          </div>
+          <Activity className="w-3 h-3 text-emerald-500/50" />
         </div>
-        <div className="grid grid-cols-4 gap-1.5">
+        
+        <div className="grid grid-cols-2 gap-3">
+          {/* Total Tickets Card */}
           <motion.div 
-            whileHover={{ y: -2, scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className={`${themeClasses.card} ${themeClasses.border} border rounded-xl p-1.5 flex flex-col items-center justify-center text-center`}
+            whileHover={{ y: -4, scale: 1.02 }}
+            className={`${themeClasses.card} rounded-3xl border p-4 shadow-sm relative overflow-hidden group`}
           >
-            <Counter value={filteredTickets.length} className={`text-sm font-black leading-none mb-0.5 ${themeClasses.text}`} />
-            <span className="text-[8px] font-bold text-slate-400 capitalize tracking-tight whitespace-nowrap">Total</span>
+            <div className="absolute -right-2 -top-2 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
+              <Layers className={`w-16 h-16 ${isDark ? 'text-white' : 'text-slate-900'}`} />
+            </div>
+            <p className={`text-[9px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Total Antrian</p>
+            <div className="flex items-end gap-1">
+              <Counter value={tickets.length} className={`text-2xl font-black ${themeClasses.text}`} />
+              <div className="mb-1.5 flex items-center gap-0.5">
+                <div className="w-1 h-1 rounded-full bg-emerald-500" />
+                <span className="text-[8px] font-bold text-emerald-500 uppercase">Live</span>
+              </div>
+            </div>
           </motion.div>
+
+          {/* Today's Traffic Card */}
           <motion.div 
-            whileHover={{ y: -2, scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className={`${isDark ? 'bg-amber-500/10 border-amber-500/20' : 'bg-amber-50 border-amber-100'} border rounded-xl p-1.5 flex flex-col items-center justify-center text-center`}
+            whileHover={{ y: -4, scale: 1.02 }}
+            className={`${themeClasses.card} rounded-3xl border p-4 shadow-sm relative overflow-hidden group`}
           >
-            <Counter value={filteredTickets.filter(t => t.status === 'New').length} className="text-sm font-black text-amber-500 leading-none mb-0.5" />
-            <span className="text-[8px] font-bold text-amber-500 capitalize tracking-tight whitespace-nowrap">Baru</span>
+            <div className="absolute -right-2 -top-2 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
+              <TrendingUp className={`w-16 h-16 ${isDark ? 'text-white' : 'text-slate-900'}`} />
+            </div>
+            <p className={`text-[9px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Traffic Hari Ini</p>
+            <div className="flex items-end gap-1">
+              <Counter 
+                value={tickets.filter(t => parseSafeDate(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length} 
+                className={`text-2xl font-black ${themeClasses.text}`} 
+              />
+              <div className="mb-1.5 flex items-center gap-0.5">
+                <div className="w-1 h-1 rounded-full bg-blue-500" />
+                <span className="text-[8px] font-bold text-blue-500 uppercase">New</span>
+              </div>
+            </div>
           </motion.div>
-          <motion.div 
-            whileHover={{ y: -2, scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className={`${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'} border rounded-xl p-1.5 flex flex-col items-center justify-center text-center`}
-          >
-            <Counter value={filteredTickets.filter(t => t.status === 'In Progress').length} className="text-sm font-black text-blue-500 leading-none mb-0.5" />
-            <span className="text-[8px] font-bold text-blue-500 capitalize tracking-tight whitespace-nowrap">Progres</span>
-          </motion.div>
-          <motion.div 
-            whileHover={{ y: -2, scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className={`${isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100'} border rounded-xl p-1.5 flex flex-col items-center justify-center text-center`}
-          >
-            <Counter value={filteredTickets.filter(t => t.status === 'Completed').length} className="text-sm font-black text-emerald-500 leading-none mb-0.5" />
-            <span className="text-[8px] font-bold text-emerald-500 capitalize tracking-tight whitespace-nowrap">Selesai</span>
-          </motion.div>
+        </div>
+
+        {/* Action Required & Status Grid */}
+        <div className={`${themeClasses.card} rounded-3xl border p-4 shadow-sm relative overflow-hidden`}>
+          {/* Background Decoration */}
+          <div className="absolute top-0 right-0 p-4 opacity-[0.02]">
+            <Inbox className={`w-20 h-20 ${isDark ? 'text-white' : 'text-slate-900'}`} />
+          </div>
+
+          <div className="flex items-center justify-between mb-4 relative z-10">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+              <p className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Status Antrian</p>
+            </div>
+            {tickets.filter(t => t.status === 'New').length > 0 && (
+              <motion.div 
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter ${isDark ? 'bg-rose-500/20 text-rose-400' : 'bg-rose-100 text-rose-600'}`}
+              >
+                {tickets.filter(t => t.status === 'New').length} Action Required
+              </motion.div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 relative z-10">
+            <motion.div 
+              whileHover={{ y: -2 }}
+              className={`p-3 rounded-2xl border transition-colors ${isDark ? 'bg-amber-500/5 border-amber-500/10 hover:bg-amber-500/10' : 'bg-amber-50/50 border-amber-100 hover:bg-amber-50'}`}
+            >
+              <p className="text-[8px] font-bold text-amber-500 uppercase tracking-tighter mb-1">Baru</p>
+              <Counter value={tickets.filter(t => t.status === 'New').length} className="text-lg font-black text-amber-500" />
+            </motion.div>
+            <motion.div 
+              whileHover={{ y: -2 }}
+              className={`p-3 rounded-2xl border transition-colors ${isDark ? 'bg-blue-500/5 border-blue-500/10 hover:bg-blue-500/10' : 'bg-blue-50/50 border-blue-100 hover:bg-blue-50'}`}
+            >
+              <p className="text-[8px] font-bold text-blue-500 uppercase tracking-tighter mb-1">Progres</p>
+              <Counter value={tickets.filter(t => t.status === 'In Progress').length} className="text-lg font-black text-blue-500" />
+            </motion.div>
+            <motion.div 
+              whileHover={{ y: -2 }}
+              className={`p-3 rounded-2xl border transition-colors ${isDark ? 'bg-emerald-500/5 border-emerald-500/10 hover:bg-emerald-500/10' : 'bg-emerald-50/50 border-emerald-100 hover:bg-emerald-50'}`}
+            >
+              <p className="text-[8px] font-bold text-emerald-500 uppercase tracking-tighter mb-1">Selesai</p>
+              <Counter value={tickets.filter(t => t.status === 'Completed').length} className="text-lg font-black text-emerald-500" />
+            </motion.div>
+          </div>
         </div>
       </section>
 
