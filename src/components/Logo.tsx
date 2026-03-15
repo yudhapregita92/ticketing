@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 interface LogoProps {
   className?: string;
@@ -87,6 +88,3 @@ export const Logo: React.FC<LogoProps> = ({ className = "w-6 h-6", color = "curr
     </svg>
   );
 };
-
-// Need to import motion from framer-motion
-import { motion } from 'framer-motion';

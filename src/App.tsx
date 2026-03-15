@@ -278,24 +278,34 @@ export default function App() {
   });
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [tempFilters, setTempFilters] = useState({ dept: '', status: '', date: '', search: '' });
-  const [appSettings, setAppSettings] = useState({ 
-    app_name: 'IT Helpdesk K3DK', 
-    logo_type: 'Send',
-    theme_mode: 'light', // 'light' or 'dark'
-    primary_color: '#10b981', // emerald-600
-    admin_theme_mode: 'light', // 'light' or 'dark'
-    admin_primary_color: '#8b5cf6', // violet-500
-    custom_logo: '',
-    custom_favicon: '',
-    notification_emails: [] as string[],
-    telegram_bot_token: '',
-    telegram_chat_ids: [] as string[],
-    smtp_host: '',
-    smtp_port: '465',
-    smtp_user: '',
-    smtp_pass: '',
-    smtp_from: '',
-    photo_cleanup_duration: '24'
+  const [appSettings, setAppSettings] = useState(() => {
+    const saved = localStorage.getItem('appSettings');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse appSettings from localStorage', e);
+      }
+    }
+    return { 
+      app_name: 'IT Helpdesk K3DK', 
+      logo_type: 'Send',
+      theme_mode: 'light', // 'light' or 'dark'
+      primary_color: '#10b981', // emerald-600
+      admin_theme_mode: 'light', // 'light' or 'dark'
+      admin_primary_color: '#8b5cf6', // violet-500
+      custom_logo: '',
+      custom_favicon: '',
+      notification_emails: [] as string[],
+      telegram_bot_token: '',
+      telegram_chat_ids: [] as string[],
+      smtp_host: '',
+      smtp_port: '465',
+      smtp_user: '',
+      smtp_pass: '',
+      smtp_from: '',
+      photo_cleanup_duration: '24'
+    };
   }); // Pengaturan nama & logo app
 
   const toggleTheme = () => {
@@ -745,17 +755,21 @@ export default function App() {
       const res = await fetch('/api/settings');
       const data = await res.json();
       if (data.app_name) {
-        setAppSettings(prev => ({
-          ...prev,
-          ...data,
-          theme_mode: data.theme_mode || 'light',
-          primary_color: data.primary_color || '#10b981',
-          admin_theme_mode: data.admin_theme_mode || 'dark',
-          admin_primary_color: data.admin_primary_color || '#6366f1',
-          notification_emails: data.notification_emails ? JSON.parse(data.notification_emails) : [],
-          telegram_bot_token: data.telegram_bot_token || '',
-          telegram_chat_ids: data.telegram_chat_ids ? JSON.parse(data.telegram_chat_ids) : []
-        }));
+        setAppSettings(prev => {
+          const newSettings = {
+            ...prev,
+            ...data,
+            theme_mode: data.theme_mode || prev.theme_mode,
+            primary_color: data.primary_color || prev.primary_color,
+            admin_theme_mode: data.admin_theme_mode || prev.admin_theme_mode,
+            admin_primary_color: data.admin_primary_color || prev.admin_primary_color,
+            notification_emails: data.notification_emails ? JSON.parse(data.notification_emails) : prev.notification_emails,
+            telegram_bot_token: data.telegram_bot_token || prev.telegram_bot_token,
+            telegram_chat_ids: data.telegram_chat_ids ? JSON.parse(data.telegram_chat_ids) : prev.telegram_chat_ids
+          };
+          localStorage.setItem('appSettings', JSON.stringify(newSettings));
+          return newSettings;
+        });
       }
     } catch (err) {
       console.error('Failed to fetch settings:', err);
@@ -801,17 +815,29 @@ export default function App() {
   useEffect(() => {
     const initApp = async () => {
       setLoading(true);
-      await Promise.all([
+      // Start fetching everything, but only wait for critical data
+      const criticalPromises = [
         fetchTickets(),
-        fetchSettings(),
-        fetchManagementData()
-      ]);
-      // Add a slight delay for the animation to be seen
-      setTimeout(() => setLoading(false), 1000);
+        fetchSettings()
+      ];
+      
+      // Management data can be fetched in background if it's not immediately needed
+      // but we still start it now
+      const managementPromise = fetchManagementData();
+      
+      await Promise.all(criticalPromises);
+      
+      // If user is admin, we might want to wait for management data too
+      if (adminUser) {
+        await managementPromise;
+      }
+      
+      // Minimal delay for smooth transition
+      setTimeout(() => setLoading(false), 300);
     };
     
     initApp();
-    const interval = setInterval(fetchTickets, 10000);
+    const interval = setInterval(() => fetchTickets(false), 10000);
     return () => clearInterval(interval);
   }, [adminUser]);
 
