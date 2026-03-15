@@ -481,6 +481,12 @@ async function startServer() {
       icons: [
         {
           src: "/api/branding/logo",
+          sizes: "192x192",
+          type: "image/png",
+          purpose: "any maskable"
+        },
+        {
+          src: "/api/branding/logo",
           sizes: "512x512",
           type: "image/png",
           purpose: "any maskable"

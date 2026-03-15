@@ -63,6 +63,7 @@ import { TakeoverModal } from './components/modals/TakeoverModal';
 import { SuccessModal } from './components/modals/SuccessModal';
 import { MobileFilterModal } from './components/modals/MobileFilterModal';
 import { ImageManagerModal } from './components/modals/ImageManagerModal';
+import { SplashScreen } from './components/SplashScreen';
 
 interface ITicket {
   id: number;
@@ -696,7 +697,7 @@ export default function App() {
     } catch (err) {
       console.error('Failed to fetch tickets:', err);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -798,9 +799,18 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    fetchTickets();
-    fetchSettings();
-    fetchManagementData();
+    const initApp = async () => {
+      setLoading(true);
+      await Promise.all([
+        fetchTickets(),
+        fetchSettings(),
+        fetchManagementData()
+      ]);
+      // Add a slight delay for the animation to be seen
+      setTimeout(() => setLoading(false), 1000);
+    };
+    
+    initApp();
     const interval = setInterval(fetchTickets, 10000);
     return () => clearInterval(interval);
   }, [adminUser]);
@@ -1221,7 +1231,8 @@ export default function App() {
       link.rel = 'icon';
       document.getElementsByTagName('head')[0].appendChild(link);
     }
-    link.href = appSettings.custom_favicon ? "/api/branding/favicon" : "https://cdn-icons-png.flaticon.com/512/2906/2906274.png";
+    const ts = new Date().getTime();
+    link.href = appSettings.custom_favicon ? `/api/branding/favicon?v=${ts}` : "https://cdn-icons-png.flaticon.com/512/2906/2906274.png";
 
     // Apple Touch Icon
     let appleLink = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement;
@@ -1230,7 +1241,7 @@ export default function App() {
       appleLink.rel = 'apple-touch-icon';
       document.getElementsByTagName('head')[0].appendChild(appleLink);
     }
-    appleLink.href = appSettings.custom_logo ? "/api/branding/logo" : (appSettings.custom_favicon ? "/api/branding/favicon" : "https://cdn-icons-png.flaticon.com/512/2906/2906274.png");
+    appleLink.href = appSettings.custom_logo ? `/api/branding/logo?v=${ts}` : (appSettings.custom_favicon ? `/api/branding/favicon?v=${ts}` : "https://cdn-icons-png.flaticon.com/512/2906/2906274.png");
 
     // Theme Color
     let themeMeta = document.querySelector("meta[name='theme-color']") as HTMLMetaElement;
@@ -1248,7 +1259,7 @@ export default function App() {
       manifestLink.rel = 'manifest';
       document.getElementsByTagName('head')[0].appendChild(manifestLink);
     }
-    manifestLink.href = "/manifest.json";
+    manifestLink.href = `/manifest.json?v=${ts}`;
   }, [appSettings.custom_favicon, appSettings.custom_logo, appSettings.app_name, primaryColor, isDark]);
 
   // Theme-aware color variables
@@ -1282,6 +1293,12 @@ export default function App() {
 
   return (
     <div className={`min-h-screen font-sans transition-colors duration-300 ${themeClasses.bg} ${themeClasses.selection}`} style={{ '--primary': primaryColor } as any}>
+      <AnimatePresence>
+        {loading && (
+          <SplashScreen appName={appSettings.app_name} primaryColor={primaryColor} />
+        )}
+      </AnimatePresence>
+
       <Toaster position="top-center" reverseOrder={false} />
       {/* --- HEADER SECTION --- */}
       <Header 
