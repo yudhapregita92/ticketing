@@ -822,6 +822,19 @@ export default function App() {
   }, [showForm]);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    if (action === 'create') {
+      setShowForm(true);
+    } else if (action === 'status') {
+      // If there's a way to filter for "my tickets", we could do it here
+      // For now, just ensuring the user is on the main list
+      setShowForm(false);
+      setShowSettings(false);
+    }
+  }, []);
+
+  useEffect(() => {
     const socket = io();
     
     socket.on('ticket_created', (newTicket) => {

@@ -470,6 +470,7 @@ async function startServer() {
       return acc;
     }, {});
 
+    const version = req.query.v || Date.now();
     const manifest = {
       name: s.app_name || "IT Helpdesk K3DK",
       short_name: (s.app_name || "IT Helpdesk").split(' ')[0],
@@ -480,16 +481,32 @@ async function startServer() {
       theme_color: s.primary_color || "#10b981",
       icons: [
         {
-          src: "/api/branding/logo",
+          src: `/api/branding/logo?v=${version}`,
           sizes: "192x192",
           type: "image/png",
           purpose: "any maskable"
         },
         {
-          src: "/api/branding/logo",
+          src: `/api/branding/logo?v=${version}`,
           sizes: "512x512",
           type: "image/png",
           purpose: "any maskable"
+        }
+      ],
+      shortcuts: [
+        {
+          name: "Buat Tiket",
+          short_name: "Buat",
+          description: "Buat tiket bantuan baru",
+          url: "/?action=create",
+          icons: [{ src: `/api/branding/logo?v=${version}`, sizes: "192x192" }]
+        },
+        {
+          name: "Cek Status",
+          short_name: "Status",
+          description: "Cek status tiket saya",
+          url: "/?action=status",
+          icons: [{ src: `/api/branding/logo?v=${version}`, sizes: "192x192" }]
         }
       ]
     };
