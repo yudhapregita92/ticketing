@@ -169,6 +169,9 @@ const SkeletonTicket: React.FC<{ isDark: boolean }> = ({ isDark }) => (
 
 import { RollingNumber } from './components/RollingNumber';
 
+import { AdminDashboard } from './components/AdminDashboard';
+import { AssetManagement } from './components/AssetManagement';
+
 /**
  * Helper to safely parse date strings for Safari compatibility
  */
@@ -273,8 +276,8 @@ export default function App() {
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [gpsError, setGpsError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'today' | 'all' | 'my_tickets'>(() => {
-    return localStorage.getItem('adminUser') ? 'all' : 'today';
+  const [viewMode, setViewMode] = useState<'today' | 'all' | 'my_tickets' | 'dashboard'>(() => {
+    return localStorage.getItem('adminUser') ? 'dashboard' : 'today';
   });
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [tempFilters, setTempFilters] = useState({ dept: '', status: '', date: '', search: '' });
@@ -334,6 +337,19 @@ export default function App() {
       localStorage.setItem('ticket_draft', JSON.stringify(formData));
     }
   }, [formData]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024 && viewMode === 'dashboard') {
+        setViewMode('today');
+      }
+    };
+    
+    // Check on mount and resize
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [viewMode]);
 
   const clearDraft = () => {
     localStorage.removeItem('ticket_draft');
@@ -1362,70 +1378,29 @@ export default function App() {
               toggleTheme={toggleTheme}
             />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 md:pb-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 lg:pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
           {/* --- SIDEBAR: STATS & INFO --- */}
-          <div className="hidden md:block">
-            <Sidebar 
-              isDark={isDark}
-              themeClasses={themeClasses}
-              tickets={tickets}
-              adminUser={adminUser}
-              setShowDistribution={setShowDistribution}
-              primaryColor={primaryColor}
-              filteredTickets={filteredTickets}
-              categoryStats={categoryStats}
-              showDistribution={showDistribution}
-              setShowForm={setShowForm}
-              fetchTickets={fetchTickets}
-            />
-          </div>
+          <Sidebar 
+            isDark={isDark}
+            themeClasses={themeClasses}
+            tickets={tickets}
+            adminUser={adminUser}
+            setShowDistribution={setShowDistribution}
+            primaryColor={primaryColor}
+            filteredTickets={filteredTickets}
+            categoryStats={categoryStats}
+            showDistribution={showDistribution}
+            setShowForm={setShowForm}
+            fetchTickets={fetchTickets}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+          />
 
-          {/* --- MAIN CONTENT: TICKET LIST --- */}
+          {/* --- MAIN CONTENT --- */}
           <div className="lg:col-span-2 space-y-3 sm:space-y-4">
-            {/* Mobile Status Overview */}
-            <div className="md:hidden mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className={`text-sm font-bold ${themeClasses.text}`}>Status Antrian</h2>
-                <BarChart3 className="w-4 h-4 text-slate-300" />
-              </div>
-              <div className="grid grid-cols-4 gap-1.5">
-                <motion.div 
-                  whileHover={{ y: -2, scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`${themeClasses.card} ${themeClasses.border} border rounded-xl p-2 flex flex-col items-center justify-center text-center`}
-                >
-                  <Counter value={filteredTickets.length} className={`text-base font-black leading-none mb-0.5 ${themeClasses.text}`} />
-                  <span className="text-[7px] font-bold text-slate-400 capitalize tracking-wider">Total</span>
-                </motion.div>
-                <motion.div 
-                  whileHover={{ y: -2, scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`${isDark ? 'bg-amber-500/10 border-amber-500/20' : 'bg-amber-50 border-amber-100'} border rounded-xl p-2 flex flex-col items-center justify-center text-center`}
-                >
-                  <Counter value={filteredTickets.filter(t => t.status === 'New').length} className="text-base font-black text-amber-500 leading-none mb-0.5" />
-                  <span className="text-[7px] font-bold text-amber-500 capitalize tracking-wider">Baru</span>
-                </motion.div>
-                <motion.div 
-                  whileHover={{ y: -2, scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'} border rounded-xl p-2 flex flex-col items-center justify-center text-center`}
-                >
-                  <Counter value={filteredTickets.filter(t => t.status === 'In Progress').length} className="text-base font-black text-blue-500 leading-none mb-0.5" />
-                  <span className="text-[7px] font-bold text-blue-500 capitalize tracking-wider">Progres</span>
-                </motion.div>
-                <motion.div 
-                  whileHover={{ y: -2, scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`${isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100'} border rounded-xl p-2 flex flex-col items-center justify-center text-center`}
-                >
-                  <Counter value={filteredTickets.filter(t => t.status === 'Completed').length} className="text-base font-black text-emerald-500 leading-none mb-0.5" />
-                  <span className="text-[7px] font-bold text-emerald-500 capitalize tracking-wider">Selesai</span>
-                </motion.div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between gap-2 mb-2 sm:mb-4 border-b border-slate-100 pb-1 overflow-hidden">
+            {/* Mobile Navigation Tabs */}
+            <div className="lg:hidden flex items-center justify-between gap-2 mb-2 sm:mb-4 border-b border-slate-100 pb-1 overflow-hidden">
               <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-hide pb-1">
                 <button 
                   onClick={() => setViewMode('today')}
@@ -1435,7 +1410,7 @@ export default function App() {
                 >
                   Antrian Hari Ini
                   {viewMode === 'today' && (
-                    <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full" />
+                    <motion.div layoutId="activeTabMobile" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full" />
                   )}
                 </button>
                 <button 
@@ -1446,7 +1421,7 @@ export default function App() {
                 >
                   Semua Antrian
                   {viewMode === 'all' && (
-                    <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full" />
+                    <motion.div layoutId="activeTabMobile" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full" />
                   )}
                 </button>
                 {adminUser && (
@@ -1458,114 +1433,81 @@ export default function App() {
                   >
                     Tiket Saya
                     {viewMode === 'my_tickets' && (
-                      <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full" />
+                      <motion.div layoutId="activeTabMobile" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full" />
                     )}
                   </button>
                 )}
               </div>
               
-              {/* Filter Controls */}
-              <div className="flex items-center gap-1 sm:gap-2">
-                <button 
-                  onClick={() => {
-                    setTempFilters({ dept: filterDept, status: filterStatus, date: filterDate, search: searchQuery });
-                    setShowMobileFilter(true);
-                  }}
-                  className={`sm:hidden flex items-center gap-1 px-2 py-1 border rounded-lg text-[9px] font-black capitalize tracking-tighter shadow-sm active:scale-95 transition-all ${
-                    (filterDept || filterStatus || filterDate || searchQuery)
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
-                    : isDark ? 'bg-zinc-900 border-zinc-800 text-slate-400' : 'bg-white border-slate-200 text-slate-500'
-                  }`}
-                >
-                  <SlidersHorizontal className="w-3 h-3" />
-                  Filter
-                </button>
-
-                <button 
-                  onClick={() => {
-                    setFilterDept('');
-                    setFilterStatus('');
-                    setFilterDate('');
-                  }}
-                  className="hidden sm:block text-[10px] font-bold text-slate-400 hover:text-emerald-600 capitalize tracking-wider"
-                >
-                  Atur Ulang Filter
-                </button>
-                <button 
-                  onClick={() => fetchTickets(true)}
-                  className="p-2 text-slate-400 hover:text-emerald-600 transition-colors"
-                  title="Segarkan Antrian"
-                  aria-label="Refresh tickets"
-                >
-                  <RefreshCcw className="w-5 h-5" />
-                </button>
-              </div>
+              {/* Filter Controls (Mobile) */}
+              {viewMode !== 'dashboard' && viewMode !== 'assets' && (
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <button 
+                    onClick={() => {
+                      setTempFilters({ dept: filterDept, status: filterStatus, date: filterDate, search: searchQuery });
+                      setShowMobileFilter(true);
+                    }}
+                    className={`flex items-center gap-1 px-2 py-1 border rounded-lg text-[9px] font-black capitalize tracking-tighter shadow-sm active:scale-95 transition-all ${
+                      (filterDept || filterStatus || filterDate || searchQuery)
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                      : isDark ? 'bg-zinc-900 border-zinc-800 text-slate-400' : 'bg-white border-slate-200 text-slate-500'
+                    }`}
+                  >
+                    <SlidersHorizontal className="w-3 h-3" />
+                    Filter
+                  </button>
+                  <button 
+                    onClick={() => fetchTickets(true)}
+                    className="p-2 text-slate-400 hover:text-emerald-600 transition-colors"
+                    title="Segarkan Antrian"
+                    aria-label="Refresh tickets"
+                  >
+                    <RefreshCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
+              )}
             </div>
 
-            {/* Dashboard Analytics - Admin Only */}
-            {adminUser && (
-              <div className="flex flex-wrap gap-3 mb-6">
-                {tickets.filter(t => t.status === 'New').length > 0 && (
-                  <div className={`flex-1 min-w-[140px] ${themeClasses.card} p-2.5 rounded-2xl border shadow-sm flex items-center gap-2.5`}>
-                    <div className="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 shrink-0">
-                      <Clock className="w-4.5 h-4.5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[9px] font-black text-slate-400 capitalize tracking-wider whitespace-nowrap">Baru</p>
-                      <RollingNumber 
-                        value={tickets.filter(t => t.status === 'New').length} 
-                        className={`text-base font-black ${themeClasses.text}`} 
-                      />
-                    </div>
-                  </div>
-                )}
-                {tickets.filter(t => t.status === 'In Progress').length > 0 && (
-                  <div className={`flex-1 min-w-[140px] ${themeClasses.card} p-2.5 rounded-2xl border shadow-sm flex items-center gap-2.5`}>
-                    <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 shrink-0">
-                      <Activity className="w-4.5 h-4.5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[9px] font-black text-slate-400 capitalize tracking-wider whitespace-nowrap">Progres</p>
-                      <RollingNumber 
-                        value={tickets.filter(t => t.status === 'In Progress').length} 
-                        className={`text-base font-black ${themeClasses.text}`} 
-                      />
-                    </div>
-                  </div>
-                )}
-                {tickets.filter(t => t.status === 'Completed').length > 0 && (
-                  <div className={`flex-1 min-w-[140px] ${themeClasses.card} p-2.5 rounded-2xl border shadow-sm flex items-center gap-2.5`}>
-                    <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 shrink-0">
-                      <CheckCircle2 className="w-4.5 h-4.5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[9px] font-black text-slate-400 capitalize tracking-wider whitespace-nowrap">Selesai</p>
-                      <RollingNumber 
-                        value={tickets.filter(t => t.status === 'Completed').length} 
-                        className={`text-base font-black ${themeClasses.text}`} 
-                      />
-                    </div>
-                  </div>
-                )}
-                {tickets.filter(t => t.priority === 'Urgent' && t.status !== 'Completed').length > 0 && (
-                  <div className={`flex-1 min-w-[140px] ${themeClasses.card} p-2.5 rounded-2xl border shadow-sm flex items-center gap-2.5`}>
-                    <div className="w-9 h-9 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600 shrink-0">
-                      <AlertCircle className="w-4.5 h-4.5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[9px] font-black text-slate-400 capitalize tracking-wider whitespace-nowrap">Urgent</p>
-                      <RollingNumber 
-                        value={tickets.filter(t => t.priority === 'Urgent' && t.status !== 'Completed').length} 
-                        className={`text-base font-black ${themeClasses.text}`} 
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            {viewMode === 'dashboard' ? (
+              <AdminDashboard 
+                tickets={tickets}
+                adminUser={adminUser}
+                isDark={isDark}
+                themeClasses={themeClasses}
+                setViewMode={setViewMode}
+              />
+            ) : viewMode === 'assets' ? (
+              <AssetManagement 
+                isDark={isDark}
+                themeClasses={themeClasses}
+                primaryColor={primaryColor}
+              />
+            ) : (
+              <>
+                {/* Desktop Filter Controls (Only visible on desktop) */}
+                <div className="hidden lg:flex items-center justify-end gap-2 mb-4">
+                  <button 
+                    onClick={() => {
+                      setFilterDept('');
+                      setFilterStatus('');
+                      setFilterDate('');
+                    }}
+                    className="text-[10px] font-bold text-slate-400 hover:text-emerald-600 capitalize tracking-wider"
+                  >
+                    Atur Ulang Filter
+                  </button>
+                  <button 
+                    onClick={() => fetchTickets(true)}
+                    className="p-2 text-slate-400 hover:text-emerald-600 transition-colors"
+                    title="Segarkan Antrian"
+                    aria-label="Refresh tickets"
+                  >
+                    <RefreshCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
 
-            {/* Results Summary & Filter Toggle */}
-            <div className="flex items-center justify-between mb-4 px-1">
+                {/* Results Summary & Filter Toggle */}
+                <div className="flex items-center justify-between mb-4 px-1">
               <div className={`text-[10px] sm:text-xs font-bold ${themeClasses.textMuted} flex items-center gap-1`}>
                 Menampilkan 
                 <RollingNumber value={Math.min((currentPage - 1) * itemsPerPage + 1, filteredTickets.length)} className={themeClasses.text} /> 
@@ -1986,6 +1928,8 @@ export default function App() {
                 Buat Tiket Sekarang
               </motion.button>
             </section>
+            </>
+          )}
           </div>
         </div>
       </main>

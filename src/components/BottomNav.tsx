@@ -54,7 +54,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     const itemWidth = `w-1/${itemCount}`;
 
     return (
-      <div className={`md:hidden fixed bottom-0 left-0 right-0 z-50 border-t ${bgClass} px-2 pb-safe pt-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]`}>
+      <div className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t ${bgClass} px-2 pb-safe pt-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]`}>
         <div className="flex justify-between items-center h-14">
           <motion.button 
             whileTap={{ scale: 0.9 }}
@@ -147,7 +147,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   }
 
   return (
-    <div className={`md:hidden fixed bottom-0 left-0 right-0 z-50 border-t ${bgClass} px-6 pb-safe pt-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]`}>
+    <div className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t ${bgClass} px-6 pb-safe pt-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]`}>
       <div className="flex justify-between items-center h-14">
         <motion.button 
           whileTap={{ scale: 0.9 }}

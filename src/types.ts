@@ -7,6 +7,8 @@ import {
   Send
 } from 'lucide-react';
 
+export type ViewMode = 'today' | 'all' | 'my_tickets' | 'dashboard' | 'assets';
+
 export interface ITicket {
   id: number;
   ticket_no: string;
@@ -58,6 +60,21 @@ export interface IAdminUser {
   full_name: string;
   theme_mode: 'light' | 'dark';
   primary_color: string;
+}
+
+export interface IAsset {
+  id: number;
+  asset_id: string;
+  name: string;
+  category: string;
+  status: string;
+  assigned_to: string | null;
+  department: string | null;
+  purchase_date: string | null;
+  condition: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export const STATUSES = ['New', 'In Progress', 'Completed', 'Cancelled'];

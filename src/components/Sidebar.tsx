@@ -9,7 +9,8 @@ import {
   ChevronUp, 
   ChevronDown, 
   Zap,
-  Send
+  Send,
+  Package
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -18,7 +19,7 @@ import {
   ResponsiveContainer, 
   Tooltip as RechartsTooltip 
 } from 'recharts';
-import { IAdminUser, ITicket, COLORS } from '../types';
+import { IAdminUser, ITicket, COLORS, ViewMode } from '../types';
 import { Counter } from './Common';
 import { APP_VERSION, getEnvironment } from '../version';
 
@@ -34,6 +35,8 @@ interface SidebarProps {
   primaryColor: string;
   setShowForm: (show: boolean) => void;
   fetchTickets: (showLoading?: boolean) => void;
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
 }
 
 // Helper to safely parse date strings for Safari compatibility
@@ -56,10 +59,105 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setShowDistribution,
   primaryColor,
   setShowForm,
-  fetchTickets
+  fetchTickets,
+  viewMode,
+  setViewMode
 }) => {
   return (
     <div className="lg:col-span-1 space-y-4 lg:space-y-6">
+      {/* Sidebar Menu - Desktop Only */}
+      <section className={`hidden lg:block ${themeClasses.card} rounded-[1.5rem] border p-4 shadow-sm`}>
+        <div className="flex items-center gap-2 mb-4 px-2">
+          <div className={`w-6 h-6 rounded-lg flex items-center justify-center border ${isDark ? 'bg-indigo-900/30 text-indigo-400 border-indigo-800' : 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}>
+            <Send className="w-3 h-3" />
+          </div>
+          <h2 className={`text-xs font-bold capitalize tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Menu Navigasi</h2>
+        </div>
+        
+        <div className="space-y-1">
+          {adminUser && (
+            <button
+              onClick={() => setViewMode('dashboard')}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-xs font-bold ${
+                viewMode === 'dashboard' 
+                  ? 'bg-emerald-500/10 text-emerald-600' 
+                  : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <BarChart3 className="w-4 h-4" />
+                <span>Dashboard</span>
+              </div>
+            </button>
+          )}
+          
+          <button
+            onClick={() => setViewMode('today')}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-xs font-bold ${
+              viewMode === 'today' 
+                ? 'bg-emerald-500/10 text-emerald-600' 
+                : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <Zap className="w-4 h-4" />
+              <span>Antrian Hari Ini</span>
+            </div>
+            {tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length > 0 && (
+              <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[9px] font-black rounded-full">
+                {tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length}
+              </span>
+            )}
+          </button>
+          
+          <button
+            onClick={() => setViewMode('all')}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-xs font-bold ${
+              viewMode === 'all' 
+                ? 'bg-emerald-500/10 text-emerald-600' 
+                : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <AlertCircle className="w-4 h-4" />
+              <span>Semua Antrian</span>
+            </div>
+          </button>
+          
+          {adminUser && (
+            <button
+              onClick={() => setViewMode('my_tickets')}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-xs font-bold ${
+                viewMode === 'my_tickets' 
+                  ? 'bg-emerald-500/10 text-emerald-600' 
+                  : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Tiket Saya</span>
+              </div>
+            </button>
+          )}
+          
+          {adminUser && (
+            <button
+              onClick={() => setViewMode('assets')}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-xs font-bold ${
+                viewMode === 'assets' 
+                  ? 'bg-emerald-500/10 text-emerald-600' 
+                  : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Package className="w-4 h-4" />
+                <span>Manajemen Aset</span>
+              </div>
+            </button>
+          )}
+        </div>
+      </section>
+
       {/* Admin Notifications */}
       {adminUser && (
         <motion.section 

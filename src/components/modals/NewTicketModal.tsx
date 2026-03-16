@@ -74,6 +74,20 @@ export const NewTicketModal = React.memo(({
   const scanTimerRef = React.useRef<NodeJS.Timeout | null>(null);
   const closeTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
+  const [showIndexSuccess, setShowIndexSuccess] = React.useState(true);
+
+  React.useEffect(() => {
+    if (inputIndex && correctIndex && inputIndex === correctIndex) {
+      setShowIndexSuccess(true);
+      const timer = setTimeout(() => {
+        setShowIndexSuccess(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    } else {
+      setShowIndexSuccess(true);
+    }
+  }, [inputIndex, correctIndex]);
+
   const stopCamera = React.useCallback(() => {
     if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
@@ -131,7 +145,13 @@ export const NewTicketModal = React.memo(({
     canvas.height = videoRef.current.videoHeight;
     const ctx = canvas.getContext('2d');
     if (ctx) {
+      // Mirror the image to match the video preview
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
       ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+      
+      // Reset transformation for any future drawing (though not needed here)
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       
       // Compress to stay under 30KB
       let quality = 0.6;
@@ -291,7 +311,7 @@ export const NewTicketModal = React.memo(({
                       muted
                       width={640}
                       height={480}
-                      className={`w-full h-full object-cover transition-opacity duration-500 ${scanComplete ? 'opacity-20' : 'opacity-100'}`}
+                      className={`w-full h-full object-cover transition-opacity duration-500 scale-x-[-1] ${scanComplete ? 'opacity-20' : 'opacity-100'}`}
                     />
                   )}
                   
@@ -551,50 +571,26 @@ export const NewTicketModal = React.memo(({
                 {showIndex ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
               </button>
             </div>
-            <div className="min-h-[12px] mt-1">
-              <AnimatePresence mode="wait">
+            <div className="min-h-[16px] mt-1 relative">
                 {!correctIndex ? (
-                  <motion.p 
-                    key="no-user"
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 5 }}
-                    className="text-[8px] font-bold text-rose-500 capitalize tracking-tight ml-0.5"
-                  >
+                  <p className="text-[9px] font-bold text-rose-500 capitalize tracking-tight ml-0.5">
                     * Pilih nama Anda dari daftar di atas terlebih dahulu
-                  </motion.p>
+                  </p>
                 ) : !inputIndex ? (
-                  <motion.p 
-                    key="empty-input"
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 5 }}
-                    className="text-[8px] font-bold text-rose-500 capitalize tracking-tight ml-0.5"
-                  >
+                  <p className="text-[9px] font-bold text-rose-500 capitalize tracking-tight ml-0.5">
                     * Masukkan indek karyawan untuk verifikasi
-                  </motion.p>
+                  </p>
                 ) : inputIndex === correctIndex ? (
-                  <motion.p 
-                    key="correct"
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 5 }}
-                    className="text-[8px] font-bold text-emerald-500 capitalize tracking-tight ml-0.5 flex items-center gap-1"
-                  >
-                    <CheckCircle2 className="w-2 h-2" /> Indek yang Anda ketik sudah benar
-                  </motion.p>
+                  showIndexSuccess ? (
+                    <p className="text-[9px] font-bold text-emerald-500 capitalize tracking-tight ml-0.5 flex items-center gap-1">
+                      <CheckCircle2 className="w-2.5 h-2.5" /> Indek yang Anda ketik sudah benar
+                    </p>
+                  ) : null
                 ) : (
-                  <motion.p 
-                    key="incorrect"
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 5 }}
-                    className="text-[8px] font-bold text-rose-500 capitalize tracking-tight ml-0.5 animate-pulse"
-                  >
+                  <p className="text-[9px] font-bold text-rose-500 capitalize tracking-tight ml-0.5 animate-pulse">
                     ⚠ Indek Karyawan tidak sesuai!
-                  </motion.p>
+                  </p>
                 )}
-              </AnimatePresence>
             </div>
           </div>
 

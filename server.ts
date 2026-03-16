@@ -305,6 +305,21 @@ async function startServer() {
         phone TEXT NOT NULL,
         employee_index TEXT
       );
+
+      CREATE TABLE IF NOT EXISTS assets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        asset_id TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        status TEXT DEFAULT 'Active',
+        assigned_to TEXT,
+        department TEXT,
+        purchase_date DATE,
+        condition TEXT,
+        notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
     `);
 
     // Add face_photo column if it doesn't exist
@@ -763,6 +778,56 @@ async function startServer() {
   app.delete("/api/master-users/:id", (req, res) => {
     db.prepare("DELETE FROM master_users WHERE id = ?").run(req.params.id);
     res.json({ success: true });
+  });
+
+  // Asset Management Routes
+  app.get("/api/assets", (req, res) => {
+    try {
+      const assets = db.prepare("SELECT * FROM assets ORDER BY created_at DESC").all();
+      res.json(assets);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/assets", (req, res) => {
+    try {
+      const { asset_id, name, category, status, assigned_to, department, purchase_date, condition, notes } = req.body;
+      if (!asset_id || !name || !category) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      const info = db.prepare(
+        "INSERT INTO assets (asset_id, name, category, status, assigned_to, department, purchase_date, condition, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      ).run(asset_id, name, category, status || 'Active', assigned_to || null, department || null, purchase_date || null, condition || null, notes || null);
+      
+      const newAsset = db.prepare("SELECT * FROM assets WHERE id = ?").get(info.lastInsertRowid);
+      res.status(201).json(newAsset);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.put("/api/assets/:id", (req, res) => {
+    try {
+      const { id } = req.params;
+      const { asset_id, name, category, status, assigned_to, department, purchase_date, condition, notes } = req.body;
+      db.prepare(
+        "UPDATE assets SET asset_id = ?, name = ?, category = ?, status = ?, assigned_to = ?, department = ?, purchase_date = ?, condition = ?, notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+      ).run(asset_id, name, category, status, assigned_to, department, purchase_date, condition, notes, id);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/assets/:id", (req, res) => {
+    try {
+      const { id } = req.params;
+      db.prepare("DELETE FROM assets WHERE id = ?").run(id);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
   });
 
   app.get("/api/tickets", (req, res) => {
