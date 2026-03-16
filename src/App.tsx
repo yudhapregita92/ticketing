@@ -1504,55 +1504,63 @@ export default function App() {
 
             {/* Dashboard Analytics - Admin Only */}
             {adminUser && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                <div className={`${themeClasses.card} p-2.5 rounded-2xl border shadow-sm flex items-center gap-2.5`}>
-                  <div className="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 shrink-0">
-                    <Clock className="w-4.5 h-4.5" />
+              <div className="flex flex-wrap gap-3 mb-6">
+                {tickets.filter(t => t.status === 'New').length > 0 && (
+                  <div className={`flex-1 min-w-[140px] ${themeClasses.card} p-2.5 rounded-2xl border shadow-sm flex items-center gap-2.5`}>
+                    <div className="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 shrink-0">
+                      <Clock className="w-4.5 h-4.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-black text-slate-400 capitalize tracking-wider whitespace-nowrap">Baru</p>
+                      <RollingNumber 
+                        value={tickets.filter(t => t.status === 'New').length} 
+                        className={`text-base font-black ${themeClasses.text}`} 
+                      />
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-[9px] font-black text-slate-400 capitalize tracking-wider whitespace-nowrap">Baru</p>
-                    <RollingNumber 
-                      value={tickets.filter(t => t.status === 'New').length} 
-                      className={`text-base font-black ${themeClasses.text}`} 
-                    />
+                )}
+                {tickets.filter(t => t.status === 'In Progress').length > 0 && (
+                  <div className={`flex-1 min-w-[140px] ${themeClasses.card} p-2.5 rounded-2xl border shadow-sm flex items-center gap-2.5`}>
+                    <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 shrink-0">
+                      <Activity className="w-4.5 h-4.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-black text-slate-400 capitalize tracking-wider whitespace-nowrap">Progres</p>
+                      <RollingNumber 
+                        value={tickets.filter(t => t.status === 'In Progress').length} 
+                        className={`text-base font-black ${themeClasses.text}`} 
+                      />
+                    </div>
                   </div>
-                </div>
-                <div className={`${themeClasses.card} p-2.5 rounded-2xl border shadow-sm flex items-center gap-2.5`}>
-                  <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 shrink-0">
-                    <Activity className="w-4.5 h-4.5" />
+                )}
+                {tickets.filter(t => t.status === 'Completed').length > 0 && (
+                  <div className={`flex-1 min-w-[140px] ${themeClasses.card} p-2.5 rounded-2xl border shadow-sm flex items-center gap-2.5`}>
+                    <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 shrink-0">
+                      <CheckCircle2 className="w-4.5 h-4.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-black text-slate-400 capitalize tracking-wider whitespace-nowrap">Selesai</p>
+                      <RollingNumber 
+                        value={tickets.filter(t => t.status === 'Completed').length} 
+                        className={`text-base font-black ${themeClasses.text}`} 
+                      />
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-[9px] font-black text-slate-400 capitalize tracking-wider whitespace-nowrap">Progres</p>
-                    <RollingNumber 
-                      value={tickets.filter(t => t.status === 'In Progress').length} 
-                      className={`text-base font-black ${themeClasses.text}`} 
-                    />
+                )}
+                {tickets.filter(t => t.priority === 'Urgent' && t.status !== 'Completed').length > 0 && (
+                  <div className={`flex-1 min-w-[140px] ${themeClasses.card} p-2.5 rounded-2xl border shadow-sm flex items-center gap-2.5`}>
+                    <div className="w-9 h-9 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600 shrink-0">
+                      <AlertCircle className="w-4.5 h-4.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-black text-slate-400 capitalize tracking-wider whitespace-nowrap">Urgent</p>
+                      <RollingNumber 
+                        value={tickets.filter(t => t.priority === 'Urgent' && t.status !== 'Completed').length} 
+                        className={`text-base font-black ${themeClasses.text}`} 
+                      />
+                    </div>
                   </div>
-                </div>
-                <div className={`${themeClasses.card} p-2.5 rounded-2xl border shadow-sm flex items-center gap-2.5`}>
-                  <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 shrink-0">
-                    <CheckCircle2 className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[9px] font-black text-slate-400 capitalize tracking-wider whitespace-nowrap">Selesai</p>
-                    <RollingNumber 
-                      value={tickets.filter(t => t.status === 'Completed').length} 
-                      className={`text-base font-black ${themeClasses.text}`} 
-                    />
-                  </div>
-                </div>
-                <div className={`${themeClasses.card} p-2.5 rounded-2xl border shadow-sm flex items-center gap-2.5`}>
-                  <div className="w-9 h-9 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600 shrink-0">
-                    <AlertCircle className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[9px] font-black text-slate-400 capitalize tracking-wider whitespace-nowrap">Urgent</p>
-                    <RollingNumber 
-                      value={tickets.filter(t => t.priority === 'Urgent' && t.status !== 'Completed').length} 
-                      className={`text-base font-black ${themeClasses.text}`} 
-                    />
-                  </div>
-                </div>
+                )}
               </div>
             )}
 
