@@ -64,10 +64,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setViewMode
 }) => {
   return (
-    <div className="lg:col-span-1 space-y-4 lg:space-y-6">
+    <div className="lg:col-span-1 space-y-3 lg:space-y-4">
       {/* Sidebar Menu - Desktop Only */}
-      <section className={`hidden lg:block ${themeClasses.card} rounded-[1.5rem] border p-4 shadow-sm`}>
-        <div className="flex items-center gap-2 mb-4 px-2">
+      <section className={`hidden lg:block ${themeClasses.card} rounded-[1.5rem] border p-3 shadow-sm`}>
+        <div className="flex items-center gap-2 mb-2 px-2">
           <div className={`w-6 h-6 rounded-lg flex items-center justify-center border ${isDark ? 'bg-indigo-900/30 text-indigo-400 border-indigo-800' : 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}>
             <Send className="w-3 h-3" />
           </div>
@@ -78,7 +78,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {adminUser && (
             <button
               onClick={() => setViewMode('dashboard')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-xs font-bold ${
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all text-xs font-bold ${
                 viewMode === 'dashboard' 
                   ? 'bg-emerald-500/10 text-emerald-600' 
                   : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -93,7 +93,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           
           <button
             onClick={() => setViewMode('today')}
-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-xs font-bold ${
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all text-xs font-bold ${
               viewMode === 'today' 
                 ? 'bg-emerald-500/10 text-emerald-600' 
                 : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -112,7 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           
           <button
             onClick={() => setViewMode('all')}
-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-xs font-bold ${
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all text-xs font-bold ${
               viewMode === 'all' 
                 ? 'bg-emerald-500/10 text-emerald-600' 
                 : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -127,7 +127,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {adminUser && (
             <button
               onClick={() => setViewMode('my_tickets')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-xs font-bold ${
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all text-xs font-bold ${
                 viewMode === 'my_tickets' 
                   ? 'bg-emerald-500/10 text-emerald-600' 
                   : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -143,7 +143,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {adminUser && (
             <button
               onClick={() => setViewMode('assets')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-xs font-bold ${
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all text-xs font-bold ${
                 viewMode === 'assets' 
                   ? 'bg-emerald-500/10 text-emerald-600' 
                   : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -164,12 +164,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           whileHover={{ y: -4, boxShadow: isDark ? "0 20px 40px -10px rgba(0,0,0,0.5)" : "0 20px 40px -10px rgba(0,0,0,0.05)" }}
-          className={`${themeClasses.card} rounded-3xl border p-4 sm:p-6 shadow-sm overflow-hidden relative`}
+          className={`${themeClasses.card} rounded-3xl border p-3 sm:p-4 shadow-sm overflow-hidden relative`}
         >
-          <div className="absolute top-0 right-0 p-6 opacity-5">
-            <Bell className={`w-24 h-24 ${isDark ? 'text-white' : 'text-slate-900'}`} />
+          <div className="absolute top-0 right-0 p-4 opacity-5">
+            <Bell className={`w-20 h-20 ${isDark ? 'text-white' : 'text-slate-900'}`} />
           </div>
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
             <div className="flex items-center gap-2">
               <div className={`w-8 h-8 rounded-xl flex items-center justify-center border ${isDark ? 'bg-rose-900/30 text-rose-400 border-rose-800' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
                 <Bell className="w-4 h-4" />
@@ -244,8 +244,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       {/* Queue Statistics */}
-      <section className={`${themeClasses.card} rounded-[1.5rem] border p-5 shadow-sm`}>
-        <div className="flex items-center justify-between mb-4">
+      <section className={`${themeClasses.card} rounded-[1.5rem] border p-3 shadow-sm`}>
+        <div className="flex items-center justify-between mb-2">
           <h2 className={`text-sm font-bold ${themeClasses.text}`}>Status Antrian</h2>
           <BarChart3 className="w-4 h-4 text-slate-300" />
         </div>
@@ -290,13 +290,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <motion.section 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`${themeClasses.card} rounded-3xl border p-4 sm:p-6 shadow-sm`}
+          className={`${themeClasses.card} rounded-3xl border p-3 sm:p-4 shadow-sm`}
         >
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className="flex items-center justify-between mb-2 sm:mb-3">
             <h2 className={`text-sm font-bold capitalize tracking-wider ${themeClasses.text}`}>Distribusi Masalah</h2>
             <button 
               onClick={() => setShowDistribution(!showDistribution)}
-              className={`p-2 rounded-xl transition-all ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}
+              className={`p-1.5 rounded-xl transition-all ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}
             >
               {showDistribution ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
@@ -376,8 +376,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </section>
 
-      {/* App Version Info */}
-      <div className="flex flex-col items-center justify-center py-2 opacity-30">
+      {/* App Version Info - Desktop Only */}
+      <div className="hidden lg:flex flex-col items-center justify-center py-2 opacity-30">
         <p className={`text-[9px] font-bold tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
           IT HELPDESK K3DK v{APP_VERSION} ({getEnvironment()})
         </p>

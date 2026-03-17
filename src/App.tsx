@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Toaster, toast } from 'react-hot-toast';
+import { APP_VERSION, getEnvironment } from './version';
 import { 
   ShieldCheck, 
   Plus, 
@@ -1378,8 +1379,8 @@ export default function App() {
               toggleTheme={toggleTheme}
             />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 lg:pb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
+      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-2 sm:py-4 pb-20 lg:pb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-6">
           {/* --- SIDEBAR: STATS & INFO --- */}
           <Sidebar 
             isDark={isDark}
@@ -1398,9 +1399,9 @@ export default function App() {
           />
 
           {/* --- MAIN CONTENT --- */}
-          <div className="lg:col-span-2 space-y-3 sm:space-y-4">
+          <div className="lg:col-span-2 space-y-2 sm:space-y-3">
             {/* Mobile Navigation Tabs */}
-            <div className="lg:hidden flex items-center justify-between gap-2 mb-2 sm:mb-4 border-b border-slate-100 pb-1 overflow-hidden">
+            <div className="lg:hidden flex items-center justify-between gap-2 mb-1 sm:mb-2 border-b border-slate-100 pb-1 overflow-hidden">
               <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-hide pb-1">
                 <button 
                   onClick={() => setViewMode('today')}
@@ -1485,7 +1486,7 @@ export default function App() {
             ) : (
               <>
                 {/* Desktop Filter Controls (Only visible on desktop) */}
-                <div className="hidden lg:flex items-center justify-end gap-2 mb-4">
+                <div className="hidden lg:flex items-center justify-end gap-2 mb-2">
                   <button 
                     onClick={() => {
                       setFilterDept('');
@@ -1507,7 +1508,7 @@ export default function App() {
                 </div>
 
                 {/* Results Summary & Filter Toggle */}
-                <div className="flex items-center justify-between mb-4 px-1">
+                <div className="flex items-center justify-between mb-2 px-1">
               <div className={`text-[10px] sm:text-xs font-bold ${themeClasses.textMuted} flex items-center gap-1`}>
                 Menampilkan 
                 <RollingNumber value={Math.min((currentPage - 1) * itemsPerPage + 1, filteredTickets.length)} className={themeClasses.text} /> 
@@ -1563,7 +1564,7 @@ export default function App() {
               </div>
             ) : (
               <motion.div 
-                className="space-y-4"
+                className="space-y-2"
                 drag="x"
                 dragDirectionLock
                 dragConstraints={{ left: 0, right: 0 }}
@@ -1652,7 +1653,7 @@ export default function App() {
                                 stiffness: 260,
                                 damping: 20
                               }}
-                              className={`${themeClasses.card} rounded-xl p-2 shadow-sm hover:shadow-md transition-all group cursor-pointer relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 ${
+                              className={`${themeClasses.card} rounded-xl p-1.5 shadow-sm hover:shadow-md transition-all group cursor-pointer relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 ${
                                 selectedTickets.includes(ticket.id) ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
                               } ${
                                 getSLAColor(ticket.created_at, ticket.status) || (isDark ? 'hover:border-emerald-900' : 'hover:border-emerald-100')
@@ -1661,7 +1662,7 @@ export default function App() {
                             >
                             <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                             
-                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
                               {adminUser && (
                                 <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                                   <input 
@@ -1896,9 +1897,9 @@ export default function App() {
               </motion.div>
             )}
 
-            {/* Help CTA - Visible on mobile at the bottom */}
+                {/* Help CTA - Visible on mobile at the bottom */}
             <section 
-              className="lg:hidden rounded-3xl p-5 sm:p-6 text-white shadow-xl relative overflow-hidden group transition-all mt-6 sm:mt-8"
+              className="lg:hidden rounded-3xl p-4 sm:p-5 text-white shadow-xl relative overflow-hidden group transition-all mt-4 sm:mt-6"
               style={{ backgroundColor: primaryColor, boxShadow: `0 20px 25px -5px ${primaryColor}30` }}
             >
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
@@ -1928,6 +1929,16 @@ export default function App() {
                 Buat Tiket Sekarang
               </motion.button>
             </section>
+            
+            {/* App Version Info - Mobile Only */}
+            <div className="lg:hidden flex flex-col items-center justify-center py-4 opacity-30">
+              <p className={`text-[9px] font-bold tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                IT HELPDESK K3DK v{APP_VERSION} ({getEnvironment()})
+              </p>
+              <p className={`text-[7px] font-medium ${isDark ? 'text-slate-600' : 'text-slate-500'}`}>
+                © 2026 Professional Ticketing System
+              </p>
+            </div>
             </>
           )}
           </div>

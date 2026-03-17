@@ -162,7 +162,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-4 sm:space-y-6 pb-20 lg:pb-0"
+      className="space-y-3 sm:space-y-4 pb-20 lg:pb-0"
     >
       {/* Header & Stats */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

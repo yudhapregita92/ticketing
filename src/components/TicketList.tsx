@@ -62,7 +62,7 @@ export const TicketList: React.FC<TicketListProps> = ({
   const [showFilters, setShowFilters] = React.useState(false);
 
   return (
-    <div className="lg:col-span-3 space-y-4 lg:space-y-6">
+    <div className="lg:col-span-3 space-y-3 lg:space-y-4">
       {/* Filters & Search */}
       <div className="flex flex-col gap-4 border-b border-slate-100 pb-4">
         <div className="flex items-center justify-between">
