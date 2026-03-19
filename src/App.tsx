@@ -1,58 +1,21 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Toaster, toast } from 'react-hot-toast';
 import { APP_VERSION, getEnvironment } from './version';
 import { 
-  ShieldCheck, 
-  Plus, 
-  Clock, 
+  Zap, 
+  Send, 
+  RefreshCcw, 
   CheckCircle2, 
-  AlertCircle, 
-  User, 
-  Phone, 
-  Building2, 
-  Layers,
-  Settings2,
-  ChevronRight,
-  ChevronUp,
-  ChevronDown,
-  RefreshCcw,
-  Trash2,
-  LogIn,
-  LogOut,
-  Lock,
-  Cpu,
-  Globe,
-  Zap,
-  Ticket,
-  Send,
-  MessageSquare,
-  Calendar,
-  MessageCircle,
-  Eye,
-  X,
-  Filter,
-  Camera,
-  Image as ImageIcon,
-  MapPin,
-  Bell,
-  TrendingUp,
-  BarChart3,
-  SlidersHorizontal,
-  History,
-  ShieldAlert,
-  UserPlus,
-  Moon,
-  Sun,
-  Inbox,
-  Activity
+  ShieldCheck,
+  Clock,
+  AlertCircle
 } from 'lucide-react';
 
 // Import modular components
-import { Counter, Shimmer } from './components/Common';
+import { Counter, Shimmer, HighlightText, SkeletonTicket } from './components/Common';
 import { Header } from './components/Header';
-import { Logo } from './components/Logo';
 import { Sidebar } from './components/Sidebar';
 import { TicketDetailModal } from './components/modals/TicketDetailModal';
 import { NewTicketModal } from './components/modals/NewTicketModal';
@@ -65,124 +28,17 @@ import { SuccessModal } from './components/modals/SuccessModal';
 import { MobileFilterModal } from './components/modals/MobileFilterModal';
 import { ImageManagerModal } from './components/modals/ImageManagerModal';
 import { SplashScreen } from './components/SplashScreen';
-
-interface ITicket {
-  id: number;
-  ticket_no: string;
-  name: string;
-  department: string;
-  phone: string;
-  category: string;
-  description: string;
-  assigned_to: string | null;
-  admin_reply: string | null;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  responded_at?: string | null;
-  resolved_at?: string | null;
-  photo?: string | null;
-  ip_address?: string | null;
-  user_agent?: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
-  internal_notes?: string | null;
-  priority: 'Low' | 'Medium' | 'High' | 'Urgent';
-}
-
-const STATUSES = ['New', 'In Progress', 'Completed', 'Cancelled'];
-const LOGO_OPTIONS = [
-  { id: 'ShieldCheck', icon: ShieldCheck },
-  { id: 'Cpu', icon: Cpu },
-  { id: 'Globe', icon: Globe },
-  { id: 'Zap', icon: Zap },
-  { id: 'Ticket', icon: Ticket },
-  { id: 'Send', icon: Logo }
-];
-
-const getDeviceInfo = (ua: string) => {
-  if (!ua) return 'Unknown Device';
-  
-  let os = 'Unknown OS';
-  if (ua.includes('Windows')) os = 'Windows';
-  else if (ua.includes('Android')) os = 'Android';
-  else if (ua.includes('iPhone')) os = 'iPhone';
-  else if (ua.includes('iPad')) os = 'iPad';
-  else if (ua.includes('Macintosh')) os = 'Mac OS';
-  else if (ua.includes('Linux')) os = 'Linux';
-
-  let browser = 'Unknown Browser';
-  if (ua.includes('Chrome')) browser = 'Chrome';
-  else if (ua.includes('Firefox')) browser = 'Firefox';
-  else if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
-  else if (ua.includes('Edge')) browser = 'Edge';
-  else if (ua.includes('Opera')) browser = 'Opera';
-
-  return `${os} (${browser})`;
-};
-
-const HighlightText = ({ text, highlight, isDark }: { text: string, highlight: string, isDark: boolean }) => {
-  if (!highlight.trim()) return <>{text}</>;
-  const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
-  return (
-    <>
-      {parts.map((part, i) => 
-        part.toLowerCase() === highlight.toLowerCase() ? (
-          <mark key={i} className={`${isDark ? 'bg-emerald-500/30 text-emerald-300' : 'bg-emerald-100 text-emerald-900'} px-0.5 rounded`}>
-            {part}
-          </mark>
-        ) : (
-          part
-        )
-      )}
-    </>
-  );
-};
-
-const SkeletonTicket: React.FC<{ isDark: boolean }> = ({ isDark }) => (
-  <div className={`animate-pulse rounded-xl p-2 border ${isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-100'} flex items-center gap-3`}>
-    <div className={`w-8 h-8 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
-    <div className="flex-1 space-y-2">
-      <div className="flex justify-between">
-        <div className={`h-2 w-16 rounded ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
-        <div className={`h-2 w-20 rounded ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
-      </div>
-      <div className={`h-3 w-32 rounded ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
-      <div className="flex gap-2">
-        <div className={`h-2 w-24 rounded ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
-        <div className={`h-2 w-24 rounded ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
-      </div>
-    </div>
-  </div>
-);
-
-/**
- * IT Helpdesk K3DK - Main Application Component
- * 
- * Flow Aplikasi:
- * 1. User: Membuat tiket melalui modal "New Ticket".
- * 2. User: Mengunggah foto (opsional) yang secara otomatis diberi watermark lokasi & waktu.
- * 3. Database: Tiket disimpan di Supabase (via API Express).
- * 4. Admin: Login melalui Portal Admin untuk mengelola antrian.
- * 5. Admin: Melihat statistik distribusi masalah (Pie Chart) dan notifikasi real-time.
- * 6. Admin: Memperbarui status tiket, menugaskan IT, dan memberikan balasan resolusi.
- */
-
-import { RollingNumber } from './components/RollingNumber';
-
 import { AdminDashboard } from './components/AdminDashboard';
 import { AssetManagement } from './components/AssetManagement';
+import { TicketList } from './components/TicketList';
 
-/**
- * Helper to safely parse date strings for Safari compatibility
- */
-const parseSafeDate = (dateString: string): Date => {
-  if (!dateString) return new Date();
-  const normalizedDate = dateString.includes('T') || dateString.includes('Z') 
-    ? dateString 
-    : dateString.replace(' ', 'T');
-  return new Date(normalizedDate);
-};
+// Types, Constants, and Utils
+import { ITicket, IUser, IDepartment, ICategory, IMasterUser, ISettings } from './types';
+import { STATUSES, LOGO_OPTIONS, PRIORITIES } from './constants';
+import { parseSafeDate, formatDate } from './utils/dateUtils';
+import { getDeviceInfo } from './utils/deviceUtils';
+import { getSLAColor, getSLALabel, processPhotoWithWatermark } from './utils/ticketUtils';
+import { api } from './services/api';
 
 export default function App() {
   // --- State Management ---
@@ -215,29 +71,21 @@ export default function App() {
     setSelectedTicket(ticket);
     setTicketLogs([]);
     try {
-      const [photoRes, facePhotoRes, logsRes] = await Promise.all([
-        fetch(`/api/tickets/${ticket.id}/photo`),
-        fetch(`/api/tickets/${ticket.id}/face_photo`),
-        fetch(`/api/tickets/${ticket.id}/logs`)
-      ]);
-      
-      const photoData = await photoRes.json();
-      const facePhotoData = await facePhotoRes.json();
+      const details = await api.getTicketDetails(ticket.id);
       
       setSelectedTicket(prev => {
         if (prev && prev.id === ticket.id) {
           return { 
             ...prev, 
-            photo: photoData.photo || null,
-            face_photo: facePhotoData.face_photo || null
+            photo: details.photo,
+            face_photo: details.face_photo
           };
         }
         return prev;
       });
 
-      const logsData = await logsRes.json();
-      if (Array.isArray(logsData)) {
-        setTicketLogs(logsData);
+      if (Array.isArray(details.logs)) {
+        setTicketLogs(details.logs);
       }
     } catch (err) {
       console.error('Failed to fetch ticket details:', err);
@@ -418,28 +266,6 @@ export default function App() {
     setCurrentPage(1);
   }, [viewMode, filterDept, filterStatus, filterDate, searchQuery]);
 
-  const getSLAColor = (createdAt: string, status: string) => {
-    if (status !== 'New') return '';
-    const created = parseSafeDate(createdAt).getTime();
-    const now = new Date().getTime();
-    const diffHours = (now - created) / (1000 * 60 * 60);
-
-    if (diffHours > 5) return 'bg-rose-500/10 border-rose-500/20 text-rose-600 animate-pulse';
-    if (diffHours > 2) return 'bg-amber-500/10 border-amber-500/20 text-amber-600';
-    return '';
-  };
-
-  const getSLALabel = (createdAt: string, status: string) => {
-    if (status !== 'New') return null;
-    const created = parseSafeDate(createdAt).getTime();
-    const now = new Date().getTime();
-    const diffHours = (now - created) / (1000 * 60 * 60);
-
-    if (diffHours > 5) return 'Critical (>5h)';
-    if (diffHours > 2) return 'Delayed (>2h)';
-    return null;
-  };
-
   /**
    * Menghitung statistik kategori untuk Pie Chart
    */
@@ -547,105 +373,28 @@ export default function App() {
    * Menangani unggahan foto dan menambahkan watermark (Lokasi & Waktu)
    * Menggunakan Canvas API untuk menggambar teks di atas gambar.
    */
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setPhotoLoading(true);
-
-    // Get location
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            if (!ctx) return;
-
-            // Set dimensions (max 400px width/height for smaller size)
-            const maxDim = 400;
-            let width = img.width;
-            let height = img.height;
-            if (width > height) {
-              if (width > maxDim) {
-                height *= maxDim / width;
-                width = maxDim;
-              }
-            } else {
-              if (height > maxDim) {
-                width *= maxDim / height;
-                height = maxDim;
-              }
-            }
-            canvas.width = width;
-            canvas.height = height;
-
-            // Draw image
-            ctx.drawImage(img, 0, 0, width, height);
-
-            // Draw watermark background
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-            const padding = 8;
-            const fontSize = Math.max(9, Math.floor(width / 40));
-            ctx.font = `${fontSize}px sans-serif`;
-            const text1 = `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
-            const text2 = `Time: ${new Date().toLocaleString()}`;
-            const text3 = `Google Maps Location`;
-            
-            const metrics1 = ctx.measureText(text1);
-            const metrics2 = ctx.measureText(text2);
-            const metrics3 = ctx.measureText(text3);
-            const bgWidth = Math.max(metrics1.width, metrics2.width, metrics3.width) + padding * 2;
-            const bgHeight = fontSize * 3 + padding * 3;
-
-            ctx.fillRect(5, height - bgHeight - 5, bgWidth, bgHeight);
-
-            // Draw watermark text
-            ctx.fillStyle = 'white';
-            ctx.fillText(text3, padding, height - bgHeight + fontSize - 2);
-            ctx.fillText(text1, padding, height - bgHeight + fontSize * 2 + padding / 2 - 2);
-            ctx.fillText(text2, padding, height - bgHeight + fontSize * 3 + padding - 2);
-
-            // Compress to stay under 30KB to save space
-            let quality = 0.6;
-            let base64 = canvas.toDataURL('image/jpeg', quality);
-            
-            // Iteratively reduce quality if still too large
-            while (base64.length > 40000 && quality > 0.1) { // 40000 chars in base64 is approx 30KB
-              quality -= 0.1;
-              base64 = canvas.toDataURL('image/jpeg', quality);
-            }
-
-            setFormData(prev => ({ ...prev, photo: base64 }));
-            setPhotoLoading(false);
-          };
-          img.src = event.target?.result as string;
-        };
-        reader.readAsDataURL(file);
-      },
-      (error) => {
-        console.error("Error getting location:", error);
-        alert("Gagal mendapatkan lokasi. Pastikan izin lokasi diaktifkan untuk watermark.");
-        setPhotoLoading(false);
-      },
-      { enableHighAccuracy: true }
-    );
+    try {
+      const base64 = await processPhotoWithWatermark(file, formData.latitude || 0, formData.longitude || 0);
+      setFormData(prev => ({ ...prev, photo: base64 }));
+    } catch (err) {
+      console.error("Error processing photo:", err);
+      toast.error("Gagal memproses foto. Pastikan izin lokasi diaktifkan.");
+    } finally {
+      setPhotoLoading(false);
+    }
   };
 
   // API Health Check
   useEffect(() => {
     const checkHealth = async () => {
       try {
-        const res = await fetch('/api/health');
-        if (res.ok) {
-          const data = await res.json();
-          console.log('API Health Check OK:', data);
-        } else {
-          console.error('API Health Check Failed with status:', res.status);
-        }
+        const data = await api.checkHealth();
+        console.log('API Health Check OK:', data);
       } catch (err) {
         console.error('API Health Check Error:', err);
       }
@@ -659,33 +408,9 @@ export default function App() {
   const fetchTickets = async (showLoading = false) => {
     if (showLoading) setLoading(true);
     try {
-      const url = adminUser 
-        ? `/api/tickets?username=${encodeURIComponent(adminUser.username)}&role=${encodeURIComponent(adminUser.role)}`
-        : '/api/tickets';
+      const data = await api.getTickets(adminUser?.username, adminUser?.role);
       
-      console.log(`Fetching tickets from: ${url}`);
-      const res = await fetch(url);
-      
-      if (!res.ok) {
-        const text = await res.text();
-        console.error(`Fetch tickets failed with status ${res.status}: ${text.substring(0, 100)}`);
-        toast.error(`Gagal mengambil tiket: Server error ${res.status}`);
-        setTickets([]);
-        return;
-      }
-      
-      const contentType = res.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await res.text();
-        console.error(`API returned non-JSON response from ${url}: ${text.substring(0, 100)}`);
-        toast.error("Gagal mengambil tiket: Format data tidak valid (Bukan JSON)");
-        setTickets([]);
-        return;
-      }
-
-      const data = await res.json();
       if (Array.isArray(data)) {
-        console.log(`Successfully fetched ${data.length} tickets.`);
         // Notification logic for Admin
         if (adminUser && lastTicketIdRef.current !== null && data.length > 0) {
           const newTickets = data.filter(t => t.id > lastTicketIdRef.current!);
@@ -717,12 +442,10 @@ export default function App() {
         }
 
         setTickets(data);
-      } else {
-        console.error('API returned non-array data:', data);
-        setTickets([]);
       }
     } catch (err) {
       console.error('Failed to fetch tickets:', err);
+      toast.error("Gagal mengambil tiket");
     } finally {
       if (showLoading) setLoading(false);
     }
@@ -730,35 +453,21 @@ export default function App() {
 
   const fetchManagementData = async () => {
     try {
-      console.log('Fetching management data...');
-      const [itRes, deptRes, catRes, usersRes, masterUsersRes, adminUsersRes] = await Promise.all([
-        fetch('/api/it-personnel'),
-        fetch('/api/departments'),
-        fetch('/api/categories'),
-        fetch('/api/users'),
-        fetch('/api/master-users'),
-        fetch('/api/admin-users')
+      const results = await Promise.allSettled([
+        api.getITPersonnel(),
+        api.getDepartments(),
+        api.getCategories(),
+        api.getUsers(),
+        api.getMasterUsers(),
+        api.getAdminUsers()
       ]);
-      
-      if (!itRes.ok || !deptRes.ok || !catRes.ok || !usersRes.ok || !masterUsersRes.ok || !adminUsersRes.ok) {
-        throw new Error('Gagal mengambil data manajemen');
-      }
 
-      const its = await itRes.json();
-      const depts = await deptRes.json();
-      const cats = await catRes.json();
-      const usersData = await usersRes.json();
-      const masterUsersData = await masterUsersRes.json();
-      const adminUsersData = await adminUsersRes.json();
-      
-      console.log('Management data fetched:', { its, depts, cats, usersData, masterUsersData, adminUsersData });
-      
-      setItPersonnel(its);
-      setDepartments(depts);
-      setCategories(cats);
-      setUsers(usersData);
-      setMasterUsers(masterUsersData);
-      setAdminUsers(adminUsersData);
+      if (results[0].status === 'fulfilled') setItPersonnel(results[0].value);
+      if (results[1].status === 'fulfilled') setDepartments(results[1].value);
+      if (results[2].status === 'fulfilled') setCategories(results[2].value);
+      if (results[3].status === 'fulfilled') setUsers(results[3].value);
+      if (results[4].status === 'fulfilled') setMasterUsers(results[4].value);
+      if (results[5].status === 'fulfilled') setAdminUsers(results[5].value);
     } catch (err) {
       console.error('Failed to fetch management data:', err);
     }
@@ -769,9 +478,8 @@ export default function App() {
    */
   const fetchSettings = async () => {
     try {
-      const res = await fetch('/api/settings');
-      const data = await res.json();
-      if (data.app_name) {
+      const data = await api.getSettings();
+      if (data && data.app_name) {
         setAppSettings(prev => {
           const newSettings = {
             ...prev,
@@ -780,9 +488,9 @@ export default function App() {
             primary_color: data.primary_color || prev.primary_color,
             admin_theme_mode: data.admin_theme_mode || prev.admin_theme_mode,
             admin_primary_color: data.admin_primary_color || prev.admin_primary_color,
-            notification_emails: data.notification_emails ? JSON.parse(data.notification_emails) : prev.notification_emails,
+            notification_emails: data.notification_emails ? (typeof data.notification_emails === 'string' ? JSON.parse(data.notification_emails) : data.notification_emails) : prev.notification_emails,
             telegram_bot_token: data.telegram_bot_token || prev.telegram_bot_token,
-            telegram_chat_ids: data.telegram_chat_ids ? JSON.parse(data.telegram_chat_ids) : prev.telegram_chat_ids
+            telegram_chat_ids: data.telegram_chat_ids ? (typeof data.telegram_chat_ids === 'string' ? JSON.parse(data.telegram_chat_ids) : data.telegram_chat_ids) : prev.telegram_chat_ids
           };
           localStorage.setItem('appSettings', JSON.stringify(newSettings));
           return newSettings;
@@ -797,28 +505,19 @@ export default function App() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
-      const res = await fetch('/api/master-users/upload', {
-        method: 'POST',
-        body: formData
-      });
-      const data = await res.json();
-      if (res.ok) {
-        alert(`Berhasil mengunggah ${data.count} user.`);
+      const data = await api.uploadMasterUsers(file);
+      if (data) {
+        toast.success(`Berhasil mengunggah ${data.count} user.`);
         fetchManagementData();
-      } else {
-        alert(`Gagal: ${data.error}`);
       }
-    } catch (err) {
-      console.error(err);
-      alert('Terjadi kesalahan saat mengunggah file.');
+    } catch (err: any) {
+      console.error('Upload error:', err);
+      toast.error(`Gagal mengunggah file: ${err.message || 'Terjadi kesalahan'}`);
+    } finally {
+      // reset input
+      e.target.value = '';
     }
-    
-    // reset input
-    e.target.value = '';
   };
 
   /**
@@ -907,12 +606,7 @@ export default function App() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(loginData)
-      });
-      const data = await res.json();
+      const data = await api.login(loginData);
       if (data.success) {
         setAdminUser(data.user);
         localStorage.setItem('adminUser', JSON.stringify(data.user));
@@ -926,10 +620,7 @@ export default function App() {
         }
         
         // Re-fetch tickets with user context
-        const url = `/api/tickets?username=${encodeURIComponent(data.user.username)}&role=${encodeURIComponent(data.user.role)}`;
-        const ticketRes = await fetch(url);
-        const ticketData = await ticketRes.json();
-        setTickets(ticketData);
+        fetchTickets();
       } else {
         alert('Login failed: ' + data.error);
       }
@@ -947,21 +638,19 @@ export default function App() {
       if (type === 'reassign') body.reassign_to = targetUser;
       body.performed_by = adminUser.username;
 
-      const res = await fetch(`/api/tickets/${ticketId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
+      const data = await api.updateTicket(ticketId, body);
       
-      if (res.ok) {
+      if (data) {
         fetchTickets();
         if (selectedTicket && selectedTicket.id === ticketId) {
           setSelectedTicket(null);
         }
         setShowTakeoverConfirm(null);
+        toast.success(type === 'takeover' ? 'Tiket berhasil diambil alih' : 'Tiket berhasil dialihkan');
       }
     } catch (err) {
-      alert('Intervention failed');
+      console.error('Intervention failed:', err);
+      toast.error('Gagal melakukan intervensi');
     }
   };
 
@@ -983,85 +672,84 @@ export default function App() {
    */
   const handleReset = async () => {
     try {
-      const res = await fetch('/api/tickets/reset', { method: 'POST' });
-      if (res.ok) {
+      const data = await api.resetTickets();
+      if (data) {
         setTickets([]);
         fetchTickets();
         setShowResetConfirm(false);
-        alert('All data has been reset successfully.');
+        toast.success('Semua data berhasil direset.');
       }
     } catch (err) {
-      alert('Reset failed');
+      console.error('Reset error:', err);
+      toast.error('Gagal meriset data');
     }
   };
 
   const handleDeleteTicket = async (id: number) => {
     if (!confirm('Hapus tiket ini secara permanen?')) return;
     try {
-      const res = await fetch(`/api/tickets/${id}`, { method: 'DELETE' });
-      if (res.ok) fetchTickets();
-    } catch (err) { alert('Gagal menghapus tiket'); }
+      const data = await api.deleteTicket(id);
+      if (data) {
+        toast.success('Tiket berhasil dihapus');
+        fetchTickets();
+      }
+    } catch (err) {
+      console.error('Delete ticket error:', err);
+      toast.error('Gagal menghapus tiket');
+    }
   };
 
   const handleManagementAction = async (type: 'it' | 'dept' | 'cat' | 'master-user' | 'admin-user', action: 'add' | 'delete' | 'refresh', data?: any) => {
-    if (type === 'master-user') {
-      // For master-user, we just refresh the data since the actual add/delete 
-      // is handled inside SettingsModal for simplicity with multiple fields
-      const res = await fetch('/api/master-users');
-      const masterUsersData = await res.json();
-      setMasterUsers(masterUsersData);
-      return;
-    }
-    
-    if (type === 'admin-user') {
-      const [adminRes, usersRes] = await Promise.all([
-        fetch('/api/admin-users'),
-        fetch('/api/users')
-      ]);
-      setAdminUsers(await adminRes.json());
-      setUsers(await usersRes.json());
-      return;
-    }
-
-    const endpoint = type === 'it' ? 'it-personnel' : type === 'dept' ? 'departments' : 'categories';
-    const label = type === 'it' ? 'IT' : type === 'dept' ? 'Departemen' : 'Kategori';
-    
     try {
+      if (type === 'master-user') {
+        const masterUsersData = await api.getMasterUsers();
+        setMasterUsers(masterUsersData);
+        return;
+      }
+      
+      if (type === 'admin-user') {
+        const [adminData, usersData] = await Promise.all([
+          api.getAdminUsers(),
+          api.getUsers()
+        ]);
+        setAdminUsers(adminData);
+        setUsers(usersData);
+        return;
+      }
+
+      const label = type === 'it' ? 'IT' : type === 'dept' ? 'Departemen' : 'Kategori';
+      
       if (action === 'add') {
         if (!newItemName.trim()) return;
         
-        const res = await fetch(`/api/${endpoint}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            name: newItemName.trim(),
-            assigned_to: type === 'cat' ? newItemAssignedTo : undefined
-          })
-        });
+        let result;
+        if (type === 'it') result = await api.addITPersonnel({ name: newItemName.trim() });
+        else if (type === 'dept') result = await api.addDepartment({ name: newItemName.trim() });
+        else if (type === 'cat') result = await api.addCategory({ name: newItemName.trim(), assigned_to: newItemAssignedTo });
         
-        if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.error || `Gagal menambah ${label}`);
+        if (result) {
+          setNewItemName('');
+          setNewItemAssignedTo('');
+          setAddingType(null);
+          toast.success(`${label} berhasil ditambahkan`);
         }
-        
-        setNewItemName('');
-        setNewItemAssignedTo('');
-        setAddingType(null);
       } else {
         if (!confirm(`Hapus ${label} "${data.name}"?`)) return;
         
-        const res = await fetch(`/api/${endpoint}/${data.id}`, { method: 'DELETE' });
+        let result;
+        if (type === 'it') result = await api.deleteITPersonnel(data.id);
+        else if (type === 'dept') result = await api.deleteDepartment(data.id);
+        else if (type === 'cat') result = await api.deleteCategory(data.id);
         
-        if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.error || `Gagal menghapus ${label}`);
+        if (result) {
+          toast.success(`${label} berhasil dihapus`);
         }
       }
       
       await fetchManagementData();
     } catch (err: any) {
       console.error(`Management action error (${type}/${action}):`, err);
-      alert(`Error: ${err.message}`);
+      toast.error(`Error: ${err.message}`);
     }
   };
 
@@ -1072,40 +760,37 @@ export default function App() {
     e.preventDefault();
     try {
       // Update global settings
-      const res = await fetch('/api/settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...appSettings,
-          notification_emails: JSON.stringify(appSettings.notification_emails),
-          telegram_chat_ids: JSON.stringify(appSettings.telegram_chat_ids)
-        })
+      const data = await api.updateSettings({
+        ...appSettings,
+        notification_emails: JSON.stringify(appSettings.notification_emails),
+        telegram_chat_ids: JSON.stringify(appSettings.telegram_chat_ids)
       });
 
-      // If admin is logged in, also update their personal settings
-      if (adminUser) {
-        await fetch(`/api/users/${adminUser.username}/settings`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+      if (data) {
+        // If admin is logged in, also update their personal settings
+        if (adminUser) {
+          await api.updateUserSettings(adminUser.username, {
             theme_mode: appSettings.admin_theme_mode,
             primary_color: appSettings.admin_primary_color
-          })
-        });
-        // Update local adminUser state to reflect changes
-        setAdminUser({
-          ...adminUser,
-          theme_mode: appSettings.admin_theme_mode,
-          primary_color: appSettings.admin_primary_color
-        });
-      }
-
-      if (res.ok) {
+          });
+          
+          // Update local adminUser state to reflect changes
+          const updatedAdmin = {
+            ...adminUser,
+            theme_mode: appSettings.admin_theme_mode,
+            primary_color: appSettings.admin_primary_color
+          };
+          setAdminUser(updatedAdmin);
+          localStorage.setItem('adminUser', JSON.stringify(updatedAdmin));
+        }
+        
+        toast.success('Pengaturan berhasil diperbarui!');
         setShowSettings(false);
-        alert('Settings updated successfully!');
+        fetchSettings();
       }
     } catch (err) {
-      alert('Update failed');
+      console.error('Failed to update settings:', err);
+      toast.error('Gagal memperbarui pengaturan.');
     }
   };
 
@@ -1123,25 +808,18 @@ export default function App() {
 
     setSubmitting(true);
     try {
-      const res = await fetch('/api/tickets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-      if (res.ok) {
+      const data = await api.createTicket(formData);
+      if (data) {
         clearDraft();
         setShowForm(false);
         toast.success('Tiket berhasil dikirim!');
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 3000);
         fetchTickets();
-      } else {
-        const errorData = await res.json();
-        toast.error('Gagal mengirim tiket: ' + (errorData.error || 'Terjadi kesalahan'));
       }
     } catch (err) {
       console.error('Failed to submit ticket:', err);
-      toast.error('Terjadi kesalahan koneksi.');
+      toast.error('Gagal mengirim tiket.');
     } finally {
       setSubmitting(false);
     }
@@ -1162,53 +840,45 @@ export default function App() {
    * Mengeksekusi update tiket setelah konfirmasi
    */
   const confirmUpdate = async () => {
-    if (!pendingUpdate) return;
+    if (!pendingUpdate || !adminUser) return;
     try {
-      const res = await fetch(`/api/tickets/${pendingUpdate.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          status: pendingUpdate.status, 
-          assigned_to: pendingUpdate.assigned_to, 
-          admin_reply: pendingUpdate.admin_reply,
-          internal_notes: pendingUpdate.internal_notes,
-          priority: (pendingUpdate as any).priority,
-          performed_by: adminUser.username
-        })
+      const data = await api.updateTicket(pendingUpdate.id, {
+        status: pendingUpdate.status,
+        assigned_to: pendingUpdate.assigned_to,
+        admin_reply: pendingUpdate.admin_reply,
+        internal_notes: pendingUpdate.internal_notes,
+        priority: (pendingUpdate as any).priority,
+        performed_by: adminUser.username
       });
-      if (res.ok) {
+      
+      if (data) {
         toast.success('Tiket berhasil diperbarui!');
         setPendingUpdate(null);
         fetchTickets();
-      } else {
-        toast.error('Gagal memperbarui tiket.');
       }
     } catch (err) {
       console.error('Failed to update ticket:', err);
-      toast.error('Terjadi kesalahan koneksi.');
+      toast.error('Gagal memperbarui tiket.');
     }
   };
 
   const handleBulkAction = async (status: string) => {
-    if (selectedTickets.length === 0) return;
+    if (selectedTickets.length === 0 || !adminUser) return;
     if (!confirm(`Update ${selectedTickets.length} tiket menjadi ${status}?`)) return;
     
     setLoading(true);
     try {
       await Promise.all(selectedTickets.map(id => 
-        fetch(`/api/tickets/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            status, 
-            performed_by: adminUser.username 
-          })
+        api.updateTicket(id, {
+          status,
+          performed_by: adminUser.username
         })
       ));
       toast.success(`${selectedTickets.length} tiket berhasil diperbarui!`);
       setSelectedTickets([]);
       fetchTickets();
     } catch (err) {
+      console.error('Bulk update error:', err);
       toast.error('Gagal memperbarui beberapa tiket.');
     } finally {
       setLoading(false);
@@ -1399,77 +1069,8 @@ export default function App() {
           />
 
           {/* --- MAIN CONTENT --- */}
-          <div className="lg:col-span-2 space-y-2 sm:space-y-3">
-            {/* Mobile Navigation Tabs */}
-            <div className="lg:hidden flex items-center justify-between gap-2 mb-1 sm:mb-2 border-b border-slate-100 pb-1 overflow-hidden">
-              <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-hide pb-1">
-                <button 
-                  onClick={() => setViewMode('today')}
-                  className={`relative pb-1 text-[10px] sm:text-xs whitespace-nowrap font-bold transition-all ${
-                    viewMode === 'today' ? 'text-emerald-600' : isDark ? 'text-slate-400 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'
-                  }`}
-                >
-                  Antrian Hari Ini
-                  {viewMode === 'today' && (
-                    <motion.div layoutId="activeTabMobile" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full" />
-                  )}
-                </button>
-                <button 
-                  onClick={() => setViewMode('all')}
-                  className={`relative pb-1 text-[10px] sm:text-xs whitespace-nowrap font-bold transition-all ${
-                    viewMode === 'all' ? 'text-emerald-600' : isDark ? 'text-slate-400 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'
-                  }`}
-                >
-                  Semua Antrian
-                  {viewMode === 'all' && (
-                    <motion.div layoutId="activeTabMobile" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full" />
-                  )}
-                </button>
-                {adminUser && (
-                  <button 
-                    onClick={() => setViewMode('my_tickets')}
-                    className={`relative pb-1 text-[10px] sm:text-xs whitespace-nowrap font-bold transition-all ${
-                      viewMode === 'my_tickets' ? 'text-emerald-600' : isDark ? 'text-slate-400 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'
-                    }`}
-                  >
-                    Tiket Saya
-                    {viewMode === 'my_tickets' && (
-                      <motion.div layoutId="activeTabMobile" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full" />
-                    )}
-                  </button>
-                )}
-              </div>
-              
-              {/* Filter Controls (Mobile) */}
-              {viewMode !== 'dashboard' && viewMode !== 'assets' && (
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <button 
-                    onClick={() => {
-                      setTempFilters({ dept: filterDept, status: filterStatus, date: filterDate, search: searchQuery });
-                      setShowMobileFilter(true);
-                    }}
-                    className={`flex items-center gap-1 px-2 py-1 border rounded-lg text-[9px] font-black capitalize tracking-tighter shadow-sm active:scale-95 transition-all ${
-                      (filterDept || filterStatus || filterDate || searchQuery)
-                      ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
-                      : isDark ? 'bg-zinc-900 border-zinc-800 text-slate-400' : 'bg-white border-slate-200 text-slate-500'
-                    }`}
-                  >
-                    <SlidersHorizontal className="w-3 h-3" />
-                    Filter
-                  </button>
-                  <button 
-                    onClick={() => fetchTickets(true)}
-                    className="p-2 text-slate-400 hover:text-emerald-600 transition-colors"
-                    title="Segarkan Antrian"
-                    aria-label="Refresh tickets"
-                  >
-                    <RefreshCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {viewMode === 'dashboard' ? (
+          {viewMode === 'dashboard' ? (
+            <div className="lg:col-span-2 space-y-2 sm:space-y-3">
               <AdminDashboard 
                 tickets={tickets}
                 adminUser={adminUser}
@@ -1477,425 +1078,55 @@ export default function App() {
                 themeClasses={themeClasses}
                 setViewMode={setViewMode}
               />
-            ) : viewMode === 'assets' ? (
+            </div>
+          ) : viewMode === 'assets' ? (
+            <div className="lg:col-span-2 space-y-2 sm:space-y-3">
               <AssetManagement 
                 isDark={isDark}
                 themeClasses={themeClasses}
                 primaryColor={primaryColor}
               />
-            ) : (
-              <>
-                {/* Desktop Filter Controls (Only visible on desktop) */}
-                <div className="hidden lg:flex items-center justify-end gap-2 mb-2">
-                  <button 
-                    onClick={() => {
-                      setFilterDept('');
-                      setFilterStatus('');
-                      setFilterDate('');
-                    }}
-                    className="text-[10px] font-bold text-slate-400 hover:text-emerald-600 capitalize tracking-wider"
-                  >
-                    Atur Ulang Filter
-                  </button>
-                  <button 
-                    onClick={() => fetchTickets(true)}
-                    className="p-2 text-slate-400 hover:text-emerald-600 transition-colors"
-                    title="Segarkan Antrian"
-                    aria-label="Refresh tickets"
-                  >
-                    <RefreshCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                  </button>
-                </div>
-
-                {/* Results Summary & Filter Toggle */}
-                <div className="flex items-center justify-between mb-2 px-1">
-              <div className={`text-[10px] sm:text-xs font-bold ${themeClasses.textMuted} flex items-center gap-1`}>
-                Menampilkan 
-                <RollingNumber value={Math.min((currentPage - 1) * itemsPerPage + 1, filteredTickets.length)} className={themeClasses.text} /> 
-                - 
-                <RollingNumber value={Math.min(currentPage * itemsPerPage, filteredTickets.length)} className={themeClasses.text} /> 
-                dari 
-                <RollingNumber value={filteredTickets.length} className={themeClasses.text} /> 
-                tiket
-              </div>
-              <div className="flex items-center gap-3">
-                {searchQuery && (
-                  <button 
-                    onClick={() => setSearchQuery('')}
-                    className="text-[10px] font-bold text-rose-500 hover:underline"
-                  >
-                    Hapus Pencarian
-                  </button>
-                )}
-                <button
-                  onClick={() => setShowMobileFilter(true)}
-                  className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border ${themeClasses.card} ${themeClasses.border} hover:border-emerald-500 hover:text-emerald-500 ${themeClasses.text}`}
-                >
-                  <Filter className="w-3.5 h-3.5" />
-                  Filter Antrian
-                </button>
-              </div>
             </div>
-
-            {loading ? (
-              <div className="space-y-3">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <div key={i} className={`p-4 rounded-2xl border ${themeClasses.card} ${themeClasses.border}`}>
-                    <div className="flex items-center gap-3">
-                      <Shimmer className="w-10 h-10" />
-                      <div className="flex-1 space-y-2">
-                        <Shimmer className="w-1/3 h-4" />
-                        <Shimmer className="w-1/2 h-3" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : tickets.length === 0 ? (
-              <div className={`flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                <CurrentLogo className="w-12 h-12 text-slate-200 mb-4" />
-                <p className={`font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>No tickets in queue</p>
-                <button 
-                  onClick={() => setShowForm(true)}
-                  className="mt-4 text-emerald-600 font-bold text-sm hover:underline"
-                >
-                  Be the first to submit
-                </button>
-              </div>
-            ) : (
-              <motion.div 
-                className="space-y-2"
-                drag="x"
-                dragDirectionLock
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.1}
-                style={{ touchAction: 'pan-y' }}
-                onDragEnd={(_, info) => {
-                  const swipeThreshold = 50;
-                  if (info.offset.x > swipeThreshold) {
-                    // Swipe Right -> Previous Tab
-                    if (viewMode === 'all') setViewMode('today');
-                    else if (viewMode === 'my_tickets') setViewMode('all');
-                  } else if (info.offset.x < -swipeThreshold) {
-                    // Swipe Left -> Next Tab
-                    if (viewMode === 'today') setViewMode('all');
-                    else if (viewMode === 'all' && adminUser) setViewMode('my_tickets');
-                  }
-                }}
-              >
-                <AnimatePresence mode="popLayout">
-                  {loading ? (
-                    <div className="flex flex-col gap-2">
-                      {[1, 2, 3, 4, 5].map(i => <SkeletonTicket key={i} isDark={isDark} />)}
-                    </div>
-                  ) : filteredTickets.length === 0 ? (
-                    <motion.div 
-                      key="no-match"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className={`flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}
-                    >
-                      <motion.div
-                        animate={{ y: [0, -10, 0] }}
-                        transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                      >
-                        <Filter className="w-12 h-12 text-slate-200 mb-4" />
-                      </motion.div>
-                      <p className={`font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>No tickets match your filter</p>
-                      <button 
-                        onClick={() => {
-                          setFilterDept('');
-                          setFilterStatus('');
-                          setFilterDate('');
-                          setSearchQuery('');
-                        }}
-                        className="mt-4 text-emerald-600 font-bold text-sm hover:underline"
-                      >
-                        Reset filters
-                      </button>
-                    </motion.div>
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      {adminUser && filteredTickets.length > 0 && (
-                        <div className="flex items-center gap-2 px-2 mb-1">
-                          <input 
-                            type="checkbox"
-                            checked={selectedTickets.length === paginatedTickets.length && paginatedTickets.length > 0}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedTickets(paginatedTickets.map(t => t.id));
-                              } else {
-                                setSelectedTickets([]);
-                              }
-                            }}
-                            className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                          />
-                          <span className={`text-[10px] font-bold ${themeClasses.textMuted} capitalize tracking-wider`}>Pilih Semua di Halaman Ini</span>
-                        </div>
-                      )}
-                      {paginatedTickets.map((ticket, index) => (
-                            <motion.div
-                              key={ticket.id}
-                              layout
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              exit={{ opacity: 0, scale: 0.95 }}
-                              whileHover={{ 
-                                y: -2, 
-                                scale: 1.01,
-                                boxShadow: isDark ? "0 10px 30px -10px rgba(0,0,0,0.5)" : "0 10px 30px -10px rgba(16,185,129,0.1)"
-                              }}
-                              whileTap={{ scale: 0.99 }}
-                              transition={{ 
-                                delay: index * 0.04,
-                                type: "spring",
-                                stiffness: 260,
-                                damping: 20
-                              }}
-                              className={`${themeClasses.card} rounded-xl p-1.5 shadow-sm hover:shadow-md transition-all group cursor-pointer relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 ${
-                                selectedTickets.includes(ticket.id) ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
-                              } ${
-                                getSLAColor(ticket.created_at, ticket.status) || (isDark ? 'hover:border-emerald-900' : 'hover:border-emerald-100')
-                              }`}
-                              onClick={() => handleSelectTicket(ticket)}
-                            >
-                            <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                              {adminUser && (
-                                <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                                  <input 
-                                    type="checkbox"
-                                    checked={selectedTickets.includes(ticket.id)}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        setSelectedTickets(prev => [...prev, ticket.id]);
-                                      } else {
-                                        setSelectedTickets(prev => prev.filter(id => id !== ticket.id));
-                                      }
-                                    }}
-                                    className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                                  />
-                                </div>
-                              )}
-                              <div className="flex-shrink-0">
-                                <motion.div 
-                                  whileHover={{ scale: 1.1 }}
-                                  whileTap={{ scale: 0.9 }}
-                                  animate={ticket.status === 'New' ? {
-                                    scale: [1, 1.05, 1],
-                                    boxShadow: ["0 0 0px rgba(245, 158, 11, 0)", "0 0 8px rgba(245, 158, 11, 0.3)", "0 0 0px rgba(245, 158, 11, 0)"]
-                                  } : {}}
-                                  transition={{ repeat: Infinity, duration: 2 }}
-                                  className={`w-8 h-8 rounded-lg flex items-center justify-center border ${
-                                    ticket.status === 'Completed' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
-                                    ticket.status === 'New' ? 'bg-amber-50 border-amber-100 text-amber-600' :
-                                    'bg-blue-50 border-blue-100 text-blue-600'
-                                  }`}
-                                >
-                                  {getStatusIcon(ticket.status)}
-                                </motion.div>
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 mb-1">
-                                  <div className="flex flex-wrap items-center gap-1.5">
-                                    <span className="text-[9px] font-black text-slate-400 tracking-tighter">
-                                      #<HighlightText text={ticket.ticket_no || ticket.id.toString().padStart(4, '0')} highlight={searchQuery} isDark={isDark} />
-                                    </span>
-                                    {adminUser?.role === 'Super Admin' && ticket.assigned_to && (
-                                      <span className={`text-[8px] font-black px-1 py-0.5 rounded capitalize leading-none ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>@{ticket.assigned_to}</span>
-                                    )}
-                                    {getSLALabel(ticket.created_at, ticket.status) && (
-                                      <span className="text-[8px] font-black px-1.5 py-0.5 rounded capitalize bg-rose-500 text-white leading-none whitespace-nowrap">{getSLALabel(ticket.created_at, ticket.status)}</span>
-                                    )}
-                                  </div>
-                                  <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 sm:gap-1">
-                                    <span className="flex items-center gap-1 text-[8px] sm:text-[9px] text-slate-400 font-medium whitespace-nowrap">
-                                      <Calendar className="w-2.5 h-2.5 shrink-0" /> {formatDate(ticket.created_at)}
-                                    </span>
-                                    <span className={`px-1.5 py-0.5 rounded-full text-[7px] sm:text-[8px] font-black capitalize tracking-widest border text-center min-w-[55px] sm:min-w-[65px] inline-block ${getStatusColor(ticket.status)}`}>
-                                      {ticket.status === 'In Progress' ? 'Progres' : 
-                                       ticket.status === 'Completed' ? 'Selesai' : 
-                                       ticket.status === 'Cancelled' ? 'Batal' : 
-                                       ticket.status === 'New' ? 'Baru' : ticket.status}
-                                    </span>
-                                  </div>
-                                </div>
-                                <h3 className={`text-[11px] font-black truncate group-hover:text-emerald-600 transition-colors mb-1 ${themeClasses.text}`}>
-                                  <HighlightText text={`${ticket.category} Request`} highlight={searchQuery} isDark={isDark} />
-                                </h3>
-                                
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                    <span className="flex items-center gap-1 truncate">
-                                      <User className="w-2.5 h-2.5 text-slate-400 shrink-0" /> <HighlightText text={ticket.name} highlight={searchQuery} isDark={isDark} />
-                                    </span>
-                                    <span className="flex items-center gap-1 truncate">
-                                      <Building2 className="w-2.5 h-2.5 text-slate-400 shrink-0" /> {ticket.department}
-                                    </span>
-                                  </div>
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleSelectTicket(ticket);
-                                    }}
-                                    className={`p-1 rounded-md transition-all ${isDark ? 'text-slate-400 hover:text-emerald-400' : 'text-slate-400 hover:text-emerald-600'}`}
-                                    title="View Details"
-                                  >
-                                    <Eye className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-end gap-1.5 sm:pl-3 sm:border-l border-slate-50">
-                              {adminUser?.role === 'Super Admin' && (
-                                <div className="flex items-center gap-1">
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleIntervention(ticket.id, 'takeover');
-                                    }}
-                                    className="px-2 py-1 bg-emerald-500 text-white text-[8px] font-black capitalize rounded hover:bg-emerald-600 transition-colors"
-                                  >
-                                    Ambil
-                                  </button>
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleIntervention(ticket.id, 'reassign');
-                                    }}
-                                    className="px-2 py-1 bg-blue-500 text-white text-[8px] font-black capitalize rounded hover:bg-blue-600 transition-colors"
-                                  >
-                                    Pindah
-                                  </button>
-                                </div>
-                              )}
-                              <div className="flex items-center gap-1">
-                                {adminUser && (
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteTicket(ticket.id);
-                                    }}
-                                    className={`p-1.5 rounded-md transition-all ${isDark ? 'text-slate-400 hover:text-rose-400 hover:bg-rose-900/30' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'}`}
-                                    title="Delete Ticket"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </motion.div>
-                        ))}
-                      </div>
-                  )}
-                </AnimatePresence>
-
-                {/* Pagination Controls */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-2 mt-8">
-                    <button 
-                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                      disabled={currentPage === 1}
-                      className={`p-2 rounded-xl border transition-all ${
-                        currentPage === 1 
-                        ? 'opacity-30 cursor-not-allowed' 
-                        : isDark ? 'hover:bg-emerald-900/30 hover:border-emerald-800 text-slate-300' : 'hover:bg-emerald-50 hover:border-emerald-200 text-slate-600'
-                      } ${themeClasses.card}`}
-                    >
-                      <ChevronRight className="w-4 h-4 rotate-180" />
-                    </button>
-                    
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
-                        // Only show first, last, and pages around current
-                        if (
-                          page === 1 || 
-                          page === totalPages || 
-                          (page >= currentPage - 1 && page <= currentPage + 1)
-                        ) {
-                          return (
-                            <button
-                              key={page}
-                              onClick={() => setCurrentPage(page)}
-                              className={`w-8 h-8 rounded-xl text-[10px] font-bold transition-all ${
-                                currentPage === page
-                                ? 'bg-emerald-600 text-white shadow-lg'
-                                : `border hover:bg-emerald-50 ${themeClasses.card} ${themeClasses.textMuted}`
-                              }`}
-                            >
-                              {page}
-                            </button>
-                          );
-                        } else if (
-                          (page === 2 && currentPage > 3) || 
-                          (page === totalPages - 1 && currentPage < totalPages - 2)
-                        ) {
-                          return <span key={page} className="text-slate-400 px-1">...</span>;
-                        }
-                        return null;
-                      })}
-                    </div>
-
-                    <button 
-                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                      disabled={currentPage === totalPages}
-                      className={`p-2 rounded-xl border transition-all ${
-                        currentPage === totalPages 
-                        ? 'opacity-30 cursor-not-allowed' 
-                        : isDark ? 'hover:bg-emerald-900/30 hover:border-emerald-800 text-slate-300' : 'hover:bg-emerald-50 hover:border-emerald-200 text-slate-600'
-                      } ${themeClasses.card}`}
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
-
-                {/* Bulk Action Bar */}
-                <AnimatePresence>
-                  {selectedTickets.length > 0 && (
-                    <motion.div 
-                      initial={{ y: 100, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      exit={{ y: 100, opacity: 0 }}
-                      className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 w-[90%] max-w-lg bg-slate-900 text-white rounded-2xl p-4 shadow-2xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-900/40">
-                          <CheckCircle2 className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-black capitalize tracking-widest">{selectedTickets.length} Tiket Terpilih</p>
-                          <p className="text-[10px] text-slate-400 font-medium">Lakukan aksi massal untuk tiket ini</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <button 
-                          onClick={() => handleBulkAction('In Progress')}
-                          className="flex-1 sm:flex-none px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-xl text-[9px] font-black capitalize tracking-widest transition-all active:scale-95"
-                        >
-                          Progres
-                        </button>
-                        <button 
-                          onClick={() => handleBulkAction('Completed')}
-                          className="flex-1 sm:flex-none px-3 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-xl text-[9px] font-black capitalize tracking-widest transition-all active:scale-95"
-                        >
-                          Selesai
-                        </button>
-                        <button 
-                          onClick={() => setSelectedTickets([])}
-                          className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition-all"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            )}
+          ) : (
+            <TicketList 
+              adminUser={adminUser}
+              isDark={isDark}
+              themeClasses={themeClasses}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+              filterDept={filterDept}
+              setFilterDept={setFilterDept}
+              filterStatus={filterStatus}
+              setFilterStatus={setFilterStatus}
+              filterDate={filterDate}
+              setFilterDate={setFilterDate}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              loading={loading}
+              tickets={tickets}
+              filteredTickets={filteredTickets}
+              paginatedTickets={paginatedTickets}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+              totalPages={totalPages}
+              itemsPerPage={itemsPerPage}
+              handleSelectTicket={handleSelectTicket}
+              handleDeleteTicket={handleDeleteTicket}
+              handleIntervention={handleIntervention}
+              getStatusIcon={getStatusIcon}
+              getStatusColor={getStatusColor}
+              formatDate={formatDate}
+              fetchTickets={fetchTickets}
+              setShowMobileFilter={setShowMobileFilter}
+              setTempFilters={setTempFilters}
+              selectedTickets={selectedTickets}
+              setSelectedTickets={setSelectedTickets}
+              primaryColor={primaryColor}
+              CurrentLogo={CurrentLogo}
+              setShowForm={setShowForm}
+              handleBulkAction={handleBulkAction}
+            />
+          )}
 
                 {/* Help CTA - Visible on mobile at the bottom */}
             <section 
@@ -1939,11 +1170,8 @@ export default function App() {
                 © 2026 Professional Ticketing System
               </p>
             </div>
-            </>
-          )}
           </div>
-        </div>
-      </main>
+        </main>
 
       <AnimatePresence>
         {/* --- MODAL: TICKET DETAIL --- */}

@@ -20,6 +20,7 @@ import {
   History
 } from 'lucide-react';
 
+import { api } from '../../services/api';
 import { APP_VERSION, BUILD_DATE, UPDATE_HISTORY, getEnvironment } from '../../version';
 
 interface SettingsModalProps {
@@ -104,44 +105,30 @@ export const SettingsModal = React.memo(({
       return;
     }
     try {
-      const res = await fetch('/api/admin-users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          username: adminUserUsername, 
-          password: adminUserPassword, 
-          full_name: adminUserFullName,
-          role: adminUserRole
-        })
+      await api.addAdminUser({ 
+        username: adminUserUsername, 
+        password: adminUserPassword, 
+        full_name: adminUserFullName,
+        role: adminUserRole
       });
-      if (res.ok) {
-        setAddingType(null);
-        setAdminUserUsername('');
-        setAdminUserPassword('');
-        setAdminUserFullName('');
-        setAdminUserRole('Staff IT Support');
-        handleManagementAction('admin-user', 'add');
-      } else {
-        const err = await res.json();
-        alert(err.error || 'Gagal menambah admin');
-      }
-    } catch (err) {
-      alert('Gagal menambah admin');
+      setAddingType(null);
+      setAdminUserUsername('');
+      setAdminUserPassword('');
+      setAdminUserFullName('');
+      setAdminUserRole('Staff IT Support');
+      handleManagementAction('admin-user', 'add');
+    } catch (err: any) {
+      alert(err.message || 'Gagal menambah admin');
     }
   };
 
   const handleDeleteAdminUser = async (id: number) => {
     if (!confirm('Hapus admin ini?')) return;
     try {
-      const res = await fetch(`/api/admin-users/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        handleManagementAction('admin-user', 'delete', { id });
-      } else {
-        const err = await res.json();
-        alert(err.error || 'Gagal menghapus admin');
-      }
-    } catch (err) {
-      alert('Gagal menghapus admin');
+      await api.deleteAdminUser(id);
+      handleManagementAction('admin-user', 'delete', { id });
+    } catch (err: any) {
+      alert(err.message || 'Gagal menghapus admin');
     }
   };
 
@@ -151,41 +138,32 @@ export const SettingsModal = React.memo(({
       return;
     }
     try {
-      const res = await fetch('/api/master-users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          full_name: masterUserName, 
-          department: masterUserDept, 
-          phone: masterUserPhone,
-          employee_index: masterUserIndex,
-          email: masterUserEmail || null
-        })
+      await api.addMasterUser({ 
+        full_name: masterUserName, 
+        department: masterUserDept, 
+        phone: masterUserPhone,
+        employee_index: masterUserIndex,
+        email: masterUserEmail || null
       });
-      if (res.ok) {
-        setAddingType(null);
-        setMasterUserName('');
-        setMasterUserDept('');
-        setMasterUserPhone('');
-        setMasterUserIndex('');
-        setMasterUserEmail('');
-        // We'll rely on the parent to refresh data, or just call handleManagementAction if we can
-        handleManagementAction('master-user', 'add');
-      }
-    } catch (err) {
-      alert('Gagal menambah user');
+      setAddingType(null);
+      setMasterUserName('');
+      setMasterUserDept('');
+      setMasterUserPhone('');
+      setMasterUserIndex('');
+      setMasterUserEmail('');
+      handleManagementAction('master-user', 'add');
+    } catch (err: any) {
+      alert(err.message || 'Gagal menambah user');
     }
   };
 
   const handleDeleteMasterUser = async (id: number) => {
     if (!confirm('Hapus user ini?')) return;
     try {
-      const res = await fetch(`/api/master-users/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        handleManagementAction('master-user', 'delete', { id });
-      }
-    } catch (err) {
-      alert('Gagal menghapus user');
+      await api.deleteMasterUser(id);
+      handleManagementAction('master-user', 'delete', { id });
+    } catch (err: any) {
+      alert(err.message || 'Gagal menghapus user');
     }
   };
 

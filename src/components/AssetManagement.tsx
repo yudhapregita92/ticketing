@@ -6,6 +6,7 @@ import {
   Calendar, User, Building2, Info
 } from 'lucide-react';
 import { IAsset } from '../types';
+import { api } from '../services/api';
 
 interface AssetManagementProps {
   isDark: boolean;
@@ -44,8 +45,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
   const fetchAssets = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/assets');
-      const data = await res.json();
+      const data = await api.getAssets();
       setAssets(data);
     } catch (err) {
       console.error('Error fetching assets:', err);
@@ -56,12 +56,12 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
 
   const fetchMetadata = async () => {
     try {
-      const [deptRes, userRes] = await Promise.all([
-        fetch('/api/departments'),
-        fetch('/api/master-users')
+      const [depts, users] = await Promise.all([
+        api.getDepartments(),
+        api.getMasterUsers()
       ]);
-      setDepartments(await deptRes.json());
-      setMasterUsers(await userRes.json());
+      setDepartments(depts);
+      setMasterUsers(users);
     } catch (err) {
       console.error('Error fetching metadata:', err);
     }
@@ -70,31 +70,26 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const url = editingAsset ? `/api/assets/${editingAsset.id}` : '/api/assets';
-      const method = editingAsset ? 'PUT' : 'POST';
-      
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      if (res.ok) {
-        setShowModal(false);
-        setEditingAsset(null);
-        setFormData({
-          asset_id: '',
-          name: '',
-          category: 'Laptop',
-          status: 'Active',
-          assigned_to: '',
-          department: '',
-          purchase_date: '',
-          condition: 'Good',
-          notes: ''
-        });
-        fetchAssets();
+      if (editingAsset) {
+        await api.updateAsset(editingAsset.id, formData);
+      } else {
+        await api.addAsset(formData);
       }
+      
+      setShowModal(false);
+      setEditingAsset(null);
+      setFormData({
+        asset_id: '',
+        name: '',
+        category: 'Laptop',
+        status: 'Active',
+        assigned_to: '',
+        department: '',
+        purchase_date: '',
+        condition: 'Good',
+        notes: ''
+      });
+      fetchAssets();
     } catch (err) {
       console.error('Error saving asset:', err);
     }
@@ -103,8 +98,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
   const handleDelete = async (id: number) => {
     if (!window.confirm('Apakah Anda yakin ingin menghapus aset ini?')) return;
     try {
-      const res = await fetch(`/api/assets/${id}`, { method: 'DELETE' });
-      if (res.ok) fetchAssets();
+      await api.deleteAsset(id);
+      fetchAssets();
     } catch (err) {
       console.error('Error deleting asset:', err);
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Image as ImageIcon, Trash2, RefreshCcw, AlertTriangle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { api } from '../../services/api';
 
 interface ImageManagerModalProps {
   show: boolean;
@@ -35,11 +36,8 @@ export const ImageManagerModal: React.FC<ImageManagerModalProps> = ({
   const fetchImages = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/images');
-      if (res.ok) {
-        const data = await res.json();
-        setImages(data);
-      }
+      const data = await api.getImages();
+      setImages(data);
     } catch (error) {
       console.error('Failed to fetch images', error);
       toast.error('Gagal memuat daftar gambar');
@@ -59,13 +57,9 @@ export const ImageManagerModal: React.FC<ImageManagerModalProps> = ({
     
     setDeletingId(`${id}-${type}`);
     try {
-      const res = await fetch(`/api/images/${id}?type=${type}`, { method: 'DELETE' });
-      if (res.ok) {
-        toast.success('Foto berhasil dihapus');
-        fetchImages(); // Refresh the list to reflect changes
-      } else {
-        toast.error('Gagal menghapus foto');
-      }
+      await api.deleteImage(id, type);
+      toast.success('Foto berhasil dihapus');
+      fetchImages(); // Refresh the list to reflect changes
     } catch (error) {
       console.error('Failed to delete image', error);
       toast.error('Gagal menghapus foto');
@@ -79,14 +73,9 @@ export const ImageManagerModal: React.FC<ImageManagerModalProps> = ({
     
     setCleaningUp(true);
     try {
-      const res = await fetch('/api/images/cleanup', { method: 'POST' });
-      if (res.ok) {
-        const data = await res.json();
-        toast.success(`${data.count} foto lama berhasil dihapus`);
-        fetchImages();
-      } else {
-        toast.error('Gagal membersihkan foto lama');
-      }
+      const data = await api.cleanupImages();
+      toast.success(`${data.count} foto lama berhasil dihapus`);
+      fetchImages();
     } catch (error) {
       console.error('Failed to cleanup images', error);
       toast.error('Gagal membersihkan foto lama');

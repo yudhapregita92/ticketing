@@ -12,7 +12,8 @@ import {
   Sun,
   Moon
 } from 'lucide-react';
-import { IAppSettings, IAdminUser, ITicket, LOGO_OPTIONS } from '../types';
+import { IAppSettings, IAdminUser, ITicket } from '../types';
+import { LOGO_OPTIONS } from '../constants';
 import { Logo } from './Logo';
 
 interface HeaderProps {
