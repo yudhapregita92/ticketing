@@ -85,17 +85,35 @@ export const HighlightText = ({ text, highlight, isDark }: { text: string, highl
  * Komponen Skeleton Loading untuk Tiket
  */
 export const SkeletonTicket: React.FC<{ isDark: boolean }> = ({ isDark }) => (
-  <div className={`animate-pulse rounded-xl p-2 border ${isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-100'} flex items-center gap-3`}>
-    <div className={`w-8 h-8 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
-    <div className="flex-1 space-y-2">
-      <div className="flex justify-between">
-        <div className={`h-2 w-16 rounded ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
-        <div className={`h-2 w-20 rounded ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
-      </div>
-      <div className={`h-3 w-32 rounded ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
-      <div className="flex gap-2">
-        <div className={`h-2 w-24 rounded ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
-        <div className={`h-2 w-24 rounded ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+  <div className={`relative overflow-hidden rounded-2xl p-4 border ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-100'} shadow-sm`}>
+    {/* Shimmer effect overlay */}
+    <motion.div
+      initial={{ x: '-100%' }}
+      animate={{ x: '100%' }}
+      transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
+      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent pointer-events-none"
+    />
+    
+    <div className="flex items-start gap-4">
+      {/* Icon placeholder */}
+      <div className={`w-12 h-12 rounded-2xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+      
+      <div className="flex-1 space-y-3">
+        <div className="flex justify-between items-center">
+          {/* Ticket ID placeholder */}
+          <div className={`h-4 w-24 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+          {/* Status badge placeholder */}
+          <div className={`h-6 w-20 rounded-full ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+        </div>
+        
+        {/* Name/Subject placeholder */}
+        <div className={`h-5 w-3/4 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+        
+        <div className="flex flex-wrap gap-3 pt-1">
+          {/* Metadata placeholders */}
+          <div className={`h-4 w-28 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+          <div className={`h-4 w-32 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
+        </div>
       </div>
     </div>
   </div>

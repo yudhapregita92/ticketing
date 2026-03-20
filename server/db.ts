@@ -197,6 +197,7 @@ export function initDb() {
     initSettings.run('custom_logo', '');
     initSettings.run('custom_favicon', '');
     initSettings.run('photo_cleanup_duration', '24');
+    initSettings.run('app_version', 'v1.3.0');
 
     // Create or update default users
     const usersToCreate = [

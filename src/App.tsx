@@ -28,6 +28,7 @@ import { SuccessModal } from './components/modals/SuccessModal';
 import { MobileFilterModal } from './components/modals/MobileFilterModal';
 import { ImageManagerModal } from './components/modals/ImageManagerModal';
 import { SplashScreen } from './components/SplashScreen';
+import { hapticFeedback } from './utils/haptics';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AssetManagement } from './components/AssetManagement';
 import { TicketList } from './components/TicketList';
@@ -40,96 +41,22 @@ import { getDeviceInfo } from './utils/deviceUtils';
 import { getSLAColor, getSLALabel, processPhotoWithWatermark } from './utils/ticketUtils';
 import { api } from './services/api';
 
+import { 
+  useTickets, 
+  useTicketDetails, 
+  useSettings, 
+  useManagementData, 
+  useCreateTicket, 
+  useUpdateTicket, 
+  useDeleteTicket 
+} from './hooks/useQueries';
+import { useQueryClient } from '@tanstack/react-query';
+
 export default function App() {
+  const queryClient = useQueryClient();
+
   // --- State Management ---
-  const [tickets, setTickets] = useState<ITicket[]>([]); // Daftar semua tiket
-  const [ticketLogs, setTicketLogs] = useState<any[]>([]); // Riwayat tiket
-  const [itPersonnel, setItPersonnel] = useState<{id: number, name: string}[]>([]);
-  const [users, setUsers] = useState<{id: number, username: string, full_name: string, role: string}[]>([]);
-  const [adminUsers, setAdminUsers] = useState<{id: number, username: string, full_name: string, role: string}[]>([]);
-  const [departments, setDepartments] = useState<{id: number, name: string}[]>([]);
-  const [categories, setCategories] = useState<{id: number, name: string}[]>([]);
-  const [masterUsers, setMasterUsers] = useState<{id: number, full_name: string, department: string, phone: string}[]>([]);
-  const [selectedTicket, setSelectedTicket] = useState<ITicket | null>(null); // Tiket yang sedang dilihat detailnya
-  const [modalStatus, setModalStatus] = useState<string>(''); // Status sementara di modal detail
-  const [modalPriority, setModalPriority] = useState<string>(''); // Priority sementara di modal detail
-  const [formData, setFormData] = useState({
-    name: '',
-    department: '',
-    category: '',
-    phone: '',
-    priority: 'Medium' as 'Low' | 'Medium' | 'High' | 'Urgent',
-    description: '',
-    photo: '',
-    face_photo: '',
-    latitude: null as number | null,
-    longitude: null as number | null
-  });
-  const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
-
-  const handleSelectTicket = async (ticket: ITicket) => {
-    setSelectedTicket(ticket);
-    setTicketLogs([]);
-    try {
-      const details = await api.getTicketDetails(ticket.id);
-      
-      setSelectedTicket(prev => {
-        if (prev && prev.id === ticket.id) {
-          return { 
-            ...prev, 
-            photo: details.photo,
-            face_photo: details.face_photo
-          };
-        }
-        return prev;
-      });
-
-      if (Array.isArray(details.logs)) {
-        setTicketLogs(details.logs);
-      }
-    } catch (err) {
-      console.error('Failed to fetch ticket details:', err);
-    }
-  };
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
-    (typeof window !== 'undefined' && "Notification" in window) ? Notification.permission : 'default'
-  );
-
-  const requestNotificationPermission = async () => {
-    if (typeof window === 'undefined' || !("Notification" in window)) return;
-    try {
-      const permission = await Notification.requestPermission();
-      setNotificationPermission(permission);
-    } catch (e) {
-      console.error('Failed to request notification permission:', e);
-    }
-  };
-
-  const [loading, setLoading] = useState(true); // Loading state untuk fetch data awal
   const [adminUser, setAdminUser] = useState<any>(null); // Data login admin
-  const [showForm, setShowForm] = useState(false); // Toggle modal buat tiket baru
-  const [showSuccess, setShowSuccess] = useState(false); // Toggle modal sukses
-  const [showLogin, setShowLogin] = useState(false); // Toggle modal login admin
-  const [loginData, setLoginData] = useState({ username: '', password: '' });
-  const [showSettings, setShowSettings] = useState(false); // Toggle modal pengaturan aplikasi
-  const [showImageManager, setShowImageManager] = useState(false); // Toggle modal manajemen gambar
-  const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'notifications' | 'data' | 'system'>('general');
-  const [showResetConfirm, setShowResetConfirm] = useState(false); // Toggle konfirmasi reset data
-  const [showTakeoverConfirm, setShowTakeoverConfirm] = useState<{id: number, type: 'takeover' | 'reassign', targetUser?: string} | null>(null);
-  const [showDistribution, setShowDistribution] = useState(false); // Toggle distribusi masalah
-  const [pendingUpdate, setPendingUpdate] = useState<{id: number, status: string, assigned_to: string | null, admin_reply: string | null, internal_notes: string | null} | null>(null); // Data update yang menunggu konfirmasi
-  const [addingType, setAddingType] = useState<'it' | 'dept' | 'cat' | 'master-user' | null>(null);
-  const [newItemName, setNewItemName] = useState('');
-  const [newItemAssignedTo, setNewItemAssignedTo] = useState('');
-  const [newEmailInput, setNewEmailInput] = useState('');
-  const [showEmailInput, setShowEmailInput] = useState(false);
-  const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [gpsError, setGpsError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'today' | 'all' | 'my_tickets' | 'dashboard'>(() => {
-    return localStorage.getItem('adminUser') ? 'dashboard' : 'today';
-  });
-  const [showMobileFilter, setShowMobileFilter] = useState(false);
-  const [tempFilters, setTempFilters] = useState({ dept: '', status: '', date: '', search: '' });
   const [appSettings, setAppSettings] = useState(() => {
     const saved = localStorage.getItem('appSettings');
     if (saved) {
@@ -159,6 +86,117 @@ export default function App() {
       photo_cleanup_duration: '24'
     };
   }); // Pengaturan nama & logo app
+
+  // --- React Query Hooks ---
+  const { data: ticketsData, isLoading: ticketsLoading } = useTickets(adminUser?.username, adminUser?.role);
+  const tickets = ticketsData || [];
+  
+  const { data: settingsData } = useSettings();
+
+  useEffect(() => {
+    if (settingsData) {
+      setAppSettings(prev => ({ ...prev, ...settingsData }));
+      localStorage.setItem('appSettings', JSON.stringify({ ...appSettings, ...settingsData }));
+    }
+  }, [settingsData]);
+
+  const { data: managementData } = useManagementData(!!adminUser);
+  const itPersonnel = managementData?.it || [];
+  const departments = managementData?.depts || [];
+  const categories = managementData?.cats || [];
+  const users = managementData?.users || [];
+  const masterUsers = managementData?.masters || [];
+  const adminUsers = managementData?.admins || [];
+
+  const createTicketMutation = useCreateTicket();
+  const updateTicketMutation = useUpdateTicket();
+  const deleteTicketMutation = useDeleteTicket();
+
+  const [ticketLogs, setTicketLogs] = useState<any[]>([]); // Riwayat tiket
+  const [selectedTicket, setSelectedTicket] = useState<ITicket | null>(null); // Tiket yang sedang dilihat detailnya
+  const { data: ticketDetails } = useTicketDetails(selectedTicket?.id || null);
+  const [modalStatus, setModalStatus] = useState<string>(''); // Status sementara di modal detail
+  const [modalPriority, setModalPriority] = useState<string>(''); // Priority sementara di modal detail
+  const [formData, setFormData] = useState({
+    name: '',
+    department: '',
+    category: '',
+    phone: '',
+    priority: 'Medium' as 'Low' | 'Medium' | 'High' | 'Urgent',
+    description: '',
+    photo: '',
+    face_photo: '',
+    latitude: null as number | null,
+    longitude: null as number | null
+  });
+  const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (ticketDetails && selectedTicket) {
+      setSelectedTicket(prev => {
+        if (prev && prev.id === selectedTicket.id) {
+          return { 
+            ...prev, 
+            photo: ticketDetails.photo,
+            face_photo: ticketDetails.face_photo
+          };
+        }
+        return prev;
+      });
+      if (Array.isArray(ticketDetails.logs)) {
+        setTicketLogs(ticketDetails.logs);
+      }
+    }
+  }, [ticketDetails]);
+
+  const handleSelectTicket = async (ticket: ITicket) => {
+    setSelectedTicket(ticket);
+    setTicketLogs([]);
+  };
+
+  const fetchTickets = useCallback(async (showLoading = false) => {
+    if (showLoading) setLoading(true);
+    await queryClient.invalidateQueries({ queryKey: ['tickets'] });
+    if (showLoading) setLoading(false);
+  }, [queryClient]);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
+    (typeof window !== 'undefined' && "Notification" in window) ? Notification.permission : 'default'
+  );
+
+  const requestNotificationPermission = async () => {
+    if (typeof window === 'undefined' || !("Notification" in window)) return;
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+    } catch (e) {
+      console.error('Failed to request notification permission:', e);
+    }
+  };
+
+  const [loading, setLoading] = useState(false); // Loading state untuk fetch data awal
+  const [showForm, setShowForm] = useState(false); // Toggle modal buat tiket baru
+  const [showSuccess, setShowSuccess] = useState(false); // Toggle modal sukses
+  const [showLogin, setShowLogin] = useState(false); // Toggle modal login admin
+  const [loginData, setLoginData] = useState({ username: '', password: '' });
+  const [showSettings, setShowSettings] = useState(false); // Toggle modal pengaturan aplikasi
+  const [showImageManager, setShowImageManager] = useState(false); // Toggle modal manajemen gambar
+  const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'notifications' | 'data' | 'system'>('general');
+  const [showResetConfirm, setShowResetConfirm] = useState(false); // Toggle konfirmasi reset data
+  const [showTakeoverConfirm, setShowTakeoverConfirm] = useState<{id: number, type: 'takeover' | 'reassign', targetUser?: string} | null>(null);
+  const [showDistribution, setShowDistribution] = useState(false); // Toggle distribusi masalah
+  const [pendingUpdate, setPendingUpdate] = useState<{id: number, status: string, assigned_to: string | null, admin_reply: string | null, internal_notes: string | null} | null>(null); // Data update yang menunggu konfirmasi
+  const [addingType, setAddingType] = useState<'it' | 'dept' | 'cat' | 'master-user' | null>(null);
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemAssignedTo, setNewItemAssignedTo] = useState('');
+  const [newEmailInput, setNewEmailInput] = useState('');
+  const [showEmailInput, setShowEmailInput] = useState(false);
+  const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [gpsError, setGpsError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'today' | 'all' | 'my_tickets' | 'dashboard'>(() => {
+    return localStorage.getItem('adminUser') ? 'dashboard' : 'today';
+  });
+  const [showMobileFilter, setShowMobileFilter] = useState(false);
+  const [tempFilters, setTempFilters] = useState({ dept: '', status: '', date: '', search: '' });
 
   const toggleTheme = () => {
     const newMode = appSettings.theme_mode === 'light' ? 'dark' : 'light';
@@ -403,103 +441,39 @@ export default function App() {
   }, []);
 
   /**
-   * Mengambil data tiket dari server
+   * Notification logic for Admin
    */
-  const fetchTickets = async (showLoading = false) => {
-    if (showLoading) setLoading(true);
-    try {
-      const data = await api.getTickets(adminUser?.username, adminUser?.role);
-      
-      if (Array.isArray(data)) {
-        // Notification logic for Admin
-        if (adminUser && lastTicketIdRef.current !== null && data.length > 0) {
-          const newTickets = data.filter(t => t.id > lastTicketIdRef.current!);
-          if (newTickets.length > 0) {
-            newTickets.forEach(ticket => {
-              if (typeof window !== 'undefined' && "Notification" in window && Notification.permission === "granted") {
-                try {
-                  new Notification(`Tiket Baru: ${ticket.ticket_no}`, {
-                    body: `${ticket.name} - ${ticket.category}\n${ticket.description}`,
-                    icon: "https://cdn-icons-png.flaticon.com/512/2906/2906274.png",
-                    badge: "https://cdn-icons-png.flaticon.com/512/2906/2906274.png"
-                  });
-                } catch (e) {
-                  console.error('Notification error:', e);
-                }
-              }
-            });
+  useEffect(() => {
+    if (adminUser && lastTicketIdRef.current !== null && tickets.length > 0) {
+      const newTickets = tickets.filter(t => t.id > lastTicketIdRef.current!);
+      if (newTickets.length > 0) {
+        newTickets.forEach(ticket => {
+          hapticFeedback.notification();
+          if (typeof window !== 'undefined' && "Notification" in window && Notification.permission === "granted") {
+            try {
+              new Notification(`Tiket Baru: ${ticket.ticket_no}`, {
+                body: `${ticket.name} - ${ticket.category}\n${ticket.description}`,
+                icon: "https://cdn-icons-png.flaticon.com/512/2906/2906274.png",
+                badge: "https://cdn-icons-png.flaticon.com/512/2906/2906274.png"
+              });
+            } catch (e) {
+              console.error('Notification error:', e);
+            }
           }
-        }
-
-        // Update last seen ID
-        if (data.length > 0) {
-          const maxId = Math.max(...data.map(t => t.id));
-          if (lastTicketIdRef.current === null || maxId > lastTicketIdRef.current) {
-            lastTicketIdRef.current = maxId;
-          }
-        } else if (lastTicketIdRef.current === null) {
-          lastTicketIdRef.current = 0;
-        }
-
-        setTickets(data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch tickets:', err);
-      toast.error("Gagal mengambil tiket");
-    } finally {
-      if (showLoading) setLoading(false);
-    }
-  };
-
-  const fetchManagementData = async () => {
-    try {
-      const results = await Promise.allSettled([
-        api.getITPersonnel(),
-        api.getDepartments(),
-        api.getCategories(),
-        api.getUsers(),
-        api.getMasterUsers(),
-        api.getAdminUsers()
-      ]);
-
-      if (results[0].status === 'fulfilled') setItPersonnel(results[0].value);
-      if (results[1].status === 'fulfilled') setDepartments(results[1].value);
-      if (results[2].status === 'fulfilled') setCategories(results[2].value);
-      if (results[3].status === 'fulfilled') setUsers(results[3].value);
-      if (results[4].status === 'fulfilled') setMasterUsers(results[4].value);
-      if (results[5].status === 'fulfilled') setAdminUsers(results[5].value);
-    } catch (err) {
-      console.error('Failed to fetch management data:', err);
-    }
-  };
-
-  /**
-   * Mengambil pengaturan aplikasi (Nama & Logo)
-   */
-  const fetchSettings = async () => {
-    try {
-      const data = await api.getSettings();
-      if (data && data.app_name) {
-        setAppSettings(prev => {
-          const newSettings = {
-            ...prev,
-            ...data,
-            theme_mode: data.theme_mode || prev.theme_mode,
-            primary_color: data.primary_color || prev.primary_color,
-            admin_theme_mode: data.admin_theme_mode || prev.admin_theme_mode,
-            admin_primary_color: data.admin_primary_color || prev.admin_primary_color,
-            notification_emails: data.notification_emails ? (typeof data.notification_emails === 'string' ? JSON.parse(data.notification_emails) : data.notification_emails) : prev.notification_emails,
-            telegram_bot_token: data.telegram_bot_token || prev.telegram_bot_token,
-            telegram_chat_ids: data.telegram_chat_ids ? (typeof data.telegram_chat_ids === 'string' ? JSON.parse(data.telegram_chat_ids) : data.telegram_chat_ids) : prev.telegram_chat_ids
-          };
-          localStorage.setItem('appSettings', JSON.stringify(newSettings));
-          return newSettings;
         });
       }
-    } catch (err) {
-      console.error('Failed to fetch settings:', err);
     }
-  };
+
+    // Update last seen ID
+    if (tickets.length > 0) {
+      const maxId = Math.max(...tickets.map(t => t.id));
+      if (lastTicketIdRef.current === null || maxId > lastTicketIdRef.current) {
+        lastTicketIdRef.current = maxId;
+      }
+    } else if (lastTicketIdRef.current === null) {
+      lastTicketIdRef.current = 0;
+    }
+  }, [tickets, adminUser]);
 
   const handleUploadExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -509,7 +483,7 @@ export default function App() {
       const data = await api.uploadMasterUsers(file);
       if (data) {
         toast.success(`Berhasil mengunggah ${data.count} user.`);
-        fetchManagementData();
+        queryClient.invalidateQueries({ queryKey: ['managementData'] });
       }
     } catch (err: any) {
       console.error('Upload error:', err);
@@ -521,41 +495,12 @@ export default function App() {
   };
 
   /**
-   * Inisialisasi data dan polling setiap 10 detik
+   * Inisialisasi data
    */
   useEffect(() => {
     const savedAdmin = localStorage.getItem('adminUser');
     if (savedAdmin) setAdminUser(JSON.parse(savedAdmin));
   }, []);
-
-  useEffect(() => {
-    const initApp = async () => {
-      setLoading(true);
-      // Start fetching everything, but only wait for critical data
-      const criticalPromises = [
-        fetchTickets(),
-        fetchSettings()
-      ];
-      
-      // Management data can be fetched in background if it's not immediately needed
-      // but we still start it now
-      const managementPromise = fetchManagementData();
-      
-      await Promise.all(criticalPromises);
-      
-      // If user is admin, we might want to wait for management data too
-      if (adminUser) {
-        await managementPromise;
-      }
-      
-      // Minimal delay for smooth transition
-      setTimeout(() => setLoading(false), 300);
-    };
-    
-    initApp();
-    const interval = setInterval(() => fetchTickets(false), 10000);
-    return () => clearInterval(interval);
-  }, [adminUser]);
 
   useEffect(() => {
     if (showForm) {
@@ -580,11 +525,11 @@ export default function App() {
     const socket = io();
     
     socket.on('ticket_created', (newTicket) => {
-      setTickets(prev => [newTicket, ...prev]);
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
     });
 
     socket.on('ticket_updated', (updatedData) => {
-      setTickets(prev => prev.map(t => t.id === Number(updatedData.id) ? { ...t, ...updatedData } : t));
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
       
       // Update selected ticket if it's the one that was updated
       setSelectedTicket(prev => {
@@ -620,7 +565,8 @@ export default function App() {
         }
         
         // Re-fetch tickets with user context
-        fetchTickets();
+        queryClient.invalidateQueries({ queryKey: ['tickets'] });
+        queryClient.invalidateQueries({ queryKey: ['managementData'] });
       } else {
         alert('Login failed: ' + data.error);
       }
@@ -632,26 +578,19 @@ export default function App() {
   const executeIntervention = async (ticketId: number, type: 'takeover' | 'reassign', targetUser?: string) => {
     if (!adminUser || adminUser.role !== 'Super Admin') return;
     
-    try {
-      const body: any = {};
-      if (type === 'takeover') body.takeover_by = adminUser.username;
-      if (type === 'reassign') body.reassign_to = targetUser;
-      body.performed_by = adminUser.username;
+    const body: any = {};
+    if (type === 'takeover') body.takeover_by = adminUser.username;
+    if (type === 'reassign') body.reassign_to = targetUser;
+    body.performed_by = adminUser.username;
 
-      const data = await api.updateTicket(ticketId, body);
-      
-      if (data) {
-        fetchTickets();
+    updateTicketMutation.mutate({ id: ticketId, data: body }, {
+      onSuccess: () => {
         if (selectedTicket && selectedTicket.id === ticketId) {
           setSelectedTicket(null);
         }
         setShowTakeoverConfirm(null);
-        toast.success(type === 'takeover' ? 'Tiket berhasil diambil alih' : 'Tiket berhasil dialihkan');
       }
-    } catch (err) {
-      console.error('Intervention failed:', err);
-      toast.error('Gagal melakukan intervensi');
-    }
+    });
   };
 
   const handleIntervention = (ticketId: number, type: 'takeover' | 'reassign', targetUser?: string) => {
@@ -674,10 +613,10 @@ export default function App() {
     try {
       const data = await api.resetTickets();
       if (data) {
-        setTickets([]);
-        fetchTickets();
+        queryClient.invalidateQueries({ queryKey: ['tickets'] });
         setShowResetConfirm(false);
         toast.success('Semua data berhasil direset.');
+        hapticFeedback.heavy();
       }
     } catch (err) {
       console.error('Reset error:', err);
@@ -687,33 +626,13 @@ export default function App() {
 
   const handleDeleteTicket = async (id: number) => {
     if (!confirm('Hapus tiket ini secara permanen?')) return;
-    try {
-      const data = await api.deleteTicket(id);
-      if (data) {
-        toast.success('Tiket berhasil dihapus');
-        fetchTickets();
-      }
-    } catch (err) {
-      console.error('Delete ticket error:', err);
-      toast.error('Gagal menghapus tiket');
-    }
+    deleteTicketMutation.mutate(id);
   };
 
   const handleManagementAction = async (type: 'it' | 'dept' | 'cat' | 'master-user' | 'admin-user', action: 'add' | 'delete' | 'refresh', data?: any) => {
     try {
-      if (type === 'master-user') {
-        const masterUsersData = await api.getMasterUsers();
-        setMasterUsers(masterUsersData);
-        return;
-      }
-      
-      if (type === 'admin-user') {
-        const [adminData, usersData] = await Promise.all([
-          api.getAdminUsers(),
-          api.getUsers()
-        ]);
-        setAdminUsers(adminData);
-        setUsers(usersData);
+      if (type === 'master-user' || type === 'admin-user') {
+        queryClient.invalidateQueries({ queryKey: ['managementData'] });
         return;
       }
 
@@ -732,6 +651,7 @@ export default function App() {
           setNewItemAssignedTo('');
           setAddingType(null);
           toast.success(`${label} berhasil ditambahkan`);
+          hapticFeedback.light();
         }
       } else {
         if (!confirm(`Hapus ${label} "${data.name}"?`)) return;
@@ -743,10 +663,11 @@ export default function App() {
         
         if (result) {
           toast.success(`${label} berhasil dihapus`);
+          hapticFeedback.medium();
         }
       }
       
-      await fetchManagementData();
+      queryClient.invalidateQueries({ queryKey: ['managementData'] });
     } catch (err: any) {
       console.error(`Management action error (${type}/${action}):`, err);
       toast.error(`Error: ${err.message}`);
@@ -786,7 +707,8 @@ export default function App() {
         
         toast.success('Pengaturan berhasil diperbarui!');
         setShowSettings(false);
-        fetchSettings();
+        queryClient.invalidateQueries({ queryKey: ['settings'] });
+        hapticFeedback.light();
       }
     } catch (err) {
       console.error('Failed to update settings:', err);
@@ -807,22 +729,19 @@ export default function App() {
     }
 
     setSubmitting(true);
-    try {
-      const data = await api.createTicket(formData);
-      if (data) {
-        clearDraft();
-        setShowForm(false);
-        toast.success('Tiket berhasil dikirim!');
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 3000);
-        fetchTickets();
+    createTicketMutation.mutate(formData, {
+      onSuccess: (data) => {
+        if (data) {
+          clearDraft();
+          setShowForm(false);
+          setShowSuccess(true);
+          setTimeout(() => setShowSuccess(false), 3000);
+        }
+      },
+      onSettled: () => {
+        setSubmitting(false);
       }
-    } catch (err) {
-      console.error('Failed to submit ticket:', err);
-      toast.error('Gagal mengirim tiket.');
-    } finally {
-      setSubmitting(false);
-    }
+    });
   };
 
   /**
@@ -841,25 +760,21 @@ export default function App() {
    */
   const confirmUpdate = async () => {
     if (!pendingUpdate || !adminUser) return;
-    try {
-      const data = await api.updateTicket(pendingUpdate.id, {
+    updateTicketMutation.mutate({
+      id: pendingUpdate.id,
+      data: {
         status: pendingUpdate.status,
         assigned_to: pendingUpdate.assigned_to,
         admin_reply: pendingUpdate.admin_reply,
         internal_notes: pendingUpdate.internal_notes,
         priority: (pendingUpdate as any).priority,
         performed_by: adminUser.username
-      });
-      
-      if (data) {
-        toast.success('Tiket berhasil diperbarui!');
-        setPendingUpdate(null);
-        fetchTickets();
       }
-    } catch (err) {
-      console.error('Failed to update ticket:', err);
-      toast.error('Gagal memperbarui tiket.');
-    }
+    }, {
+      onSuccess: () => {
+        setPendingUpdate(null);
+      }
+    });
   };
 
   const handleBulkAction = async (status: string) => {
@@ -876,7 +791,8 @@ export default function App() {
       ));
       toast.success(`${selectedTickets.length} tiket berhasil diperbarui!`);
       setSelectedTickets([]);
-      fetchTickets();
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      hapticFeedback.medium();
     } catch (err) {
       console.error('Bulk update error:', err);
       toast.error('Gagal memperbarui beberapa tiket.');

@@ -1,5 +1,5 @@
-export const APP_VERSION = "1.2.0";
-export const BUILD_DATE = "2026-03-15";
+export const APP_VERSION = "1.4.0";
+export const BUILD_DATE = "2026-03-20";
 
 // Deteksi apakah berjalan di Staging atau Production
 export const getEnvironment = () => {
@@ -18,6 +18,29 @@ export interface VersionUpdate {
 }
 
 export const UPDATE_HISTORY: VersionUpdate[] = [
+  {
+    version: "1.4.0",
+    date: "2026-03-20",
+    changes: [
+      "Refaktor Frontend menggunakan React Query (Caching & Auto-polling)",
+      "Implementasi Haptic Feedback (Getaran) untuk interaksi mobile",
+      "Peningkatan Skeleton Loading dengan efek Shimmer yang lebih modern",
+      "Optimasi sinkronisasi data real-time via Socket.IO",
+      "Perbaikan manajemen state global dan modularitas komponen"
+    ]
+  },
+  {
+    version: "1.3.0",
+    date: "2026-03-20",
+    changes: [
+      "Refaktor arsitektur backend menjadi modular (Route Separation)",
+      "Implementasi Global Error Handling & AppError class",
+      "Peningkatan keamanan dengan Password Hashing (bcryptjs)",
+      "Peningkatan Type Safety di seluruh backend (TypeScript Interfaces)",
+      "Optimasi performa query database SQLite",
+      "Sistem logging login admin untuk audit trail"
+    ]
+  },
   {
     version: "1.2.0",
     date: "2026-03-15",

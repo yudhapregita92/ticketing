@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Bell, 
@@ -10,11 +10,50 @@ import {
   Plus,
   Image as ImageIcon,
   Sun,
-  Moon
+  Moon,
+  Clock
 } from 'lucide-react';
 import { IAppSettings, IAdminUser, ITicket } from '../types';
 import { LOGO_OPTIONS } from '../constants';
 import { Logo } from './Logo';
+
+const RealTimeClock: React.FC<{ isDark: boolean }> = ({ isDark }) => {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (date: Date) => {
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    
+    const dayName = days[date.getDay()];
+    const day = date.getDate();
+    const monthName = months[date.getMonth()];
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+
+    return `${dayName}, ${day} ${monthName} ${year} | ${hours}:${minutes}:${seconds}`;
+  };
+
+  return (
+    <div className={`hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[10px] font-bold tracking-tight shadow-sm transition-all ${
+      isDark 
+        ? 'bg-zinc-800/50 border-zinc-700 text-zinc-300' 
+        : 'bg-white border-slate-200 text-slate-600'
+    }`}>
+      <Clock className="w-3 h-3 text-emerald-500" />
+      {formatTime(time)}
+    </div>
+  );
+};
 
 interface HeaderProps {
   appSettings: IAppSettings;
@@ -78,8 +117,11 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        <div className="hidden md:flex items-center gap-2 sm:gap-4 shrink-0">
-          {adminUser ? (
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+          <RealTimeClock isDark={isDark} />
+          
+          <div className="hidden md:flex items-center gap-2 sm:gap-4">
+            {adminUser ? (
             <div className="flex items-center gap-2">
               <div className="hidden sm:flex flex-col items-end mr-2">
                 <span className={`text-[10px] font-bold capitalize tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>{adminUser.full_name}</span>
@@ -161,6 +203,7 @@ export const Header: React.FC<HeaderProps> = ({
               <ShieldCheck className="w-5 h-5" />
             </motion.button>
           )}
+          </div>
           
           <motion.button 
             whileHover={{ scale: 1.05 }}
