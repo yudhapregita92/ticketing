@@ -4,12 +4,26 @@ import { ITicket, IAppSettings, IUser, IDepartment, ICategory, IMasterUser } fro
 import { toast } from 'react-hot-toast';
 import { hapticFeedback } from '../utils/haptics';
 import { offlineQueue } from '../utils/offlineQueue';
+import { localCache } from '../utils/cacheUtils';
 import { useState, useEffect } from 'react';
 
 export const useTickets = (username?: string, role?: string) => {
   return useQuery<ITicket[]>({
     queryKey: ['tickets', username, role],
-    queryFn: () => api.getTickets(username, role),
+    queryFn: async () => {
+      try {
+        const data = await api.getTickets(username, role);
+        localCache.set(`tickets_${username}_${role}`, data);
+        return data;
+      } catch (error) {
+        const cached = localCache.get(`tickets_${username}_${role}`);
+        if (cached) {
+          console.log('Using cached tickets for offline mode');
+          return cached;
+        }
+        throw error;
+      }
+    },
     refetchInterval: 10000, // Poll every 10 seconds
   });
 };
@@ -25,7 +39,17 @@ export const useTicketDetails = (id: number | null) => {
 export const useSettings = () => {
   return useQuery<IAppSettings>({
     queryKey: ['settings'],
-    queryFn: () => api.getSettings() as any,
+    queryFn: async () => {
+      try {
+        const data = await api.getSettings() as any;
+        localCache.set('settings', data);
+        return data;
+      } catch (error) {
+        const cached = localCache.get('settings');
+        if (cached) return cached;
+        throw error;
+      }
+    },
   });
 };
 
@@ -33,17 +57,56 @@ export const useManagementData = (isAdmin: boolean) => {
   return useQuery({
     queryKey: ['managementData'],
     queryFn: async () => {
-      const [it, depts, cats, users, masters, admins] = await Promise.all([
-        api.getITPersonnel(),
-        api.getDepartments(),
-        api.getCategories(),
-        api.getUsers(),
-        api.getMasterUsers(),
-        api.getAdminUsers()
-      ]);
-      return { it, depts, cats, users, masters, admins };
+      try {
+        const [it, depts, cats, users, masters, admins] = await Promise.all([
+          api.getITPersonnel(),
+          api.getDepartments(),
+          api.getCategories(),
+          api.getUsers(),
+          api.getMasterUsers(),
+          api.getAdminUsers()
+        ]);
+        const data = { it, depts, cats, users, masters, admins };
+        localCache.set('managementData', data);
+        // Also update public cache
+        localCache.set('publicData', { depts, cats, masters });
+        return data;
+      } catch (error) {
+        const cached = localCache.get('managementData');
+        if (cached) {
+          console.log('Using cached management data for offline mode');
+          return cached;
+        }
+        throw error;
+      }
     },
     enabled: isAdmin,
+  });
+};
+
+export const usePublicData = () => {
+  return useQuery({
+    queryKey: ['publicData'],
+    queryFn: async () => {
+      try {
+        const [depts, cats, masters] = await Promise.all([
+          api.getDepartments(),
+          api.getCategories(),
+          api.getMasterUsers()
+        ]);
+        const data = { depts, cats, masters };
+        localCache.set('publicData', data);
+        return data;
+      } catch (error) {
+        const cached = localCache.get('publicData');
+        if (cached) {
+          console.log('Using cached public data for offline mode');
+          return cached;
+        }
+        throw error;
+      }
+    },
+    staleTime: 1000 * 60 * 60, // 1 hour
   });
 };
 

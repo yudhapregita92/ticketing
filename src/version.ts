@@ -1,4 +1,4 @@
-export const APP_VERSION = "1.5.0";
+export const APP_VERSION = "1.6.0";
 export const BUILD_DATE = "2026-03-21";
 
 // Deteksi apakah berjalan di Staging atau Production
@@ -18,6 +18,16 @@ export interface VersionUpdate {
 }
 
 export const UPDATE_HISTORY: VersionUpdate[] = [
+  {
+    version: "1.6.0",
+    date: "2026-03-21",
+    changes: [
+      "Implementasi Master Data Caching (Offline Support)",
+      "Akses data Departemen, Kategori, dan Master User saat offline",
+      "Peningkatan performa dengan sistem caching cerdas",
+      "Perbaikan bug akses data master untuk user non-admin"
+    ]
+  },
   {
     version: "1.5.0",
     date: "2026-03-21",

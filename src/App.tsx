@@ -48,9 +48,10 @@ import {
   useManagementData, 
   useCreateTicket, 
   useUpdateTicket, 
-  useDeleteTicket 
+  useDeleteTicket,
+  useSyncOffline,
+  usePublicData
 } from './hooks/useQueries';
-import { useSyncOffline } from './hooks/useQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { WifiOff, CloudUpload } from 'lucide-react';
 
@@ -94,6 +95,8 @@ export default function App() {
   const tickets = ticketsData || [];
   
   const { data: settingsData } = useSettings();
+  const { data: managementData } = useManagementData(!!adminUser);
+  const { data: publicData } = usePublicData();
   const { pendingCount, isSyncing, sync } = useSyncOffline();
 
   useEffect(() => {
@@ -103,13 +106,32 @@ export default function App() {
     }
   }, [settingsData]);
 
-  const { data: managementData } = useManagementData(!!adminUser);
-  const itPersonnel = managementData?.it || [];
-  const departments = managementData?.depts || [];
-  const categories = managementData?.cats || [];
-  const users = managementData?.users || [];
-  const masterUsers = managementData?.masters || [];
-  const adminUsers = managementData?.admins || [];
+  const { 
+    it: itPersonnel, 
+    depts: departments, 
+    cats: categories, 
+    users, 
+    masters: masterUsers, 
+    admins: adminUsers 
+  } = useMemo(() => {
+    if (adminUser && managementData) return {
+      it: managementData.it || [],
+      depts: managementData.depts || [],
+      cats: managementData.cats || [],
+      users: managementData.users || [],
+      masters: managementData.masters || [],
+      admins: managementData.admins || []
+    };
+    if (publicData) return { 
+      it: [], 
+      depts: publicData.depts || [], 
+      cats: publicData.cats || [], 
+      users: [], 
+      masters: publicData.masters || [], 
+      admins: [] 
+    };
+    return { it: [], depts: [], cats: [], users: [], masters: [], admins: [] };
+  }, [adminUser, managementData, publicData]);
 
   const createTicketMutation = useCreateTicket();
   const updateTicketMutation = useUpdateTicket();
