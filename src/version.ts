@@ -1,4 +1,4 @@
-export const APP_VERSION = "1.6.0";
+export const APP_VERSION = "1.7.0";
 export const BUILD_DATE = "2026-03-21";
 
 // Deteksi apakah berjalan di Staging atau Production
@@ -18,6 +18,16 @@ export interface VersionUpdate {
 }
 
 export const UPDATE_HISTORY: VersionUpdate[] = [
+  {
+    version: "1.7.0",
+    date: "2026-03-21",
+    changes: [
+      "Penambahan Indikator Status Online/Offline di Header",
+      "Deteksi koneksi internet real-time dengan event listener",
+      "Visualisasi status dengan ikon Wifi/WifiOff dan animasi pulse",
+      "Penyelarasan UI/UX untuk indikator status di perangkat mobile"
+    ]
+  },
   {
     version: "1.6.0",
     date: "2026-03-21",

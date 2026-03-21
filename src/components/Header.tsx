@@ -11,7 +11,9 @@ import {
   Image as ImageIcon,
   Sun,
   Moon,
-  Clock
+  Clock,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import { IAppSettings, IAdminUser, ITicket } from '../types';
 import { LOGO_OPTIONS } from '../constants';
@@ -88,6 +90,21 @@ export const Header: React.FC<HeaderProps> = ({
   tickets,
   toggleTheme
 }) => {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   const CurrentLogo = LOGO_OPTIONS.find(l => l.id === appSettings.logo_type)?.icon || LOGO_OPTIONS[0].icon;
 
   return (
@@ -112,8 +129,20 @@ export const Header: React.FC<HeaderProps> = ({
               )
             )}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex items-center gap-2">
             <h1 className={`text-sm sm:text-lg font-bold tracking-tight leading-tight truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{appSettings.app_name}</h1>
+            <div 
+              className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border transition-all ${
+                isOnline 
+                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' 
+                  : 'bg-rose-500/10 border-rose-500/20 text-rose-500'
+              }`}
+              title={isOnline ? 'Online' : 'Offline'}
+            >
+              {isOnline ? <Wifi className="w-2 h-2" /> : <WifiOff className="w-2 h-2" />}
+              <span className="hidden xs:inline">{isOnline ? 'Online' : 'Offline'}</span>
+              <span className={`w-1 h-1 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+            </div>
           </div>
         </div>
 
