@@ -50,7 +50,9 @@ import {
   useUpdateTicket, 
   useDeleteTicket 
 } from './hooks/useQueries';
+import { useSyncOffline } from './hooks/useQueries';
 import { useQueryClient } from '@tanstack/react-query';
+import { WifiOff, CloudUpload } from 'lucide-react';
 
 export default function App() {
   const queryClient = useQueryClient();
@@ -92,6 +94,7 @@ export default function App() {
   const tickets = ticketsData || [];
   
   const { data: settingsData } = useSettings();
+  const { pendingCount, isSyncing, sync } = useSyncOffline();
 
   useEffect(() => {
     if (settingsData) {
@@ -947,6 +950,38 @@ export default function App() {
             className="flex flex-col min-h-screen"
           >
             <Toaster position="top-center" reverseOrder={false} />
+            
+            {/* --- OFFLINE SYNC BANNER --- */}
+            <AnimatePresence>
+              {pendingCount > 0 && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="bg-amber-500 text-white overflow-hidden"
+                >
+                  <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between text-xs sm:text-sm font-bold">
+                    <div className="flex items-center gap-2">
+                      <WifiOff className="w-4 h-4" />
+                      <span>{pendingCount} tiket menunggu sinkronisasi offline.</span>
+                    </div>
+                    <button 
+                      onClick={() => sync()}
+                      disabled={isSyncing || !navigator.onLine}
+                      className={`flex items-center gap-1 px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 transition-all active:scale-95 disabled:opacity-50 disabled:scale-100`}
+                    >
+                      {isSyncing ? (
+                        <RefreshCcw className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <CloudUpload className="w-3 h-3" />
+                      )}
+                      {isSyncing ? 'Sinkronisasi...' : 'Sinkronkan Sekarang'}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* --- HEADER SECTION --- */}
             <Header 
               appSettings={appSettings}

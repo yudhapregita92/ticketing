@@ -1,5 +1,5 @@
-export const APP_VERSION = "1.4.0";
-export const BUILD_DATE = "2026-03-20";
+export const APP_VERSION = "1.5.0";
+export const BUILD_DATE = "2026-03-21";
 
 // Deteksi apakah berjalan di Staging atau Production
 export const getEnvironment = () => {
@@ -18,6 +18,16 @@ export interface VersionUpdate {
 }
 
 export const UPDATE_HISTORY: VersionUpdate[] = [
+  {
+    version: "1.5.0",
+    date: "2026-03-21",
+    changes: [
+      "Implementasi Offline Queue (Antrian Tiket Offline)",
+      "Sistem sinkronisasi otomatis saat koneksi internet kembali pulih",
+      "Banner indikator status sinkronisasi offline di halaman utama",
+      "Peningkatan ketahanan aplikasi terhadap gangguan jaringan"
+    ]
+  },
   {
     version: "1.4.0",
     date: "2026-03-20",
