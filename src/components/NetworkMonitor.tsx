@@ -24,8 +24,11 @@ interface Device {
 const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, primaryColor, adminUser }) => {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [locationFilter, setLocationFilter] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
+  const [isNewType, setIsNewType] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -139,7 +142,11 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
     });
     setEditingDevice(null);
     setShowAddForm(false);
+    setIsNewType(false);
   };
+
+  const uniqueTypes = Array.from(new Set(['Komputer', 'CCTV', 'Radio', 'Server', ...devices.map(d => d.type).filter(Boolean)]));
+  const uniqueLocations = Array.from(new Set(devices.map(d => d.location).filter(Boolean)));
 
   const getDeviceIcon = (type: string) => {
     switch (type) {
@@ -152,9 +159,11 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
   };
 
   const filteredDevices = devices.filter(d => 
-    d.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (d.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     d.ip_address.includes(searchQuery) ||
-    d.location?.toLowerCase().includes(searchQuery.toLowerCase())
+    d.location?.toLowerCase().includes(searchQuery.toLowerCase())) &&
+    (typeFilter ? d.type === typeFilter : true) &&
+    (locationFilter ? d.location === locationFilter : true)
   );
 
   const onlineCount = devices.filter(d => d.status === 'Online').length;
@@ -162,56 +171,86 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
 
   return (
     <div className={`p-4 sm:p-6 lg:p-8 rounded-3xl ${themeClasses.card} shadow-sm border ${isDark ? 'border-zinc-800' : 'border-slate-100'} mb-6 min-h-[500px]`}>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
-            <Activity className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold tracking-tight">Monitoring Jaringan</h2>
-            <p className={`text-sm ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
-              Status: <span className="text-emerald-500 font-bold">{onlineCount} Online</span> • <span className="text-rose-500 font-bold">{offlineCount} Offline</span>
-            </p>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Monitoring Jaringan</h2>
+          <div className="flex items-center gap-2 mt-1.5">
+            <span className="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              {onlineCount} Online
+            </span>
+            <span className="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2.5 py-0.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+              {offlineCount} Offline
+            </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => scanMutation.mutate()}
             disabled={scanMutation.isPending}
-            className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+            className={`flex items-center justify-center p-2.5 sm:px-4 sm:py-2 rounded-xl text-sm font-bold transition-all ${
               isDark ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
             }`}
           >
             <RefreshCw className={`w-4 h-4 ${scanMutation.isPending ? 'animate-spin' : ''}`} />
-            Scan
+            <span className="hidden sm:block ml-2">Scan</span>
           </button>
           {(adminUser?.role === 'Super Admin' || adminUser?.role === 'Staff IT Support') && (
             <button
               onClick={() => setShowAddForm(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 flex-1 sm:flex-none shadow-md shadow-indigo-500/20"
+              className="flex items-center justify-center p-2.5 sm:px-4 sm:py-2 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 shadow-md"
               style={{ backgroundColor: primaryColor }}
             >
               <Plus className="w-4 h-4" />
-              Tambah
+              <span className="hidden sm:block ml-2">Tambah</span>
             </button>
           )}
         </div>
       </div>
 
-      <div className="mb-6 relative">
-        <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`} />
-        <input
-          type="text"
-          placeholder="Cari nama, IP, atau lokasi..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className={`w-full pl-10 pr-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 transition-all ${
-            isDark 
-              ? 'bg-zinc-900 border-zinc-800 focus:border-zinc-700 text-white placeholder-zinc-500 focus:ring-zinc-800' 
-              : 'bg-slate-50 border-slate-200 focus:border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-slate-200'
-          }`}
-        />
+      <div className="flex flex-col gap-3 mb-6">
+        <div className="relative">
+          <Search className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`} />
+          <input
+            type="text"
+            placeholder="Cari perangkat, IP, lokasi..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={`w-full pl-10 pr-4 py-2.5 rounded-2xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+              isDark 
+                ? 'bg-zinc-900/50 border-zinc-800 focus:border-zinc-700 text-white placeholder-zinc-500 focus:ring-zinc-800' 
+                : 'bg-slate-50 border-slate-200 focus:border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-slate-200'
+            }`}
+          />
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className={`flex-none py-2 px-3 rounded-xl border text-xs font-bold focus:outline-none transition-all cursor-pointer ${
+              isDark 
+                ? 'bg-zinc-900/50 border-zinc-800 text-zinc-300 focus:border-zinc-700 focus:ring-zinc-800' 
+                : 'bg-white border-slate-200 text-slate-700 focus:border-slate-300 focus:ring-slate-200 shadow-sm'
+            }`}
+          >
+            <option value="">Semua Tipe</option>
+            {uniqueTypes.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <select
+            value={locationFilter}
+            onChange={(e) => setLocationFilter(e.target.value)}
+            className={`flex-none py-2 px-3 rounded-xl border text-xs font-bold focus:outline-none transition-all cursor-pointer ${
+              isDark 
+                ? 'bg-zinc-900/50 border-zinc-800 text-zinc-300 focus:border-zinc-700 focus:ring-zinc-800' 
+                : 'bg-white border-slate-200 text-slate-700 focus:border-slate-300 focus:ring-slate-200 shadow-sm'
+            }`}
+          >
+            <option value="">Semua Lokasi</option>
+            {uniqueLocations.map(l => <option key={l} value={l}>{l}</option>)}
+          </select>
+        </div>
       </div>
 
       {(showAddForm || editingDevice) && (
@@ -250,19 +289,52 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
             </div>
             <div>
               <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Tipe</label>
-              <select
-                value={formData.type}
-                onChange={(e) => setFormData({...formData, type: e.target.value})}
-                className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none ${
-                  isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-slate-300 text-slate-900'
-                }`}
-              >
-                <option value="Komputer">Komputer</option>
-                <option value="CCTV">CCTV</option>
-                <option value="Radio">Radio</option>
-                <option value="Server">Server</option>
-                <option value="Lainnya">Lainnya</option>
-              </select>
+              {isNewType ? (
+                <div className="flex gap-2">
+                  <input
+                    required
+                    type="text"
+                    value={formData.type}
+                    onChange={(e) => setFormData({...formData, type: e.target.value})}
+                    className={`flex-1 px-3 py-2 rounded-lg border text-sm focus:outline-none ${
+                      isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-slate-300 text-slate-900'
+                    }`}
+                    placeholder="Ketik tipe baru..."
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsNewType(false);
+                      setFormData({...formData, type: 'Komputer'});
+                    }}
+                    className={`px-3 py-2 rounded-lg border text-xs font-bold ${
+                      isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    Batal
+                  </button>
+                </div>
+              ) : (
+                <select
+                  value={uniqueTypes.includes(formData.type) ? formData.type : 'Lainnya'}
+                  onChange={(e) => {
+                    if (e.target.value === 'new') {
+                      setIsNewType(true);
+                      setFormData({...formData, type: ''});
+                    } else {
+                      setFormData({...formData, type: e.target.value});
+                    }
+                  }}
+                  className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none ${
+                    isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-slate-300 text-slate-900'
+                  }`}
+                >
+                  {uniqueTypes.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                  <option value="new">+ Tambah Baru...</option>
+                </select>
+              )}
             </div>
             <div>
               <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Lokasi</label>
@@ -304,84 +376,89 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
           <RefreshCw className={`w-8 h-8 animate-spin ${isDark ? 'text-zinc-600' : 'text-slate-400'}`} />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredDevices.map((device) => (
             <motion.div
               layout
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               key={device.id}
-              className={`p-4 rounded-2xl border flex flex-col gap-3 relative overflow-hidden ${
-                isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white border-slate-200 shadow-sm'
+              className={`p-3 sm:p-4 rounded-2xl border flex flex-col gap-3 relative overflow-hidden transition-shadow hover:shadow-md ${
+                isDark ? 'bg-zinc-900/40 border-zinc-800' : 'bg-white border-slate-100 shadow-sm'
               }`}
             >
-              <div className={`absolute top-0 left-0 w-1.5 h-full ${
-                device.status === 'Online' ? 'bg-emerald-500' :
-                device.status === 'Offline' ? 'bg-rose-500' : 'bg-slate-400'
-              }`} />
-              
-              <div className="flex justify-between items-start pl-2">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
+              <div className="flex items-center justify-between gap-3 relative z-10">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center border ${
                     device.status === 'Online' 
-                      ? 'bg-emerald-50 border-emerald-100 text-emerald-600 dark:bg-emerald-950/30 dark:border-emerald-900/50 dark:text-emerald-400'
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
                       : device.status === 'Offline'
-                      ? 'bg-rose-50 border-rose-100 text-rose-600 dark:bg-rose-950/30 dark:border-rose-900/50 dark:text-rose-400'
-                      : 'bg-slate-50 border-slate-200 text-slate-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400'
+                      ? 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
+                      : 'bg-slate-500/10 border-slate-500/20 text-slate-600 dark:text-slate-400'
                   }`}>
                     {getDeviceIcon(device.type)}
                   </div>
-                  <div>
-                    <h3 className="font-bold text-sm tracking-tight">{device.name}</h3>
-                    <p className={`text-xs font-mono mt-0.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
-                      {device.ip_address}
-                    </p>
+                  <div className="flex flex-col truncate">
+                    <h3 className="font-bold text-sm tracking-tight truncate pr-2">{device.name}</h3>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className={`text-[11px] font-mono ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                        {device.ip_address}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 
-                {(adminUser?.role === 'Super Admin' || adminUser?.role === 'Staff IT Support') && (
-                  <div className="flex items-center gap-1">
-                    <button 
-                      onClick={() => {
-                        setEditingDevice(device);
-                        setFormData({
-                          name: device.name,
-                          ip_address: device.ip_address,
-                          type: device.type,
-                          location: device.location || ''
-                        });
-                        setShowAddForm(false);
-                      }}
-                      className={`p-1.5 rounded-lg ${isDark ? 'hover:bg-zinc-800 text-zinc-400 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-800'}`}
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                    </button>
-                    <button 
-                      onClick={() => {
-                        if (window.confirm('Yakin ingin menghapus perangkat ini?')) {
-                          deleteMutation.mutate(device.id);
-                        }
-                      }}
-                      className={`p-1.5 rounded-lg ${isDark ? 'hover:bg-rose-900/30 text-zinc-400 hover:text-rose-400' : 'hover:bg-rose-50 text-slate-400 hover:text-rose-500'}`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {(adminUser?.role === 'Super Admin' || adminUser?.role === 'Staff IT Support') && (
+                    <>
+                      <button 
+                        onClick={() => {
+                          setEditingDevice(device);
+                          setFormData({
+                            name: device.name,
+                            ip_address: device.ip_address,
+                            type: device.type,
+                            location: device.location || ''
+                          });
+                          setShowAddForm(false);
+                        }}
+                        className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-zinc-800 text-zinc-400 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-800'}`}
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
+                        onClick={() => {
+                          if (window.confirm('Yakin ingin menghapus perangkat ini?')) {
+                            deleteMutation.mutate(device.id);
+                          }
+                        }}
+                        className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-rose-900/30 text-zinc-400 hover:text-rose-400' : 'hover:bg-rose-50 text-slate-400 hover:text-rose-500'}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                      <div className={`w-px h-4 mx-0.5 ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
+                    </>
+                  )}
+                  <div className="flex items-center justify-center w-6 h-6">
+                    <div className={`w-2 h-2 rounded-full ${
+                      device.status === 'Online' 
+                        ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' 
+                        : device.status === 'Offline'
+                        ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]'
+                        : 'bg-slate-400'
+                    }`} />
                   </div>
-                )}
+                </div>
               </div>
               
-              <div className="pl-2 pt-2 border-t border-dashed mt-1 flex justify-between items-center text-[10px] sm:text-xs">
-                <span className={`font-medium ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>
+              <div className="flex justify-between items-center text-[10px] sm:text-xs">
+                <span className={`px-2 py-1 rounded-md border font-medium ${
+                  isDark ? 'bg-zinc-800/50 border-zinc-700/50 text-zinc-400' : 'bg-slate-50 border-slate-100 text-slate-500'
+                }`}>
                   {device.location || 'Lokasi tidak diatur'}
                 </span>
-                <span className={`font-bold px-2 py-0.5 rounded-full ${
-                  device.status === 'Online' 
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'
-                    : device.status === 'Offline'
-                    ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'
-                    : 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-400'
-                }`}>
-                  {device.status}
+                <span className={`text-[10px] font-medium ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>
+                  {device.type}
                 </span>
               </div>
             </motion.div>
