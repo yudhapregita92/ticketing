@@ -78,7 +78,7 @@ export interface ISettings {
 
 export interface IAdminUser extends IUser {}
 export type IAppSettings = ISettings;
-export type ViewMode = 'today' | 'all' | 'my_tickets' | 'dashboard';
+export type ViewMode = 'today' | 'all' | 'my_tickets' | 'dashboard' | 'assets' | 'network';
 export interface IAsset {
   id: number;
   asset_id: string;

@@ -10,7 +10,8 @@ import {
   ChevronDown, 
   Zap,
   Send,
-  Package
+  Package,
+  Activity
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -124,36 +125,52 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </button>
           
-          {adminUser && (
-            <button
-              onClick={() => setViewMode('my_tickets')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all text-xs font-bold ${
-                viewMode === 'my_tickets' 
-                  ? 'bg-emerald-500/10 text-emerald-600' 
-                  : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Tiket Saya</span>
-              </div>
-            </button>
-          )}
+          <button
+            onClick={() => setViewMode('my_tickets')}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all text-xs font-bold ${
+              viewMode === 'my_tickets' 
+                ? 'bg-emerald-500/10 text-emerald-600' 
+                : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{adminUser ? 'Tiket Saya' : 'Riwayat Tiket'}</span>
+            </div>
+          </button>
           
           {adminUser && (
-            <button
-              onClick={() => setViewMode('assets')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all text-xs font-bold ${
-                viewMode === 'assets' 
-                  ? 'bg-emerald-500/10 text-emerald-600' 
-                  : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Package className="w-4 h-4" />
-                <span>Manajemen Aset</span>
-              </div>
-            </button>
+            <>
+              <button
+                onClick={() => setViewMode('assets')}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all text-xs font-bold ${
+                  viewMode === 'assets' 
+                    ? 'bg-emerald-500/10 text-emerald-600' 
+                    : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Package className="w-4 h-4" />
+                  <span>Manajemen Aset</span>
+                </div>
+              </button>
+              
+              {(adminUser.role === 'Super Admin' || adminUser.role === 'Staff IT Support') && (
+                <button
+                  onClick={() => setViewMode('network')}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all text-xs font-bold ${
+                    viewMode === 'network' 
+                      ? 'bg-emerald-500/10 text-emerald-600' 
+                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Activity className="w-4 h-4" />
+                    <span>Monitoring Jaringan</span>
+                  </div>
+                </button>
+              )}
+            </>
           )}
         </div>
       </section>
@@ -261,10 +278,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <motion.div 
             whileHover={{ y: -2, scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className={`${isDark ? 'bg-amber-500/10 border-amber-500/20' : 'bg-amber-50 border-amber-100'} border rounded-xl p-1.5 flex flex-col items-center justify-center text-center`}
+            className={`${isDark ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-indigo-50 border-indigo-100'} border rounded-xl p-1.5 flex flex-col items-center justify-center text-center`}
           >
-            <Counter value={tickets.filter(t => t.status === 'New').length} className="text-sm font-black text-amber-500 leading-none mb-0.5" />
-            <span className="text-[8px] font-bold text-amber-500 capitalize tracking-tight whitespace-nowrap">Baru</span>
+            <Counter value={tickets.filter(t => t.status === 'New').length} className="text-sm font-black text-indigo-500 leading-none mb-0.5" />
+            <span className="text-[8px] font-bold text-indigo-500 capitalize tracking-tight whitespace-nowrap">Baru</span>
           </motion.div>
           <motion.div 
             whileHover={{ y: -2, scale: 1.05 }}

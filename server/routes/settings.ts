@@ -1,9 +1,9 @@
-import { Router } from "express";
-import db from "../db.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { AppError } from "../utils/errors.js";
+import express from "express";
+import db from "../db.ts";
+import { asyncHandler } from "../utils/asyncHandler.ts";
+import { AppError } from "../utils/errors.ts";
 
-const router = Router();
+const router = express.Router();
 
 router.get("/api/settings", asyncHandler(async (req, res) => {
   const settings = db.prepare("SELECT * FROM settings").all();

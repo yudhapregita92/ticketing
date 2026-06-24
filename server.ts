@@ -4,16 +4,17 @@ import path from "path";
 import cors from "cors";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import { initDb } from "./server/db.js";
-import { globalErrorHandler } from "./server/utils/errors.js";
+import { initDb } from "./server/db.ts";
+import { globalErrorHandler } from "./server/utils/errors.ts";
 
 // Import routes
-import authRouter from "./server/routes/auth.js";
-import ticketsRouter from "./server/routes/tickets.js";
-import assetsRouter from "./server/routes/assets.js";
-import masterDataRouter from "./server/routes/masterData.js";
-import imagesRouter from "./server/routes/images.js";
-import settingsRouter from "./server/routes/settings.js";
+import authRouter from "./server/routes/auth.ts";
+import ticketsRouter from "./server/routes/tickets.ts";
+import assetsRouter from "./server/routes/assets.ts";
+import masterDataRouter from "./server/routes/masterData.ts";
+import imagesRouter from "./server/routes/images.ts";
+import settingsRouter from "./server/routes/settings.ts";
+import networkRouter from "./server/routes/network.ts";
 
 async function startServer() {
   console.log("Starting server initialization...");
@@ -67,6 +68,7 @@ async function startServer() {
   app.use("/api/assets", assetsRouter);
   app.use("/api", masterDataRouter);
   app.use("/api/images", imagesRouter);
+  app.use("/api/network", networkRouter);
   app.use("/", settingsRouter);
 
   // Catch-all for API routes

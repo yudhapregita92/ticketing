@@ -97,7 +97,7 @@ export const TicketDetailModal = React.memo(({
                      selectedTicket.status === 'Cancelled' ? 'Batal' : 
                      selectedTicket.status === 'New' ? 'Baru' : selectedTicket.status}
                   </span>
-                  <span className={`px-1.5 py-0.5 rounded-full text-[7px] sm:text-[8px] font-bold capitalize tracking-wider text-white ${priorityInfo.color}`}>
+                  <span className={`px-1.5 py-0.5 rounded-full text-[7px] sm:text-[8px] font-bold capitalize tracking-wider text-center min-w-[65px] inline-block border border-transparent text-white ${priorityInfo.color}`}>
                     {priorityInfo.label}
                   </span>
                 </div>
@@ -408,7 +408,7 @@ export const TicketDetailModal = React.memo(({
                             className={`flex-1 min-w-[50px] py-1 rounded-lg text-[6px] sm:text-[7px] font-black capitalize tracking-tighter transition-all ${
                               (modalStatus || selectedTicket.status) === status 
                               ? (
-                                status === 'New' ? 'bg-amber-500 text-white shadow-lg shadow-amber-900/40' :
+                                status === 'New' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-900/40' :
                                 status === 'In Progress' ? 'bg-blue-500 text-white shadow-lg shadow-blue-900/40' :
                                 status === 'Completed' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' :
                                 'bg-rose-500 text-white shadow-lg shadow-rose-900/40'

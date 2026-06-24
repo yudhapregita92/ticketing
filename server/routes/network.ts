@@ -1,0 +1,122 @@
+import express from "express";
+import db from "../db.ts";
+import ping from "ping";
+
+const router = express.Router();
+
+// Get all network devices
+router.get("/devices", (req, res) => {
+  try {
+    const devices = db.prepare("SELECT * FROM network_devices ORDER BY type, name").all();
+    res.json(devices);
+  } catch (error) {
+    console.error("Error fetching network devices:", error);
+    res.status(500).json({ error: "Failed to fetch network devices" });
+  }
+});
+
+// Add a new device
+router.post("/devices", (req, res) => {
+  try {
+    const { name, ip_address, type, location } = req.body;
+    
+    if (!name || !ip_address || !type) {
+      return res.status(400).json({ error: "Name, IP address, and type are required" });
+    }
+
+    const result = db.prepare(`
+      INSERT INTO network_devices (name, ip_address, type, location, status) 
+      VALUES (?, ?, ?, ?, 'Unknown')
+    `).run(name, ip_address, type, location || null);
+
+    const newDevice = db.prepare("SELECT * FROM network_devices WHERE id = ?").get(result.lastInsertRowid);
+    res.status(201).json(newDevice);
+  } catch (error: any) {
+    console.error("Error adding network device:", error);
+    if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      return res.status(400).json({ error: "IP Address already exists in monitoring list" });
+    }
+    res.status(500).json({ error: "Failed to add network device" });
+  }
+});
+
+// Update a device
+router.put("/devices/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, ip_address, type, location } = req.body;
+    
+    db.prepare(`
+      UPDATE network_devices 
+      SET name = ?, ip_address = ?, type = ?, location = ?
+      WHERE id = ?
+    `).run(name, ip_address, type, location || null, id);
+
+    const updatedDevice = db.prepare("SELECT * FROM network_devices WHERE id = ?").get(id);
+    res.json(updatedDevice);
+  } catch (error: any) {
+    console.error("Error updating network device:", error);
+    if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      return res.status(400).json({ error: "IP Address already exists" });
+    }
+    res.status(500).json({ error: "Failed to update network device" });
+  }
+});
+
+// Delete a device
+router.delete("/devices/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    db.prepare("DELETE FROM network_devices WHERE id = ?").run(id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting network device:", error);
+    res.status(500).json({ error: "Failed to delete network device" });
+  }
+});
+
+// Scan all devices (Ping)
+router.post("/scan", async (req, res) => {
+  try {
+    const devices = db.prepare("SELECT * FROM network_devices").all() as any[];
+    const updateStmt = db.prepare("UPDATE network_devices SET status = ?, last_checked = CURRENT_TIMESTAMP WHERE id = ?");
+    
+    // We can ping in parallel for faster results
+    const pingPromises = devices.map(async (device) => {
+      try {
+        const res = await ping.promise.probe(device.ip_address, {
+          timeout: 2,
+          extra: ['-c', '1']
+        });
+        const status = res.alive ? 'Online' : 'Offline';
+        
+        // Update DB
+        updateStmt.run(status, device.id);
+        
+        return {
+          id: device.id,
+          ip_address: device.ip_address,
+          status,
+          time: res.time
+        };
+      } catch (err) {
+        updateStmt.run('Offline', device.id);
+        return {
+          id: device.id,
+          ip_address: device.ip_address,
+          status: 'Offline',
+          time: null
+        };
+      }
+    });
+
+    const results = await Promise.all(pingPromises);
+    
+    res.json({ success: true, results });
+  } catch (error) {
+    console.error("Error scanning devices:", error);
+    res.status(500).json({ error: "Failed to scan devices" });
+  }
+});
+
+export default router;

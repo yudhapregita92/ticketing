@@ -1,5 +1,5 @@
-export const APP_VERSION = "1.7.0";
-export const BUILD_DATE = "2026-03-21";
+export const APP_VERSION = "1.8.0";
+export const BUILD_DATE = "2026-03-24";
 
 // Deteksi apakah berjalan di Staging atau Production
 export const getEnvironment = () => {
@@ -18,6 +18,18 @@ export interface VersionUpdate {
 }
 
 export const UPDATE_HISTORY: VersionUpdate[] = [
+  {
+    version: "1.8.0",
+    date: "2026-03-24",
+    changes: [
+      "Implementasi Portal Riwayat Tiket User (My Tickets)",
+      "Fitur pencarian tiket mandiri menggunakan No. HP atau Nama",
+      "Penyimpanan otomatis identitas user setelah pengiriman tiket",
+      "Peningkatan Success Modal dengan akses cepat ke riwayat tiket",
+      "Navigasi baru untuk akses riwayat tiket di Sidebar dan Bottom Nav",
+      "Penyederhanaan Bottom Nav dengan menghapus tombol Cari"
+    ]
+  },
   {
     version: "1.7.0",
     date: "2026-03-21",

@@ -49,6 +49,8 @@ interface TicketListProps {
   CurrentLogo: any;
   setShowForm: (show: boolean) => void;
   handleBulkAction: (status: string) => Promise<void>;
+  userIdentifier: string;
+  setUserIdentifier: (id: string) => void;
 }
 
 export const TicketList: React.FC<TicketListProps> = ({
@@ -87,74 +89,156 @@ export const TicketList: React.FC<TicketListProps> = ({
   primaryColor,
   CurrentLogo,
   setShowForm,
-  handleBulkAction
+  handleBulkAction,
+  userIdentifier,
+  setUserIdentifier
 }) => {
   return (
     <div className="lg:col-span-2 space-y-2 sm:space-y-3">
+      {/* User Portal Search - Only for non-admins in my_tickets mode */}
+      {viewMode === 'my_tickets' && !adminUser && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`${themeClasses.card} rounded-3xl border p-4 sm:p-6 shadow-sm mb-4`}
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${isDark ? 'bg-emerald-900/30 text-emerald-400 border-emerald-800' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
+              <TicketIcon className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className={`text-sm font-bold capitalize tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Portal Riwayat Tiket</h2>
+              <p className="text-[10px] text-slate-400 font-medium tracking-wide">Cari tiket Anda menggunakan No. HP atau Nama</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <input 
+                type="text"
+                placeholder="Masukkan No. HP atau Nama..."
+                value={userIdentifier}
+                onChange={(e) => {
+                  setUserIdentifier(e.target.value);
+                  localStorage.setItem('userIdentifier', e.target.value);
+                }}
+                className={`w-full px-4 py-3 rounded-2xl border text-sm font-bold transition-all focus:ring-2 focus:ring-emerald-500/20 outline-none ${
+                  isDark 
+                    ? 'bg-zinc-800 border-zinc-700 text-white placeholder-zinc-500' 
+                    : 'bg-zinc-50 border-zinc-200 text-slate-900 placeholder-slate-400'
+                }`}
+              />
+            </div>
+            {userIdentifier && (
+              <button 
+                onClick={() => {
+                  setUserIdentifier('');
+                  localStorage.removeItem('userIdentifier');
+                }}
+                className={`px-4 py-3 rounded-2xl text-xs font-bold transition-all ${
+                  isDark ? 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600' : 'bg-zinc-100 text-slate-600 hover:bg-zinc-200'
+                }`}
+              >
+                Bersihkan
+              </button>
+            )}
+          </div>
+
+          {!userIdentifier && (
+            <div className={`mt-4 p-4 rounded-2xl border border-dashed flex flex-col items-center justify-center text-center ${isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+              <Filter className="w-8 h-8 text-slate-300 mb-2" />
+              <p className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Silakan masukkan No. HP atau Nama yang Anda gunakan saat membuat tiket untuk melihat riwayat laporan Anda.
+              </p>
+            </div>
+          )}
+        </motion.div>
+      )}
+
       {/* Mobile Navigation Tabs */}
-      <div className="lg:hidden flex items-center justify-between gap-2 mb-1 sm:mb-2 border-b border-slate-100 pb-1 overflow-hidden">
-        <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-hide pb-1">
-          <button 
-            onClick={() => setViewMode('today')}
-            className={`relative pb-1 text-[10px] sm:text-xs whitespace-nowrap font-bold transition-all ${
-              viewMode === 'today' ? 'text-emerald-600' : isDark ? 'text-slate-400 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            Antrian Hari Ini
-            {viewMode === 'today' && (
-              <motion.div layoutId="activeTabMobile" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full" />
-            )}
-          </button>
-          <button 
-            onClick={() => setViewMode('all')}
-            className={`relative pb-1 text-[10px] sm:text-xs whitespace-nowrap font-bold transition-all ${
-              viewMode === 'all' ? 'text-emerald-600' : isDark ? 'text-slate-400 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            Semua Antrian
-            {viewMode === 'all' && (
-              <motion.div layoutId="activeTabMobile" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full" />
-            )}
-          </button>
-          {adminUser && (
+      <div className="lg:hidden flex flex-col gap-3 mb-4">
+        {/* Interactive Stats Quick-Filter Grid */}
+        <div className="grid grid-cols-4 gap-1.5 w-full">
+          {[
+            { 
+              id: '', 
+              label: 'Semua', 
+              count: tickets.length,
+              activeClass: isDark ? 'bg-zinc-800 border-zinc-700 text-white ring-1 ring-emerald-500/20' : 'bg-white border-slate-300 text-slate-900 shadow-sm ring-1 ring-emerald-500/20',
+              idleClass: isDark ? 'bg-zinc-900/30 border-zinc-850/60 text-zinc-400 hover:bg-zinc-800/20' : 'bg-slate-50/50 border-slate-100 text-slate-500 hover:bg-slate-100/50'
+            },
+            { 
+              id: 'New', 
+              label: 'Baru', 
+              count: tickets.filter(t => t.status === 'New').length,
+              activeClass: isDark ? 'bg-indigo-500/10 border-indigo-500/40 text-indigo-400 ring-1 ring-indigo-500/30' : 'bg-indigo-50 border-indigo-200 text-indigo-600 ring-1 ring-indigo-500/20',
+              idleClass: isDark ? 'bg-zinc-900/30 border-zinc-850/60 text-zinc-400 hover:bg-zinc-850/40' : 'bg-slate-50/50 border-slate-100 text-slate-500 hover:bg-slate-100/50'
+            },
+            { 
+              id: 'In Progress', 
+              label: 'Progres', 
+              count: tickets.filter(t => t.status === 'In Progress').length,
+              activeClass: isDark ? 'bg-blue-500/10 border-blue-500/40 text-blue-400 ring-1 ring-blue-500/30' : 'bg-blue-50 border-blue-200 text-blue-600 ring-1 ring-blue-500/20',
+              idleClass: isDark ? 'bg-zinc-900/30 border-zinc-850/60 text-zinc-400 hover:bg-zinc-850/40' : 'bg-slate-50/50 border-slate-100 text-slate-500 hover:bg-slate-100/50'
+            },
+            { 
+              id: 'Completed', 
+              label: 'Selesai', 
+              count: tickets.filter(t => t.status === 'Completed').length,
+              activeClass: isDark ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400 ring-1 ring-emerald-500/30' : 'bg-emerald-50 border-emerald-200 text-emerald-600 ring-1 ring-emerald-500/20',
+              idleClass: isDark ? 'bg-zinc-900/30 border-zinc-850/60 text-zinc-400 hover:bg-zinc-850/40' : 'bg-slate-50/50 border-slate-100 text-slate-500 hover:bg-slate-100/50'
+            }
+          ].map((item) => {
+            const isActive = filterStatus === item.id;
+            return (
+              <motion.button
+                key={item.label}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setFilterStatus(item.id)}
+                className={`py-1.5 px-1 rounded-xl border text-center flex flex-col items-center justify-center transition-all ${
+                  isActive ? item.activeClass : item.idleClass
+                }`}
+              >
+                <span className="text-xs font-black tracking-tight leading-none mb-0.5">
+                  <RollingNumber value={item.count} />
+                </span>
+                <span className="text-[8px] sm:text-[9px] font-bold tracking-tight whitespace-nowrap">{item.label}</span>
+              </motion.button>
+            );
+          })}
+        </div>
+
+        {/* Quick Actions (Filter and Refresh) */}
+        <div className="flex items-center justify-end gap-2 p-1.5 rounded-2xl">
+          <div className="flex items-center gap-1">
             <button 
-              onClick={() => setViewMode('my_tickets')}
-              className={`relative pb-1 text-[10px] sm:text-xs whitespace-nowrap font-bold transition-all ${
-                viewMode === 'my_tickets' ? 'text-emerald-600' : isDark ? 'text-slate-400 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'
+              onClick={() => {
+                setTempFilters({ dept: filterDept, status: filterStatus, date: filterDate, search: searchQuery });
+                setShowMobileFilter(true);
+              }}
+              className={`flex items-center justify-center w-8 h-8 rounded-xl border relative ${
+                (filterDept || filterStatus || filterDate || searchQuery)
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-800'
+                : isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white' : 'bg-white border-slate-200 text-slate-500 hover:text-slate-800'
               }`}
+              title="Filter"
             >
-              Tiket Saya
-              {viewMode === 'my_tickets' && (
-                <motion.div layoutId="activeTabMobile" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full" />
+              <SlidersHorizontal className="w-4 h-4" />
+              {(filterDept || filterStatus || filterDate || searchQuery) && (
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-500" />
               )}
             </button>
-          )}
-        </div>
-        
-        {/* Filter Controls (Mobile) */}
-        <div className="flex items-center gap-1 sm:gap-2">
-          <button 
-            onClick={() => {
-              setTempFilters({ dept: filterDept, status: filterStatus, date: filterDate, search: searchQuery });
-              setShowMobileFilter(true);
-            }}
-            className={`flex items-center gap-1 px-2 py-1 border rounded-lg text-[9px] font-black capitalize tracking-tighter shadow-sm active:scale-95 transition-all ${
-              (filterDept || filterStatus || filterDate || searchQuery)
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
-              : isDark ? 'bg-zinc-900 border-zinc-800 text-slate-400' : 'bg-white border-slate-200 text-slate-500'
-            }`}
-          >
-            <SlidersHorizontal className="w-3 h-3" />
-            Filter
-          </button>
-          <button 
-            onClick={() => fetchTickets(true)}
-            className="p-2 text-slate-400 hover:text-emerald-600 transition-colors"
-            title="Segarkan Antrian"
-            aria-label="Refresh tickets"
-          >
-            <RefreshCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+            <button 
+              onClick={() => fetchTickets(true)}
+              className={`flex items-center justify-center w-8 h-8 rounded-xl border ${
+                isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white' : 'bg-white border-slate-200 text-slate-500 hover:text-slate-800'
+              }`}
+              title="Segarkan Antrian"
+              aria-label="Refresh tickets"
+            >
+              <RefreshCcw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -227,7 +311,7 @@ export const TicketList: React.FC<TicketListProps> = ({
         </div>
       ) : (
         <motion.div 
-          className="space-y-2"
+          className="space-y-1.5"
           drag="x"
           dragDirectionLock
           dragConstraints={{ left: 0, right: 0 }}
@@ -275,7 +359,7 @@ export const TicketList: React.FC<TicketListProps> = ({
                 </button>
               </motion.div>
             ) : (
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1.5">
                 {adminUser && filteredTickets.length > 0 && (
                   <div className="flex items-center gap-2 px-2 mb-1">
                     <input 

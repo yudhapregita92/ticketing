@@ -293,9 +293,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div key={ticket.id} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                    ticket.status === 'New' ? 'bg-amber-500/10 text-amber-500' :
+                    ticket.status === 'New' ? 'bg-indigo-500/10 text-indigo-500' :
                     ticket.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' :
-                    'bg-emerald-500/10 text-emerald-500'
+                    ticket.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-500' :
+                    'bg-rose-500/10 text-rose-500'
                   }`}>
                     {ticket.name.substring(0, 2).toUpperCase()}
                   </div>
@@ -305,11 +306,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 </div>
                 <div className={`px-2 py-0.5 rounded text-[9px] font-bold ${
-                  ticket.status === 'New' ? 'bg-amber-500/10 text-amber-500' :
+                  ticket.status === 'New' ? 'bg-indigo-500/10 text-indigo-500' :
                   ticket.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' :
-                  'bg-emerald-500/10 text-emerald-500'
+                  ticket.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-500' :
+                  'bg-rose-500/10 text-rose-500'
                 }`}>
-                  {ticket.status === 'New' ? 'Open' : ticket.status === 'In Progress' ? 'Assigned' : 'Resolved'}
+                  {ticket.status === 'New' ? 'Open' : ticket.status === 'In Progress' ? 'Assigned' : ticket.status === 'Completed' ? 'Resolved' : 'Cancelled'}
                 </div>
               </div>
             ))}

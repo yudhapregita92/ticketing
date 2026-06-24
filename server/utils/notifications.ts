@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import db from "../db.js";
+import db from "../db.ts";
 
 // Email Transporter Helper
 async function getTransporter() {

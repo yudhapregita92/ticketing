@@ -1,13 +1,13 @@
-import { Router } from "express";
-import db from "../db.js";
-import { sendNotificationEmail, sendTelegramNotification, sendUserNotificationEmail } from "../utils/notifications.js";
+import express from "express";
+import db from "../db.ts";
+import { sendNotificationEmail, sendTelegramNotification, sendUserNotificationEmail } from "../utils/notifications.ts";
 import { Server } from "socket.io";
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { Ticket, User, TicketLog } from "../types.js";
-import { AppError } from "../utils/errors.js";
+import { asyncHandler } from "../utils/asyncHandler.ts";
+import type { Ticket, User, TicketLog } from "../types.ts";
+import { AppError } from "../utils/errors.ts";
 
 export default function(io: Server) {
-  const router = Router();
+  const router = express.Router();
 
   router.get("/", asyncHandler(async (req: any, res: any) => {
     console.log('GET /api/tickets', req.query);
@@ -61,9 +61,16 @@ export default function(io: Server) {
     res.json(logs);
   }));
 
+  router.get("/history/:index", asyncHandler(async (req: any, res: any) => {
+    const { index } = req.params;
+    const columns = "id, ticket_no, name, department, phone, category, description, assigned_to, admin_reply, status, created_at, updated_at, responded_at, resolved_at, priority";
+    const tickets = db.prepare(`SELECT ${columns} FROM tickets WHERE employee_index = ? ORDER BY created_at DESC`).all(index) as Ticket[];
+    res.json(tickets);
+  }));
+
   router.post("/", asyncHandler(async (req: any, res: any) => {
-    const { name, department, phone, category, description, photo, face_photo, latitude, longitude, priority } = req.body;
-    console.log('Incoming ticket data:', { name, department, phone, category, hasPhoto: !!photo, hasFacePhoto: !!face_photo, lat: latitude, lng: longitude });
+    const { name, department, phone, category, description, photo, face_photo, latitude, longitude, priority, employee_index } = req.body;
+    console.log('Incoming ticket data:', { name, department, phone, category, hasPhoto: !!photo, hasFacePhoto: !!face_photo, lat: latitude, lng: longitude, employee_index });
     
     if (!name || !department || !category) {
       throw new AppError("Missing required fields", 400);
@@ -103,8 +110,8 @@ export default function(io: Server) {
     }
 
     const info = db.prepare(
-      "INSERT INTO tickets (ticket_no, name, department, phone, category, description, photo, face_photo, created_at, ip_address, user_agent, latitude, longitude, assigned_to, status, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-    ).run(ticketNo, name, department, finalPhone, category, description || "", photo || null, face_photo || null, utcNow.toISOString(), String(ip), String(userAgent), latitude || null, longitude || null, assignedTo, 'New', priority || 'Medium');
+      "INSERT INTO tickets (ticket_no, name, department, phone, category, description, photo, face_photo, created_at, ip_address, user_agent, latitude, longitude, assigned_to, status, priority, employee_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    ).run(ticketNo, name, department, finalPhone, category, description || "", photo || null, face_photo || null, utcNow.toISOString(), String(ip), String(userAgent), latitude || null, longitude || null, assignedTo, 'New', priority || 'Medium', employee_index || null);
     
     const newTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(info.lastInsertRowid) as Ticket;
     

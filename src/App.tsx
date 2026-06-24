@@ -31,6 +31,8 @@ import { SplashScreen } from './components/SplashScreen';
 import { hapticFeedback } from './utils/haptics';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AssetManagement } from './components/AssetManagement';
+import NetworkMonitor from './components/NetworkMonitor';
+import { MobileAppNav } from './components/MobileAppNav';
 import { TicketList } from './components/TicketList';
 
 // Types, Constants, and Utils
@@ -217,8 +219,11 @@ export default function App() {
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [gpsError, setGpsError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'today' | 'all' | 'my_tickets' | 'dashboard'>(() => {
+  const [viewMode, setViewMode] = useState<'today' | 'all' | 'my_tickets' | 'dashboard' | 'assets' | 'network'>(() => {
     return localStorage.getItem('adminUser') ? 'dashboard' : 'today';
+  });
+  const [userIdentifier, setUserIdentifier] = useState<string>(() => {
+    return localStorage.getItem('userIdentifier') || '';
   });
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [tempFilters, setTempFilters] = useState({ dept: '', status: '', date: '', search: '' });
@@ -298,8 +303,20 @@ export default function App() {
         const ticketDate = parseSafeDate(ticket.created_at).toLocaleDateString('en-CA'); // YYYY-MM-DD
         const today = new Date().toLocaleDateString('en-CA');
         if (ticketDate !== today) return false;
-      } else if (viewMode === 'my_tickets' && adminUser) {
-        if (ticket.assigned_to !== adminUser.username && ticket.assigned_to !== adminUser.full_name) return false;
+      } else if (viewMode === 'my_tickets') {
+        if (adminUser) {
+          // Admin view: tickets assigned to me
+          if (ticket.assigned_to !== adminUser.username && ticket.assigned_to !== adminUser.full_name) return false;
+        } else {
+          // User view: tickets I submitted
+          if (!userIdentifier) return false;
+          const search = userIdentifier.toLowerCase();
+          if (
+            ticket.phone.toLowerCase() !== search && 
+            ticket.name.toLowerCase() !== search &&
+            !ticket.ticket_no.toLowerCase().includes(search)
+          ) return false;
+        }
       }
 
       const matchDept = filterDept ? ticket.department === filterDept : true;
@@ -757,10 +774,17 @@ export default function App() {
     createTicketMutation.mutate(formData, {
       onSuccess: (data) => {
         if (data) {
+          // Save user identifier for portal
+          if (formData.phone) {
+            setUserIdentifier(formData.phone);
+            localStorage.setItem('userIdentifier', formData.phone);
+          }
           clearDraft();
           setShowForm(false);
           setShowSuccess(true);
-          setTimeout(() => setShowSuccess(false), 3000);
+          // Don't auto-hide if we want them to click a button, 
+          // but for now let's keep it and just add buttons to the modal.
+          setTimeout(() => setShowSuccess(false), 5000);
         }
       },
       onSettled: () => {
@@ -851,7 +875,7 @@ export default function App() {
    */
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'New': return 'bg-amber-500 text-white border-amber-600';
+      case 'New': return 'bg-indigo-500 text-white border-indigo-600';
       case 'In Progress': return 'bg-blue-500 text-white border-blue-600';
       case 'Completed': return 'bg-emerald-600 text-white border-emerald-700';
       case 'Cancelled': return 'bg-rose-500 text-white border-rose-600';
@@ -1025,25 +1049,33 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-2 sm:py-4 pb-20 lg:pb-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-6">
           {/* --- SIDEBAR: STATS & INFO --- */}
-          <Sidebar 
-            isDark={isDark}
-            themeClasses={themeClasses}
-            tickets={tickets}
-            adminUser={adminUser}
-            setShowDistribution={setShowDistribution}
-            primaryColor={primaryColor}
-            filteredTickets={filteredTickets}
-            categoryStats={categoryStats}
-            showDistribution={showDistribution}
-            setShowForm={setShowForm}
-            fetchTickets={fetchTickets}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-          />
+          <div className="hidden lg:block">
+            <Sidebar 
+              isDark={isDark}
+              themeClasses={themeClasses}
+              tickets={tickets}
+              adminUser={adminUser}
+              setShowDistribution={setShowDistribution}
+              primaryColor={primaryColor}
+              filteredTickets={filteredTickets}
+              categoryStats={categoryStats}
+              showDistribution={showDistribution}
+              setShowForm={setShowForm}
+              fetchTickets={fetchTickets}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+            />
+          </div>
 
           {/* --- MAIN CONTENT --- */}
-          {viewMode === 'dashboard' ? (
-            <div className="lg:col-span-2 space-y-2 sm:space-y-3">
+          <div className="lg:col-span-2 space-y-2 sm:space-y-3">
+            <MobileAppNav 
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+              isDark={isDark}
+              adminUser={adminUser}
+            />
+            {viewMode === 'dashboard' ? (
               <AdminDashboard 
                 tickets={tickets}
                 adminUser={adminUser}
@@ -1051,55 +1083,62 @@ export default function App() {
                 themeClasses={themeClasses}
                 setViewMode={setViewMode}
               />
-            </div>
-          ) : viewMode === 'assets' ? (
-            <div className="lg:col-span-2 space-y-2 sm:space-y-3">
+            ) : viewMode === 'assets' ? (
               <AssetManagement 
                 isDark={isDark}
                 themeClasses={themeClasses}
                 primaryColor={primaryColor}
               />
-            </div>
-          ) : (
-            <TicketList 
-              adminUser={adminUser}
-              isDark={isDark}
-              themeClasses={themeClasses}
-              viewMode={viewMode}
-              setViewMode={setViewMode}
-              filterDept={filterDept}
-              setFilterDept={setFilterDept}
-              filterStatus={filterStatus}
-              setFilterStatus={setFilterStatus}
-              filterDate={filterDate}
-              setFilterDate={setFilterDate}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              loading={loading}
-              tickets={tickets}
-              filteredTickets={filteredTickets}
-              paginatedTickets={paginatedTickets}
-              currentPage={currentPage}
-              setCurrentPage={setCurrentPage}
-              totalPages={totalPages}
-              itemsPerPage={itemsPerPage}
-              handleSelectTicket={handleSelectTicket}
-              handleDeleteTicket={handleDeleteTicket}
-              handleIntervention={handleIntervention}
-              getStatusIcon={getStatusIcon}
-              getStatusColor={getStatusColor}
-              formatDate={formatDate}
-              fetchTickets={fetchTickets}
-              setShowMobileFilter={setShowMobileFilter}
-              setTempFilters={setTempFilters}
-              selectedTickets={selectedTickets}
-              setSelectedTickets={setSelectedTickets}
-              primaryColor={primaryColor}
-              CurrentLogo={CurrentLogo}
-              setShowForm={setShowForm}
-              handleBulkAction={handleBulkAction}
-            />
-          )}
+            ) : viewMode === 'network' ? (
+              <NetworkMonitor 
+                isDark={isDark}
+                themeClasses={themeClasses}
+                primaryColor={primaryColor}
+                adminUser={adminUser}
+              />
+            ) : (
+              <TicketList 
+                adminUser={adminUser}
+                isDark={isDark}
+                themeClasses={themeClasses}
+                viewMode={viewMode}
+                setViewMode={setViewMode}
+                filterDept={filterDept}
+                setFilterDept={setFilterDept}
+                filterStatus={filterStatus}
+                setFilterStatus={setFilterStatus}
+                filterDate={filterDate}
+                setFilterDate={setFilterDate}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                loading={loading}
+                tickets={tickets}
+                filteredTickets={filteredTickets}
+                paginatedTickets={paginatedTickets}
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+                totalPages={totalPages}
+                itemsPerPage={itemsPerPage}
+                handleSelectTicket={handleSelectTicket}
+                handleDeleteTicket={handleDeleteTicket}
+                handleIntervention={handleIntervention}
+                getStatusIcon={getStatusIcon}
+                getStatusColor={getStatusColor}
+                formatDate={formatDate}
+                fetchTickets={fetchTickets}
+                setShowMobileFilter={setShowMobileFilter}
+                setTempFilters={setTempFilters}
+                selectedTickets={selectedTickets}
+                setSelectedTickets={setSelectedTickets}
+                primaryColor={primaryColor}
+                CurrentLogo={CurrentLogo}
+                setShowForm={setShowForm}
+                handleBulkAction={handleBulkAction}
+                userIdentifier={userIdentifier}
+                setUserIdentifier={setUserIdentifier}
+              />
+            )}
+          </div>
 
                 {/* Help CTA - Visible on mobile at the bottom */}
             <section 
@@ -1224,6 +1263,11 @@ export default function App() {
           <SuccessModal 
             show={showSuccess}
             themeClasses={themeClasses}
+            onClose={() => setShowSuccess(false)}
+            onViewHistory={() => {
+              setShowSuccess(false);
+              setViewMode('my_tickets');
+            }}
           />
         )}
 

@@ -43,7 +43,7 @@ export const getSLALabel = (createdAt: string, status: string) => {
 
 export const getStatusColor = (status: string) => {
   switch (status) {
-    case 'New': return 'bg-amber-500 text-white';
+    case 'New': return 'bg-indigo-500 text-white';
     case 'In Progress': return 'bg-blue-500 text-white';
     case 'Completed': return 'bg-emerald-600 text-white';
     case 'Cancelled': return 'bg-rose-500 text-white';

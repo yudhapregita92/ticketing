@@ -1,11 +1,11 @@
-import { Router } from "express";
-import db from "../db.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { User } from "../types.js";
-import { AppError } from "../utils/errors.js";
+import express from "express";
+import db from "../db.ts";
+import { asyncHandler } from "../utils/asyncHandler.ts";
+import type { User } from "../types.ts";
+import { AppError } from "../utils/errors.ts";
 import bcrypt from "bcryptjs";
 
-const router = Router();
+const router = express.Router();
 
 router.post("/login", asyncHandler(async (req, res) => {
   const { username, password } = req.body;

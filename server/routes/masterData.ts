@@ -1,11 +1,11 @@
-import { Router } from "express";
-import db from "../db.js";
+import express from "express";
+import db from "../db.ts";
 import multer from "multer";
 import * as xlsx from "xlsx";
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { AppError } from "../utils/errors.js";
+import { asyncHandler } from "../utils/asyncHandler.ts";
+import { AppError } from "../utils/errors.ts";
 
-const router = Router();
+const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 // IT Personnel

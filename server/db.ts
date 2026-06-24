@@ -28,7 +28,8 @@ export function initDb() {
       latitude REAL,
       longitude REAL,
       internal_notes TEXT,
-      face_photo TEXT
+      face_photo TEXT,
+      employee_index TEXT
     );
 
     CREATE TABLE IF NOT EXISTS users (
@@ -66,9 +67,9 @@ export function initDb() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       ticket_id INTEGER,
       action TEXT,
+      note TEXT,
       performed_by TEXT,
-      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-      details TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(ticket_id) REFERENCES tickets(id)
     );
 
@@ -98,12 +99,32 @@ export function initDb() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS network_devices (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      ip_address TEXT UNIQUE NOT NULL,
+      type TEXT NOT NULL,
+      location TEXT,
+      status TEXT DEFAULT 'Unknown',
+      last_checked DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // Add missing columns if they don't exist
-  const tables = ['tickets', 'users', 'categories', 'master_users'];
+  const tables = ['tickets', 'users', 'categories', 'master_users', 'ticket_logs'];
   for (const table of tables) {
     const columns = db.prepare(`PRAGMA table_info(${table})`).all() as any[];
+    
+    if (table === 'ticket_logs') {
+      if (columns.find(c => c.name === 'timestamp') && !columns.find(c => c.name === 'created_at')) {
+        db.prepare("ALTER TABLE ticket_logs RENAME COLUMN timestamp TO created_at").run();
+      }
+      if (columns.find(c => c.name === 'details') && !columns.find(c => c.name === 'note')) {
+        db.prepare("ALTER TABLE ticket_logs RENAME COLUMN details TO note").run();
+      }
+    }
     
     if (table === 'tickets') {
       if (!columns.find(c => c.name === 'face_photo')) {
@@ -123,6 +144,9 @@ export function initDb() {
       }
       if (!columns.find(c => c.name === 'priority')) {
         db.prepare("ALTER TABLE tickets ADD COLUMN priority TEXT DEFAULT 'Medium'").run();
+      }
+      if (!columns.find(c => c.name === 'employee_index')) {
+        db.prepare("ALTER TABLE tickets ADD COLUMN employee_index TEXT").run();
       }
     }
     
@@ -201,6 +225,7 @@ export function initDb() {
 
     // Create or update default users
     const usersToCreate = [
+      { username: 'admin', password: 'admin', role: 'Super Admin', full_name: 'Administrator' },
       { username: 'yudha', password: 'root', role: 'Super Admin', full_name: 'Yudha' },
       { username: 'bayu', password: 'root', role: 'Staff IT Support', full_name: 'Bayu' },
       { username: 'dita', password: 'root', role: 'Staff App Support', full_name: 'Dita' }
