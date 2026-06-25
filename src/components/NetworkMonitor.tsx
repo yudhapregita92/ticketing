@@ -526,121 +526,137 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
         )}
 
       {(showAddForm || editingDevice) && (
-        <motion.form 
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`p-4 rounded-2xl border mb-6 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-slate-50 border-slate-200'}`}
-          onSubmit={handleSubmit}
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <div>
-              <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Nama Perangkat</label>
-              <input
-                required
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-                className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none ${
-                  isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-slate-300 text-slate-900'
-                }`}
-                placeholder="Ex: PC Admin 1"
-              />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <motion.form 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className={`w-full max-w-lg p-6 rounded-3xl border shadow-xl ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-slate-200'}`}
+            onSubmit={handleSubmit}
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold tracking-tight">
+                {editingDevice ? 'Edit Perangkat' : 'Tambah Perangkat Baru'}
+              </h3>
+              <button 
+                type="button" 
+                onClick={resetForm}
+                className={`p-2 rounded-full ${isDark ? 'hover:bg-zinc-800 text-zinc-400' : 'hover:bg-slate-100 text-slate-500'}`}
+              >
+                <AlertCircle className="w-5 h-5 opacity-0 hidden" /> {/* Just for spacing or close icon if we had one. Let's use a simple X */}
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
             </div>
-            <div>
-              <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>IP Address</label>
-              <input
-                required
-                type="text"
-                value={formData.ip_address}
-                onChange={(e) => setFormData({...formData, ip_address: e.target.value})}
-                className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none ${
-                  isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-slate-300 text-slate-900'
-                }`}
-                placeholder="192.168.1.10"
-              />
-            </div>
-            <div>
-              <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Tipe</label>
-              {isNewType ? (
-                <div className="flex gap-2">
-                  <input
-                    required
-                    type="text"
-                    value={formData.type}
-                    onChange={(e) => setFormData({...formData, type: e.target.value})}
-                    className={`flex-1 px-3 py-2 rounded-lg border text-sm focus:outline-none ${
-                      isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-slate-300 text-slate-900'
-                    }`}
-                    placeholder="Ketik tipe baru..."
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsNewType(false);
-                      setFormData({...formData, type: 'Komputer'});
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Nama Perangkat</label>
+                <input
+                  required
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                    isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                  }`}
+                  placeholder="Ex: PC Admin 1"
+                />
+              </div>
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>IP Address</label>
+                <input
+                  required
+                  type="text"
+                  value={formData.ip_address}
+                  onChange={(e) => setFormData({...formData, ip_address: e.target.value})}
+                  className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                    isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                  }`}
+                  placeholder="192.168.1.10"
+                />
+              </div>
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Tipe</label>
+                {isNewType ? (
+                  <div className="flex gap-2">
+                    <input
+                      required
+                      type="text"
+                      value={formData.type}
+                      onChange={(e) => setFormData({...formData, type: e.target.value})}
+                      className={`flex-1 px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                        isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                      }`}
+                      placeholder="Ketik tipe baru..."
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsNewType(false);
+                        setFormData({...formData, type: 'Komputer'});
+                      }}
+                      className={`px-4 py-2.5 rounded-xl border text-xs font-bold transition-colors ${
+                        isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      Batal
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    value={uniqueTypes.includes(formData.type) ? formData.type : 'Lainnya'}
+                    onChange={(e) => {
+                      if (e.target.value === 'new') {
+                        setIsNewType(true);
+                        setFormData({...formData, type: ''});
+                      } else {
+                        setFormData({...formData, type: e.target.value});
+                      }
                     }}
-                    className={`px-3 py-2 rounded-lg border text-xs font-bold ${
-                      isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'
+                    className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                      isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
                     }`}
                   >
-                    Batal
-                  </button>
-                </div>
-              ) : (
-                <select
-                  value={uniqueTypes.includes(formData.type) ? formData.type : 'Lainnya'}
-                  onChange={(e) => {
-                    if (e.target.value === 'new') {
-                      setIsNewType(true);
-                      setFormData({...formData, type: ''});
-                    } else {
-                      setFormData({...formData, type: e.target.value});
-                    }
-                  }}
-                  className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none ${
-                    isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-slate-300 text-slate-900'
+                    {uniqueTypes.map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                    <option value="new">+ Tambah Baru...</option>
+                  </select>
+                )}
+              </div>
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Lokasi</label>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => setFormData({...formData, location: e.target.value})}
+                  className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                    isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
                   }`}
-                >
-                  {uniqueTypes.map(t => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                  <option value="new">+ Tambah Baru...</option>
-                </select>
-              )}
+                  placeholder="Ex: Lantai 1"
+                />
+              </div>
             </div>
-            <div>
-              <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Lokasi</label>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => setFormData({...formData, location: e.target.value})}
-                className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none ${
-                  isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-slate-300 text-slate-900'
+            <div className="flex justify-end gap-3 pt-4 border-t border-dashed border-slate-200 dark:border-zinc-800">
+              <button
+                type="button"
+                onClick={resetForm}
+                className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                  isDark ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                 }`}
-                placeholder="Ex: Lantai 1"
-              />
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={addMutation.isPending || updateMutation.isPending}
+                className="px-5 py-2.5 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-90 transition-all disabled:opacity-50"
+                style={{ backgroundColor: primaryColor }}
+              >
+                {editingDevice ? 'Simpan Perubahan' : 'Tambah Perangkat'}
+              </button>
             </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={resetForm}
-              className={`px-4 py-2 rounded-xl text-sm font-bold ${
-                isDark ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
-              }`}
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              disabled={addMutation.isPending || updateMutation.isPending}
-              className="px-4 py-2 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-90"
-              style={{ backgroundColor: primaryColor }}
-            >
-              {editingDevice ? 'Simpan Perubahan' : 'Simpan'}
-            </button>
-          </div>
-        </motion.form>
+          </motion.form>
+        </div>
       )}
 
       {isLoading ? (
