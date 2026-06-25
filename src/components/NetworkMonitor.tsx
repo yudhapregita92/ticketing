@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Plus, Search, Trash2, Edit, RefreshCw, Monitor, Video, Radio, AlertCircle, Wifi, Server, Upload, Download } from 'lucide-react';
+import { Activity, Plus, Search, Trash2, Edit, RefreshCw, Monitor, Video, Radio, AlertCircle, Wifi, Server, Upload, Download, ArrowUp, ArrowDown, Cloud, Settings2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as xlsx from 'xlsx';
@@ -241,6 +241,36 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
   const uniqueTypes = Array.from(new Set(['Komputer', 'CCTV', 'Radio', 'Server', ...devices.map(d => d.type).filter(Boolean)]));
   const uniqueLocations = Array.from(new Set(devices.map(d => d.location).filter(Boolean)));
 
+  const [isEditingTopology, setIsEditingTopology] = useState(false);
+  const [topologyOrder, setTopologyOrder] = useState<string[]>(() => {
+    const saved = localStorage.getItem('networkTopologyOrder');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    setTopologyOrder(prev => {
+      const newTypes = uniqueTypes.filter(t => !prev.includes(t));
+      const currentValidTypes = prev.filter(t => uniqueTypes.includes(t));
+      if (newTypes.length > 0 || currentValidTypes.length !== prev.length) {
+        const updated = [...currentValidTypes, ...newTypes];
+        localStorage.setItem('networkTopologyOrder', JSON.stringify(updated));
+        return updated;
+      }
+      return prev;
+    });
+  }, [uniqueTypes.length]);
+
+  const moveType = (index: number, direction: 'up' | 'down') => {
+    const newOrder = [...topologyOrder];
+    if (direction === 'up' && index > 0) {
+      [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
+    } else if (direction === 'down' && index < newOrder.length - 1) {
+      [newOrder[index + 1], newOrder[index]] = [newOrder[index], newOrder[index + 1]];
+    }
+    setTopologyOrder(newOrder);
+    localStorage.setItem('networkTopologyOrder', JSON.stringify(newOrder));
+  };
+
   const getDeviceIcon = (type: string) => {
     switch (type) {
       case 'Komputer': return <Monitor className="w-5 h-5" />;
@@ -446,82 +476,137 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
       </div>
 
         {viewType === 'topology' && !isLoading && (
-          <div className={`p-4 sm:p-6 rounded-2xl border ${isDark ? 'bg-zinc-900/30 border-zinc-800' : 'bg-slate-50 border-slate-200'} overflow-x-auto min-h-[400px] flex items-center justify-center`}>
-            <div className="relative flex flex-col items-center">
-              {/* Central Node */}
-              <motion.div 
-                initial={{ scale: 0 }} animate={{ scale: 1 }}
-                className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex flex-col items-center justify-center border-2 z-10 ${
-                  isDark ? 'bg-zinc-800 border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'bg-white border-indigo-500/50 shadow-md'
+          <div className={`p-4 sm:p-6 rounded-2xl border ${isDark ? 'bg-zinc-900/30 border-zinc-800' : 'bg-slate-50 border-slate-200'} overflow-x-auto min-h-[400px]`}>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className={`text-sm font-bold ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                {isEditingTopology ? 'Atur Urutan Hierarki Topologi' : 'Peta Topologi Jaringan'}
+              </h3>
+              <button 
+                onClick={() => setIsEditingTopology(!isEditingTopology)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  isEditingTopology 
+                    ? 'bg-indigo-500 text-white shadow-md' 
+                    : isDark ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' : 'bg-white border shadow-sm text-slate-700 hover:bg-slate-50'
                 }`}
               >
-                <Server className={`w-6 h-6 sm:w-8 sm:h-8 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} />
-                <span className={`text-[8px] sm:text-[10px] font-bold mt-1 ${isDark ? 'text-zinc-300' : 'text-slate-600'}`}>CORE</span>
-              </motion.div>
-
-              {/* Connecting Lines & Devices */}
-              <div className="mt-8 sm:mt-12 flex gap-4 sm:gap-8 px-4 flex-wrap justify-center relative">
-                {/* Main Vertical Line from Core */}
-                <motion.div 
-                  initial={{ height: 0 }} animate={{ height: '2rem' }} transition={{ delay: 0.2 }}
-                  className={`absolute top-[-32px] left-1/2 w-0.5 -translate-x-1/2 ${isDark ? 'bg-zinc-700' : 'bg-slate-300'}`} 
-                />
-                
-                {/* Horizontal connection line if multiple groups */}
-                {uniqueTypes.length > 1 && (
-                  <motion.div 
-                    initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.4 }}
-                    className={`absolute top-0 left-8 right-8 h-0.5 origin-center ${isDark ? 'bg-zinc-700' : 'bg-slate-300'}`} 
-                  />
-                )}
-
-                {uniqueTypes.map((type, tIndex) => {
-                  const typeDevices = devices.filter(d => d.type === type);
-                  if (typeDevices.length === 0) return null;
-                  
-                  return (
-                    <div key={type} className="flex flex-col items-center relative pt-4 sm:pt-6 min-w-[140px]">
-                      {/* Line down to group */}
-                      <motion.div 
-                        initial={{ height: 0 }} animate={{ height: '1rem' }} transition={{ delay: 0.5 + tIndex * 0.1 }}
-                        className={`absolute top-0 left-1/2 w-0.5 -translate-x-1/2 ${isDark ? 'bg-zinc-700' : 'bg-slate-300'}`} 
-                      />
-                      
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 + tIndex * 0.1 }}
-                        className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold mb-4 z-10 shadow-sm ${
-                          isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-300' : 'bg-white border-slate-200 text-slate-700'
-                        }`}
-                      >
-                        {type}
-                      </motion.div>
-
-                      <div className="flex flex-col gap-2 w-full">
-                        {typeDevices.map((device, dIndex) => (
-                          <motion.div
-                            key={device.id}
-                            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 + (tIndex * 0.1) + (dIndex * 0.05) }}
-                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border w-full relative z-10 transition-colors ${
-                              isDark ? 'bg-zinc-900 border-zinc-800 hover:border-zinc-700' : 'bg-white border-slate-200 shadow-sm hover:border-slate-300'
-                            }`}
-                          >
-                            <div className={`w-2.5 h-2.5 rounded-full shadow-sm shrink-0 ${
-                              device.status === 'Online' 
-                                ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' 
-                                : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]'
-                            }`} />
-                            <div className="flex flex-col overflow-hidden">
-                              <span className={`text-xs font-bold truncate ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>{device.name}</span>
-                              <span className={`text-[9px] font-mono truncate mt-0.5 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>{device.ip_address}</span>
-                            </div>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                <Settings2 className="w-3.5 h-3.5" />
+                {isEditingTopology ? 'Selesai Edit' : 'Edit Urutan'}
+              </button>
             </div>
+
+            {isEditingTopology ? (
+              <div className="max-w-md mx-auto space-y-2">
+                {topologyOrder.map((type, index) => (
+                  <motion.div 
+                    layout
+                    key={type} 
+                    className={`flex items-center justify-between p-3 rounded-xl border ${isDark ? 'bg-zinc-800/50 border-zinc-700' : 'bg-white border-slate-200 shadow-sm'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isDark ? 'bg-zinc-700 text-zinc-300' : 'bg-slate-100 text-slate-500'}`}>
+                        {index + 1}
+                      </div>
+                      <span className={`text-sm font-bold ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>{type}</span>
+                    </div>
+                    <div className="flex gap-1">
+                      <button 
+                        onClick={() => moveType(index, 'up')} 
+                        disabled={index === 0}
+                        className={`p-1.5 rounded-lg transition-colors ${index === 0 ? 'opacity-30 cursor-not-allowed' : isDark ? 'hover:bg-zinc-700 text-zinc-300' : 'hover:bg-slate-100 text-slate-600'}`}
+                      >
+                        <ArrowUp className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => moveType(index, 'down')} 
+                        disabled={index === topologyOrder.length - 1}
+                        className={`p-1.5 rounded-lg transition-colors ${index === topologyOrder.length - 1 ? 'opacity-30 cursor-not-allowed' : isDark ? 'hover:bg-zinc-700 text-zinc-300' : 'hover:bg-slate-100 text-slate-600'}`}
+                      >
+                        <ArrowDown className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="relative flex flex-col items-center py-4">
+                {/* INTERNET Node */}
+                <motion.div 
+                  initial={{ scale: 0 }} animate={{ scale: 1 }}
+                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-3xl flex flex-col items-center justify-center border-2 z-10 ${
+                    isDark ? 'bg-zinc-800 border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'bg-white border-indigo-500/50 shadow-md'
+                  }`}
+                >
+                  <Cloud className={`w-6 h-6 sm:w-8 sm:h-8 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} />
+                  <span className={`text-[8px] sm:text-[10px] font-bold mt-1 ${isDark ? 'text-zinc-300' : 'text-slate-600'}`}>INTERNET</span>
+                </motion.div>
+
+                {/* Vertical Tiers */}
+                <div className="flex flex-col items-center w-full">
+                  {topologyOrder.map((type, tIndex) => {
+                    const typeDevices = devices.filter(d => d.type === type);
+                    if (typeDevices.length === 0) return null;
+                    
+                    return (
+                      <div key={type} className="flex flex-col items-center relative w-full pt-8 pb-4">
+                        {/* Vertical line from previous tier */}
+                        <motion.div 
+                          initial={{ height: 0 }} animate={{ height: '2rem' }} transition={{ delay: tIndex * 0.1 }}
+                          className={`absolute top-0 left-1/2 w-0.5 -translate-x-1/2 ${isDark ? 'bg-zinc-700' : 'bg-slate-300'}`} 
+                        />
+                        
+                        <motion.div 
+                          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + tIndex * 0.1 }}
+                          className={`px-4 py-1.5 rounded-full border text-xs font-bold mb-6 z-10 shadow-sm ${
+                            isDark ? 'bg-zinc-800 border-zinc-600 text-zinc-200' : 'bg-white border-slate-300 text-slate-700'
+                          }`}
+                        >
+                          {type}
+                        </motion.div>
+
+                        <div className="flex flex-nowrap justify-center gap-4 sm:gap-8 relative px-4 w-max mx-auto pb-2">
+                          {/* Horizontal line if multiple devices */}
+                          {typeDevices.length > 1 && (
+                            <motion.div 
+                              initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.3 + tIndex * 0.1 }}
+                              className={`absolute top-0 left-[80px] right-[80px] sm:left-[96px] sm:right-[96px] h-0.5 origin-center ${isDark ? 'bg-zinc-700' : 'bg-slate-300'}`}
+                            />
+                          )}
+
+                          {typeDevices.map((device, dIndex) => (
+                            <div key={device.id} className="relative pt-4 flex flex-col items-center w-[140px] sm:w-[160px]">
+                              {/* vertical line down to device */}
+                              {typeDevices.length > 1 && (
+                                <motion.div 
+                                  initial={{ height: 0 }} animate={{ height: '1rem' }} transition={{ delay: 0.4 + tIndex * 0.1 }}
+                                  className={`absolute top-0 left-1/2 w-0.5 -translate-x-1/2 ${isDark ? 'bg-zinc-700' : 'bg-slate-300'}`} 
+                                />
+                              )}
+                              
+                              <motion.div
+                                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + (tIndex * 0.1) + (dIndex * 0.05) }}
+                                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border w-full relative z-10 transition-colors ${
+                                  isDark ? 'bg-zinc-900 border-zinc-800 hover:border-zinc-700' : 'bg-white border-slate-200 shadow-sm hover:border-slate-300'
+                                }`}
+                              >
+                                <div className={`w-2.5 h-2.5 rounded-full shadow-sm shrink-0 ${
+                                  device.status === 'Online' 
+                                    ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' 
+                                    : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]'
+                                }`} />
+                                <div className="flex flex-col overflow-hidden">
+                                  <span className={`text-xs font-bold truncate ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>{device.name}</span>
+                                  <span className={`text-[9px] font-mono truncate mt-0.5 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>{device.ip_address}</span>
+                                </div>
+                              </motion.div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
