@@ -37,6 +37,8 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
     location: ''
   });
 
+  const [viewType, setViewType] = useState<'list' | 'topology'>('list');
+
   const { data: devices = [], isLoading, refetch } = useQuery({
     queryKey: ['network-devices'],
     queryFn: async () => {
@@ -166,6 +168,7 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
     (locationFilter ? d.location === locationFilter : true)
   );
 
+  const totalCount = devices.length;
   const onlineCount = devices.filter(d => d.status === 'Online').length;
   const offlineCount = devices.filter(d => d.status === 'Offline').length;
 
@@ -174,16 +177,7 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Monitoring Jaringan</h2>
-          <div className="flex items-center gap-2 mt-1.5">
-            <span className="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              {onlineCount} Online
-            </span>
-            <span className="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2.5 py-0.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-              {offlineCount} Offline
-            </span>
-          </div>
+          <p className={`text-xs mt-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Status realtime perangkat</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -210,48 +204,178 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 mb-6">
-        <div className="relative">
-          <Search className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`} />
-          <input
-            type="text"
-            placeholder="Cari perangkat, IP, lokasi..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className={`w-full pl-10 pr-4 py-2.5 rounded-2xl border text-sm focus:outline-none focus:ring-2 transition-all ${
-              isDark 
-                ? 'bg-zinc-900/50 border-zinc-800 focus:border-zinc-700 text-white placeholder-zinc-500 focus:ring-zinc-800' 
-                : 'bg-slate-50 border-slate-200 focus:border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-slate-200'
-            }`}
-          />
-        </div>
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className={`flex-none py-2 px-3 rounded-xl border text-xs font-bold focus:outline-none transition-all cursor-pointer ${
-              isDark 
-                ? 'bg-zinc-900/50 border-zinc-800 text-zinc-300 focus:border-zinc-700 focus:ring-zinc-800' 
-                : 'bg-white border-slate-200 text-slate-700 focus:border-slate-300 focus:ring-slate-200 shadow-sm'
-            }`}
-          >
-            <option value="">Semua Tipe</option>
-            {uniqueTypes.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-          <select
-            value={locationFilter}
-            onChange={(e) => setLocationFilter(e.target.value)}
-            className={`flex-none py-2 px-3 rounded-xl border text-xs font-bold focus:outline-none transition-all cursor-pointer ${
-              isDark 
-                ? 'bg-zinc-900/50 border-zinc-800 text-zinc-300 focus:border-zinc-700 focus:ring-zinc-800' 
-                : 'bg-white border-slate-200 text-slate-700 focus:border-slate-300 focus:ring-slate-200 shadow-sm'
-            }`}
-          >
-            <option value="">Semua Lokasi</option>
-            {uniqueLocations.map(l => <option key={l} value={l}>{l}</option>)}
-          </select>
-        </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+          className={`p-3 sm:p-4 rounded-2xl border ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-slate-50 border-slate-100'}`}
+        >
+          <div className={`text-[10px] sm:text-xs font-bold mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>TOTAL</div>
+          <div className="text-xl sm:text-3xl font-black">{totalCount}</div>
+        </motion.div>
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className={`p-3 sm:p-4 rounded-2xl border ${isDark ? 'bg-emerald-900/20 border-emerald-900/30' : 'bg-emerald-50 border-emerald-100'}`}
+        >
+          <div className="text-[10px] sm:text-xs font-bold mb-1 text-emerald-600 dark:text-emerald-400">ONLINE</div>
+          <div className="text-xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+            {onlineCount}
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse hidden sm:block"></span>
+          </div>
+        </motion.div>
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+          className={`p-3 sm:p-4 rounded-2xl border ${isDark ? 'bg-rose-900/20 border-rose-900/30' : 'bg-rose-50 border-rose-100'}`}
+        >
+          <div className="text-[10px] sm:text-xs font-bold mb-1 text-rose-600 dark:text-rose-400">OFFLINE</div>
+          <div className="text-xl sm:text-3xl font-black text-rose-600 dark:text-rose-400">
+            {offlineCount}
+          </div>
+        </motion.div>
       </div>
+
+      {/* Toggle View & Filters */}
+      <div className="flex flex-col gap-3 mb-6">
+        <div className="flex bg-slate-100 dark:bg-zinc-900/50 p-1 rounded-xl self-start w-full sm:w-auto">
+          <button 
+            onClick={() => setViewType('list')}
+            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewType === 'list' ? 'bg-white dark:bg-zinc-800 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 dark:text-zinc-400'}`}
+          >
+            Daftar Perangkat
+          </button>
+          <button 
+            onClick={() => setViewType('topology')}
+            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewType === 'topology' ? 'bg-white dark:bg-zinc-800 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 dark:text-zinc-400'}`}
+          >
+            Topologi
+          </button>
+        </div>
+
+        {viewType === 'list' && (
+          <div className="flex flex-col sm:flex-row gap-3 mt-2">
+            <div className="relative flex-1">
+              <Search className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`} />
+              <input
+                type="text"
+                placeholder="Cari perangkat, IP, lokasi..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={`w-full pl-10 pr-4 py-2.5 rounded-2xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                  isDark 
+                    ? 'bg-zinc-900/50 border-zinc-800 focus:border-zinc-700 text-white placeholder-zinc-500 focus:ring-zinc-800' 
+                    : 'bg-slate-50 border-slate-200 focus:border-slate-300 text-slate-900 placeholder-slate-400 focus:ring-slate-200'
+                }`}
+              />
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className={`flex-none py-2 px-3 rounded-xl border text-xs font-bold focus:outline-none transition-all cursor-pointer ${
+                  isDark 
+                    ? 'bg-zinc-900/50 border-zinc-800 text-zinc-300 focus:border-zinc-700 focus:ring-zinc-800' 
+                    : 'bg-white border-slate-200 text-slate-700 focus:border-slate-300 focus:ring-slate-200 shadow-sm'
+                }`}
+              >
+                <option value="">Semua Tipe</option>
+                {uniqueTypes.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+              <select
+                value={locationFilter}
+                onChange={(e) => setLocationFilter(e.target.value)}
+                className={`flex-none py-2 px-3 rounded-xl border text-xs font-bold focus:outline-none transition-all cursor-pointer ${
+                  isDark 
+                    ? 'bg-zinc-900/50 border-zinc-800 text-zinc-300 focus:border-zinc-700 focus:ring-zinc-800' 
+                    : 'bg-white border-slate-200 text-slate-700 focus:border-slate-300 focus:ring-slate-200 shadow-sm'
+                }`}
+              >
+                <option value="">Semua Lokasi</option>
+                {uniqueLocations.map(l => <option key={l} value={l}>{l}</option>)}
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
+
+        {viewType === 'topology' && !isLoading && (
+          <div className={`p-4 sm:p-6 rounded-2xl border ${isDark ? 'bg-zinc-900/30 border-zinc-800' : 'bg-slate-50 border-slate-200'} overflow-x-auto min-h-[400px] flex items-center justify-center`}>
+            <div className="relative flex flex-col items-center">
+              {/* Central Node */}
+              <motion.div 
+                initial={{ scale: 0 }} animate={{ scale: 1 }}
+                className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex flex-col items-center justify-center border-2 z-10 ${
+                  isDark ? 'bg-zinc-800 border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'bg-white border-indigo-500/50 shadow-md'
+                }`}
+              >
+                <Server className={`w-6 h-6 sm:w-8 sm:h-8 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} />
+                <span className={`text-[8px] sm:text-[10px] font-bold mt-1 ${isDark ? 'text-zinc-300' : 'text-slate-600'}`}>CORE</span>
+              </motion.div>
+
+              {/* Connecting Lines & Devices */}
+              <div className="mt-8 sm:mt-12 flex gap-4 sm:gap-8 px-4 flex-wrap justify-center relative">
+                {/* Main Vertical Line from Core */}
+                <motion.div 
+                  initial={{ height: 0 }} animate={{ height: '2rem' }} transition={{ delay: 0.2 }}
+                  className={`absolute top-[-32px] left-1/2 w-0.5 -translate-x-1/2 ${isDark ? 'bg-zinc-700' : 'bg-slate-300'}`} 
+                />
+                
+                {/* Horizontal connection line if multiple groups */}
+                {uniqueTypes.length > 1 && (
+                  <motion.div 
+                    initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.4 }}
+                    className={`absolute top-0 left-8 right-8 h-0.5 origin-center ${isDark ? 'bg-zinc-700' : 'bg-slate-300'}`} 
+                  />
+                )}
+
+                {uniqueTypes.map((type, tIndex) => {
+                  const typeDevices = devices.filter(d => d.type === type);
+                  if (typeDevices.length === 0) return null;
+                  
+                  return (
+                    <div key={type} className="flex flex-col items-center relative pt-4 sm:pt-6 min-w-[140px]">
+                      {/* Line down to group */}
+                      <motion.div 
+                        initial={{ height: 0 }} animate={{ height: '1rem' }} transition={{ delay: 0.5 + tIndex * 0.1 }}
+                        className={`absolute top-0 left-1/2 w-0.5 -translate-x-1/2 ${isDark ? 'bg-zinc-700' : 'bg-slate-300'}`} 
+                      />
+                      
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 + tIndex * 0.1 }}
+                        className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold mb-4 z-10 shadow-sm ${
+                          isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-300' : 'bg-white border-slate-200 text-slate-700'
+                        }`}
+                      >
+                        {type}
+                      </motion.div>
+
+                      <div className="flex flex-col gap-2 w-full">
+                        {typeDevices.map((device, dIndex) => (
+                          <motion.div
+                            key={device.id}
+                            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 + (tIndex * 0.1) + (dIndex * 0.05) }}
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border w-full relative z-10 transition-colors ${
+                              isDark ? 'bg-zinc-900 border-zinc-800 hover:border-zinc-700' : 'bg-white border-slate-200 shadow-sm hover:border-slate-300'
+                            }`}
+                          >
+                            <div className={`w-2.5 h-2.5 rounded-full shadow-sm shrink-0 ${
+                              device.status === 'Online' 
+                                ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' 
+                                : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]'
+                            }`} />
+                            <div className="flex flex-col overflow-hidden">
+                              <span className={`text-xs font-bold truncate ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>{device.name}</span>
+                              <span className={`text-[9px] font-mono truncate mt-0.5 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>{device.ip_address}</span>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
       {(showAddForm || editingDevice) && (
         <motion.form 
@@ -375,7 +499,7 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
         <div className="flex justify-center py-12">
           <RefreshCw className={`w-8 h-8 animate-spin ${isDark ? 'text-zinc-600' : 'text-slate-400'}`} />
         </div>
-      ) : (
+      ) : viewType === 'list' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredDevices.map((device) => (
             <motion.div
@@ -470,7 +594,7 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
             </div>
           )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 };
