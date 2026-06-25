@@ -40,6 +40,43 @@ router.post("/devices", (req, res) => {
   }
 });
 
+// Add multiple devices
+router.post("/devices/bulk", (req, res) => {
+  try {
+    const devices = req.body.devices;
+    
+    if (!Array.isArray(devices)) {
+      return res.status(400).json({ error: "Devices array is required" });
+    }
+
+    const insertStmt = db.prepare(`
+      INSERT INTO network_devices (name, ip_address, type, location, status) 
+      VALUES (?, ?, ?, ?, 'Unknown')
+      ON CONFLICT(ip_address) DO UPDATE SET
+        name = excluded.name,
+        type = excluded.type,
+        location = excluded.location
+    `);
+
+    const insertMany = db.transaction((devicesList) => {
+      let count = 0;
+      for (const device of devicesList) {
+        if (device.ip_address && device.name && device.type) {
+          const result = insertStmt.run(device.name, device.ip_address, device.type, device.location || null);
+          if (result.changes > 0) count++;
+        }
+      }
+      return count;
+    });
+
+    const addedCount = insertMany(devices);
+    res.status(201).json({ success: true, count: addedCount });
+  } catch (error: any) {
+    console.error("Error bulk adding network devices:", error);
+    res.status(500).json({ error: "Failed to bulk add network devices" });
+  }
+});
+
 // Update a device
 router.put("/devices/:id", (req, res) => {
   try {

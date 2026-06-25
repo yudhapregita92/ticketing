@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Plus, Search, Trash2, Edit, RefreshCw, Monitor, Video, Radio, AlertCircle, Wifi, Server } from 'lucide-react';
+import { Activity, Plus, Search, Trash2, Edit, RefreshCw, Monitor, Video, Radio, AlertCircle, Wifi, Server, Upload, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import * as xlsx from 'xlsx';
 
 interface NetworkMonitorProps {
   isDark: boolean;
@@ -62,6 +63,92 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
       toast.error('Gagal melakukan pemindaian');
     }
   });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const bulkMutation = useMutation({
+    mutationFn: async (devices: any[]) => {
+      const res = await fetch('/api/network/devices/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ devices })
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to bulk add devices');
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['network-devices'] });
+      toast.success(`${data.count} Perangkat berhasil diimport`);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  });
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = xlsx.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = xlsx.utils.sheet_to_json(ws);
+        
+        // Map excel columns to expected device object
+        // Assume Excel might have headers like "IP Address" or "ip_address", "Name", "Type", "Location"
+        const mappedDevices = data.map((row: any) => {
+          const ip = row['IP Address'] || row['ip_address'] || row['ip'] || '';
+          const name = row['Name'] || row['Nama'] || row['name'] || `Device ${ip}`;
+          const type = row['Type'] || row['Tipe'] || row['type'] || 'Komputer';
+          const location = row['Location'] || row['Lokasi'] || row['location'] || '';
+          
+          return { name, ip_address: ip, type, location };
+        }).filter(d => d.ip_address); // Only keep rows with IP addresses
+        
+        if (mappedDevices.length > 0) {
+          bulkMutation.mutate(mappedDevices);
+        } else {
+          toast.error('Tidak ada data IP Address yang valid ditemukan di file excel.');
+        }
+      } catch (error) {
+        console.error("Error parsing excel:", error);
+        toast.error('Gagal membaca file Excel. Pastikan format file sesuai.');
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const downloadTemplate = () => {
+    const templateData = [
+      { 'IP Address': '192.168.1.10', 'Nama': 'PC Staff 1', 'Tipe': 'Komputer', 'Lokasi': 'Ruang Admin' },
+      { 'IP Address': '192.168.1.11', 'Nama': 'CCTV Pintu Masuk', 'Tipe': 'CCTV', 'Lokasi': 'Lobby' },
+      { 'IP Address': '192.168.1.12', 'Nama': 'Server Utama', 'Tipe': 'Server', 'Lokasi': 'Ruang Server' },
+      { 'IP Address': '192.168.1.13', 'Nama': 'AP Lt 1', 'Tipe': 'Radio', 'Lokasi': 'Lantai 1' }
+    ];
+    
+    const ws = xlsx.utils.json_to_sheet(templateData);
+    
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 15 }, // IP Address
+      { wch: 25 }, // Nama
+      { wch: 15 }, // Tipe
+      { wch: 20 }  // Lokasi
+    ];
+
+    const wb = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(wb, ws, 'Template');
+    xlsx.writeFile(wb, 'Template_Import_Network.xlsx');
+  };
 
   const addMutation = useMutation({
     mutationFn: async (newDevice: any) => {
@@ -192,14 +279,44 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
             <span className="hidden sm:block ml-2">Scan</span>
           </button>
           {(adminUser?.role === 'Super Admin' || adminUser?.role === 'Staff IT Support') && (
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="flex items-center justify-center p-2.5 sm:px-4 sm:py-2 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 shadow-md"
-              style={{ backgroundColor: primaryColor }}
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:block ml-2">Tambah</span>
-            </button>
+            <>
+              <button
+                onClick={downloadTemplate}
+                className={`flex items-center justify-center p-2.5 sm:px-4 sm:py-2 rounded-xl text-sm font-bold transition-all ${
+                  isDark ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                }`}
+                title="Download Format Template Excel"
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:block ml-2">Template</span>
+              </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={bulkMutation.isPending}
+                className={`flex items-center justify-center p-2.5 sm:px-4 sm:py-2 rounded-xl text-sm font-bold transition-all ${
+                  isDark ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                }`}
+                title="Upload Excel"
+              >
+                <Upload className={`w-4 h-4 ${bulkMutation.isPending ? 'animate-bounce' : ''}`} />
+                <span className="hidden sm:block ml-2">Import</span>
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept=".xlsx,.xls,.csv"
+                className="hidden"
+              />
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="flex items-center justify-center p-2.5 sm:px-4 sm:py-2 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 shadow-md"
+                style={{ backgroundColor: primaryColor }}
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:block ml-2">Tambah</span>
+              </button>
+            </>
           )}
         </div>
       </div>
