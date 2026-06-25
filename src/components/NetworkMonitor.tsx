@@ -31,6 +31,10 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
   const [isNewType, setIsNewType] = useState(false);
   
+  const [statusFilter, setStatusFilter] = useState<'all' | 'Online' | 'Offline'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
+
   const [formData, setFormData] = useState({
     name: '',
     ip_address: '',
@@ -252,8 +256,20 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
     d.ip_address.includes(searchQuery) ||
     d.location?.toLowerCase().includes(searchQuery.toLowerCase())) &&
     (typeFilter ? d.type === typeFilter : true) &&
-    (locationFilter ? d.location === locationFilter : true)
+    (locationFilter ? d.location === locationFilter : true) &&
+    (statusFilter === 'all' ? true : d.status === statusFilter)
   );
+
+  const totalPages = Math.ceil(filteredDevices.length / itemsPerPage);
+  const paginatedDevices = filteredDevices.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, typeFilter, locationFilter, statusFilter]);
 
   const totalCount = devices.length;
   const onlineCount = devices.filter(d => d.status === 'Online').length;
@@ -324,15 +340,25 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
       {/* Stats Cards */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         <motion.div 
+          onClick={() => setStatusFilter('all')}
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          className={`p-3 sm:p-4 rounded-2xl border ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-slate-50 border-slate-100'}`}
+          className={`p-3 sm:p-4 rounded-2xl border cursor-pointer transition-all ${
+            statusFilter === 'all' 
+              ? (isDark ? 'bg-zinc-800 border-zinc-600 ring-1 ring-zinc-500' : 'bg-slate-100 border-slate-300 ring-1 ring-slate-300') 
+              : (isDark ? 'bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800' : 'bg-slate-50 border-slate-100 hover:bg-slate-100')
+          }`}
         >
           <div className={`text-[10px] sm:text-xs font-bold mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>TOTAL</div>
           <div className="text-xl sm:text-3xl font-black">{totalCount}</div>
         </motion.div>
         <motion.div 
+          onClick={() => setStatusFilter('Online')}
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className={`p-3 sm:p-4 rounded-2xl border ${isDark ? 'bg-emerald-900/20 border-emerald-900/30' : 'bg-emerald-50 border-emerald-100'}`}
+          className={`p-3 sm:p-4 rounded-2xl border cursor-pointer transition-all ${
+            statusFilter === 'Online'
+              ? (isDark ? 'bg-emerald-900/40 border-emerald-500/50 ring-1 ring-emerald-500/50' : 'bg-emerald-100 border-emerald-300 ring-1 ring-emerald-300')
+              : (isDark ? 'bg-emerald-900/20 border-emerald-900/30 hover:bg-emerald-900/30' : 'bg-emerald-50 border-emerald-100 hover:bg-emerald-100')
+          }`}
         >
           <div className="text-[10px] sm:text-xs font-bold mb-1 text-emerald-600 dark:text-emerald-400">ONLINE</div>
           <div className="text-xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
@@ -341,8 +367,13 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
           </div>
         </motion.div>
         <motion.div 
+          onClick={() => setStatusFilter('Offline')}
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          className={`p-3 sm:p-4 rounded-2xl border ${isDark ? 'bg-rose-900/20 border-rose-900/30' : 'bg-rose-50 border-rose-100'}`}
+          className={`p-3 sm:p-4 rounded-2xl border cursor-pointer transition-all ${
+            statusFilter === 'Offline'
+              ? (isDark ? 'bg-rose-900/40 border-rose-500/50 ring-1 ring-rose-500/50' : 'bg-rose-100 border-rose-300 ring-1 ring-rose-300')
+              : (isDark ? 'bg-rose-900/20 border-rose-900/30 hover:bg-rose-900/30' : 'bg-rose-50 border-rose-100 hover:bg-rose-100')
+          }`}
         >
           <div className="text-[10px] sm:text-xs font-bold mb-1 text-rose-600 dark:text-rose-400">OFFLINE</div>
           <div className="text-xl sm:text-3xl font-black text-rose-600 dark:text-rose-400">
@@ -617,97 +648,129 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
           <RefreshCw className={`w-8 h-8 animate-spin ${isDark ? 'text-zinc-600' : 'text-slate-400'}`} />
         </div>
       ) : viewType === 'list' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filteredDevices.map((device) => (
-            <motion.div
-              layout
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              key={device.id}
-              className={`p-3 sm:p-4 rounded-2xl border flex flex-col gap-3 relative overflow-hidden transition-shadow hover:shadow-md ${
-                isDark ? 'bg-zinc-900/40 border-zinc-800' : 'bg-white border-slate-100 shadow-sm'
-              }`}
-            >
-              <div className="flex items-center justify-between gap-3 relative z-10">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className={`shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center border ${
-                    device.status === 'Online' 
-                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                      : device.status === 'Offline'
-                      ? 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
-                      : 'bg-slate-500/10 border-slate-500/20 text-slate-600 dark:text-slate-400'
-                  }`}>
-                    {getDeviceIcon(device.type)}
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {paginatedDevices.map((device) => (
+              <motion.div
+                layout
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                key={device.id}
+                className={`p-3 sm:p-4 rounded-2xl border flex flex-col gap-3 relative overflow-hidden transition-shadow hover:shadow-md ${
+                  isDark ? 'bg-zinc-900/40 border-zinc-800' : 'bg-white border-slate-100 shadow-sm'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3 relative z-10">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center border ${
+                      device.status === 'Online' 
+                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                        : device.status === 'Offline'
+                        ? 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
+                        : 'bg-slate-500/10 border-slate-500/20 text-slate-600 dark:text-slate-400'
+                    }`}>
+                      {getDeviceIcon(device.type)}
+                    </div>
+                    <div className="flex flex-col truncate">
+                      <h3 className="font-bold text-sm tracking-tight truncate pr-2">{device.name}</h3>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className={`text-[11px] font-mono ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                          {device.ip_address}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex flex-col truncate">
-                    <h3 className="font-bold text-sm tracking-tight truncate pr-2">{device.name}</h3>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className={`text-[11px] font-mono ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
-                        {device.ip_address}
-                      </span>
+                  
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {(adminUser?.role === 'Super Admin' || adminUser?.role === 'Staff IT Support') && (
+                      <>
+                        <button 
+                          onClick={() => {
+                            setEditingDevice(device);
+                            setFormData({
+                              name: device.name,
+                              ip_address: device.ip_address,
+                              type: device.type,
+                              location: device.location || ''
+                            });
+                            setShowAddForm(false);
+                          }}
+                          className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-zinc-800 text-zinc-400 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-800'}`}
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button 
+                          onClick={() => {
+                            if (window.confirm('Yakin ingin menghapus perangkat ini?')) {
+                              deleteMutation.mutate(device.id);
+                            }
+                          }}
+                          className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-rose-900/30 text-zinc-400 hover:text-rose-400' : 'hover:bg-rose-50 text-slate-400 hover:text-rose-500'}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                        <div className={`w-px h-4 mx-0.5 ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
+                      </>
+                    )}
+                    <div className="flex items-center justify-center w-6 h-6">
+                      <div className={`w-2 h-2 rounded-full ${
+                        device.status === 'Online' 
+                          ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' 
+                          : device.status === 'Offline'
+                          ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]'
+                          : 'bg-slate-400'
+                      }`} />
                     </div>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {(adminUser?.role === 'Super Admin' || adminUser?.role === 'Staff IT Support') && (
-                    <>
-                      <button 
-                        onClick={() => {
-                          setEditingDevice(device);
-                          setFormData({
-                            name: device.name,
-                            ip_address: device.ip_address,
-                            type: device.type,
-                            location: device.location || ''
-                          });
-                          setShowAddForm(false);
-                        }}
-                        className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-zinc-800 text-zinc-400 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-800'}`}
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                      </button>
-                      <button 
-                        onClick={() => {
-                          if (window.confirm('Yakin ingin menghapus perangkat ini?')) {
-                            deleteMutation.mutate(device.id);
-                          }
-                        }}
-                        className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-rose-900/30 text-zinc-400 hover:text-rose-400' : 'hover:bg-rose-50 text-slate-400 hover:text-rose-500'}`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                      <div className={`w-px h-4 mx-0.5 ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
-                    </>
-                  )}
-                  <div className="flex items-center justify-center w-6 h-6">
-                    <div className={`w-2 h-2 rounded-full ${
-                      device.status === 'Online' 
-                        ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' 
-                        : device.status === 'Offline'
-                        ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]'
-                        : 'bg-slate-400'
-                    }`} />
-                  </div>
+                <div className="flex justify-between items-center text-[10px] sm:text-xs">
+                  <span className={`px-2 py-1 rounded-md border font-medium ${
+                    isDark ? 'bg-zinc-800/50 border-zinc-700/50 text-zinc-400' : 'bg-slate-50 border-slate-100 text-slate-500'
+                  }`}>
+                    {device.location || 'Lokasi tidak diatur'}
+                  </span>
+                  <span className={`text-[10px] font-medium ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>
+                    {device.type}
+                  </span>
                 </div>
+              </motion.div>
+            ))}
+            {paginatedDevices.length === 0 && (
+              <div className={`col-span-full py-12 text-center rounded-2xl border border-dashed ${isDark ? 'border-zinc-800' : 'border-slate-200'}`}>
+                <AlertCircle className={`w-8 h-8 mx-auto mb-2 ${isDark ? 'text-zinc-600' : 'text-slate-400'}`} />
+                <p className={`text-sm font-medium ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>Tidak ada perangkat ditemukan.</p>
               </div>
-              
-              <div className="flex justify-between items-center text-[10px] sm:text-xs">
-                <span className={`px-2 py-1 rounded-md border font-medium ${
-                  isDark ? 'bg-zinc-800/50 border-zinc-700/50 text-zinc-400' : 'bg-slate-50 border-slate-100 text-slate-500'
-                }`}>
-                  {device.location || 'Lokasi tidak diatur'}
-                </span>
-                <span className={`text-[10px] font-medium ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>
-                  {device.type}
-                </span>
-              </div>
-            </motion.div>
-          ))}
-          {filteredDevices.length === 0 && (
-            <div className={`col-span-full py-12 text-center rounded-2xl border border-dashed ${isDark ? 'border-zinc-800' : 'border-slate-200'}`}>
-              <AlertCircle className={`w-8 h-8 mx-auto mb-2 ${isDark ? 'text-zinc-600' : 'text-slate-400'}`} />
-              <p className={`text-sm font-medium ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>Tidak ada perangkat ditemukan.</p>
+            )}
+          </div>
+          
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-4">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                  isDark 
+                    ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 disabled:opacity-50 disabled:hover:bg-zinc-800' 
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-50 disabled:hover:bg-slate-100'
+                }`}
+              >
+                Sebelumnya
+              </button>
+              <span className={`text-xs font-bold ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                Halaman {currentPage} dari {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                  isDark 
+                    ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 disabled:opacity-50 disabled:hover:bg-zinc-800' 
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-50 disabled:hover:bg-slate-100'
+                }`}
+              >
+                Berikutnya
+              </button>
             </div>
           )}
         </div>
