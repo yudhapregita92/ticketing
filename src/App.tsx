@@ -553,6 +553,7 @@ export default function App() {
       if (data) {
         toast.success(`Berhasil mengunggah ${data.count} user.`);
         queryClient.invalidateQueries({ queryKey: ['managementData'] });
+        queryClient.invalidateQueries({ queryKey: ['publicData'] });
       }
     } catch (err: any) {
       console.error('Upload error:', err);
