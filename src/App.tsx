@@ -1377,20 +1377,22 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <BottomNav 
-        adminUser={adminUser}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-        setShowForm={setShowForm}
-        setShowLogin={setShowLogin}
-        setShowSettings={setShowSettings}
-        setShowImageManager={setShowImageManager}
-        handleLogout={handleLogout}
-        primaryColor={primaryColor}
-        isDark={isDark}
-        toggleTheme={toggleTheme}
-        onSearchClick={() => setShowMobileFilter(true)}
-      />
+      <div className="print:hidden">
+        <BottomNav 
+          adminUser={adminUser}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          setShowForm={setShowForm}
+          setShowLogin={setShowLogin}
+          setShowSettings={setShowSettings}
+          setShowImageManager={setShowImageManager}
+          handleLogout={handleLogout}
+          primaryColor={primaryColor}
+          isDark={isDark}
+          toggleTheme={toggleTheme}
+          onSearchClick={() => setShowMobileFilter(true)}
+        />
+      </div>
 
       <style>{`
         @keyframes spin-slow {

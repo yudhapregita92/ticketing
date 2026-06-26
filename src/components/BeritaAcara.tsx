@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Printer, FileText, AlertCircle } from 'lucide-react';
 import { AdminUser } from '../types';
@@ -11,18 +11,36 @@ interface BeritaAcaraProps {
 }
 
 const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primaryColor, adminUser }) => {
-  const [formData, setFormData] = useState({
-    recommenderName: adminUser?.name || '',
-    recommenderDept: 'IT KDK',
-    recommendeeName: '',
-    recommendeeDept: '',
-    recommendeePosition: '',
-    reason: '',
-    location: 'Terbanggi Besar',
-    date: new Date().toISOString().split('T')[0],
-    logo1: null as string | null,
-    logo2: null as string | null
+  const [formData, setFormData] = useState(() => {
+    const saved = localStorage.getItem('beritaAcaraSettings');
+    const parsed = saved ? JSON.parse(saved) : {};
+    
+    return {
+      recommenderName: adminUser?.name || '',
+      recommenderDept: 'IT KDK',
+      recommendeeName: '',
+      recommendeeDept: '',
+      recommendeePosition: '',
+      reason: '',
+      location: 'Terbanggi Besar',
+      date: new Date().toISOString().split('T')[0],
+      logo1: parsed.logo1 || null,
+      logo2: parsed.logo2 || null,
+      headerTitle: parsed.headerTitle || 'KOPKAR DWI KARYA',
+      headerSubtitle: parsed.headerSubtitle || 'SURAT REKOMENDASI',
+      headerDocNo: parsed.headerDocNo || 'No. Dok: F/KDK/18/XII/2022 Rev. 5, Tanggal 27 September 2024'
+    };
   });
+
+  useEffect(() => {
+    localStorage.setItem('beritaAcaraSettings', JSON.stringify({
+      logo1: formData.logo1,
+      logo2: formData.logo2,
+      headerTitle: formData.headerTitle,
+      headerSubtitle: formData.headerSubtitle,
+      headerDocNo: formData.headerDocNo
+    }));
+  }, [formData.logo1, formData.logo2, formData.headerTitle, formData.headerSubtitle, formData.headerDocNo]);
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>, logoKey: 'logo1' | 'logo2') => {
     const file = e.target.files?.[0];
@@ -192,6 +210,47 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
 
             <div className={`h-px w-full ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
 
+            <div className="space-y-4">
+              <h4 className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Pengaturan Kop Surat</h4>
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Teks Header Utama</label>
+                  <input
+                    type="text"
+                    value={formData.headerTitle}
+                    onChange={(e) => setFormData({...formData, headerTitle: e.target.value})}
+                    className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                      isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Teks Sub Header</label>
+                  <input
+                    type="text"
+                    value={formData.headerSubtitle}
+                    onChange={(e) => setFormData({...formData, headerSubtitle: e.target.value})}
+                    className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                      isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Teks Nomor Dokumen</label>
+                  <input
+                    type="text"
+                    value={formData.headerDocNo}
+                    onChange={(e) => setFormData({...formData, headerDocNo: e.target.value})}
+                    className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                      isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                    }`}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className={`h-px w-full ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Logo Kiri</label>
@@ -258,11 +317,11 @@ const PrintableContent = ({ formData, formattedDate }: { formData: any, formatte
         {/* Text Center */}
         <div className="w-[60%] flex flex-col justify-between items-center text-center">
           <div className="h-1/2 w-full border-b border-black flex items-center justify-center uppercase font-bold text-lg tracking-wider">
-            KOPKAR DWI KARYA
+            {formData.headerTitle}
           </div>
           <div className="h-1/2 w-full flex flex-col items-center justify-center">
-            <div className="uppercase font-bold text-base tracking-wider leading-none">SURAT REKOMENDASI</div>
-            <div className="text-[10px] mt-1">No. Dok: F/KDK/18/XII/2022 Rev. 5, Tanggal 27 September 2024</div>
+            <div className="uppercase font-bold text-base tracking-wider leading-none">{formData.headerSubtitle}</div>
+            <div className="text-[10px] mt-1">{formData.headerDocNo}</div>
           </div>
         </div>
 
