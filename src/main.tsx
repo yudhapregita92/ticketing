@@ -9,7 +9,11 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
       retry: 1,
+      networkMode: 'always', // Allow fetching even if browser incorrectly reports offline in PWA
     },
+    mutations: {
+      networkMode: 'always',
+    }
   },
 });
 
