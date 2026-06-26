@@ -80,6 +80,7 @@ export default function App() {
       admin_theme_mode: 'light', // 'light' or 'dark'
       admin_primary_color: '#8b5cf6', // violet-500
       custom_logo: '',
+      custom_pwa_icon: '',
       custom_favicon: '',
       notification_emails: [] as string[],
       telegram_bot_token: '',
@@ -933,7 +934,7 @@ export default function App() {
       appleLink.rel = 'apple-touch-icon';
       document.getElementsByTagName('head')[0].appendChild(appleLink);
     }
-    appleLink.href = appSettings.custom_logo ? `/api/branding/logo?v=${ts}` : (appSettings.custom_favicon ? `/api/branding/favicon?v=${ts}` : "https://cdn-icons-png.flaticon.com/512/2906/2906274.png");
+    appleLink.href = appSettings.custom_pwa_icon ? `/api/branding/pwa-icon?v=${ts}` : (appSettings.custom_logo ? `/api/branding/logo?v=${ts}` : (appSettings.custom_favicon ? `/api/branding/favicon?v=${ts}` : "https://cdn-icons-png.flaticon.com/512/2906/2906274.png"));
 
     // Theme Color
     let themeMeta = document.querySelector("meta[name='theme-color']") as HTMLMetaElement;
@@ -952,7 +953,7 @@ export default function App() {
       document.getElementsByTagName('head')[0].appendChild(manifestLink);
     }
     manifestLink.href = `/manifest.json?v=${ts}`;
-  }, [appSettings.custom_favicon, appSettings.custom_logo, appSettings.app_name, primaryColor, isDark]);
+  }, [appSettings.custom_favicon, appSettings.custom_logo, appSettings.custom_pwa_icon, appSettings.app_name, primaryColor, isDark]);
 
   // Theme-aware color variables
   const themeClasses = {

@@ -71,6 +71,9 @@ export interface ISettings {
   theme_mode?: 'light' | 'dark' | 'system';
   admin_theme_mode?: 'light' | 'dark' | 'system';
   admin_primary_color?: string;
+  custom_logo?: string;
+  custom_pwa_icon?: string;
+  custom_favicon?: string;
   notification_emails?: string;
   telegram_bot_token?: string;
   telegram_chat_ids?: string;

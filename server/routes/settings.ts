@@ -62,6 +62,33 @@ router.get("/api/branding/favicon", asyncHandler(async (req, res) => {
   }
 }));
 
+router.get("/api/branding/pwa-icon", asyncHandler(async (req, res) => {
+  const pwaIcon = db.prepare("SELECT value FROM settings WHERE key = 'custom_pwa_icon'").get() as { value: string } | undefined;
+  if (pwaIcon && pwaIcon.value) {
+    const base64Data = pwaIcon.value.replace(/^data:image\/\w+;base64,/, "");
+    const img = Buffer.from(base64Data, 'base64');
+    res.writeHead(200, {
+      'Content-Type': 'image/png',
+      'Content-Length': img.length
+    });
+    res.end(img);
+  } else {
+    // Fallback to custom_logo or default
+    const logo = db.prepare("SELECT value FROM settings WHERE key = 'custom_logo'").get() as { value: string } | undefined;
+    if (logo && logo.value) {
+      const base64Data = logo.value.replace(/^data:image\/\w+;base64,/, "");
+      const img = Buffer.from(base64Data, 'base64');
+      res.writeHead(200, {
+        'Content-Type': 'image/png',
+        'Content-Length': img.length
+      });
+      res.end(img);
+    } else {
+      res.redirect("https://cdn-icons-png.flaticon.com/512/2906/2906274.png");
+    }
+  }
+}));
+
 router.get("/manifest.json", asyncHandler(async (req, res) => {
   const settings = db.prepare("SELECT * FROM settings").all();
   const s = settings.reduce((acc: any, curr: any) => {
@@ -80,13 +107,13 @@ router.get("/manifest.json", asyncHandler(async (req, res) => {
     theme_color: s.primary_color || "#10b981",
     icons: [
       {
-        src: `/api/branding/logo?v=${version}`,
+        src: `/api/branding/pwa-icon?v=${version}`,
         sizes: "192x192",
         type: "image/png",
         purpose: "any maskable"
       },
       {
-        src: `/api/branding/logo?v=${version}`,
+        src: `/api/branding/pwa-icon?v=${version}`,
         sizes: "512x512",
         type: "image/png",
         purpose: "any maskable"
