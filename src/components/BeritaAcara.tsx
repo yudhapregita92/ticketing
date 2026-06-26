@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Printer, FileText, AlertCircle } from 'lucide-react';
+import { Printer, FileText, AlertCircle, Plus, Trash2, Edit2, History } from 'lucide-react';
 import { IAdminUser } from '../types';
 
 interface BeritaAcaraProps {
@@ -31,6 +31,17 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
       headerDocNo: parsed.headerDocNo || 'No. Dok: F/KDK/18/XII/2022 Rev. 5, Tanggal 27 September 2024'
     };
   });
+
+  const [savedDocs, setSavedDocs] = useState<any[]>(() => {
+    const saved = localStorage.getItem('savedBeritaAcaraList');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [currentId, setCurrentId] = useState<string>(() => Date.now().toString());
+
+  useEffect(() => {
+    localStorage.setItem('savedBeritaAcaraList', JSON.stringify(savedDocs));
+  }, [savedDocs]);
 
   useEffect(() => {
     localStorage.setItem('beritaAcaraSettings', JSON.stringify({
@@ -70,7 +81,67 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
   };
 
   const handlePrint = () => {
-    window.print();
+    const newDoc = {
+      id: currentId,
+      recommenderName: formData.recommenderName,
+      recommenderDept: formData.recommenderDept,
+      recommendeeName: formData.recommendeeName,
+      recommendeeDept: formData.recommendeeDept,
+      recommendeePosition: formData.recommendeePosition,
+      reason: formData.reason,
+      location: formData.location,
+      date: formData.date,
+    };
+    
+    setSavedDocs(prev => {
+      const exists = prev.findIndex(d => d.id === currentId);
+      if (exists >= 0) {
+        const next = [...prev];
+        next[exists] = newDoc;
+        return next;
+      }
+      return [newDoc, ...prev];
+    });
+
+    setTimeout(() => {
+      window.print();
+    }, 100);
+  };
+
+  const loadDoc = (doc: any) => {
+    setCurrentId(doc.id);
+    setFormData(prev => ({
+      ...prev,
+      recommenderName: doc.recommenderName,
+      recommenderDept: doc.recommenderDept,
+      recommendeeName: doc.recommendeeName,
+      recommendeeDept: doc.recommendeeDept,
+      recommendeePosition: doc.recommendeePosition,
+      reason: doc.reason,
+      location: doc.location,
+      date: doc.date,
+    }));
+  };
+
+  const deleteDoc = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm('Hapus dokumen ini?')) {
+      setSavedDocs(prev => prev.filter(d => d.id !== id));
+      if (currentId === id) {
+        handleNew();
+      }
+    }
+  };
+
+  const handleNew = () => {
+    setCurrentId(Date.now().toString());
+    setFormData(prev => ({
+      ...prev,
+      recommendeeName: '',
+      recommendeeDept: '',
+      recommendeePosition: '',
+      reason: '',
+    }));
   };
 
   const formattedDate = new Date(formData.date).toLocaleDateString('id-ID', {
@@ -81,7 +152,7 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4 print:hidden">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 print:hidden gap-4">
         <div>
           <h2 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
             Surat Rekomendasi
@@ -90,29 +161,41 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
             Buat dan cetak surat rekomendasi/berita acara
           </p>
         </div>
-        <button
-          onClick={handlePrint}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-90 transition-all"
-          style={{ backgroundColor: primaryColor }}
-        >
-          <Printer className="w-4 h-4" />
-          <span>Cetak / Simpan PDF</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleNew}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all ${
+              isDark ? 'bg-zinc-800 text-white hover:bg-zinc-700' : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            <Plus className="w-4 h-4" />
+            <span>Buat Baru</span>
+          </button>
+          <button
+            onClick={handlePrint}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-90 transition-all"
+            style={{ backgroundColor: primaryColor }}
+          >
+            <Printer className="w-4 h-4" />
+            <span>Cetak / Simpan PDF</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:hidden">
         {/* Form Section */}
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`p-6 rounded-3xl border shadow-sm ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-slate-200'}`}
-        >
-          <h3 className={`text-sm font-bold mb-4 flex items-center gap-2 ${isDark ? 'text-zinc-200' : 'text-slate-800'}`}>
-            <FileText className="w-4 h-4" />
-            Formulir Data
-          </h3>
-          
-          <div className="space-y-4">
+        <div className="space-y-6">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`p-6 rounded-3xl border shadow-sm ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-slate-200'}`}
+          >
+            <h3 className={`text-sm font-bold mb-4 flex items-center gap-2 ${isDark ? 'text-zinc-200' : 'text-slate-800'}`}>
+              <FileText className="w-4 h-4" />
+              Formulir Data
+            </h3>
+            
+            <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Nama Pemberi (Anda)</label>
@@ -294,6 +377,7 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
 
           </div>
         </motion.div>
+        </div>
 
         {/* Preview Section */}
         <div className="hidden lg:block">
@@ -317,6 +401,95 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Riwayat Dokumen */}
+      <div className="print:hidden">
+        <h3 className={`text-sm font-bold mb-4 flex items-center gap-2 ${isDark ? 'text-zinc-200' : 'text-slate-800'}`}>
+          <History className="w-4 h-4" />
+          Daftar Riwayat Rekomendasi
+        </h3>
+        
+        {savedDocs.length === 0 ? (
+          <div className={`p-8 rounded-2xl border border-dashed text-center ${isDark ? 'bg-zinc-900/50 border-zinc-800 text-zinc-500' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+            <FileText className="w-8 h-8 mx-auto mb-3 opacity-50" />
+            <p className="text-sm">Belum ada riwayat dokumen yang disimpan.</p>
+          </div>
+        ) : (
+          <div className={`overflow-hidden rounded-2xl border ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-slate-200'}`}>
+            <div className={`grid grid-cols-12 gap-4 p-4 text-xs font-bold ${isDark ? 'bg-zinc-800/50 border-zinc-800 text-zinc-400' : 'bg-slate-50 border-slate-200 text-slate-700'} border-b`}>
+              <div className="col-span-6 sm:col-span-7 flex items-center gap-4">
+                <input type="checkbox" className="w-4 h-4 rounded border-gray-300" disabled />
+                <span>Text</span>
+              </div>
+              <div className="col-span-6 sm:col-span-5 flex items-center justify-end sm:justify-start">
+                <span>Actions</span>
+              </div>
+            </div>
+            <div className="divide-y divide-slate-100 dark:divide-zinc-800">
+              {savedDocs.map(doc => (
+                <div 
+                  key={doc.id}
+                  className={`grid grid-cols-12 gap-4 p-4 items-center transition-all ${
+                    currentId === doc.id 
+                      ? (isDark ? 'bg-emerald-900/10' : 'bg-emerald-50/50')
+                      : (isDark ? 'hover:bg-zinc-800/50' : 'hover:bg-slate-50')
+                  }`}
+                >
+                  <div className="col-span-6 sm:col-span-7 flex items-center gap-4">
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500" 
+                      checked={currentId === doc.id}
+                      onChange={() => loadDoc(doc)}
+                    />
+                    <div>
+                      <h4 className={`text-sm font-medium ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>
+                        {doc.recommendeeName || 'Tanpa Nama'} <span className="text-slate-400 font-normal">[{doc.recommendeeDept} {doc.recommendeePosition ? `• ${doc.recommendeePosition}` : ''}]</span>
+                      </h4>
+                    </div>
+                  </div>
+                  <div className="col-span-6 sm:col-span-5 flex flex-row items-center justify-end sm:justify-start gap-2 sm:gap-4 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                    <button
+                      onClick={() => {
+                        loadDoc(doc);
+                        setTimeout(() => handlePrint(), 100);
+                      }}
+                      className="flex items-center gap-1.5 text-xs font-medium text-blue-500 hover:text-blue-600 transition-colors shrink-0"
+                    >
+                      <Printer className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Cetak</span>
+                    </button>
+                    <button
+                      onClick={() => loadDoc(doc)}
+                      className={`flex items-center gap-1.5 text-xs font-medium transition-colors shrink-0 ${
+                        currentId === doc.id ? 'text-emerald-500 cursor-default font-bold' : 'text-blue-500 hover:text-blue-600'
+                      }`}
+                    >
+                      <Edit2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{currentId === doc.id ? 'Aktif' : 'Edit'}</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        const newDoc = { ...doc, id: Date.now().toString(), date: new Date().toISOString() };
+                        setSavedDocs(prev => [newDoc, ...prev]);
+                        loadDoc(newDoc);
+                      }}
+                      className="flex items-center gap-1.5 text-xs font-medium text-blue-500 hover:text-blue-600 transition-colors shrink-0"
+                    >
+                      <FileText className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clone</span>
+                    </button>
+                    <button
+                      onClick={(e) => deleteDoc(doc.id, e)}
+                      className="flex items-center gap-1.5 text-xs font-medium text-blue-500 hover:text-blue-600 transition-colors shrink-0"
+                      title="Hapus"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Delete</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Hidden print area */}
