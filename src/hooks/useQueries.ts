@@ -24,7 +24,6 @@ export const useTickets = (username?: string, role?: string) => {
         throw error;
       }
     },
-    refetchInterval: 10000, // Poll every 10 seconds
   });
 };
 
@@ -58,18 +57,10 @@ export const useManagementData = (isAdmin: boolean) => {
     queryKey: ['managementData'],
     queryFn: async () => {
       try {
-        const [it, depts, cats, users, masters, admins] = await Promise.all([
-          api.getITPersonnel(),
-          api.getDepartments(),
-          api.getCategories(),
-          api.getUsers(),
-          api.getMasterUsers(),
-          api.getAdminUsers()
-        ]);
-        const data = { it, depts, cats, users, masters, admins };
+        const data = await api.getManagementData();
         localCache.set('managementData', data);
         // Also update public cache
-        localCache.set('publicData', { depts, cats, masters });
+        localCache.set('publicData', { depts: data.depts, cats: data.cats, masters: data.masters });
         return data;
       } catch (error) {
         const cached = localCache.get('managementData');
@@ -89,12 +80,7 @@ export const usePublicData = () => {
     queryKey: ['publicData'],
     queryFn: async () => {
       try {
-        const [depts, cats, masters] = await Promise.all([
-          api.getDepartments(),
-          api.getCategories(),
-          api.getMasterUsers()
-        ]);
-        const data = { depts, cats, masters };
+        const data = await api.getPublicData();
         localCache.set('publicData', data);
         return data;
       } catch (error) {

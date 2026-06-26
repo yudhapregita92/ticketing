@@ -8,6 +8,24 @@ import { AppError } from "../utils/errors.ts";
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
+// Batch endpoints to prevent 429 Rate Exceeded on initial load
+router.get("/master-data/all", asyncHandler(async (req, res) => {
+  const it = db.prepare("SELECT * FROM it_personnel ORDER BY name ASC").all();
+  const depts = db.prepare("SELECT * FROM departments ORDER BY name ASC").all();
+  const cats = db.prepare("SELECT * FROM categories ORDER BY name ASC").all();
+  const users = db.prepare("SELECT * FROM users ORDER BY created_at DESC").all();
+  const masters = db.prepare("SELECT * FROM master_users ORDER BY name ASC").all();
+  const admins = db.prepare("SELECT * FROM admin_users ORDER BY username ASC").all();
+  res.json({ it, depts, cats, users, masters, admins });
+}));
+
+router.get("/public-data/all", asyncHandler(async (req, res) => {
+  const depts = db.prepare("SELECT * FROM departments ORDER BY name ASC").all();
+  const cats = db.prepare("SELECT * FROM categories ORDER BY name ASC").all();
+  const masters = db.prepare("SELECT * FROM master_users ORDER BY name ASC").all();
+  res.json({ depts, cats, masters });
+}));
+
 // IT Personnel
 router.get("/it-personnel", asyncHandler(async (req, res) => {
   res.json(db.prepare("SELECT * FROM it_personnel ORDER BY name ASC").all());

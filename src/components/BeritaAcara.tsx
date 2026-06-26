@@ -403,19 +403,19 @@ const PrintableContent = ({ formData, formattedDate }: { formData: any, formatte
         {formData.location || <span className="text-gray-300">....................</span>} {formattedDate}
       </div>
 
-      <table className="w-full border-collapse border border-black text-center text-sm">
+      <table className="w-full text-center text-sm">
         <tbody>
           <tr>
-            <td className="border border-black py-2 w-1/3">Direkomendasikan</td>
-            <td className="border border-black py-2 w-1/3 text-white">.</td>
-            <td className="border border-black py-2 w-1/3 text-white">.</td>
+            <td className="py-2 w-1/3">Direkomendasikan</td>
+            <td className="py-2 w-1/3 text-white">.</td>
+            <td className="py-2 w-1/3 text-white">.</td>
           </tr>
           <tr>
-            <td className="border border-black h-28 align-bottom pb-2">
+            <td className="h-28 align-bottom pb-2">
               <span className="font-bold underline">{formData.recommenderName || <span className="text-gray-300">....................</span>}</span>
             </td>
-            <td className="border border-black h-28 align-bottom pb-2"></td>
-            <td className="border border-black h-28 align-bottom pb-2"></td>
+            <td className="h-28 align-bottom pb-2"></td>
+            <td className="h-28 align-bottom pb-2"></td>
           </tr>
         </tbody>
       </table>

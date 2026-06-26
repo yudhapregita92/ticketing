@@ -59,6 +59,8 @@ export const api = {
   },
 
   // Management Data
+  getManagementData: (): Promise<any> => fetch('/api/master-data/all').then(handleResponse),
+  getPublicData: (): Promise<any> => fetch('/api/public-data/all').then(handleResponse),
   getITPersonnel: (): Promise<any[]> => fetch('/api/it-personnel').then(handleResponse),
   addITPersonnel: (data: any) => fetch('/api/it-personnel', {
     method: 'POST',

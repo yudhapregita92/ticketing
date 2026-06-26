@@ -565,7 +565,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const socket = io();
+    const socket = io({ transports: ['websocket'] });
     
     socket.on('ticket_created', (newTicket) => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
