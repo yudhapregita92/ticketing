@@ -11,7 +11,8 @@ import {
   Zap,
   Send,
   Package,
-  Activity
+  Activity,
+  FileText
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -167,6 +168,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <div className="flex items-center gap-2.5">
                     <Activity className="w-4 h-4" />
                     <span>Monitoring Jaringan</span>
+                  </div>
+                </button>
+              )}
+
+              {adminUser.role === 'Super Admin' && (
+                <button
+                  onClick={() => setViewMode('ba')}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all text-xs font-bold ${
+                    viewMode === 'ba' 
+                      ? 'bg-emerald-500/10 text-emerald-600' 
+                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <FileText className="w-4 h-4" />
+                    <span>Surat Rekomendasi / BA</span>
                   </div>
                 </button>
               )}

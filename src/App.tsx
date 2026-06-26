@@ -32,6 +32,7 @@ import { hapticFeedback } from './utils/haptics';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AssetManagement } from './components/AssetManagement';
 import NetworkMonitor from './components/NetworkMonitor';
+import BeritaAcara from './components/BeritaAcara';
 import { MobileAppNav } from './components/MobileAppNav';
 import { TicketList } from './components/TicketList';
 
@@ -219,7 +220,7 @@ export default function App() {
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [gpsError, setGpsError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'today' | 'all' | 'my_tickets' | 'dashboard' | 'assets' | 'network'>(() => {
+  const [viewMode, setViewMode] = useState<'today' | 'all' | 'my_tickets' | 'dashboard' | 'assets' | 'network' | 'ba'>(() => {
     return localStorage.getItem('adminUser') ? 'dashboard' : 'today';
   });
   const [userIdentifier, setUserIdentifier] = useState<string>(() => {
@@ -1091,6 +1092,13 @@ export default function App() {
               />
             ) : viewMode === 'network' ? (
               <NetworkMonitor 
+                isDark={isDark}
+                themeClasses={themeClasses}
+                primaryColor={primaryColor}
+                adminUser={adminUser}
+              />
+            ) : viewMode === 'ba' ? (
+              <BeritaAcara 
                 isDark={isDark}
                 themeClasses={themeClasses}
                 primaryColor={primaryColor}

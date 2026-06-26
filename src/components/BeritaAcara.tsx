@@ -1,0 +1,367 @@
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Printer, FileText, AlertCircle } from 'lucide-react';
+import { AdminUser } from '../types';
+
+interface BeritaAcaraProps {
+  isDark: boolean;
+  themeClasses: any;
+  primaryColor: string;
+  adminUser: AdminUser | null;
+}
+
+const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primaryColor, adminUser }) => {
+  const [formData, setFormData] = useState({
+    recommenderName: adminUser?.name || '',
+    recommenderDept: 'IT KDK',
+    recommendeeName: '',
+    recommendeeDept: '',
+    recommendeePosition: '',
+    reason: '',
+    location: 'Terbanggi Besar',
+    date: new Date().toISOString().split('T')[0],
+    logo1: null as string | null,
+    logo2: null as string | null
+  });
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>, logoKey: 'logo1' | 'logo2') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setFormData(prev => ({ ...prev, [logoKey]: event.target?.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const formattedDate = new Date(formData.date).toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-4 print:hidden">
+        <div>
+          <h2 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            Surat Rekomendasi
+          </h2>
+          <p className={`text-xs mt-1 font-medium ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+            Buat dan cetak surat rekomendasi/berita acara
+          </p>
+        </div>
+        <button
+          onClick={handlePrint}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-90 transition-all"
+          style={{ backgroundColor: primaryColor }}
+        >
+          <Printer className="w-4 h-4" />
+          <span>Cetak / Simpan PDF</span>
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:hidden">
+        {/* Form Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`p-6 rounded-3xl border shadow-sm ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-slate-200'}`}
+        >
+          <h3 className={`text-sm font-bold mb-4 flex items-center gap-2 ${isDark ? 'text-zinc-200' : 'text-slate-800'}`}>
+            <FileText className="w-4 h-4" />
+            Formulir Data
+          </h3>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Nama Pemberi (Anda)</label>
+                <input
+                  type="text"
+                  value={formData.recommenderName}
+                  onChange={(e) => setFormData({...formData, recommenderName: e.target.value})}
+                  className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                    isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                  }`}
+                />
+              </div>
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Bagian Pemberi</label>
+                <input
+                  type="text"
+                  value={formData.recommenderDept}
+                  onChange={(e) => setFormData({...formData, recommenderDept: e.target.value})}
+                  className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                    isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                  }`}
+                />
+              </div>
+            </div>
+
+            <div className={`h-px w-full ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
+
+            <div className="space-y-3">
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Nama Penerima</label>
+                <input
+                  type="text"
+                  value={formData.recommendeeName}
+                  onChange={(e) => setFormData({...formData, recommendeeName: e.target.value})}
+                  className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                    isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                  }`}
+                  placeholder="Ex: BAYU AJI"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Bagian Penerima</label>
+                  <input
+                    type="text"
+                    value={formData.recommendeeDept}
+                    onChange={(e) => setFormData({...formData, recommendeeDept: e.target.value})}
+                    className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                      isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                    }`}
+                    placeholder="Ex: Fleet"
+                  />
+                </div>
+                <div>
+                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Jabatan Penerima</label>
+                  <input
+                    type="text"
+                    value={formData.recommendeePosition}
+                    onChange={(e) => setFormData({...formData, recommendeePosition: e.target.value})}
+                    className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                      isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                    }`}
+                    placeholder="Ex: Sub Deb Head"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className={`h-px w-full ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
+
+            <div className="space-y-3">
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Isi Keterangan Pengajuan</label>
+                <textarea
+                  value={formData.reason}
+                  onChange={(e) => setFormData({...formData, reason: e.target.value})}
+                  className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all min-h-[120px] ${
+                    isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                  }`}
+                  placeholder="Ex: Untuk dapat melakukan pengajuan pembelian Laptop Core i3 series, piranti saat ini akan digunakan oleh Section Head Fleet, dengan mempertimbangkan pekerjaan yang menggunakan monitoring GPS Tracker..."
+                />
+              </div>
+            </div>
+
+            <div className={`h-px w-full ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Lokasi</label>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => setFormData({...formData, location: e.target.value})}
+                  className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                    isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                  }`}
+                />
+              </div>
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Tanggal</label>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({...formData, date: e.target.value})}
+                  className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                    isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                  }`}
+                />
+              </div>
+            </div>
+
+            <div className={`h-px w-full ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Logo Kiri</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleLogoUpload(e, 'logo1')}
+                  className={`w-full px-3 py-1.5 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                    isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                  }`}
+                />
+              </div>
+              <div>
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Logo Kanan</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleLogoUpload(e, 'logo2')}
+                  className={`w-full px-3 py-1.5 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                    isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                  }`}
+                />
+              </div>
+            </div>
+
+          </div>
+        </motion.div>
+
+        {/* Preview Section */}
+        <div className="hidden lg:block">
+          <div className="sticky top-6">
+            <h3 className={`text-sm font-bold mb-4 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Pratinjau Dokumen</h3>
+            <div className="bg-white p-6 shadow-md rounded-lg overflow-hidden border border-slate-200 scale-[0.8] origin-top-left xl:origin-top text-black w-full min-h-[600px]">
+              <PrintableContent formData={formData} formattedDate={formattedDate} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Hidden print area */}
+      <div className="hidden print:block print:fixed print:inset-0 print:bg-white print:text-black print:p-8 print:w-full print:h-screen print:z-50 bg-white text-black p-8">
+        <PrintableContent formData={formData} formattedDate={formattedDate} />
+      </div>
+    </div>
+  );
+};
+
+const PrintableContent = ({ formData, formattedDate }: { formData: any, formattedDate: string }) => {
+  return (
+    <div className="font-serif text-[12pt] leading-relaxed max-w-4xl mx-auto text-black">
+      {/* Header */}
+      <div className="border border-black flex mb-8 h-24">
+        {/* Logo 1 */}
+        <div className="w-[20%] border-r border-black flex items-center justify-center p-2">
+          {formData.logo1 ? (
+            <img src={formData.logo1} alt="Logo Kiri" className="max-w-full max-h-full object-contain" />
+          ) : (
+            <div className="w-16 h-16 rounded-full border-2 border-emerald-600 flex items-center justify-center text-emerald-700 font-bold text-[10px] text-center leading-tight">
+              LOGO
+            </div>
+          )}
+        </div>
+        
+        {/* Text Center */}
+        <div className="w-[60%] flex flex-col justify-between items-center text-center">
+          <div className="h-1/2 w-full border-b border-black flex items-center justify-center uppercase font-bold text-lg tracking-wider">
+            KOPKAR DWI KARYA
+          </div>
+          <div className="h-1/2 w-full flex flex-col items-center justify-center">
+            <div className="uppercase font-bold text-base tracking-wider leading-none">SURAT REKOMENDASI</div>
+            <div className="text-[10px] mt-1">No. Dok: F/KDK/18/XII/2022 Rev. 5, Tanggal 27 September 2024</div>
+          </div>
+        </div>
+
+        {/* Logo 2 */}
+        <div className="w-[20%] border-l border-black flex items-center justify-center p-2">
+          {formData.logo2 ? (
+            <img src={formData.logo2} alt="Logo Kanan" className="max-w-full max-h-full object-contain" />
+          ) : (
+            <div className="flex flex-col items-center">
+              <div className="flex text-3xl font-black italic tracking-tighter">
+                <span className="text-slate-400">K</span>
+                <span className="text-rose-600">D</span>
+                <span className="text-slate-400">K</span>
+              </div>
+              <div className="text-[7px] text-center mt-1 leading-tight text-slate-600">Koperasi Karyawan<br/>Dwi Karya</div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="text-center font-bold underline mb-8 text-lg">
+        SURAT REKOMENDASI
+      </div>
+
+      <div className="mb-6">
+        <p className="mb-2">Yang bertandatangan dibawah ini :</p>
+        <table className="w-full ml-4">
+          <tbody>
+            <tr>
+              <td className="w-32 py-1">Nama</td>
+              <td className="w-4 py-1">:</td>
+              <td className="py-1">{formData.recommenderName || <span className="text-gray-300">....................................................................</span>}</td>
+            </tr>
+            <tr>
+              <td className="py-1">Bagian</td>
+              <td className="py-1">:</td>
+              <td className="py-1">{formData.recommenderDept || <span className="text-gray-300">....................................................................</span>}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mb-6">
+        <p className="mb-2">Dengan ini merekomendasikan kepada :</p>
+        <table className="w-full ml-4">
+          <tbody>
+            <tr>
+              <td className="w-32 py-1">Nama</td>
+              <td className="w-4 py-1">:</td>
+              <td className="py-1">{formData.recommendeeName || <span className="text-gray-300">....................................................................</span>}</td>
+            </tr>
+            <tr>
+              <td className="py-1">Bagian</td>
+              <td className="py-1">:</td>
+              <td className="py-1">{formData.recommendeeDept || <span className="text-gray-300">....................................................................</span>}</td>
+            </tr>
+            <tr>
+              <td className="py-1">Jabatan</td>
+              <td className="py-1">:</td>
+              <td className="py-1">{formData.recommendeePosition || <span className="text-gray-300">....................................................................</span>}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mb-6 text-justify">
+        <p>
+          {formData.reason ? formData.reason : <span className="text-gray-300">..........................................................................................................................................................................................................................................................................................................................................................................................</span>}
+        </p>
+      </div>
+
+      <div className="mb-12 text-justify">
+        <p>
+          Demikian surat ini saya buat agar dapat digunakan sebagai lampiran pendukung pengajuan piranti unit operasional KDK.
+        </p>
+      </div>
+
+      <div className="mb-4">
+        {formData.location || <span className="text-gray-300">....................</span>} {formattedDate}
+      </div>
+
+      <table className="w-full border-collapse border border-black text-center text-sm">
+        <tbody>
+          <tr>
+            <td className="border border-black py-2 w-1/3">Direkomendasikan</td>
+            <td className="border border-black py-2 w-1/3 text-white">.</td>
+            <td className="border border-black py-2 w-1/3 text-white">.</td>
+          </tr>
+          <tr>
+            <td className="border border-black h-28 align-bottom pb-2">
+              <span className="font-bold underline">{formData.recommenderName || <span className="text-gray-300">....................</span>}</span>
+            </td>
+            <td className="border border-black h-28 align-bottom pb-2"></td>
+            <td className="border border-black h-28 align-bottom pb-2"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export default BeritaAcara;

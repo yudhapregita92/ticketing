@@ -85,6 +85,18 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
             Network
           </button>
         )}
+        {adminUser && adminUser.role === 'Super Admin' && (
+          <button 
+            onClick={() => setViewMode('ba')}
+            className={`flex-none py-2 px-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-center ${
+              viewMode === 'ba' 
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/15' 
+                : isDark ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
+            }`}
+          >
+            Surat Rekomendasi
+          </button>
+        )}
       </div>
     </div>
   );
