@@ -20,7 +20,8 @@ import {
   RefreshCw,
   History,
   BookOpen,
-  Edit3
+  Edit3,
+  Search
 } from 'lucide-react';
 
 import * as xlsx from 'xlsx';
@@ -100,6 +101,19 @@ export const SettingsModal = React.memo(({
   const [masterUserEmail, setMasterUserEmail] = React.useState('');
   const [masterUserJenisPiranti, setMasterUserJenisPiranti] = React.useState('(Tidak Ada)');
   const [editingMasterUser, setEditingMasterUser] = React.useState<any | null>(null);
+  const [masterUserSearch, setMasterUserSearch] = React.useState('');
+
+  const filteredMasterUsers = React.useMemo(() => {
+    if (!Array.isArray(masterUsers)) return [];
+    const term = masterUserSearch.toLowerCase().trim();
+    if (!term) return masterUsers;
+    return masterUsers.filter(user => 
+      (user.full_name || '').toLowerCase().includes(term) ||
+      (user.department || '').toLowerCase().includes(term) ||
+      (user.employee_index || '').toLowerCase().includes(term) ||
+      (user.jenis_piranti || '').toLowerCase().includes(term)
+    );
+  }, [masterUsers, masterUserSearch]);
 
   const [adminUserUsername, setAdminUserUsername] = React.useState('');
   const [adminUserPassword, setAdminUserPassword] = React.useState('');
@@ -894,6 +908,27 @@ export const SettingsModal = React.memo(({
                       </div>
                     </div>
 
+                    {/* Search bar for Master Users */}
+                    <div className="relative">
+                      <Search className="absolute left-3.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Cari Master User berdasarkan Nama, Bagian, atau Indek..."
+                        className={`w-full pl-9 pr-8 py-2 rounded-xl text-xs font-medium outline-none border transition-all focus:ring-2 focus:ring-emerald-500/20 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                        value={masterUserSearch}
+                        onChange={e => setMasterUserSearch(e.target.value)}
+                      />
+                      {masterUserSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setMasterUserSearch('')}
+                          className={`absolute right-3 top-2 text-xs font-bold px-1.5 py-0.5 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.textMuted}`}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+
                     <AnimatePresence>
                       {addingType === 'master-user' && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -1022,36 +1057,42 @@ export const SettingsModal = React.memo(({
                     </AnimatePresence>
 
                     <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-                      {Array.isArray(masterUsers) && masterUsers.map(user => (
-                        <div key={user.id} className={`flex items-center justify-between p-2.5 rounded-xl border ${themeClasses.border} ${themeClasses.bgSecondary}`}>
-                          <div className="flex flex-col text-left">
-                            <span className="text-[11px] font-bold">{user.full_name}</span>
-                            <span className="text-[9px] text-slate-400 capitalize font-black">
-                              {user.department} • {user.phone} • Indek: {user.employee_index}
-                              {user.jenis_piranti ? ` • Piranti: ${user.jenis_piranti}` : ''}
-                              {user.email ? ` • ${user.email}` : ''}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <button 
-                              type="button"
-                              onClick={() => handleOpenEditMasterUser(user)}
-                              className="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
-                              title="Edit User"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                            <button 
-                              type="button"
-                              onClick={() => handleDeleteMasterUser(user.id)}
-                              className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
-                              title="Hapus User"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                      {filteredMasterUsers.length === 0 ? (
+                        <div className="text-center py-6 text-slate-400 text-xs">
+                          {masterUserSearch ? 'Tidak ada user yang cocok dengan pencarian' : 'Belum ada data master user'}
                         </div>
-                      ))}
+                      ) : (
+                        filteredMasterUsers.map(user => (
+                          <div key={user.id} className={`flex items-center justify-between p-2.5 rounded-xl border ${themeClasses.border} ${themeClasses.bgSecondary}`}>
+                            <div className="flex flex-col text-left">
+                              <span className="text-[11px] font-bold">{user.full_name}</span>
+                              <span className="text-[9px] text-slate-400 capitalize font-black">
+                                {user.department} • {user.phone} • Indek: {user.employee_index}
+                                {user.jenis_piranti ? ` • Piranti: ${user.jenis_piranti}` : ''}
+                                {user.email ? ` • ${user.email}` : ''}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button 
+                                type="button"
+                                onClick={() => handleOpenEditMasterUser(user)}
+                                className="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
+                                title="Edit User"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button 
+                                type="button"
+                                onClick={() => handleDeleteMasterUser(user.id)}
+                                className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
+                                title="Hapus User"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
 
