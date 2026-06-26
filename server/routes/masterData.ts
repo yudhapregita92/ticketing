@@ -117,7 +117,7 @@ router.get("/master-users", asyncHandler(async (req, res) => {
 
 router.post("/master-users", asyncHandler(async (req, res) => {
   const { full_name, department, phone, employee_index, email, jenis_piranti } = req.body;
-  db.prepare("INSERT INTO master_users (full_name, department, phone, employee_index, email, jenis_piranti) VALUES (?, ?, ?, ?, ?, ?)").run(full_name, department, phone, employee_index, email || null, jenis_piranti || null);
+  db.prepare("INSERT INTO master_users (full_name, department, phone, employee_index, email, jenis_piranti) VALUES (?, ?, ?, ?, ?, ?)").run(full_name, department, phone, employee_index, email || null, jenis_piranti || '(Tidak Ada)');
   emitUpdate();
   res.json({ success: true });
 }));
@@ -125,7 +125,7 @@ router.post("/master-users", asyncHandler(async (req, res) => {
 router.put("/master-users/:id", asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { full_name, department, phone, employee_index, email, jenis_piranti } = req.body;
-  db.prepare("UPDATE master_users SET full_name = ?, department = ?, phone = ?, employee_index = ?, email = ?, jenis_piranti = ? WHERE id = ?").run(full_name, department, phone, employee_index, email || null, jenis_piranti || null, id);
+  db.prepare("UPDATE master_users SET full_name = ?, department = ?, phone = ?, employee_index = ?, email = ?, jenis_piranti = ? WHERE id = ?").run(full_name, department, phone, employee_index, email || null, jenis_piranti || '(Tidak Ada)', id);
   emitUpdate();
   res.json({ success: true });
 }));
@@ -156,10 +156,20 @@ router.post("/master-users/upload", upload.single('file'), asyncHandler(async (r
       const phone = row['No HP'] || row['Telepon'] || row['phone'] || row['no_hp'] || row['No Telepon'];
       const employeeIndex = row['Indek'] || row['Indeks'] || row['Index'] || row['employee_index'] || row['NIK'];
       const email = row['Email'] || row['email'] || row['Alamat Email'] || null;
-      const jenisPiranti = row['Jenis Piranti'] || row['jenis_piranti'] || row['Piranti'] || row['Device Type'] || row['Jenis Device'] || '(Tidak Ada)';
+      let jenisPiranti = row['Jenis Piranti'] || row['jenis_piranti'] || row['Piranti'] || row['Device Type'] || row['Jenis Device'] || '(Tidak Ada)';
+      const norm = String(jenisPiranti).trim().toLowerCase();
+      if (norm === 'komputer' || norm === 'pc' || norm === 'komputer pc') {
+        jenisPiranti = 'Komputer';
+      } else if (norm === 'laptop' || norm === 'notebook') {
+        jenisPiranti = 'Laptop';
+      } else if (norm === 'tab' || norm === 'tablet' || norm === 'smartphone' || norm === 'hp' || norm === 'android' || norm === 'ios') {
+        jenisPiranti = 'TAB';
+      } else {
+        jenisPiranti = '(Tidak Ada)';
+      }
       
       if (fullName && department && phone && employeeIndex) {
-        insert.run(String(fullName).trim(), String(department).trim(), String(phone).trim(), String(employeeIndex).trim(), email ? String(email).trim() : null, jenisPiranti ? String(jenisPiranti).trim() : null);
+        insert.run(String(fullName).trim(), String(department).trim(), String(phone).trim(), String(employeeIndex).trim(), email ? String(email).trim() : null, jenisPiranti);
         count++;
       }
     }

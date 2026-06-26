@@ -707,6 +707,7 @@ export default function App() {
     try {
       if (type === 'master-user' || type === 'admin-user') {
         queryClient.invalidateQueries({ queryKey: ['managementData'] });
+        queryClient.invalidateQueries({ queryKey: ['publicData'] });
         return;
       }
 

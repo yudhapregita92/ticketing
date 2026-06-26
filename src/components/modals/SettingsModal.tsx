@@ -213,6 +213,15 @@ export const SettingsModal = React.memo(({
     setAddingType('master-user');
   };
 
+  const normalizeJenisPiranti = (val: string | null | undefined): string => {
+    if (!val) return '(Tidak Ada)';
+    const normalized = val.trim().toLowerCase();
+    if (normalized === 'komputer' || normalized === 'pc' || normalized === 'komputer pc') return 'Komputer';
+    if (normalized === 'laptop' || normalized === 'notebook') return 'Laptop';
+    if (normalized === 'tab' || normalized === 'tablet' || normalized === 'smartphone' || normalized === 'hp') return 'TAB';
+    return '(Tidak Ada)';
+  };
+
   const handleOpenEditMasterUser = (user: any) => {
     setEditingMasterUser(user);
     setMasterUserName(user.full_name || '');
@@ -220,7 +229,7 @@ export const SettingsModal = React.memo(({
     setMasterUserPhone(user.phone || '');
     setMasterUserIndex(user.employee_index || '');
     setMasterUserEmail(user.email || '');
-    setMasterUserJenisPiranti(user.jenis_piranti || '(Tidak Ada)');
+    setMasterUserJenisPiranti(normalizeJenisPiranti(user.jenis_piranti));
     setAddingType('master-user');
   };
 
@@ -266,6 +275,27 @@ export const SettingsModal = React.memo(({
     const wb = xlsx.utils.book_new();
     xlsx.utils.book_append_sheet(wb, ws, 'Template Master User');
     xlsx.writeFile(wb, 'Template_Import_User.xlsx');
+  };
+
+  const handleExportMasterUser = () => {
+    if (!Array.isArray(masterUsers) || masterUsers.length === 0) {
+      alert('Tidak ada data master user untuk diexport');
+      return;
+    }
+
+    const exportData = masterUsers.map(user => ({
+      'Nama Lengkap': user.full_name || '',
+      'Bagian': user.department || '',
+      'No HP': user.phone || '',
+      'Indek': user.employee_index || '',
+      'Email': user.email || '',
+      'Jenis Piranti': user.jenis_piranti || '(Tidak Ada)'
+    }));
+
+    const ws = xlsx.utils.json_to_sheet(exportData);
+    const wb = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(wb, ws, 'Master User');
+    xlsx.writeFile(wb, 'Data_Master_User.xlsx');
   };
 
   const parsedPanduan = (() => {
@@ -898,6 +928,13 @@ export const SettingsModal = React.memo(({
                           <Upload className="w-3 h-3" /> Upload Excel
                           <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleUploadExcel} />
                         </label>
+                        <button 
+                          type="button"
+                          onClick={handleExportMasterUser}
+                          className="text-[10px] font-black text-amber-600 hover:text-amber-700 capitalize tracking-widest flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 px-2 py-1 rounded-md"
+                        >
+                          <Download className="w-3 h-3" /> Export Excel
+                        </button>
                         <button 
                           type="button"
                           onClick={handleOpenAddMasterUser}
