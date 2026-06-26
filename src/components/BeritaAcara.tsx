@@ -16,6 +16,7 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
     const parsed = saved ? JSON.parse(saved) : {};
     
     return {
+      docType: parsed.docType || 'rekomendasi',
       recommenderName: adminUser?.name || '',
       recommenderDept: 'IT KDK',
       recommendeeName: '',
@@ -45,13 +46,14 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
 
   useEffect(() => {
     localStorage.setItem('beritaAcaraSettings', JSON.stringify({
+      docType: formData.docType,
       logo1: formData.logo1,
       logo2: formData.logo2,
       headerTitle: formData.headerTitle,
       headerSubtitle: formData.headerSubtitle,
       headerDocNo: formData.headerDocNo
     }));
-  }, [formData.logo1, formData.logo2, formData.headerTitle, formData.headerSubtitle, formData.headerDocNo]);
+  }, [formData.docType, formData.logo1, formData.logo2, formData.headerTitle, formData.headerSubtitle, formData.headerDocNo]);
 
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.6);
@@ -83,6 +85,7 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
   const handlePrint = () => {
     const newDoc = {
       id: currentId,
+      docType: formData.docType,
       recommenderName: formData.recommenderName,
       recommenderDept: formData.recommenderDept,
       recommendeeName: formData.recommendeeName,
@@ -112,6 +115,7 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
     setCurrentId(doc.id);
     setFormData(prev => ({
       ...prev,
+      docType: doc.docType || 'rekomendasi',
       recommenderName: doc.recommenderName,
       recommenderDept: doc.recommenderDept,
       recommendeeName: doc.recommendeeName,
@@ -155,7 +159,7 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 print:hidden gap-4">
         <div>
           <h2 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-            Surat Rekomendasi
+            {formData.docType === 'kejadian' ? 'Berita Acara Kejadian' : formData.docType === 'serah_terima' ? 'Berita Acara Serah Terima' : 'Surat Rekomendasi'}
           </h2>
           <p className={`text-xs mt-1 font-medium ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
             Buat dan cetak surat rekomendasi/berita acara
@@ -196,9 +200,28 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
             </h3>
             
             <div className="space-y-4">
+            <div>
+              <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Jenis Dokumen</label>
+              <select
+                value={formData.docType}
+                onChange={(e) => setFormData({...formData, docType: e.target.value})}
+                className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                  isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                }`}
+              >
+                <option value="rekomendasi">Surat Rekomendasi</option>
+                <option value="kejadian">Berita Acara Kejadian</option>
+                <option value="serah_terima">Berita Acara Serah Terima</option>
+              </select>
+            </div>
+
+            <div className={`h-px w-full ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
+
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Nama Pemberi (Anda)</label>
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                  {formData.docType === 'kejadian' ? 'Nama Pembuat BA' : formData.docType === 'serah_terima' ? 'Nama PIHAK PERTAMA' : 'Nama Pemberi (Anda)'}
+                </label>
                 <input
                   type="text"
                   value={formData.recommenderName}
@@ -209,7 +232,9 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
                 />
               </div>
               <div>
-                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Bagian Pemberi</label>
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                  {formData.docType === 'kejadian' ? 'Bagian Pembuat BA' : formData.docType === 'serah_terima' ? 'Bagian PIHAK PERTAMA' : 'Bagian Pemberi'}
+                </label>
                 <input
                   type="text"
                   value={formData.recommenderDept}
@@ -225,7 +250,9 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
 
             <div className="space-y-3">
               <div>
-                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Nama Penerima</label>
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                  {formData.docType === 'kejadian' ? 'Nama Pihak Terkait / Obyek' : formData.docType === 'serah_terima' ? 'Nama PIHAK KEDUA' : 'Nama Penerima'}
+                </label>
                 <input
                   type="text"
                   value={formData.recommendeeName}
@@ -238,7 +265,9 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Bagian Penerima</label>
+                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                    {formData.docType === 'kejadian' ? 'Bagian Terkait' : formData.docType === 'serah_terima' ? 'Bagian PIHAK KEDUA' : 'Bagian Penerima'}
+                  </label>
                   <input
                     type="text"
                     value={formData.recommendeeDept}
@@ -250,7 +279,9 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
                   />
                 </div>
                 <div>
-                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Jabatan Penerima</label>
+                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                    {formData.docType === 'kejadian' ? 'Keterangan / Jabatan Terkait' : formData.docType === 'serah_terima' ? 'Jabatan PIHAK KEDUA' : 'Jabatan Penerima'}
+                  </label>
                   <input
                     type="text"
                     value={formData.recommendeePosition}
@@ -268,7 +299,9 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
 
             <div className="space-y-3">
               <div>
-                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Isi Keterangan Pengajuan</label>
+                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                  {formData.docType === 'kejadian' ? 'Kronologi Kejadian' : formData.docType === 'serah_terima' ? 'Keterangan Barang/Obyek Serah Terima' : 'Isi Keterangan Pengajuan'}
+                </label>
                 <textarea
                   value={formData.reason}
                   onChange={(e) => setFormData({...formData, reason: e.target.value})}
@@ -534,83 +567,249 @@ const PrintableContent = ({ formData, formattedDate }: { formData: any, formatte
         </div>
       </div>
 
-      <div className="text-center font-bold underline mb-8 text-lg">
-        SURAT REKOMENDASI
-      </div>
+      {formData.docType === 'rekomendasi' && (
+        <>
+          <div className="text-center font-bold underline mb-8 text-lg uppercase">
+            SURAT REKOMENDASI
+          </div>
 
-      <div className="mb-6">
-        <p className="mb-2">Yang bertandatangan dibawah ini :</p>
-        <table className="w-full ml-4">
-          <tbody>
-            <tr>
-              <td className="w-32 py-1">Nama</td>
-              <td className="w-4 py-1">:</td>
-              <td className="py-1">{formData.recommenderName || <span className="text-gray-300">....................................................................</span>}</td>
-            </tr>
-            <tr>
-              <td className="py-1">Bagian</td>
-              <td className="py-1">:</td>
-              <td className="py-1">{formData.recommenderDept || <span className="text-gray-300">....................................................................</span>}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+          <div className="mb-6">
+            <p className="mb-2">Yang bertandatangan dibawah ini :</p>
+            <table className="w-full ml-4">
+              <tbody>
+                <tr>
+                  <td className="w-32 py-1">Nama</td>
+                  <td className="w-4 py-1">:</td>
+                  <td className="py-1">{formData.recommenderName || <span className="text-gray-300">....................................................................</span>}</td>
+                </tr>
+                <tr>
+                  <td className="py-1">Bagian</td>
+                  <td className="py-1">:</td>
+                  <td className="py-1">{formData.recommenderDept || <span className="text-gray-300">....................................................................</span>}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-      <div className="mb-6">
-        <p className="mb-2">Dengan ini merekomendasikan kepada :</p>
-        <table className="w-full ml-4">
-          <tbody>
-            <tr>
-              <td className="w-32 py-1">Nama</td>
-              <td className="w-4 py-1">:</td>
-              <td className="py-1">{formData.recommendeeName || <span className="text-gray-300">....................................................................</span>}</td>
-            </tr>
-            <tr>
-              <td className="py-1">Bagian</td>
-              <td className="py-1">:</td>
-              <td className="py-1">{formData.recommendeeDept || <span className="text-gray-300">....................................................................</span>}</td>
-            </tr>
-            <tr>
-              <td className="py-1">Jabatan</td>
-              <td className="py-1">:</td>
-              <td className="py-1">{formData.recommendeePosition || <span className="text-gray-300">....................................................................</span>}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+          <div className="mb-6">
+            <p className="mb-2">Dengan ini merekomendasikan kepada :</p>
+            <table className="w-full ml-4">
+              <tbody>
+                <tr>
+                  <td className="w-32 py-1">Nama</td>
+                  <td className="w-4 py-1">:</td>
+                  <td className="py-1">{formData.recommendeeName || <span className="text-gray-300">....................................................................</span>}</td>
+                </tr>
+                <tr>
+                  <td className="py-1">Bagian</td>
+                  <td className="py-1">:</td>
+                  <td className="py-1">{formData.recommendeeDept || <span className="text-gray-300">....................................................................</span>}</td>
+                </tr>
+                <tr>
+                  <td className="py-1">Jabatan</td>
+                  <td className="py-1">:</td>
+                  <td className="py-1">{formData.recommendeePosition || <span className="text-gray-300">....................................................................</span>}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-      <div className="mb-6 text-justify">
-        <p>
-          {formData.reason ? formData.reason : <span className="text-gray-300">..........................................................................................................................................................................................................................................................................................................................................................................................</span>}
-        </p>
-      </div>
+          <div className="mb-6 text-justify">
+            <p>
+              {formData.reason ? formData.reason : <span className="text-gray-300">..........................................................................................................................................................................................................................................................................................................................................................................................</span>}
+            </p>
+          </div>
 
-      <div className="mb-12 text-justify">
-        <p>
-          Demikian surat ini saya buat agar dapat digunakan sebagai lampiran pendukung pengajuan piranti unit operasional KDK.
-        </p>
-      </div>
+          <div className="mb-12 text-justify">
+            <p>
+              Demikian surat ini saya buat agar dapat digunakan sebagai lampiran pendukung pengajuan piranti unit operasional KDK.
+            </p>
+          </div>
 
-      <div className="mb-4">
-        {formData.location || <span className="text-gray-300">....................</span>} {formattedDate}
-      </div>
+          <div className="mb-4">
+            {formData.location || <span className="text-gray-300">....................</span>}, {formattedDate}
+          </div>
 
-      <table className="w-full text-center text-sm">
-        <tbody>
-          <tr>
-            <td className="py-2 w-1/3">Direkomendasikan</td>
-            <td className="py-2 w-1/3 text-white">.</td>
-            <td className="py-2 w-1/3 text-white">.</td>
-          </tr>
-          <tr>
-            <td className="h-28 align-bottom pb-2">
-              <span className="font-bold underline">{formData.recommenderName || <span className="text-gray-300">....................</span>}</span>
-            </td>
-            <td className="h-28 align-bottom pb-2"></td>
-            <td className="h-28 align-bottom pb-2"></td>
-          </tr>
-        </tbody>
-      </table>
+          <table className="w-full text-center text-sm">
+            <tbody>
+              <tr>
+                <td className="py-2 w-1/3">Direkomendasikan Oleh,</td>
+                <td className="py-2 w-1/3 text-white">.</td>
+                <td className="py-2 w-1/3 text-white">.</td>
+              </tr>
+              <tr>
+                <td className="h-28 align-bottom pb-2">
+                  <span className="font-bold underline">{formData.recommenderName || <span className="text-gray-300">....................</span>}</span>
+                </td>
+                <td className="h-28 align-bottom pb-2"></td>
+                <td className="h-28 align-bottom pb-2"></td>
+              </tr>
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {formData.docType === 'kejadian' && (
+        <>
+          <div className="text-center font-bold underline mb-8 text-lg uppercase">
+            BERITA ACARA KEJADIAN
+          </div>
+
+          <div className="mb-6 text-justify">
+            <p className="mb-2">Pada hari ini, tanggal <strong>{formattedDate}</strong>, bertempat di <strong>{formData.location || <span className="text-gray-300">....................</span>}</strong>, yang bertandatangan di bawah ini:</p>
+            <table className="w-full ml-4 mt-2">
+              <tbody>
+                <tr>
+                  <td className="w-32 py-1">Nama</td>
+                  <td className="w-4 py-1">:</td>
+                  <td className="py-1">{formData.recommenderName || <span className="text-gray-300">....................................................................</span>}</td>
+                </tr>
+                <tr>
+                  <td className="py-1">Bagian</td>
+                  <td className="py-1">:</td>
+                  <td className="py-1">{formData.recommenderDept || <span className="text-gray-300">....................................................................</span>}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mb-6">
+            <p className="mb-2">Menerangkan dengan sesungguhnya bahwa telah terjadi suatu kejadian dengan pihak/obyek berikut:</p>
+            <table className="w-full ml-4 mt-2">
+              <tbody>
+                <tr>
+                  <td className="w-32 py-1">Nama/Obyek</td>
+                  <td className="w-4 py-1">:</td>
+                  <td className="py-1">{formData.recommendeeName || <span className="text-gray-300">....................................................................</span>}</td>
+                </tr>
+                <tr>
+                  <td className="py-1">Bagian</td>
+                  <td className="py-1">:</td>
+                  <td className="py-1">{formData.recommendeeDept || <span className="text-gray-300">....................................................................</span>}</td>
+                </tr>
+                <tr>
+                  <td className="py-1">Keterangan/Jabatan</td>
+                  <td className="py-1">:</td>
+                  <td className="py-1">{formData.recommendeePosition || <span className="text-gray-300">....................................................................</span>}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mb-6 text-justify mt-4">
+            <p className="mb-2 font-bold">Kronologi Kejadian:</p>
+            <p>
+              {formData.reason ? formData.reason : <span className="text-gray-300">..........................................................................................................................................................................................................................................................................................................................................................................................</span>}
+            </p>
+          </div>
+
+          <div className="mb-12 text-justify">
+            <p>
+              Demikian Berita Acara Kejadian ini dibuat dengan sebenarnya untuk dapat dipergunakan sebagaimana mestinya.
+            </p>
+          </div>
+
+          <table className="w-full text-center text-sm mt-8">
+            <tbody>
+              <tr>
+                <td className="py-2 w-1/3">Pembuat Berita Acara,</td>
+                <td className="py-2 w-1/3 text-white">.</td>
+                <td className="py-2 w-1/3">Mengetahui/Saksi,</td>
+              </tr>
+              <tr>
+                <td className="h-28 align-bottom pb-2">
+                  <span className="font-bold underline">{formData.recommenderName || <span className="text-gray-300">....................</span>}</span>
+                </td>
+                <td className="h-28 align-bottom pb-2"></td>
+                <td className="h-28 align-bottom pb-2">
+                  <span className="font-bold underline">{formData.recommendeeName || <span className="text-gray-300">....................</span>}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {formData.docType === 'serah_terima' && (
+        <>
+          <div className="text-center font-bold underline mb-8 text-lg uppercase">
+            BERITA ACARA SERAH TERIMA
+          </div>
+
+          <div className="mb-6 text-justify">
+            <p className="mb-4">Pada hari ini, tanggal <strong>{formattedDate}</strong>, bertempat di <strong>{formData.location || <span className="text-gray-300">....................</span>}</strong>, kami yang bertandatangan di bawah ini:</p>
+            
+            <p className="mb-2 font-bold">PIHAK PERTAMA (Yang Menyerahkan):</p>
+            <table className="w-full ml-4 mb-4">
+              <tbody>
+                <tr>
+                  <td className="w-32 py-1">Nama</td>
+                  <td className="w-4 py-1">:</td>
+                  <td className="py-1">{formData.recommenderName || <span className="text-gray-300">....................................................................</span>}</td>
+                </tr>
+                <tr>
+                  <td className="py-1">Bagian</td>
+                  <td className="py-1">:</td>
+                  <td className="py-1">{formData.recommenderDept || <span className="text-gray-300">....................................................................</span>}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <p className="mb-2 font-bold">PIHAK KEDUA (Yang Menerima):</p>
+            <table className="w-full ml-4 mb-4">
+              <tbody>
+                <tr>
+                  <td className="w-32 py-1">Nama</td>
+                  <td className="w-4 py-1">:</td>
+                  <td className="py-1">{formData.recommendeeName || <span className="text-gray-300">....................................................................</span>}</td>
+                </tr>
+                <tr>
+                  <td className="py-1">Bagian</td>
+                  <td className="py-1">:</td>
+                  <td className="py-1">{formData.recommendeeDept || <span className="text-gray-300">....................................................................</span>}</td>
+                </tr>
+                <tr>
+                  <td className="py-1">Jabatan</td>
+                  <td className="py-1">:</td>
+                  <td className="py-1">{formData.recommendeePosition || <span className="text-gray-300">....................................................................</span>}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mb-6 text-justify">
+            <p className="mb-2">Bahwa PIHAK PERTAMA telah menyerahkan kepada PIHAK KEDUA berupa:</p>
+            <p className="ml-4 italic">
+              {formData.reason ? formData.reason : <span className="text-gray-300">..........................................................................................................................................................................................................................................................................................................................................................................................</span>}
+            </p>
+          </div>
+
+          <div className="mb-12 text-justify mt-6">
+            <p>
+              Demikian Berita Acara Serah Terima ini dibuat dengan sebenarnya dan ditandatangani oleh kedua belah pihak dalam keadaan sadar dan tanpa paksaan dari pihak manapun.
+            </p>
+          </div>
+
+          <table className="w-full text-center text-sm mt-8">
+            <tbody>
+              <tr>
+                <td className="py-2 w-1/3">PIHAK PERTAMA,</td>
+                <td className="py-2 w-1/3 text-white">.</td>
+                <td className="py-2 w-1/3">PIHAK KEDUA,</td>
+              </tr>
+              <tr>
+                <td className="h-28 align-bottom pb-2">
+                  <span className="font-bold underline">{formData.recommenderName || <span className="text-gray-300">....................</span>}</span>
+                </td>
+                <td className="h-28 align-bottom pb-2"></td>
+                <td className="h-28 align-bottom pb-2">
+                  <span className="font-bold underline">{formData.recommendeeName || <span className="text-gray-300">....................</span>}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </>
+      )}
     </div>
   );
 };

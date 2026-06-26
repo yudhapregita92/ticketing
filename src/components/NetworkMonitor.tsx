@@ -238,8 +238,12 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
     setIsNewType(false);
   };
 
-  const uniqueTypes = Array.from(new Set(['Komputer', 'CCTV', 'Radio', 'Server', ...devices.map(d => d.type).filter(Boolean)]));
-  const uniqueLocations = Array.from(new Set(devices.map(d => d.location).filter(Boolean)));
+  const uniqueTypes = React.useMemo(() => {
+    return Array.from(new Set(['Komputer', 'CCTV', 'Radio', 'Server', ...devices.map(d => d.type).filter(Boolean)]));
+  }, [devices]);
+  const uniqueLocations = React.useMemo(() => {
+    return Array.from(new Set(devices.map(d => d.location).filter(Boolean)));
+  }, [devices]);
 
   const [isEditingTopology, setIsEditingTopology] = useState(false);
   const [topologyOrder, setTopologyOrder] = useState<string[]>(() => {
@@ -250,15 +254,16 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
   useEffect(() => {
     setTopologyOrder(prev => {
       const newTypes = uniqueTypes.filter(t => !prev.includes(t));
-      const currentValidTypes = prev.filter(t => uniqueTypes.includes(t));
-      if (newTypes.length > 0 || currentValidTypes.length !== prev.length) {
-        const updated = [...currentValidTypes, ...newTypes];
+      // Do not filter out existing types from prev even if they are not in uniqueTypes yet,
+      // because uniqueTypes might be incomplete while devices are still loading.
+      if (newTypes.length > 0) {
+        const updated = [...prev, ...newTypes];
         localStorage.setItem('networkTopologyOrder', JSON.stringify(updated));
         return updated;
       }
       return prev;
     });
-  }, [uniqueTypes.length]);
+  }, [uniqueTypes]);
 
   const moveType = (index: number, direction: 'up' | 'down') => {
     const newOrder = [...topologyOrder];
