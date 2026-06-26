@@ -14,12 +14,16 @@ import {
   MessageCircle,
   Send,
   Upload,
+  Download,
   Image as ImageIcon,
   Info,
   RefreshCw,
   History,
-  BookOpen
+  BookOpen,
+  Edit3
 } from 'lucide-react';
+
+import * as xlsx from 'xlsx';
 
 import { api } from '../../services/api';
 import { APP_VERSION, BUILD_DATE, UPDATE_HISTORY, getEnvironment } from '../../version';
@@ -94,6 +98,8 @@ export const SettingsModal = React.memo(({
   const [masterUserPhone, setMasterUserPhone] = React.useState('');
   const [masterUserIndex, setMasterUserIndex] = React.useState('');
   const [masterUserEmail, setMasterUserEmail] = React.useState('');
+  const [masterUserJenisPiranti, setMasterUserJenisPiranti] = React.useState('(Tidak Ada)');
+  const [editingMasterUser, setEditingMasterUser] = React.useState<any | null>(null);
 
   const [adminUserUsername, setAdminUserUsername] = React.useState('');
   const [adminUserPassword, setAdminUserPassword] = React.useState('');
@@ -139,23 +145,69 @@ export const SettingsModal = React.memo(({
       return;
     }
     try {
-      await api.addMasterUser({ 
-        full_name: masterUserName, 
-        department: masterUserDept, 
-        phone: masterUserPhone,
-        employee_index: masterUserIndex,
-        email: masterUserEmail || null
-      });
-      setAddingType(null);
-      setMasterUserName('');
-      setMasterUserDept('');
-      setMasterUserPhone('');
-      setMasterUserIndex('');
-      setMasterUserEmail('');
-      handleManagementAction('master-user', 'add');
+      if (editingMasterUser) {
+        // Edit Mode
+        await api.updateMasterUser(editingMasterUser.id, {
+          full_name: masterUserName,
+          department: masterUserDept,
+          phone: masterUserPhone,
+          employee_index: masterUserIndex,
+          email: masterUserEmail || null,
+          jenis_piranti: masterUserJenisPiranti
+        });
+        setAddingType(null);
+        setEditingMasterUser(null);
+        setMasterUserName('');
+        setMasterUserDept('');
+        setMasterUserPhone('');
+        setMasterUserIndex('');
+        setMasterUserEmail('');
+        setMasterUserJenisPiranti('(Tidak Ada)');
+        handleManagementAction('master-user', 'delete', { id: editingMasterUser.id }); // Invalidate queries/refresh
+      } else {
+        // Add Mode
+        await api.addMasterUser({ 
+          full_name: masterUserName, 
+          department: masterUserDept, 
+          phone: masterUserPhone,
+          employee_index: masterUserIndex,
+          email: masterUserEmail || null,
+          jenis_piranti: masterUserJenisPiranti
+        });
+        setAddingType(null);
+        setMasterUserName('');
+        setMasterUserDept('');
+        setMasterUserPhone('');
+        setMasterUserIndex('');
+        setMasterUserEmail('');
+        setMasterUserJenisPiranti('(Tidak Ada)');
+        handleManagementAction('master-user', 'add');
+      }
     } catch (err: any) {
-      alert(err.message || 'Gagal menambah user');
+      alert(err.message || (editingMasterUser ? 'Gagal mengedit user' : 'Gagal menambah user'));
     }
+  };
+
+  const handleOpenAddMasterUser = () => {
+    setEditingMasterUser(null);
+    setMasterUserName('');
+    setMasterUserDept('');
+    setMasterUserPhone('');
+    setMasterUserIndex('');
+    setMasterUserEmail('');
+    setMasterUserJenisPiranti('(Tidak Ada)');
+    setAddingType('master-user');
+  };
+
+  const handleOpenEditMasterUser = (user: any) => {
+    setEditingMasterUser(user);
+    setMasterUserName(user.full_name || '');
+    setMasterUserDept(user.department || '');
+    setMasterUserPhone(user.phone || '');
+    setMasterUserIndex(user.employee_index || '');
+    setMasterUserEmail(user.email || '');
+    setMasterUserJenisPiranti(user.jenis_piranti || '(Tidak Ada)');
+    setAddingType('master-user');
   };
 
   const handleDeleteMasterUser = async (id: number) => {
@@ -166,6 +218,40 @@ export const SettingsModal = React.memo(({
     } catch (err: any) {
       alert(err.message || 'Gagal menghapus user');
     }
+  };
+
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        'Nama Lengkap': 'Budi Santoso',
+        'Bagian': 'HRGA',
+        'No HP': '081234567890',
+        'Indek': '12345',
+        'Email': 'budi@example.com',
+        'Jenis Piranti': 'Komputer'
+      },
+      {
+        'Nama Lengkap': 'Siti Aminah',
+        'Bagian': 'CE Business',
+        'No HP': '081234567891',
+        'Indek': '67890',
+        'Email': 'siti@example.com',
+        'Jenis Piranti': 'Laptop'
+      },
+      {
+        'Nama Lengkap': 'Andi Wijaya',
+        'Bagian': 'Fleet Business',
+        'No HP': '081234567892',
+        'Indek': '11223',
+        'Email': '',
+        'Jenis Piranti': '(Tidak Ada)'
+      }
+    ];
+
+    const ws = xlsx.utils.json_to_sheet(templateData);
+    const wb = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(wb, ws, 'Template Master User');
+    xlsx.writeFile(wb, 'Template_Import_User.xlsx');
   };
 
   const parsedPanduan = (() => {
@@ -786,95 +872,184 @@ export const SettingsModal = React.memo(({
                   <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800">
                     <div className="flex items-center justify-between">
                       <h3 className="text-xs font-black capitalize tracking-widest text-slate-400">Master Data User</h3>
-                      <div className="flex items-center gap-3">
-                        <label className="text-[10px] font-black text-blue-600 hover:text-blue-700 capitalize tracking-widest cursor-pointer flex items-center gap-1">
-                          Upload Excel
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button 
+                          type="button"
+                          onClick={handleDownloadTemplate}
+                          className="text-[10px] font-black text-violet-600 hover:text-violet-700 capitalize tracking-widest flex items-center gap-1 bg-violet-50 dark:bg-violet-950/40 px-2 py-1 rounded-md"
+                        >
+                          <Download className="w-3 h-3" /> Download Template
+                        </button>
+                        <label className="text-[10px] font-black text-blue-600 hover:text-blue-700 capitalize tracking-widest cursor-pointer flex items-center gap-1 bg-blue-50 dark:bg-blue-950/40 px-2 py-1 rounded-md">
+                          <Upload className="w-3 h-3" /> Upload Excel
                           <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleUploadExcel} />
                         </label>
                         <button 
                           type="button"
-                          onClick={() => setAddingType('master-user')}
-                          className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 capitalize tracking-widest"
+                          onClick={handleOpenAddMasterUser}
+                          className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 capitalize tracking-widest flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-1 rounded-md"
                         >
-                          + Tambah User
+                          <Plus className="w-3 h-3" /> + Tambah User
                         </button>
                       </div>
                     </div>
 
-                    {addingType === 'master-user' && (
-                      <div className={`p-4 rounded-xl border-2 border-emerald-500/30 space-y-3 ${themeClasses.bgSecondary}`}>
-                        <input 
-                          autoFocus
-                          type="text"
-                          placeholder="Nama Lengkap"
-                          className={`w-full px-3 py-2 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
-                          value={masterUserName}
-                          onChange={e => setMasterUserName(e.target.value)}
-                        />
-                        <div className="grid grid-cols-2 gap-2">
-                          <select 
-                            className={`w-full px-3 py-2 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
-                            value={masterUserDept}
-                            onChange={e => setMasterUserDept(e.target.value)}
-                          >
-                            <option value="">Pilih Bagian...</option>
-                            {Array.isArray(departments) && departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
-                          </select>
-                          <input 
-                            type="text"
-                            placeholder="No. Telepon"
-                            className={`w-full px-3 py-2 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
-                            value={masterUserPhone}
-                            onChange={e => setMasterUserPhone(e.target.value)}
-                          />
-                        </div>
-                        <input 
-                          type="text"
-                          placeholder="Indek Karyawan"
-                          className={`w-full px-3 py-2 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
-                          value={masterUserIndex}
-                          onChange={e => setMasterUserIndex(e.target.value)}
-                        />
-                        <input 
-                          type="email"
-                          placeholder="Email (Opsional)"
-                          className={`w-full px-3 py-2 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
-                          value={masterUserEmail}
-                          onChange={e => setMasterUserEmail(e.target.value)}
-                        />
-                        <div className="flex gap-2">
-                          <button 
-                            type="button"
-                            onClick={handleAddMasterUser}
-                            className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-bold capitalize tracking-widest"
-                          >
-                            Simpan User
-                          </button>
-                          <button 
-                            type="button"
+                    <AnimatePresence>
+                      {addingType === 'master-user' && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                          <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
                             onClick={() => setAddingType(null)}
-                            className={`flex-1 py-2 rounded-lg text-[10px] font-bold capitalize tracking-widest border ${themeClasses.border} ${themeClasses.textMuted}`}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs"
+                          />
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                            className={`relative z-[101] w-full max-w-md p-6 rounded-3xl shadow-2xl border ${themeClasses.border} ${themeClasses.card} text-left`}
                           >
-                            Batal
-                          </button>
+                            {/* Modal Header */}
+                            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+                              <h4 className={`text-xs font-black capitalize tracking-widest ${themeClasses.text}`}>
+                                {editingMasterUser ? 'Edit Master User' : 'Tambah User Manual'}
+                              </h4>
+                              <button 
+                                type="button" 
+                                onClick={() => setAddingType(null)}
+                                className={`p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 ${themeClasses.textMuted}`}
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            
+                            {/* Modal Body */}
+                            <div className="space-y-4">
+                              <div>
+                                <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Nama Lengkap</label>
+                                <input 
+                                  autoFocus
+                                  type="text"
+                                  placeholder="Masukkan nama lengkap"
+                                  className={`w-full px-3 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                                  value={masterUserName}
+                                  onChange={e => setMasterUserName(e.target.value)}
+                                />
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Bagian / Departemen</label>
+                                  <select 
+                                    className={`w-full px-3 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                                    value={masterUserDept}
+                                    onChange={e => setMasterUserDept(e.target.value)}
+                                  >
+                                    <option value="">Pilih Bagian...</option>
+                                    {Array.isArray(departments) && departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">No. Telepon</label>
+                                  <input 
+                                    type="text"
+                                    placeholder="No. HP"
+                                    className={`w-full px-3 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                                    value={masterUserPhone}
+                                    onChange={e => setMasterUserPhone(e.target.value)}
+                                  />
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Indek Karyawan</label>
+                                  <input 
+                                    type="text"
+                                    placeholder="Indek Karyawan"
+                                    className={`w-full px-3 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                                    value={masterUserIndex}
+                                    onChange={e => setMasterUserIndex(e.target.value)}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Jenis Piranti</label>
+                                  <select 
+                                    className={`w-full px-3 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                                    value={masterUserJenisPiranti}
+                                    onChange={e => setMasterUserJenisPiranti(e.target.value)}
+                                  >
+                                    <option value="(Tidak Ada)">(Tidak Ada)</option>
+                                    <option value="Komputer">Komputer</option>
+                                    <option value="Laptop">Laptop</option>
+                                    <option value="TAB">TAB</option>
+                                  </select>
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Email (Opsional)</label>
+                                <input 
+                                  type="email"
+                                  placeholder="Alamat Email (opsional)"
+                                  className={`w-full px-3 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                                  value={masterUserEmail}
+                                  onChange={e => setMasterUserEmail(e.target.value)}
+                                />
+                              </div>
+                              
+                              <div className="flex gap-2 pt-2">
+                                <button 
+                                  type="button"
+                                  onClick={() => setAddingType(null)}
+                                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold border ${themeClasses.border} ${themeClasses.textMuted}`}
+                                >
+                                  Batal
+                                </button>
+                                <button 
+                                  type="button"
+                                  onClick={handleAddMasterUser}
+                                  className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-500/20 hover:bg-emerald-700 transition-all"
+                                >
+                                  {editingMasterUser ? 'Simpan Perubahan' : 'Simpan User'}
+                                </button>
+                              </div>
+                            </div>
+                          </motion.div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </AnimatePresence>
 
                     <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
                       {Array.isArray(masterUsers) && masterUsers.map(user => (
                         <div key={user.id} className={`flex items-center justify-between p-2.5 rounded-xl border ${themeClasses.border} ${themeClasses.bgSecondary}`}>
-                          <div className="flex flex-col">
+                          <div className="flex flex-col text-left">
                             <span className="text-[11px] font-bold">{user.full_name}</span>
-                            <span className="text-[9px] text-slate-400 capitalize font-black">{user.department} • {user.phone} • Indek: {user.employee_index} {user.email ? `• ${user.email}` : ''}</span>
+                            <span className="text-[9px] text-slate-400 capitalize font-black">
+                              {user.department} • {user.phone} • Indek: {user.employee_index}
+                              {user.jenis_piranti ? ` • Piranti: ${user.jenis_piranti}` : ''}
+                              {user.email ? ` • ${user.email}` : ''}
+                            </span>
                           </div>
-                          <button 
-                            type="button"
-                            onClick={() => handleDeleteMasterUser(user.id)}
-                            className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button 
+                              type="button"
+                              onClick={() => handleOpenEditMasterUser(user)}
+                              className="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
+                              title="Edit User"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => handleDeleteMasterUser(user.id)}
+                              className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
+                              title="Hapus User"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>

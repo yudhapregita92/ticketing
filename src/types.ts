@@ -21,6 +21,8 @@ export interface ITicket {
   internal_notes?: string | null;
   priority: 'Low' | 'Medium' | 'High' | 'Urgent';
   face_photo?: string | null;
+  device_type?: string | null;
+  pc_code?: string | null;
 }
 
 export interface IUser {
@@ -45,6 +47,9 @@ export interface IMasterUser {
   full_name: string;
   department: string;
   phone: string;
+  employee_index?: string;
+  email?: string;
+  jenis_piranti?: string;
 }
 
 export interface ISettings {
@@ -81,7 +86,7 @@ export interface ISettings {
 
 export interface IAdminUser extends IUser {}
 export type IAppSettings = ISettings;
-export type ViewMode = 'today' | 'all' | 'my_tickets' | 'dashboard' | 'assets' | 'network';
+export type ViewMode = 'today' | 'all' | 'my_tickets' | 'dashboard' | 'assets' | 'network' | 'ba';
 export interface IAsset {
   id: number;
   asset_id: string;

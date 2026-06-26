@@ -176,6 +176,8 @@ export default function App() {
     description: '',
     photo: '',
     face_photo: '',
+    device_type: '',
+    pc_code: '',
     latitude: null as number | null,
     longitude: null as number | null
   });
@@ -302,6 +304,8 @@ export default function App() {
       description: '',
       photo: '',
       face_photo: '',
+      device_type: '',
+      pc_code: '',
       latitude: null,
       longitude: null
     });
@@ -795,11 +799,6 @@ export default function App() {
     if (!formData.latitude || !formData.longitude) {
       alert('Lokasi GPS wajib diaktifkan untuk mengirim tiket.');
       getGPSLocation();
-      return;
-    }
-
-    if (!formData.face_photo) {
-      alert('Foto wajah wajib disertakan saat membuat tiket.');
       return;
     }
 

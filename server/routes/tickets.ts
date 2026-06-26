@@ -13,7 +13,7 @@ export default function(io: Server) {
     console.log('GET /api/tickets', req.query);
     const { username, role } = req.query;
     // Exclude 'photo' from the list to keep payload small
-    const columns = "id, ticket_no, name, department, phone, category, description, assigned_to, admin_reply, status, created_at, updated_at, responded_at, resolved_at, ip_address, user_agent, latitude, longitude, internal_notes";
+    const columns = "id, ticket_no, name, department, phone, category, description, assigned_to, admin_reply, status, created_at, updated_at, responded_at, resolved_at, ip_address, user_agent, latitude, longitude, internal_notes, device_type, pc_code";
     let tickets;
     if (role === 'Super Admin' || !username) {
       tickets = db.prepare(`SELECT ${columns} FROM tickets ORDER BY created_at DESC`).all() as Ticket[];
@@ -63,14 +63,14 @@ export default function(io: Server) {
 
   router.get("/history/:index", asyncHandler(async (req: any, res: any) => {
     const { index } = req.params;
-    const columns = "id, ticket_no, name, department, phone, category, description, assigned_to, admin_reply, status, created_at, updated_at, responded_at, resolved_at, priority";
+    const columns = "id, ticket_no, name, department, phone, category, description, assigned_to, admin_reply, status, created_at, updated_at, responded_at, resolved_at, priority, device_type, pc_code";
     const tickets = db.prepare(`SELECT ${columns} FROM tickets WHERE employee_index = ? ORDER BY created_at DESC`).all(index) as Ticket[];
     res.json(tickets);
   }));
 
   router.post("/", asyncHandler(async (req: any, res: any) => {
-    const { name, department, phone, category, description, photo, face_photo, latitude, longitude, priority, employee_index } = req.body;
-    console.log('Incoming ticket data:', { name, department, phone, category, hasPhoto: !!photo, hasFacePhoto: !!face_photo, lat: latitude, lng: longitude, employee_index });
+    const { name, department, phone, category, description, photo, face_photo, latitude, longitude, priority, employee_index, device_type, pc_code } = req.body;
+    console.log('Incoming ticket data:', { name, department, phone, category, hasPhoto: !!photo, hasFacePhoto: !!face_photo, lat: latitude, lng: longitude, employee_index, device_type, pc_code });
     
     if (!name || !department || !category) {
       throw new AppError("Missing required fields", 400);
@@ -110,8 +110,8 @@ export default function(io: Server) {
     }
 
     const info = db.prepare(
-      "INSERT INTO tickets (ticket_no, name, department, phone, category, description, photo, face_photo, created_at, ip_address, user_agent, latitude, longitude, assigned_to, status, priority, employee_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-    ).run(ticketNo, name, department, finalPhone, category, description || "", photo || null, face_photo || null, utcNow.toISOString(), String(ip), String(userAgent), latitude || null, longitude || null, assignedTo, 'New', priority || 'Medium', employee_index || null);
+      "INSERT INTO tickets (ticket_no, name, department, phone, category, description, photo, face_photo, created_at, ip_address, user_agent, latitude, longitude, assigned_to, status, priority, employee_index, device_type, pc_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    ).run(ticketNo, name, department, finalPhone, category, description || "", photo || null, face_photo || null, utcNow.toISOString(), String(ip), String(userAgent), latitude || null, longitude || null, assignedTo, 'New', priority || 'Medium', employee_index || null, device_type || null, pc_code || null);
     
     const newTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(info.lastInsertRowid) as Ticket;
     

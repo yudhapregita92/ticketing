@@ -116,16 +116,16 @@ router.get("/master-users", asyncHandler(async (req, res) => {
 }));
 
 router.post("/master-users", asyncHandler(async (req, res) => {
-  const { full_name, department, phone, employee_index, email } = req.body;
-  db.prepare("INSERT INTO master_users (full_name, department, phone, employee_index, email) VALUES (?, ?, ?, ?, ?)").run(full_name, department, phone, employee_index, email || null);
+  const { full_name, department, phone, employee_index, email, jenis_piranti } = req.body;
+  db.prepare("INSERT INTO master_users (full_name, department, phone, employee_index, email, jenis_piranti) VALUES (?, ?, ?, ?, ?, ?)").run(full_name, department, phone, employee_index, email || null, jenis_piranti || null);
   emitUpdate();
   res.json({ success: true });
 }));
 
 router.put("/master-users/:id", asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { full_name, department, phone, employee_index, email } = req.body;
-  db.prepare("UPDATE master_users SET full_name = ?, department = ?, phone = ?, employee_index = ?, email = ? WHERE id = ?").run(full_name, department, phone, employee_index, email || null, id);
+  const { full_name, department, phone, employee_index, email, jenis_piranti } = req.body;
+  db.prepare("UPDATE master_users SET full_name = ?, department = ?, phone = ?, employee_index = ?, email = ?, jenis_piranti = ? WHERE id = ?").run(full_name, department, phone, employee_index, email || null, jenis_piranti || null, id);
   emitUpdate();
   res.json({ success: true });
 }));
@@ -146,7 +146,7 @@ router.post("/master-users/upload", upload.single('file'), asyncHandler(async (r
   const sheet = workbook.Sheets[sheetName];
   const data = xlsx.utils.sheet_to_json(sheet);
   
-  const insert = db.prepare("INSERT OR REPLACE INTO master_users (full_name, department, phone, employee_index, email) VALUES (?, ?, ?, ?, ?)");
+  const insert = db.prepare("INSERT OR REPLACE INTO master_users (full_name, department, phone, employee_index, email, jenis_piranti) VALUES (?, ?, ?, ?, ?, ?)");
   
   let count = 0;
   db.transaction(() => {
@@ -156,9 +156,10 @@ router.post("/master-users/upload", upload.single('file'), asyncHandler(async (r
       const phone = row['No HP'] || row['Telepon'] || row['phone'] || row['no_hp'] || row['No Telepon'];
       const employeeIndex = row['Indek'] || row['Indeks'] || row['Index'] || row['employee_index'] || row['NIK'];
       const email = row['Email'] || row['email'] || row['Alamat Email'] || null;
+      const jenisPiranti = row['Jenis Piranti'] || row['jenis_piranti'] || row['Piranti'] || row['Device Type'] || row['Jenis Device'] || '(Tidak Ada)';
       
       if (fullName && department && phone && employeeIndex) {
-        insert.run(String(fullName).trim(), String(department).trim(), String(phone).trim(), String(employeeIndex).trim(), email ? String(email).trim() : null);
+        insert.run(String(fullName).trim(), String(department).trim(), String(phone).trim(), String(employeeIndex).trim(), email ? String(email).trim() : null, jenisPiranti ? String(jenisPiranti).trim() : null);
         count++;
       }
     }

@@ -18,6 +18,8 @@ export interface Ticket {
   description: string;
   photo?: string;
   face_photo?: string;
+  device_type?: string;
+  pc_code?: string;
   assigned_to?: string;
   admin_reply?: string;
   status: string;

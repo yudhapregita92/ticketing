@@ -29,7 +29,9 @@ export function initDb() {
       longitude REAL,
       internal_notes TEXT,
       face_photo TEXT,
-      employee_index TEXT
+      employee_index TEXT,
+      device_type TEXT,
+      pc_code TEXT
     );
 
     CREATE TABLE IF NOT EXISTS users (
@@ -79,7 +81,8 @@ export function initDb() {
       department TEXT NOT NULL,
       phone TEXT,
       employee_index TEXT,
-      email TEXT
+      email TEXT,
+      jenis_piranti TEXT
     );
 
     CREATE TABLE IF NOT EXISTS assets (
@@ -148,6 +151,12 @@ export function initDb() {
       if (!columns.find(c => c.name === 'employee_index')) {
         db.prepare("ALTER TABLE tickets ADD COLUMN employee_index TEXT").run();
       }
+      if (!columns.find(c => c.name === 'device_type')) {
+        db.prepare("ALTER TABLE tickets ADD COLUMN device_type TEXT").run();
+      }
+      if (!columns.find(c => c.name === 'pc_code')) {
+        db.prepare("ALTER TABLE tickets ADD COLUMN pc_code TEXT").run();
+      }
     }
     
     if (table === 'users') {
@@ -172,6 +181,10 @@ export function initDb() {
       if (!columns.find(c => c.name === 'email')) {
         db.prepare("ALTER TABLE master_users ADD COLUMN email TEXT").run();
       }
+      if (!columns.find(c => c.name === 'jenis_piranti')) {
+        db.prepare("ALTER TABLE master_users ADD COLUMN jenis_piranti TEXT").run();
+      }
+      db.prepare("UPDATE master_users SET jenis_piranti = '(Tidak Ada)' WHERE jenis_piranti IS NULL OR jenis_piranti = ''").run();
     }
   }
 
