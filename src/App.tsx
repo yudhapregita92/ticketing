@@ -43,6 +43,7 @@ import { ImageManagerModal } from './components/modals/ImageManagerModal';
 import { SplashScreen } from './components/SplashScreen';
 import { hapticFeedback } from './utils/haptics';
 import { AdminDashboard } from './components/AdminDashboard';
+import { Panduan } from './components/Panduan';
 import { AssetManagement } from './components/AssetManagement';
 import NetworkMonitor from './components/NetworkMonitor';
 import BeritaAcara from './components/BeritaAcara';
@@ -118,8 +119,15 @@ export default function App() {
 
   useEffect(() => {
     if (settingsData) {
-      setAppSettings(prev => ({ ...prev, ...settingsData }));
-      safeSetItem('appSettings', JSON.stringify({ ...appSettings, ...settingsData }));
+      const parsedData = { ...settingsData };
+      if (typeof parsedData.notification_emails === 'string') {
+        try { parsedData.notification_emails = JSON.parse(parsedData.notification_emails); } catch(e){}
+      }
+      if (typeof parsedData.telegram_chat_ids === 'string') {
+        try { parsedData.telegram_chat_ids = JSON.parse(parsedData.telegram_chat_ids); } catch(e){}
+      }
+      setAppSettings(prev => ({ ...prev, ...parsedData }));
+      safeSetItem('appSettings', JSON.stringify({ ...appSettings, ...parsedData }));
     }
   }, [settingsData]);
 
@@ -222,7 +230,7 @@ export default function App() {
   const [loginData, setLoginData] = useState({ username: '', password: '' });
   const [showSettings, setShowSettings] = useState(false); // Toggle modal pengaturan aplikasi
   const [showImageManager, setShowImageManager] = useState(false); // Toggle modal manajemen gambar
-  const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'notifications' | 'data' | 'system'>('general');
+  const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'notifications' | 'data' | 'system' | 'panduan'>('general');
   const [showResetConfirm, setShowResetConfirm] = useState(false); // Toggle konfirmasi reset data
   const [showTakeoverConfirm, setShowTakeoverConfirm] = useState<{id: number, type: 'takeover' | 'reassign', targetUser?: string} | null>(null);
   const [showDistribution, setShowDistribution] = useState(false); // Toggle distribusi masalah
@@ -234,7 +242,7 @@ export default function App() {
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [gpsError, setGpsError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'today' | 'all' | 'my_tickets' | 'dashboard' | 'assets' | 'network' | 'ba'>(() => {
+  const [viewMode, setViewMode] = useState<'today' | 'all' | 'my_tickets' | 'dashboard' | 'assets' | 'network' | 'ba' | 'panduan'>(() => {
     return safeGetItem('adminUser') ? 'dashboard' : 'today';
   });
   const [userIdentifier, setUserIdentifier] = useState<string>(() => {
@@ -785,6 +793,11 @@ export default function App() {
       return;
     }
 
+    if (!formData.face_photo) {
+      alert('Foto wajah wajib disertakan saat membuat tiket.');
+      return;
+    }
+
     setSubmitting(true);
     createTicketMutation.mutate(formData, {
       onSuccess: (data) => {
@@ -1118,6 +1131,8 @@ export default function App() {
                 primaryColor={primaryColor}
                 adminUser={adminUser}
               />
+            ) : viewMode === 'panduan' ? (
+              <Panduan isDark={isDark} primaryColor={primaryColor} appSettings={appSettings} />
             ) : (
               <TicketList 
                 adminUser={adminUser}

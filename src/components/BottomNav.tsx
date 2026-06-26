@@ -11,15 +11,16 @@ import {
   Image as ImageIcon,
   Sun,
   Moon,
-  Search
+  Search,
+  BookOpen
 } from 'lucide-react';
 import { IAdminUser } from '../types';
 import { Logo } from './Logo';
 
 interface BottomNavProps {
   adminUser: IAdminUser | null;
-  viewMode: 'today' | 'all' | 'my_tickets';
-  setViewMode: (mode: 'today' | 'all' | 'my_tickets') => void;
+  viewMode: 'today' | 'all' | 'my_tickets' | 'panduan';
+  setViewMode: (mode: 'today' | 'all' | 'my_tickets' | 'panduan') => void;
   setShowForm: (show: boolean) => void;
   setShowLogin: (show: boolean) => void;
   setShowSettings: (show: boolean) => void;
@@ -117,11 +118,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
           <motion.button 
             whileTap={{ scale: 0.9 }}
-            onClick={toggleTheme}
-            className={`flex flex-col items-center justify-center ${itemWidth} gap-0.5 ${isDark ? 'text-amber-400' : textClass}`}
+            onClick={() => setViewMode('panduan')}
+            className={`flex flex-col items-center justify-center ${itemWidth} gap-0.5 ${viewMode === 'panduan' ? activeTextClass : textClass}`}
           >
-            {isDark ? <Sun className="w-4.5 h-4.5 stroke-2" /> : <Moon className="w-4.5 h-4.5 stroke-2" />}
-            <span className="text-[9px] font-bold">Tema</span>
+            <BookOpen className={`w-4.5 h-4.5 ${viewMode === 'panduan' ? 'stroke-[2.5px]' : 'stroke-2'}`} style={{ color: viewMode === 'panduan' ? primaryColor : undefined }} />
+            <span className="text-[9px] font-bold">Panduan</span>
           </motion.button>
 
           <motion.button 
@@ -182,11 +183,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
         <motion.button 
           whileTap={{ scale: 0.9 }}
-          onClick={toggleTheme}
-          className={`flex flex-col items-center justify-center w-1/5 gap-0.5 ${isDark ? 'text-amber-400' : textClass}`}
+          onClick={() => setViewMode('panduan')}
+          className={`flex flex-col items-center justify-center w-1/5 gap-0.5 ${viewMode === 'panduan' ? activeTextClass : textClass}`}
         >
-          {isDark ? <Sun className="w-5 h-5 stroke-2" /> : <Moon className="w-5 h-5 stroke-2" />}
-          <span className="text-[9px] font-bold">Tema</span>
+          <BookOpen className={`w-5 h-5 ${viewMode === 'panduan' ? 'stroke-[2.5px]' : 'stroke-2'}`} style={{ color: viewMode === 'panduan' ? primaryColor : undefined }} />
+          <span className="text-[9px] font-bold">Panduan</span>
         </motion.button>
 
         <motion.button 

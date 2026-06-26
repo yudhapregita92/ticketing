@@ -237,12 +237,12 @@ export const Header: React.FC<HeaderProps> = ({
           <motion.button 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setShowForm(true)}
+            onClick={toggleTheme}
             style={{ backgroundColor: primaryColor }}
             className="text-white px-3 py-1.5 rounded-full text-[10px] sm:text-sm font-bold shadow-lg flex items-center gap-1.5 active:scale-95"
           >
-            <Plus className="w-3 h-3 sm:w-4 h-4" />
-            <span className="font-bold">New Ticket</span>
+            {isDark ? <Sun className="w-3 h-3 sm:w-4 sm:h-4" /> : <Moon className="w-3 h-3 sm:w-4 sm:h-4" />}
+            <span className="font-bold">Mode</span>
           </motion.button>
         </div>
       </div>

@@ -17,7 +17,8 @@ import {
   Image as ImageIcon,
   Info,
   RefreshCw,
-  History
+  History,
+  BookOpen
 } from 'lucide-react';
 
 import { api } from '../../services/api';
@@ -28,8 +29,8 @@ interface SettingsModalProps {
   setShowSettings: (show: boolean) => void;
   isDark: boolean;
   themeClasses: any;
-  settingsTab: 'general' | 'branding' | 'notifications' | 'data' | 'system';
-  setSettingsTab: (tab: 'general' | 'branding' | 'notifications' | 'data' | 'system') => void;
+  settingsTab: 'general' | 'branding' | 'notifications' | 'data' | 'system' | 'panduan';
+  setSettingsTab: (tab: 'general' | 'branding' | 'notifications' | 'data' | 'system' | 'panduan') => void;
   appSettings: any;
   setAppSettings: (settings: any) => void;
   LOGO_OPTIONS: any[];
@@ -167,6 +168,18 @@ export const SettingsModal = React.memo(({
     }
   };
 
+  const parsedPanduan = (() => {
+    try {
+      return appSettings.panduan_guides ? JSON.parse(appSettings.panduan_guides) : [];
+    } catch (e) {
+      return [];
+    }
+  })();
+
+  const updatePanduan = (newPanduan: any[]) => {
+    setAppSettings({ ...appSettings, panduan_guides: JSON.stringify(newPanduan) });
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <motion.div 
@@ -234,6 +247,12 @@ export const SettingsModal = React.memo(({
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'system' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Settings2 className="w-4 h-4" /> Sistem
+            </button>
+            <button 
+              onClick={() => setSettingsTab('panduan')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'panduan' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+            >
+              <BookOpen className="w-4 h-4" /> Panduan
             </button>
           </div>
 
@@ -1081,6 +1100,79 @@ export const SettingsModal = React.memo(({
                         <span className="text-[10px] font-black capitalize tracking-widest text-slate-600 group-hover:text-blue-700">Muat Ulang Paksa</span>
                       </button>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {settingsTab === 'panduan' && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xs font-black capitalize tracking-widest text-slate-400">Daftar Panduan</h3>
+                      <p className="text-[10px] text-slate-500 mt-1">Panduan ini akan ditampilkan di menu Panduan aplikasi</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const current = [...parsedPanduan];
+                        current.push({ id: `panduan_${Date.now()}`, title: `Panduan Baru`, content: '' });
+                        updatePanduan(current);
+                      }}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-[10px] font-bold shadow-lg shadow-emerald-500/20 active:scale-95"
+                    >
+                      <Plus className="w-3 h-3" /> Tambah
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {parsedPanduan.map((guide: any, index: number) => (
+                      <div key={guide.id} className={`p-4 rounded-2xl border ${themeClasses.border} ${themeClasses.bgSecondary}`}>
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sub Judul</label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const current = [...parsedPanduan];
+                                current.splice(index, 1);
+                                updatePanduan(current);
+                              }}
+                              className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            value={guide.title}
+                            onChange={e => {
+                              const current = [...parsedPanduan];
+                              current[index].title = e.target.value;
+                              updatePanduan(current);
+                            }}
+                            placeholder="Contoh: 1. Cara membuat tiket"
+                            className={`w-full px-4 py-2 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bg} ${themeClasses.border} ${themeClasses.text}`}
+                          />
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Isi Panduan</label>
+                            <textarea
+                              value={guide.content}
+                              onChange={e => {
+                                const current = [...parsedPanduan];
+                                current[index].content = e.target.value;
+                                updatePanduan(current);
+                              }}
+                              rows={4}
+                              className={`w-full px-4 py-3 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bg} ${themeClasses.border} ${themeClasses.text}`}
+                              placeholder="Ketik isi panduan disini..."
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {parsedPanduan.length === 0 && (
+                      <p className="text-xs text-slate-400 italic text-center py-4">Belum ada panduan. Tekan tombol Tambah untuk membuat panduan.</p>
+                    )}
                   </div>
                 </div>
               )}
