@@ -4,9 +4,15 @@ import multer from "multer";
 import * as xlsx from "xlsx";
 import { asyncHandler } from "../utils/asyncHandler.ts";
 import { AppError } from "../utils/errors.ts";
+import { Server } from "socket.io";
 
+export default function masterDataRouter(io: Server) {
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
+
+const emitUpdate = () => {
+  io.emit("master_data_updated");
+};
 
 // Batch endpoints to prevent 429 Rate Exceeded on initial load
 router.get("/master-data/all", asyncHandler(async (req, res) => {
@@ -34,6 +40,7 @@ router.get("/it-personnel", asyncHandler(async (req, res) => {
 router.post("/it-personnel", asyncHandler(async (req, res) => {
   const { name } = req.body;
   db.prepare("INSERT INTO it_personnel (name) VALUES (?)").run(name);
+  emitUpdate();
   res.json({ success: true });
 }));
 
@@ -41,11 +48,13 @@ router.put("/it-personnel/:id", asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
   db.prepare("UPDATE it_personnel SET name = ? WHERE id = ?").run(name, id);
+  emitUpdate();
   res.json({ success: true });
 }));
 
 router.delete("/it-personnel/:id", asyncHandler(async (req, res) => {
   db.prepare("DELETE FROM it_personnel WHERE id = ?").run(req.params.id);
+  emitUpdate();
   res.json({ success: true });
 }));
 
@@ -57,6 +66,7 @@ router.get("/departments", asyncHandler(async (req, res) => {
 router.post("/departments", asyncHandler(async (req, res) => {
   const { name } = req.body;
   db.prepare("INSERT INTO departments (name) VALUES (?)").run(name);
+  emitUpdate();
   res.json({ success: true });
 }));
 
@@ -64,11 +74,13 @@ router.put("/departments/:id", asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
   db.prepare("UPDATE departments SET name = ? WHERE id = ?").run(name, id);
+  emitUpdate();
   res.json({ success: true });
 }));
 
 router.delete("/departments/:id", asyncHandler(async (req, res) => {
   db.prepare("DELETE FROM departments WHERE id = ?").run(req.params.id);
+  emitUpdate();
   res.json({ success: true });
 }));
 
@@ -80,6 +92,7 @@ router.get("/categories", asyncHandler(async (req, res) => {
 router.post("/categories", asyncHandler(async (req, res) => {
   const { name, assigned_to } = req.body;
   db.prepare("INSERT INTO categories (name, assigned_to) VALUES (?, ?)").run(name, assigned_to || null);
+  emitUpdate();
   res.json({ success: true });
 }));
 
@@ -87,11 +100,13 @@ router.put("/categories/:id", asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { name, assigned_to } = req.body;
   db.prepare("UPDATE categories SET name = ?, assigned_to = ? WHERE id = ?").run(name, assigned_to || null, id);
+  emitUpdate();
   res.json({ success: true });
 }));
 
 router.delete("/categories/:id", asyncHandler(async (req, res) => {
   db.prepare("DELETE FROM categories WHERE id = ?").run(req.params.id);
+  emitUpdate();
   res.json({ success: true });
 }));
 
@@ -103,6 +118,7 @@ router.get("/master-users", asyncHandler(async (req, res) => {
 router.post("/master-users", asyncHandler(async (req, res) => {
   const { full_name, department, phone, employee_index, email } = req.body;
   db.prepare("INSERT INTO master_users (full_name, department, phone, employee_index, email) VALUES (?, ?, ?, ?, ?)").run(full_name, department, phone, employee_index, email || null);
+  emitUpdate();
   res.json({ success: true });
 }));
 
@@ -110,11 +126,13 @@ router.put("/master-users/:id", asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { full_name, department, phone, employee_index, email } = req.body;
   db.prepare("UPDATE master_users SET full_name = ?, department = ?, phone = ?, employee_index = ?, email = ? WHERE id = ?").run(full_name, department, phone, employee_index, email || null, id);
+  emitUpdate();
   res.json({ success: true });
 }));
 
 router.delete("/master-users/:id", asyncHandler(async (req, res) => {
   db.prepare("DELETE FROM master_users WHERE id = ?").run(req.params.id);
+  emitUpdate();
   res.json({ success: true });
 }));
 
@@ -146,7 +164,9 @@ router.post("/master-users/upload", upload.single('file'), asyncHandler(async (r
     }
   })();
   
+  emitUpdate();
   res.json({ success: true, count });
 }));
 
-export default router;
+  return router;
+}

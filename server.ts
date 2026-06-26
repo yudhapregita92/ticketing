@@ -66,7 +66,7 @@ async function startServer() {
   app.use("/api", authRouter);
   app.use("/api/tickets", ticketsRouter(io));
   app.use("/api/assets", assetsRouter);
-  app.use("/api", masterDataRouter);
+  app.use("/api", masterDataRouter(io));
   app.use("/api/images", imagesRouter);
   app.use("/api/network", networkRouter);
   app.use("/", settingsRouter);

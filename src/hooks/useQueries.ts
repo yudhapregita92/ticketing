@@ -92,7 +92,6 @@ export const usePublicData = () => {
         throw error;
       }
     },
-    staleTime: 1000 * 60 * 60, // 1 hour
   });
 };
 

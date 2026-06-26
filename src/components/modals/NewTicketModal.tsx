@@ -450,7 +450,10 @@ export const NewTicketModal = React.memo(({
                     <div 
                       key={user.id} 
                       className={`px-4 py-2 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors border-b last:border-0 ${themeClasses.border}`}
-                      onClick={() => handleSelectUser(user)}
+                      onPointerDown={(e) => {
+                        e.preventDefault(); // Prevents input from losing focus and keyboard from hiding
+                        handleSelectUser(user);
+                      }}
                     >
                       <div className={`text-xs font-bold ${themeClasses.text}`}>{user.full_name}</div>
                       <div className={`text-[10px] ${themeClasses.textMuted}`}>{user.department}</div>

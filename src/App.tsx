@@ -605,6 +605,11 @@ export default function App() {
       });
     });
 
+    socket.on('master_data_updated', () => {
+      queryClient.invalidateQueries({ queryKey: ['managementData'] });
+      queryClient.invalidateQueries({ queryKey: ['publicData'] });
+    });
+
     return () => {
       socket.disconnect();
     };
