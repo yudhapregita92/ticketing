@@ -237,7 +237,7 @@ export const SettingsModal = React.memo(({
     setMasterUserIndex(user.employee_index || '');
     setMasterUserEmail(user.email || '');
     setMasterUserJenisPiranti(normalizeJenisPiranti(user.jenis_piranti));
-    setMasterUserKodePiranti(user.kode_piranti || '');
+    setMasterUserKodePiranti(user.kode_piranti && user.kode_piranti !== '-' ? user.kode_piranti : '');
     setAddingType('master-user');
   };
 

@@ -38,6 +38,8 @@ interface NewTicketModalProps {
     face_photo?: string | null;
     device_type?: string | null;
     pc_code?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
   };
   setNewTicket: (ticket: any) => void;
   DEPARTMENTS: string[];
@@ -46,7 +48,7 @@ interface NewTicketModalProps {
   handleSubmit: (e: React.FormEvent) => void;
   isSubmitting: boolean;
   primaryColor: string;
-  masterUsers: {id: number, full_name: string, department: string, phone: string, employee_index?: string}[];
+  masterUsers: {id: number, full_name: string, department: string, phone: string, employee_index?: string, jenis_piranti?: string, kode_piranti?: string}[];
 }
 
 export const NewTicketModal = React.memo(({
@@ -73,6 +75,7 @@ export const NewTicketModal = React.memo(({
   const [scanComplete, setScanComplete] = React.useState(false);
   const [cameraError, setCameraError] = React.useState(false);
   const [permissionDenied, setPermissionDenied] = React.useState(false);
+  const [cameraTarget, setCameraTarget] = React.useState<'face_photo' | 'photo'>('photo');
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const streamRef = React.useRef<MediaStream | null>(null);
@@ -107,8 +110,9 @@ export const NewTicketModal = React.memo(({
     }
   }, []);
 
-  const startCamera = React.useCallback(async () => {
+  const startCamera = React.useCallback(async (target: 'face_photo' | 'photo' = 'photo') => {
     try {
+      setCameraTarget(target);
       if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
 
@@ -119,7 +123,7 @@ export const NewTicketModal = React.memo(({
 
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
-          facingMode: 'user',
+          facingMode: target === 'face_photo' ? 'user' : 'environment',
           width: { ideal: 640 },
           height: { ideal: 480 }
         } 
@@ -151,15 +155,44 @@ export const NewTicketModal = React.memo(({
     canvas.height = videoRef.current.videoHeight;
     const ctx = canvas.getContext('2d');
     if (ctx) {
-      // Mirror the image to match the video preview
-      ctx.translate(canvas.width, 0);
-      ctx.scale(-1, 1);
+      // Mirror the image to match the video preview (only for front camera / face photo)
+      if (cameraTarget === 'face_photo') {
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+      }
       ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
       
-      // Reset transformation for any future drawing (though not needed here)
+      // Reset transformation for any future drawing
       ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+      // Draw watermark on canvas for standard photo attachment
+      if (cameraTarget === 'photo') {
+        const lat = newTicket.latitude || 0;
+        const lng = newTicket.longitude || 0;
+        
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        const padding = 10;
+        const fontSize = Math.max(10, Math.floor(canvas.width / 35));
+        ctx.font = `${fontSize}px sans-serif`;
+        const text1 = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+        const text2 = `Time: ${new Date().toLocaleString()}`;
+        const text3 = `Google Maps Location`;
+        
+        const metrics1 = ctx.measureText(text1);
+        const metrics2 = ctx.measureText(text2);
+        const metrics3 = ctx.measureText(text3);
+        const bgWidth = Math.max(metrics1.width, metrics2.width, metrics3.width) + padding * 2;
+        const bgHeight = fontSize * 3 + padding * 3;
+
+        ctx.fillRect(8, canvas.height - bgHeight - 8, bgWidth, bgHeight);
+
+        ctx.fillStyle = 'white';
+        ctx.fillText(text3, padding + 8, canvas.height - bgHeight + fontSize);
+        ctx.fillText(text1, padding + 8, canvas.height - bgHeight + fontSize * 2 + padding / 2);
+        ctx.fillText(text2, padding + 8, canvas.height - bgHeight + fontSize * 3 + padding);
+      }
       
-      // Compress to stay under 30KB
+      // Compress to stay under 40KB
       let quality = 0.6;
       let base64 = canvas.toDataURL('image/jpeg', quality);
       while (base64.length > 40000 && quality > 0.1) {
@@ -167,7 +200,11 @@ export const NewTicketModal = React.memo(({
         base64 = canvas.toDataURL('image/jpeg', quality);
       }
       
-      setNewTicket({ ...newTicket, face_photo: base64 });
+      if (cameraTarget === 'photo') {
+        setNewTicket({ ...newTicket, photo: base64 });
+      } else {
+        setNewTicket({ ...newTicket, face_photo: base64 });
+      }
     }
 
     // Manual capture, bypass AI detection
@@ -176,7 +213,7 @@ export const NewTicketModal = React.memo(({
       setIsScanning(false);
       stopCamera();
     }, 1500);
-  }, [stopCamera, newTicket, setNewTicket]);
+  }, [stopCamera, newTicket, setNewTicket, cameraTarget]);
 
   const handleFacePhotoUpload = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -264,6 +301,28 @@ export const NewTicketModal = React.memo(({
     return masterUsers.filter(u => u.full_name.toLowerCase().includes(search.toLowerCase()));
   }, [masterUsers, newTicket.name]);
 
+  const matchedMasterUser = React.useMemo(() => {
+    if (!newTicket.name || !Array.isArray(masterUsers)) return null;
+    return masterUsers.find(
+      u => u.full_name?.trim().toLowerCase() === newTicket.name.trim().toLowerCase()
+    );
+  }, [masterUsers, newTicket.name]);
+
+  const isPcCodeMatched = React.useMemo(() => {
+    if (!matchedMasterUser || !newTicket.pc_code) return false;
+    const userCode = (matchedMasterUser.kode_piranti || '').trim().toLowerCase();
+    const inputCode = (newTicket.pc_code || '').trim().toLowerCase();
+    if (!userCode || userCode === '-' || userCode === '(tidak ada)') return false;
+    
+    // Check direct match
+    if (userCode === inputCode) return true;
+    
+    // Check cleaned match (remove leading hyphens/spaces)
+    const cleanUser = userCode.replace(/^[- \t]+/g, '').trim();
+    const cleanInput = inputCode.replace(/^[- \t]+/g, '').trim();
+    return cleanUser !== '' && cleanUser === cleanInput;
+  }, [matchedMasterUser, newTicket.pc_code]);
+
   if (!showForm) return null;
 
   const handleClose = () => {
@@ -319,10 +378,6 @@ export const NewTicketModal = React.memo(({
       alert('Silakan pilih tipe piranti yang Anda gunakan.');
       return;
     }
-    if (newTicket.device_type === 'smartphone' && !newTicket.face_photo) {
-      alert('Foto wajah (selfie) wajib diambil/disertakan jika menggunakan Smartphone/Tablet/Laptop.');
-      return;
-    }
     if (newTicket.device_type === 'pc' && !newTicket.pc_code?.trim()) {
       alert('Kode Komputer wajib diisi jika menggunakan Komputer PC.');
       return;
@@ -370,19 +425,32 @@ export const NewTicketModal = React.memo(({
                   <h3 className="text-lg font-black text-white mb-2">Kamera Tidak Aktif / Error</h3>
                   <p className="text-xs text-slate-300 mb-6 leading-relaxed">
                     {permissionDenied 
-                      ? "Izin kamera ditolak. Anda tetap dapat mengunggah file foto wajah (selfie) secara manual dari PC Anda." 
-                      : "Gagal mengakses kamera (tidak terdeteksi atau sedang digunakan). Anda tetap dapat mengunggah file foto wajah (selfie) secara manual dari PC Anda."}
+                      ? (cameraTarget === 'photo' 
+                          ? "Izin kamera ditolak. Anda tetap dapat mengunggah file foto lampiran secara manual." 
+                          : "Izin kamera ditolak. Anda tetap dapat mengunggah file foto wajah (selfie) secara manual.")
+                      : (cameraTarget === 'photo' 
+                          ? "Gagal mengakses kamera. Anda tetap dapat mengunggah file foto lampiran secara manual." 
+                          : "Gagal mengakses kamera. Anda tetap dapat mengunggah file foto wajah (selfie) secara manual.")
+                    }
                   </p>
                   
                   <div className="flex flex-col sm:flex-row gap-3 w-full">
                     <label className="flex-1 px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2">
                       <Upload className="w-4 h-4" />
-                      Upload Foto Wajah
+                      {cameraTarget === 'photo' ? 'Upload Foto Lampiran' : 'Upload Foto Wajah'}
                       <input 
                         type="file" 
                         accept="image/*" 
                         className="hidden" 
-                        onChange={handleFacePhotoUpload}
+                        onChange={(e) => {
+                          if (cameraTarget === 'photo') {
+                            handlePhotoChange(e);
+                            setIsScanning(false);
+                            stopCamera();
+                          } else {
+                            handleFacePhotoUpload(e);
+                          }
+                        }}
                       />
                     </label>
                     
@@ -422,7 +490,7 @@ export const NewTicketModal = React.memo(({
                         muted
                         width={640}
                         height={480}
-                        className={`w-full h-full object-cover transition-opacity duration-500 scale-x-[-1] ${scanComplete ? 'opacity-20' : 'opacity-100'}`}
+                        className={`w-full h-full object-cover transition-opacity duration-500 ${cameraTarget === 'face_photo' ? 'scale-x-[-1]' : ''} ${scanComplete ? 'opacity-20' : 'opacity-100'}`}
                       />
                       
                       {scanComplete && (
@@ -439,7 +507,11 @@ export const NewTicketModal = React.memo(({
                     {!scanComplete && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
                         <svg width="200" height="250" viewBox="0 0 200 250" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <ellipse cx="100" cy="125" rx="80" ry="110" stroke="rgba(16, 185, 129, 0.8)" strokeWidth="4" strokeDasharray="10 10" />
+                          {cameraTarget === 'face_photo' ? (
+                            <ellipse cx="100" cy="125" rx="80" ry="110" stroke="rgba(16, 185, 129, 0.8)" strokeWidth="4" strokeDasharray="10 10" />
+                          ) : (
+                            <rect x="20" y="45" width="160" height="160" rx="20" stroke="rgba(16, 185, 129, 0.8)" strokeWidth="4" strokeDasharray="10 10" />
+                          )}
                         </svg>
                         <motion.div
                           animate={{ 
@@ -470,10 +542,16 @@ export const NewTicketModal = React.memo(({
                     className="space-y-2 relative z-20"
                   >
                     <h3 className={`text-xl font-black tracking-tight ${scanComplete ? 'text-emerald-500' : 'text-white'}`}>
-                      {scanComplete ? 'Verifikasi Berhasil' : 'Posisikan Wajah Anda'}
+                      {cameraTarget === 'photo' 
+                        ? (scanComplete ? 'Foto Tersimpan' : 'Ambil Foto Lampiran')
+                        : (scanComplete ? 'Verifikasi Berhasil' : 'Posisikan Wajah Anda')
+                      }
                     </h3>
                     <p className="text-sm font-bold text-slate-400 capitalize tracking-widest">
-                      {scanComplete ? 'Foto anda telah tersimpan di sistem' : 'Mohon hadap ke kamera dan paskan dengan garis'}
+                      {cameraTarget === 'photo'
+                        ? (scanComplete ? 'Foto lampiran berhasil ditambahkan' : 'Posisikan objek/kamera dengan benar dan ambil gambar')
+                        : (scanComplete ? 'Foto anda telah tersimpan di sistem' : 'Mohon hadap ke kamera dan paskan dengan garis')
+                      }
                     </p>
                     
                     {!scanComplete && (
@@ -494,7 +572,18 @@ export const NewTicketModal = React.memo(({
                             type="file" 
                             accept="image/*" 
                             className="hidden" 
-                            onChange={handleFacePhotoUpload}
+                            onChange={(e) => {
+                              if (cameraTarget === 'photo') {
+                                handlePhotoChange(e);
+                                setScanComplete(true);
+                                closeTimerRef.current = setTimeout(() => {
+                                  setIsScanning(false);
+                                  stopCamera();
+                                }, 1500);
+                              } else {
+                                handleFacePhotoUpload(e);
+                              }
+                            }}
                           />
                         </label>
                       </div>
@@ -672,14 +761,27 @@ export const NewTicketModal = React.memo(({
               <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
                 <Monitor className="w-2.5 h-2.5 text-blue-500" /> Kode Komputer (Berlabel di Monitor) <span className="text-rose-500 font-bold">* Wajib</span>
               </label>
-              <input 
-                required
-                type="text"
-                placeholder="Contoh: PC-05, PC-LAB-01, dll..."
-                className={`w-full px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
-                value={newTicket.pc_code || ''}
-                onChange={e => setNewTicket({...newTicket, pc_code: e.target.value})}
-              />
+              <div className="relative flex items-center">
+                <input 
+                  required
+                  type="text"
+                  placeholder="Contoh: PC-05, PC-LAB-01, dll..."
+                  className={`w-full px-3 py-1.5 pr-16 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                  value={newTicket.pc_code || ''}
+                  onChange={e => setNewTicket({...newTicket, pc_code: e.target.value})}
+                />
+                {isPcCodeMatched && (
+                  <div className="absolute right-2 text-emerald-500 flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-lg border border-emerald-500/20">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-500 fill-emerald-500/10" />
+                    <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 tracking-wider">Cocok</span>
+                  </div>
+                )}
+              </div>
+              {matchedMasterUser && matchedMasterUser.kode_piranti && matchedMasterUser.kode_piranti !== '-' && !isPcCodeMatched && (
+                <p className="text-[9px] font-medium text-amber-500 capitalize tracking-wide ml-0.5">
+                  Petunjuk: Masukkan Kode Piranti terdaftar Anda ({matchedMasterUser.kode_piranti})
+                </p>
+              )}
               <p className="text-[9px] font-bold text-amber-500 dark:text-amber-400 capitalize tracking-wide ml-0.5">
                 * Masukkan nomor PC yang tertera pada stiker label di casing/layar monitor Anda.
               </p>
@@ -737,16 +839,28 @@ export const NewTicketModal = React.memo(({
               <Camera className="w-2 h-2" /> Lampiran Foto (Opsional)
             </label>
             <div className="flex items-center gap-3">
-              <label className={`flex-1 flex flex-col items-center justify-center gap-1 px-3 py-2 border-2 border-dashed rounded-2xl cursor-pointer transition-all hover:bg-emerald-50/50 group ${isDark ? 'border-slate-700 hover:border-emerald-500' : 'border-slate-200 hover:border-emerald-500'}`}>
-                <Camera className="w-4 h-4 text-slate-400 group-hover:text-emerald-500 transition-colors" />
-                <span className={`text-[8px] font-bold group-hover:text-emerald-600 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Klik untuk upload foto</span>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  className="hidden" 
-                  onChange={handlePhotoChange}
-                />
-              </label>
+              <div className="flex-1 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => startCamera('photo')}
+                  className={`flex-1 flex flex-col items-center justify-center gap-1 px-3 py-2 border-2 border-dashed rounded-2xl transition-all hover:bg-emerald-50/50 group ${isDark ? 'border-slate-700 hover:border-emerald-500' : 'border-slate-200 hover:border-emerald-500'}`}
+                >
+                  <Camera className="w-4 h-4 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+                  <span className={`text-[8px] font-bold group-hover:text-emerald-600 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Ambil via Kamera</span>
+                </button>
+
+                <label className={`flex-1 flex flex-col items-center justify-center gap-1 px-3 py-2 border-2 border-dashed rounded-2xl cursor-pointer transition-all hover:bg-emerald-50/50 group ${isDark ? 'border-slate-700 hover:border-emerald-500' : 'border-slate-200 hover:border-emerald-500'}`}>
+                  <Upload className="w-4 h-4 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+                  <span className={`text-[8px] font-bold group-hover:text-emerald-600 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Upload File Foto</span>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={handlePhotoChange}
+                  />
+                </label>
+              </div>
+
               {newTicket.photo && (
                 <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-lg group">
                   <img 
@@ -768,50 +882,11 @@ export const NewTicketModal = React.memo(({
           </div>
 
           {deviceSelected === 'smartphone' && (
-            <div className="space-y-0.5">
-              <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
-                <Scan className="w-2 h-2" /> Foto Wajah / Selfie <span className="text-rose-500 font-bold">* Wajib</span>
-              </label>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={startCamera}
-                    className={`flex-1 flex flex-col items-center justify-center gap-1 px-3 py-2 border-2 border-dashed rounded-2xl transition-all hover:bg-emerald-50/50 group ${isDark ? 'border-slate-700 hover:border-emerald-500' : 'border-slate-200 hover:border-emerald-500'}`}
-                  >
-                    <Camera className="w-4 h-4 text-slate-400 group-hover:text-emerald-500 transition-colors" />
-                    <span className={`text-[8px] font-bold group-hover:text-emerald-600 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Ambil via Kamera</span>
-                  </button>
-
-                  <label className={`flex-1 flex flex-col items-center justify-center gap-1 px-3 py-2 border-2 border-dashed rounded-2xl cursor-pointer transition-all hover:bg-emerald-50/50 group ${isDark ? 'border-slate-700 hover:border-emerald-500' : 'border-slate-200 hover:border-emerald-500'}`}>
-                    <Upload className="w-4 h-4 text-slate-400 group-hover:text-emerald-500 transition-colors" />
-                    <span className={`text-[8px] font-bold group-hover:text-emerald-600 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Upload File Foto</span>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      className="hidden" 
-                      onChange={handleFacePhotoUpload}
-                    />
-                  </label>
-                </div>
-
-                {newTicket.face_photo && (
-                  <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-lg group">
-                    <img 
-                      src={newTicket.face_photo} 
-                      alt="Preview Wajah" 
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                    <button 
-                      type="button"
-                      onClick={() => setNewTicket({...newTicket, face_photo: null})}
-                      className="absolute inset-0 bg-rose-500/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Trash2 className="w-5 h-5 text-white" />
-                    </button>
-                  </div>
-                )}
+            <div className={`p-3 rounded-2xl border flex items-center gap-3 ${isDark ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
+              <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+              <div className="flex-1 text-left">
+                <p className="text-xs font-bold">Foto Selfie Tersimpan</p>
+                <p className="text-[10px] opacity-80 leading-relaxed">Foto selfie Anda sudah tersimpan dan terverifikasi secara aman di database.</p>
               </div>
             </div>
           )}
