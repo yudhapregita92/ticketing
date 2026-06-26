@@ -13,16 +13,16 @@ router.get("/master-data/all", asyncHandler(async (req, res) => {
   const it = db.prepare("SELECT * FROM it_personnel ORDER BY name ASC").all();
   const depts = db.prepare("SELECT * FROM departments ORDER BY name ASC").all();
   const cats = db.prepare("SELECT * FROM categories ORDER BY name ASC").all();
-  const users = db.prepare("SELECT * FROM users ORDER BY created_at DESC").all();
-  const masters = db.prepare("SELECT * FROM master_users ORDER BY name ASC").all();
-  const admins = db.prepare("SELECT * FROM admin_users ORDER BY username ASC").all();
+  const users = db.prepare("SELECT * FROM users ORDER BY username ASC").all();
+  const masters = db.prepare("SELECT * FROM master_users ORDER BY full_name ASC").all();
+  const admins = db.prepare("SELECT id, username, full_name, role FROM users WHERE role != 'staff' ORDER BY username ASC").all();
   res.json({ it, depts, cats, users, masters, admins });
 }));
 
 router.get("/public-data/all", asyncHandler(async (req, res) => {
   const depts = db.prepare("SELECT * FROM departments ORDER BY name ASC").all();
   const cats = db.prepare("SELECT * FROM categories ORDER BY name ASC").all();
-  const masters = db.prepare("SELECT * FROM master_users ORDER BY name ASC").all();
+  const masters = db.prepare("SELECT * FROM master_users ORDER BY full_name ASC").all();
   res.json({ depts, cats, masters });
 }));
 

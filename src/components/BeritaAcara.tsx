@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Printer, FileText, AlertCircle } from 'lucide-react';
-import { AdminUser } from '../types';
+import { IAdminUser } from '../types';
 
 interface BeritaAcaraProps {
   isDark: boolean;
   themeClasses: any;
   primaryColor: string;
-  adminUser: AdminUser | null;
+  adminUser: IAdminUser | null;
 }
 
 const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primaryColor, adminUser }) => {
@@ -41,6 +41,22 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
       headerDocNo: formData.headerDocNo
     }));
   }, [formData.logo1, formData.logo2, formData.headerTitle, formData.headerSubtitle, formData.headerDocNo]);
+
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.6);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        const availableWidth = entry.contentRect.width - 40; // 40px total horizontal padding
+        const newScale = availableWidth / 794; // 794px is approx 210mm at 96dpi
+        setScale(newScale > 1 ? 1 : newScale);
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>, logoKey: 'logo1' | 'logo2') => {
     const file = e.target.files?.[0];
@@ -283,8 +299,21 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
         <div className="hidden lg:block">
           <div className="sticky top-6">
             <h3 className={`text-sm font-bold mb-4 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Pratinjau Dokumen</h3>
-            <div className="bg-white p-6 shadow-md rounded-lg overflow-hidden border border-slate-200 scale-[0.8] origin-top-left xl:origin-top text-black w-full min-h-[600px]">
-              <PrintableContent formData={formData} formattedDate={formattedDate} />
+            <div ref={containerRef} className="w-full flex justify-center bg-slate-100/50 rounded-lg overflow-hidden border border-slate-200" style={{ height: `${1123 * scale + 40}px` }}>
+              <div 
+                className="bg-white text-black shadow-lg" 
+                style={{ 
+                  width: '210mm', 
+                  minHeight: '297mm', 
+                  transform: `scale(${scale})`, 
+                  transformOrigin: 'top center',
+                  margin: '20px 0'
+                }}
+              >
+                <div className="p-[20mm]">
+                  <PrintableContent formData={formData} formattedDate={formattedDate} />
+                </div>
+              </div>
             </div>
           </div>
         </div>
