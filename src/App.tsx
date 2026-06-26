@@ -2,6 +2,19 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { io } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Toaster, toast } from 'react-hot-toast';
+
+const safeGetItem = (key: string) => {
+  try { return localStorage.getItem(key); } catch (e) { return null; }
+};
+
+const safeSetItem = (key: string, value: string) => {
+  try { localStorage.setItem(key, value); } catch (e) {}
+};
+
+const safeRemoveItem = (key: string) => {
+  try { localStorage.removeItem(key); } catch (e) {}
+};
+
 import { APP_VERSION, getEnvironment } from './version';
 import { 
   Zap, 
@@ -64,7 +77,7 @@ export default function App() {
   // --- State Management ---
   const [adminUser, setAdminUser] = useState<any>(null); // Data login admin
   const [appSettings, setAppSettings] = useState(() => {
-    const saved = localStorage.getItem('appSettings');
+    const saved = safeGetItem('appSettings');
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -106,7 +119,7 @@ export default function App() {
   useEffect(() => {
     if (settingsData) {
       setAppSettings(prev => ({ ...prev, ...settingsData }));
-      localStorage.setItem('appSettings', JSON.stringify({ ...appSettings, ...settingsData }));
+      safeSetItem('appSettings', JSON.stringify({ ...appSettings, ...settingsData }));
     }
   }, [settingsData]);
 
@@ -222,10 +235,10 @@ export default function App() {
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'today' | 'all' | 'my_tickets' | 'dashboard' | 'assets' | 'network' | 'ba'>(() => {
-    return localStorage.getItem('adminUser') ? 'dashboard' : 'today';
+    return safeGetItem('adminUser') ? 'dashboard' : 'today';
   });
   const [userIdentifier, setUserIdentifier] = useState<string>(() => {
-    return localStorage.getItem('userIdentifier') || '';
+    return safeGetItem('userIdentifier') || '';
   });
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [tempFilters, setTempFilters] = useState({ dept: '', status: '', date: '', search: '' });
@@ -241,7 +254,7 @@ export default function App() {
 
   // --- Draft Ticket Logic ---
   useEffect(() => {
-    const savedDraft = localStorage.getItem('ticket_draft');
+    const savedDraft = safeGetItem('ticket_draft');
     if (savedDraft) {
       try {
         setFormData(prev => ({ ...prev, ...JSON.parse(savedDraft) }));
@@ -253,7 +266,7 @@ export default function App() {
 
   useEffect(() => {
     if (formData.name || formData.description) {
-      localStorage.setItem('ticket_draft', JSON.stringify(formData));
+      safeSetItem('ticket_draft', JSON.stringify(formData));
     }
   }, [formData]);
 
@@ -271,7 +284,7 @@ export default function App() {
   }, [viewMode]);
 
   const clearDraft = () => {
-    localStorage.removeItem('ticket_draft');
+    safeRemoveItem('ticket_draft');
     setFormData({
       name: '',
       department: '',
@@ -542,7 +555,7 @@ export default function App() {
    * Inisialisasi data
    */
   useEffect(() => {
-    const savedAdmin = localStorage.getItem('adminUser');
+    const savedAdmin = safeGetItem('adminUser');
     if (savedAdmin) setAdminUser(JSON.parse(savedAdmin));
   }, []);
 
@@ -598,7 +611,7 @@ export default function App() {
       const data = await api.login(loginData);
       if (data.success) {
         setAdminUser(data.user);
-        localStorage.setItem('adminUser', JSON.stringify(data.user));
+        safeSetItem('adminUser', JSON.stringify(data.user));
         setShowLogin(false);
         setLoginData({ username: '', password: '' });
         setViewMode('all');
@@ -646,7 +659,7 @@ export default function App() {
    */
   const handleLogout = () => {
     setAdminUser(null);
-    localStorage.removeItem('adminUser');
+    safeRemoveItem('adminUser');
     setViewMode('today');
   };
 
@@ -746,7 +759,7 @@ export default function App() {
             primary_color: appSettings.admin_primary_color
           };
           setAdminUser(updatedAdmin);
-          localStorage.setItem('adminUser', JSON.stringify(updatedAdmin));
+          safeSetItem('adminUser', JSON.stringify(updatedAdmin));
         }
         
         toast.success('Pengaturan berhasil diperbarui!');
@@ -779,7 +792,7 @@ export default function App() {
           // Save user identifier for portal
           if (formData.phone) {
             setUserIdentifier(formData.phone);
-            localStorage.setItem('userIdentifier', formData.phone);
+            safeSetItem('userIdentifier', formData.phone);
           }
           clearDraft();
           setShowForm(false);
