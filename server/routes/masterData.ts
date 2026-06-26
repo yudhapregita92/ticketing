@@ -131,75 +131,94 @@ router.get("/master-users", asyncHandler(async (req, res) => {
 }));
 
 router.post("/master-users", asyncHandler(async (req, res) => {
-  const { full_name, department, phone, employee_index, email, jenis_piranti } = req.body;
+  const { full_name, department, phone, employee_index, email, jenis_piranti, kode_piranti } = req.body;
   const normalizedPiranti = normalizeJenisPiranti(jenis_piranti);
-  db.prepare("INSERT INTO master_users (full_name, department, phone, employee_index, email, jenis_piranti) VALUES (?, ?, ?, ?, ?, ?)").run(full_name, department, phone, employee_index, email || null, normalizedPiranti);
+  db.prepare("INSERT INTO master_users (full_name, department, phone, employee_index, email, jenis_piranti, kode_piranti) VALUES (?, ?, ?, ?, ?, ?, ?)").run(
+    full_name ? String(full_name).trim() : '',
+    department ? String(department).trim() : '-',
+    phone ? String(phone).trim() : '-',
+    employee_index ? String(employee_index).trim() : '-',
+    email ? String(email).trim() : '-',
+    normalizedPiranti,
+    kode_piranti ? String(kode_piranti).trim() : '-'
+  );
   emitUpdate();
   res.json({ success: true });
-}));
-
-router.put("/master-users/:id", asyncHandler(async (req, res) => {
+ }));
+ 
+ router.put("/master-users/:id", asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { full_name, department, phone, employee_index, email, jenis_piranti } = req.body;
+  const { full_name, department, phone, employee_index, email, jenis_piranti, kode_piranti } = req.body;
   const normalizedPiranti = normalizeJenisPiranti(jenis_piranti);
-  db.prepare("UPDATE master_users SET full_name = ?, department = ?, phone = ?, employee_index = ?, email = ?, jenis_piranti = ? WHERE id = ?").run(full_name, department, phone, employee_index, email || null, normalizedPiranti, id);
+  db.prepare("UPDATE master_users SET full_name = ?, department = ?, phone = ?, employee_index = ?, email = ?, jenis_piranti = ?, kode_piranti = ? WHERE id = ?").run(
+    full_name ? String(full_name).trim() : '',
+    department ? String(department).trim() : '-',
+    phone ? String(phone).trim() : '-',
+    employee_index ? String(employee_index).trim() : '-',
+    email ? String(email).trim() : '-',
+    normalizedPiranti,
+    kode_piranti ? String(kode_piranti).trim() : '-',
+    id
+  );
   emitUpdate();
   res.json({ success: true });
-}));
-
-router.delete("/master-users/:id", asyncHandler(async (req, res) => {
-  db.prepare("DELETE FROM master_users WHERE id = ?").run(req.params.id);
-  emitUpdate();
-  res.json({ success: true });
-}));
-
-router.post("/master-users/upload", upload.single('file'), asyncHandler(async (req, res) => {
-  if (!req.file) {
-    throw new AppError("No file uploaded", 400);
-  }
-  
-  const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-  const sheetName = workbook.SheetNames[0];
-  const sheet = workbook.Sheets[sheetName];
-  const data = xlsx.utils.sheet_to_json(sheet);
-  
-  const insert = db.prepare("INSERT OR REPLACE INTO master_users (full_name, department, phone, employee_index, email, jenis_piranti) VALUES (?, ?, ?, ?, ?, ?)");
-  
-  let count = 0;
-  
-  const findValue = (row: any, possibleHeaders: string[]) => {
-    const keys = Object.keys(row);
-    const matchedKey = keys.find(k => {
-      const normKey = k.trim().toLowerCase().replace(/[\s_-]+/g, '');
-      return possibleHeaders.some(h => h.trim().toLowerCase().replace(/[\s_-]+/g, '') === normKey);
-    });
-    return matchedKey ? row[matchedKey] : null;
-  };
-
-  db.transaction(() => {
-    for (const row of data as any[]) {
-      const fullName = findValue(row, ['Nama', 'Nama Lengkap', 'full_name', 'name', 'Nama User']);
-      const department = findValue(row, ['Bagian', 'Departemen', 'department', 'dept', 'Unit', 'Bagian / Departemen']);
-      const phone = findValue(row, ['No HP', 'Telepon', 'phone', 'no_hp', 'No Telepon', 'Handphone']);
-      const employeeIndex = findValue(row, ['Indek', 'Indeks', 'Index', 'employee_index', 'NIK', 'Indek Karyawan']);
-      const email = findValue(row, ['Email', 'email', 'Alamat Email']);
-      const jenisPirantiRaw = findValue(row, ['Jenis Piranti', 'jenis_piranti', 'Piranti', 'Device Type', 'Jenis Device', 'Device']);
-      
-      const normalizedPiranti = normalizeJenisPiranti(jenisPirantiRaw);
-      
-      if (fullName && department && phone && employeeIndex) {
-        insert.run(
-          String(fullName).trim(), 
-          String(department).trim(), 
-          String(phone).trim(), 
-          String(employeeIndex).trim(), 
-          email ? String(email).trim() : null, 
-          normalizedPiranti
-        );
-        count++;
-      }
-    }
-  })();
+ }));
+ 
+ router.delete("/master-users/:id", asyncHandler(async (req, res) => {
+   db.prepare("DELETE FROM master_users WHERE id = ?").run(req.params.id);
+   emitUpdate();
+   res.json({ success: true });
+ }));
+ 
+ router.post("/master-users/upload", upload.single('file'), asyncHandler(async (req, res) => {
+   if (!req.file) {
+     throw new AppError("No file uploaded", 400);
+   }
+   
+   const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+   const sheetName = workbook.SheetNames[0];
+   const sheet = workbook.Sheets[sheetName];
+   const data = xlsx.utils.sheet_to_json(sheet);
+   
+   const insert = db.prepare("INSERT OR REPLACE INTO master_users (full_name, department, phone, employee_index, email, jenis_piranti, kode_piranti) VALUES (?, ?, ?, ?, ?, ?, ?)");
+   
+   let count = 0;
+   
+   const findValue = (row: any, possibleHeaders: string[]) => {
+     const keys = Object.keys(row);
+     const matchedKey = keys.find(k => {
+       const normKey = k.trim().toLowerCase().replace(/[\s_-]+/g, '');
+       return possibleHeaders.some(h => h.trim().toLowerCase().replace(/[\s_-]+/g, '') === normKey);
+     });
+     return matchedKey ? row[matchedKey] : null;
+   };
+ 
+   db.transaction(() => {
+     for (const row of data as any[]) {
+       const fullName = findValue(row, ['Nama', 'Nama Lengkap', 'full_name', 'name', 'Nama User']);
+       const department = findValue(row, ['Bagian', 'Departemen', 'department', 'dept', 'Unit', 'Bagian / Departemen']);
+       const phone = findValue(row, ['No HP', 'Telepon', 'phone', 'no_hp', 'No Telepon', 'Handphone']);
+       const employeeIndex = findValue(row, ['Indek', 'Indeks', 'Index', 'employee_index', 'NIK', 'Indek Karyawan']);
+       const email = findValue(row, ['Email', 'email', 'Alamat Email']);
+       const jenisPirantiRaw = findValue(row, ['Jenis Piranti', 'jenis_piranti', 'Piranti', 'Device Type', 'Jenis Device', 'Device']);
+       const kodePirantiRaw = findValue(row, ['Kode Piranti', 'kode_piranti', 'Device Code', 'Kode Device', 'Kode']);
+       
+       const normalizedPiranti = normalizeJenisPiranti(jenisPirantiRaw);
+       
+       if (fullName) {
+         insert.run(
+           String(fullName).trim(), 
+           department ? String(department).trim() : '-', 
+           phone ? String(phone).trim() : '-', 
+           employeeIndex ? String(employeeIndex).trim() : '-', 
+           email ? String(email).trim() : '-', 
+           normalizedPiranti,
+           kodePirantiRaw ? String(kodePirantiRaw).trim() : '-'
+         );
+         count++;
+       }
+     }
+   })();
   
   emitUpdate();
   res.json({ success: true, count });

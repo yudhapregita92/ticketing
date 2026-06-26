@@ -82,7 +82,8 @@ export function initDb() {
       phone TEXT,
       employee_index TEXT,
       email TEXT,
-      jenis_piranti TEXT
+      jenis_piranti TEXT,
+      kode_piranti TEXT
     );
 
     CREATE TABLE IF NOT EXISTS assets (
@@ -184,7 +185,11 @@ export function initDb() {
       if (!columns.find(c => c.name === 'jenis_piranti')) {
         db.prepare("ALTER TABLE master_users ADD COLUMN jenis_piranti TEXT").run();
       }
+      if (!columns.find(c => c.name === 'kode_piranti')) {
+        db.prepare("ALTER TABLE master_users ADD COLUMN kode_piranti TEXT").run();
+      }
       db.prepare("UPDATE master_users SET jenis_piranti = '(Tidak Ada)' WHERE jenis_piranti IS NULL OR jenis_piranti = ''").run();
+      db.prepare("UPDATE master_users SET kode_piranti = '-' WHERE kode_piranti IS NULL OR kode_piranti = ''").run();
     }
   }
 

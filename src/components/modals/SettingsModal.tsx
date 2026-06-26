@@ -100,6 +100,7 @@ export const SettingsModal = React.memo(({
   const [masterUserIndex, setMasterUserIndex] = React.useState('');
   const [masterUserEmail, setMasterUserEmail] = React.useState('');
   const [masterUserJenisPiranti, setMasterUserJenisPiranti] = React.useState('(Tidak Ada)');
+  const [masterUserKodePiranti, setMasterUserKodePiranti] = React.useState('');
   const [editingMasterUser, setEditingMasterUser] = React.useState<any | null>(null);
   const [masterUserSearch, setMasterUserSearch] = React.useState('');
 
@@ -111,7 +112,8 @@ export const SettingsModal = React.memo(({
       (user.full_name || '').toLowerCase().includes(term) ||
       (user.department || '').toLowerCase().includes(term) ||
       (user.employee_index || '').toLowerCase().includes(term) ||
-      (user.jenis_piranti || '').toLowerCase().includes(term)
+      (user.jenis_piranti || '').toLowerCase().includes(term) ||
+      (user.kode_piranti || '').toLowerCase().includes(term)
     );
   }, [masterUsers, masterUserSearch]);
 
@@ -154,8 +156,8 @@ export const SettingsModal = React.memo(({
   };
 
   const handleAddMasterUser = async () => {
-    if (!masterUserName || !masterUserDept || !masterUserPhone || !masterUserIndex) {
-      alert('Semua kolom wajib diisi (kecuali email)');
+    if (!masterUserName) {
+      alert('Nama wajib diisi');
       return;
     }
     try {
@@ -167,7 +169,8 @@ export const SettingsModal = React.memo(({
           phone: masterUserPhone,
           employee_index: masterUserIndex,
           email: masterUserEmail || null,
-          jenis_piranti: masterUserJenisPiranti
+          jenis_piranti: masterUserJenisPiranti,
+          kode_piranti: masterUserKodePiranti
         });
         setAddingType(null);
         setEditingMasterUser(null);
@@ -177,6 +180,7 @@ export const SettingsModal = React.memo(({
         setMasterUserIndex('');
         setMasterUserEmail('');
         setMasterUserJenisPiranti('(Tidak Ada)');
+        setMasterUserKodePiranti('');
         handleManagementAction('master-user', 'delete', { id: editingMasterUser.id }); // Invalidate queries/refresh
       } else {
         // Add Mode
@@ -186,7 +190,8 @@ export const SettingsModal = React.memo(({
           phone: masterUserPhone,
           employee_index: masterUserIndex,
           email: masterUserEmail || null,
-          jenis_piranti: masterUserJenisPiranti
+          jenis_piranti: masterUserJenisPiranti,
+          kode_piranti: masterUserKodePiranti
         });
         setAddingType(null);
         setMasterUserName('');
@@ -195,6 +200,7 @@ export const SettingsModal = React.memo(({
         setMasterUserIndex('');
         setMasterUserEmail('');
         setMasterUserJenisPiranti('(Tidak Ada)');
+        setMasterUserKodePiranti('');
         handleManagementAction('master-user', 'add');
       }
     } catch (err: any) {
@@ -210,15 +216,16 @@ export const SettingsModal = React.memo(({
     setMasterUserIndex('');
     setMasterUserEmail('');
     setMasterUserJenisPiranti('(Tidak Ada)');
+    setMasterUserKodePiranti('');
     setAddingType('master-user');
   };
 
   const normalizeJenisPiranti = (val: string | null | undefined): string => {
     if (!val) return '(Tidak Ada)';
     const normalized = val.trim().toLowerCase();
-    if (normalized === 'komputer' || normalized === 'pc' || normalized === 'komputer pc') return 'Komputer';
-    if (normalized === 'laptop' || normalized === 'notebook') return 'Laptop';
-    if (normalized === 'tab' || normalized === 'tablet' || normalized === 'smartphone' || normalized === 'hp') return 'TAB';
+    if (normalized === 'komputer' || normalized === 'pc' || normalized === 'komputer pc' || normalized === 'desktop' || normalized === 'computer' || normalized === 'cpu') return 'Komputer';
+    if (normalized === 'laptop' || normalized === 'notebook' || normalized === 'netbook' || normalized === 'macbook') return 'Laptop';
+    if (normalized === 'tab' || normalized === 'tablet' || normalized === 'smartphone' || normalized === 'hp' || normalized === 'android' || normalized === 'ios' || normalized === 'handphone' || normalized === 'phone') return 'TAB';
     return '(Tidak Ada)';
   };
 
@@ -230,6 +237,7 @@ export const SettingsModal = React.memo(({
     setMasterUserIndex(user.employee_index || '');
     setMasterUserEmail(user.email || '');
     setMasterUserJenisPiranti(normalizeJenisPiranti(user.jenis_piranti));
+    setMasterUserKodePiranti(user.kode_piranti || '');
     setAddingType('master-user');
   };
 
@@ -251,7 +259,8 @@ export const SettingsModal = React.memo(({
         'No HP': '081234567890',
         'Indek': '12345',
         'Email': 'budi@example.com',
-        'Jenis Piranti': 'Komputer'
+        'Jenis Piranti': 'Komputer',
+        'Kode Piranti': 'KMP-001'
       },
       {
         'Nama Lengkap': 'Siti Aminah',
@@ -259,7 +268,8 @@ export const SettingsModal = React.memo(({
         'No HP': '081234567891',
         'Indek': '67890',
         'Email': 'siti@example.com',
-        'Jenis Piranti': 'Laptop'
+        'Jenis Piranti': 'Laptop',
+        'Kode Piranti': 'LPT-002'
       },
       {
         'Nama Lengkap': 'Andi Wijaya',
@@ -267,7 +277,8 @@ export const SettingsModal = React.memo(({
         'No HP': '081234567892',
         'Indek': '11223',
         'Email': '',
-        'Jenis Piranti': '(Tidak Ada)'
+        'Jenis Piranti': '(Tidak Ada)',
+        'Kode Piranti': '-'
       }
     ];
 
@@ -289,7 +300,8 @@ export const SettingsModal = React.memo(({
       'No HP': user.phone || '',
       'Indek': user.employee_index || '',
       'Email': user.email || '',
-      'Jenis Piranti': user.jenis_piranti || '(Tidak Ada)'
+      'Jenis Piranti': user.jenis_piranti || '(Tidak Ada)',
+      'Kode Piranti': user.kode_piranti || '-'
     }));
 
     const ws = xlsx.utils.json_to_sheet(exportData);
@@ -1012,7 +1024,7 @@ export const SettingsModal = React.memo(({
                               
                               <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Bagian / Departemen</label>
+                                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Bagian / Departemen (Opsional)</label>
                                   <select 
                                     className={`w-full px-3 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                                     value={masterUserDept}
@@ -1023,7 +1035,7 @@ export const SettingsModal = React.memo(({
                                   </select>
                                 </div>
                                 <div>
-                                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">No. Telepon</label>
+                                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">No. Telepon (Opsional)</label>
                                   <input 
                                     type="text"
                                     placeholder="No. HP"
@@ -1036,7 +1048,7 @@ export const SettingsModal = React.memo(({
                               
                               <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Indek Karyawan</label>
+                                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Indek Karyawan (Opsional)</label>
                                   <input 
                                     type="text"
                                     placeholder="Indek Karyawan"
@@ -1046,7 +1058,7 @@ export const SettingsModal = React.memo(({
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Jenis Piranti</label>
+                                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Jenis Piranti (Opsional)</label>
                                   <select 
                                     className={`w-full px-3 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                                     value={masterUserJenisPiranti}
@@ -1060,15 +1072,27 @@ export const SettingsModal = React.memo(({
                                 </div>
                               </div>
                               
-                              <div>
-                                <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Email (Opsional)</label>
-                                <input 
-                                  type="email"
-                                  placeholder="Alamat Email (opsional)"
-                                  className={`w-full px-3 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
-                                  value={masterUserEmail}
-                                  onChange={e => setMasterUserEmail(e.target.value)}
-                                />
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Kode Piranti (Opsional)</label>
+                                  <input 
+                                    type="text"
+                                    placeholder="Contoh: KMP-01 atau LPT-02"
+                                    className={`w-full px-3 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                                    value={masterUserKodePiranti}
+                                    onChange={e => setMasterUserKodePiranti(e.target.value)}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Email (Opsional)</label>
+                                  <input 
+                                    type="email"
+                                    placeholder="Alamat Email (opsional)"
+                                    className={`w-full px-3 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                                    value={masterUserEmail}
+                                    onChange={e => setMasterUserEmail(e.target.value)}
+                                  />
+                                </div>
                               </div>
                               
                               <div className="flex gap-2 pt-2">
@@ -1106,6 +1130,7 @@ export const SettingsModal = React.memo(({
                               <span className="text-[9px] text-slate-400 capitalize font-black">
                                 {user.department} • {user.phone} • Indek: {user.employee_index}
                                 {user.jenis_piranti ? ` • Piranti: ${user.jenis_piranti}` : ''}
+                                {user.kode_piranti ? ` • Kode Piranti: ${user.kode_piranti}` : ''}
                                 {user.email ? ` • ${user.email}` : ''}
                               </span>
                             </div>

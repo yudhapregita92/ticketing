@@ -50,6 +50,7 @@ export interface IMasterUser {
   employee_index?: string;
   email?: string;
   jenis_piranti?: string;
+  kode_piranti?: string;
 }
 
 export interface ISettings {
