@@ -453,7 +453,7 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
                     <button
                       onClick={() => {
                         loadDoc(doc);
-                        setTimeout(() => handlePrint(), 100);
+                        setTimeout(() => window.print(), 100);
                       }}
                       className="flex items-center gap-1.5 text-xs font-medium text-blue-500 hover:text-blue-600 transition-colors shrink-0"
                     >
@@ -466,16 +466,6 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
                       }`}
                     >
                       <Edit2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{currentId === doc.id ? 'Aktif' : 'Edit'}</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        const newDoc = { ...doc, id: Date.now().toString(), date: new Date().toISOString() };
-                        setSavedDocs(prev => [newDoc, ...prev]);
-                        loadDoc(newDoc);
-                      }}
-                      className="flex items-center gap-1.5 text-xs font-medium text-blue-500 hover:text-blue-600 transition-colors shrink-0"
-                    >
-                      <FileText className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clone</span>
                     </button>
                     <button
                       onClick={(e) => deleteDoc(doc.id, e)}

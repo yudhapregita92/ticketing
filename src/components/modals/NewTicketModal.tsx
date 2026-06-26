@@ -186,13 +186,17 @@ export const NewTicketModal = React.memo(({
   };
 
   React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowUserDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   const filteredUsers = React.useMemo(() => {
@@ -433,6 +437,7 @@ export const NewTicketModal = React.memo(({
               <input 
                 required
                 type="text"
+                autoComplete="off"
                 placeholder="Cari Nama User..."
                 className={`w-full px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                 value={newTicket.name}
@@ -445,7 +450,10 @@ export const NewTicketModal = React.memo(({
                     <div 
                       key={user.id} 
                       className={`px-4 py-2 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors border-b last:border-0 ${themeClasses.border}`}
-                      onClick={() => handleSelectUser(user)}
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        handleSelectUser(user);
+                      }}
                     >
                       <div className={`text-xs font-bold ${themeClasses.text}`}>{user.full_name}</div>
                       <div className={`text-[10px] ${themeClasses.textMuted}`}>{user.department}</div>
