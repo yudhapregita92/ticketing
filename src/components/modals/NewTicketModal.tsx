@@ -278,7 +278,7 @@ export const NewTicketModal = React.memo(({
   }, [stopCamera]);
 
   const handleRetryCamera = () => {
-    startCamera();
+    startCamera(cameraTarget);
   };
 
   React.useEffect(() => {
@@ -386,7 +386,7 @@ export const NewTicketModal = React.memo(({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -645,7 +645,7 @@ export const NewTicketModal = React.memo(({
                   setDeviceSelected('smartphone');
                   setNewTicket({ ...newTicket, device_type: 'smartphone' });
                   // Trigger face scan right away
-                  startCamera();
+                  startCamera('face_photo');
                 }}
                 className={`p-4 rounded-2xl border-2 border-dashed flex items-center text-left gap-3.5 transition-all hover:bg-emerald-50/20 hover:border-emerald-500 group ${isDark ? 'border-slate-700 bg-slate-800/40' : 'border-slate-200 bg-slate-50/50'}`}
               >

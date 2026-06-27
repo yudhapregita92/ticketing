@@ -598,9 +598,9 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
                                     ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' 
                                     : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]'
                                 }`} />
-                                <div className="flex flex-col overflow-hidden">
-                                  <span className={`text-xs font-bold truncate ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>{device.name}</span>
-                                  <span className={`text-[9px] font-mono truncate mt-0.5 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>{device.ip_address}</span>
+                                <div className="flex flex-col min-w-0 w-full pr-1">
+                                  <span className={`text-xs font-bold leading-tight break-words line-clamp-2 ${isDark ? 'text-zinc-200' : 'text-slate-700'}`} title={device.name}>{device.name}</span>
+                                  <span className={`text-[9px] font-mono break-all mt-1 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`} title={device.ip_address}>{device.ip_address}</span>
                                 </div>
                               </motion.div>
                             </div>
@@ -616,7 +616,7 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
         )}
 
       {(showAddForm || editingDevice) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <motion.form 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -755,20 +755,20 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
         </div>
       ) : viewType === 'list' ? (
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
             {paginatedDevices.map((device) => (
               <motion.div
                 layout
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 key={device.id}
-                className={`p-3 sm:p-4 rounded-2xl border flex flex-col gap-3 relative overflow-hidden transition-shadow hover:shadow-md ${
+                className={`p-4 rounded-2xl border flex flex-col gap-3 relative overflow-hidden transition-shadow hover:shadow-md w-full ${
                   isDark ? 'bg-zinc-900/40 border-zinc-800' : 'bg-white border-slate-100 shadow-sm'
                 }`}
               >
-                <div className="flex items-center justify-between gap-3 relative z-10">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className={`shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center border ${
+                <div className="flex items-start justify-between gap-3 relative z-10 w-full">
+                  <div className="flex items-start gap-3 min-w-0 flex-1">
+                    <div className={`shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center border mt-0.5 ${
                       device.status === 'Online' 
                         ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
                         : device.status === 'Offline'
@@ -777,17 +777,17 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
                     }`}>
                       {getDeviceIcon(device.type)}
                     </div>
-                    <div className="flex flex-col truncate">
-                      <h3 className="font-bold text-sm tracking-tight truncate pr-2">{device.name}</h3>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className={`text-[11px] font-mono ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <h3 className="font-bold text-sm leading-snug break-words pr-2 line-clamp-2" title={device.name}>{device.name}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-[11px] font-mono break-all ${isDark ? 'text-zinc-400' : 'text-slate-500'}`} title={device.ip_address}>
                           {device.ip_address}
                         </span>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-1.5 shrink-0 ml-auto pt-1">
                     {(adminUser?.role === 'Super Admin' || adminUser?.role === 'Staff IT Support') && (
                       <>
                         <button 
@@ -818,7 +818,7 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
                         <div className={`w-px h-4 mx-0.5 ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
                       </>
                     )}
-                    <div className="flex items-center justify-center w-6 h-6">
+                    <div className="flex items-center justify-center w-6 h-6 shrink-0">
                       <div className={`w-2 h-2 rounded-full ${
                         device.status === 'Online' 
                           ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' 
@@ -830,7 +830,7 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
                   </div>
                 </div>
                 
-                <div className="flex justify-between items-center text-[10px] sm:text-xs">
+                <div className="flex justify-between items-center text-[10px] sm:text-xs w-full mt-auto">
                   <span className={`px-2 py-1 rounded-md border font-medium ${
                     isDark ? 'bg-zinc-800/50 border-zinc-700/50 text-zinc-400' : 'bg-slate-50 border-slate-100 text-slate-500'
                   }`}>
