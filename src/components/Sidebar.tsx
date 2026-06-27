@@ -12,7 +12,8 @@ import {
   Send,
   Package,
   Activity,
-  FileText
+  FileText,
+  BookOpen
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -189,6 +190,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </>
           )}
+
+          <button
+            onClick={() => setViewMode('panduan')}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all text-xs font-bold ${
+              viewMode === 'panduan' 
+                ? 'bg-emerald-500/10 text-emerald-600' 
+                : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <BookOpen className="w-4 h-4" />
+              <span>Panduan</span>
+            </div>
+          </button>
         </div>
       </section>
 

@@ -564,28 +564,6 @@ export const NewTicketModal = React.memo(({
                           <Camera className="w-4 h-4" />
                           Ambil Gambar
                         </button>
-                        
-                        <label className="px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold rounded-xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 flex-1 w-full">
-                          <Upload className="w-4 h-4" />
-                          Upload File
-                          <input 
-                            type="file" 
-                            accept="image/*" 
-                            className="hidden" 
-                            onChange={(e) => {
-                              if (cameraTarget === 'photo') {
-                                handlePhotoChange(e);
-                                setScanComplete(true);
-                                closeTimerRef.current = setTimeout(() => {
-                                  setIsScanning(false);
-                                  stopCamera();
-                                }, 1500);
-                              } else {
-                                handleFacePhotoUpload(e);
-                              }
-                            }}
-                          />
-                        </label>
                       </div>
                     )}
                   </motion.div>
@@ -836,7 +814,7 @@ export const NewTicketModal = React.memo(({
 
           <div className="space-y-0.5">
             <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
-              <Camera className="w-2 h-2" /> Lampiran Foto (Opsional)
+              <Camera className="w-2 h-2" /> Lampiran Foto Selfie (Opsional)
             </label>
             <div className="flex items-center gap-3">
               <div className="flex-1 flex gap-2">
@@ -848,17 +826,6 @@ export const NewTicketModal = React.memo(({
                   <Camera className="w-4 h-4 text-slate-400 group-hover:text-emerald-500 transition-colors" />
                   <span className={`text-[8px] font-bold group-hover:text-emerald-600 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Ambil via Kamera</span>
                 </button>
-
-                <label className={`flex-1 flex flex-col items-center justify-center gap-1 px-3 py-2 border-2 border-dashed rounded-2xl cursor-pointer transition-all hover:bg-emerald-50/50 group ${isDark ? 'border-slate-700 hover:border-emerald-500' : 'border-slate-200 hover:border-emerald-500'}`}>
-                  <Upload className="w-4 h-4 text-slate-400 group-hover:text-emerald-500 transition-colors" />
-                  <span className={`text-[8px] font-bold group-hover:text-emerald-600 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Upload File Foto</span>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    onChange={handlePhotoChange}
-                  />
-                </label>
               </div>
 
               {newTicket.photo && (
