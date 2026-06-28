@@ -282,6 +282,17 @@ export const NewTicketModal = React.memo(({
   };
 
   React.useEffect(() => {
+    if (showForm) {
+      setDeviceSelected(null);
+      setNewTicket(prev => ({
+        ...prev,
+        device_type: '',
+        pc_code: ''
+      }));
+    }
+  }, [showForm, setNewTicket]);
+
+  React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowUserDropdown(false);
@@ -755,12 +766,7 @@ export const NewTicketModal = React.memo(({
                   </div>
                 )}
               </div>
-              {matchedMasterUser && matchedMasterUser.kode_piranti && matchedMasterUser.kode_piranti !== '-' && !isPcCodeMatched && (
-                <p className="text-[9px] font-medium text-amber-500 capitalize tracking-wide ml-0.5">
-                  Petunjuk: Masukkan Kode Piranti terdaftar Anda ({matchedMasterUser.kode_piranti})
-                </p>
-              )}
-              <p className="text-[9px] font-bold text-amber-500 dark:text-amber-400 capitalize tracking-wide ml-0.5">
+               <p className="text-[9px] font-bold text-amber-500 dark:text-amber-400 capitalize tracking-wide ml-0.5">
                 * Masukkan nomor PC yang tertera pada stiker label di casing/layar monitor Anda.
               </p>
             </div>
