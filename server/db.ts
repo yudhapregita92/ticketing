@@ -191,6 +191,14 @@ export function initDb() {
       db.prepare("UPDATE master_users SET jenis_piranti = '(Tidak Ada)' WHERE jenis_piranti IS NULL OR jenis_piranti = ''").run();
       db.prepare("UPDATE master_users SET kode_piranti = '-' WHERE kode_piranti IS NULL OR kode_piranti = ''").run();
     }
+
+    // Add role to it_personnel if not exists
+    {
+      const columns = db.pragma("table_info(it_personnel)") as { name: string }[];
+      if (!columns.find(c => c.name === 'role')) {
+        db.prepare("ALTER TABLE it_personnel ADD COLUMN role TEXT").run();
+      }
+    }
   }
 
   // Initialize default data if tables are empty

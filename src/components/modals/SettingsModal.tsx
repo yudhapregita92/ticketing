@@ -123,6 +123,38 @@ export const SettingsModal = React.memo(({
   const [adminUserFullName, setAdminUserFullName] = React.useState('');
   const [adminUserRole, setAdminUserRole] = React.useState('Staff IT Support');
 
+  const [itName, setItName] = React.useState('');
+  const [itRole, setItRole] = React.useState('Staff IT Support');
+  const [editingIt, setEditingIt] = React.useState<any | null>(null);
+
+  const handleSaveItPersonnel = async () => {
+    if (!itName.trim()) {
+      alert('Nama wajib diisi');
+      return;
+    }
+    try {
+      if (editingIt) {
+        await api.updateITPersonnel(editingIt.id, { name: itName.trim(), role: itRole });
+      } else {
+        await api.addITPersonnel({ name: itName.trim(), role: itRole });
+      }
+      setAddingType(null);
+      setEditingIt(null);
+      setItName('');
+      setItRole('Staff IT Support');
+      handleManagementAction('it', 'refresh');
+    } catch (err: any) {
+      alert(err.message || 'Gagal menyimpan data');
+    }
+  };
+
+  const handleEditItPersonnel = (it: any) => {
+    setEditingIt(it);
+    setItName(it.name || '');
+    setItRole(it.role || 'Staff IT Support');
+    setAddingType('it');
+  };
+
   const handleAddAdminUser = async () => {
     if (!adminUserUsername || !adminUserPassword || !adminUserFullName || !adminUserRole) {
       alert('Semua kolom wajib diisi');
@@ -937,7 +969,12 @@ export const SettingsModal = React.memo(({
                         <label className={`text-[10px] font-black ${themeClasses.textMuted} capitalize tracking-widest ml-1`}>Tim IT</label>
                         <button 
                           type="button"
-                          onClick={() => setAddingType(addingType === 'it' ? null : 'it')} 
+                          onClick={() => {
+                            setAddingType(addingType === 'it' ? null : 'it');
+                            setEditingIt(null);
+                            setItName('');
+                            setItRole('Staff IT Support');
+                          }} 
                           className="text-[10px] font-black text-emerald-500 capitalize tracking-widest hover:underline"
                         >
                           {addingType === 'it' ? 'Batal' : '+ Tambah IT'}
@@ -945,33 +982,66 @@ export const SettingsModal = React.memo(({
                       </div>
                       
                       {addingType === 'it' && (
-                        <div className="flex gap-2">
-                          <input 
-                            autoFocus
-                            type="text"
-                            value={newItemName}
-                            onChange={e => setNewItemName(e.target.value)}
-                            placeholder="Nama IT baru..."
-                            className={`flex-1 border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
-                            onKeyDown={e => e.key === 'Enter' && handleManagementAction('it', 'add')}
-                          />
-                          <button 
-                            type="button"
-                            onClick={() => handleManagementAction('it', 'add')}
-                            className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black capitalize"
-                          >
-                            Simpan
-                          </button>
+                        <div className={`p-4 rounded-xl border-2 border-emerald-500/30 space-y-3 ${themeClasses.bgSecondary}`}>
+                          <div className="grid grid-cols-2 gap-2">
+                            <input 
+                              autoFocus
+                              type="text"
+                              value={itName}
+                              onChange={e => setItName(e.target.value)}
+                              placeholder="Nama IT..."
+                              className={`w-full px-3 py-2 rounded-lg border text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                              onKeyDown={e => e.key === 'Enter' && handleSaveItPersonnel()}
+                            />
+                            <select 
+                              className={`w-full px-3 py-2 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                              value={itRole}
+                              onChange={e => setItRole(e.target.value)}
+                            >
+                              <option value="Staff IT Support">Staff IT Support</option>
+                              <option value="Staff App Support">Staff App Support</option>
+                              <option value="Super Admin">Super Admin</option>
+                            </select>
+                          </div>
+                          <div className="flex gap-2">
+                            <button 
+                              type="button"
+                              onClick={handleSaveItPersonnel}
+                              className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-bold capitalize tracking-widest"
+                            >
+                              {editingIt ? 'Simpan Perubahan' : 'Simpan IT'}
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                setAddingType(null);
+                                setEditingIt(null);
+                                setItName('');
+                                setItRole('Staff IT Support');
+                              }}
+                              className={`flex-1 py-2 rounded-lg text-[10px] font-bold capitalize tracking-widest border ${themeClasses.border} ${themeClasses.textMuted}`}
+                            >
+                              Batal
+                            </button>
+                          </div>
                         </div>
                       )}
 
                       <div className="flex flex-wrap gap-2">
                         {Array.isArray(itPersonnel) && itPersonnel.map(it => (
                           <div key={it.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
-                            <span className={`text-xs font-bold ${themeClasses.text}`}>{it.name}</span>
-                            <button type="button" onClick={() => handleManagementAction('it', 'delete', it)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Trash2 className="w-3 h-3" />
-                            </button>
+                            <div className="flex flex-col">
+                              <span className={`text-xs font-bold ${themeClasses.text}`}>{it.name}</span>
+                              {it.role && <span className={`text-[9px] ${themeClasses.textMuted}`}>{it.role}</span>}
+                            </div>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                              <button type="button" onClick={() => handleEditItPersonnel(it)} className="text-blue-500 hover:text-blue-400">
+                                <Edit3 className="w-3 h-3" />
+                              </button>
+                              <button type="button" onClick={() => handleManagementAction('it', 'delete', it)} className="text-rose-500 hover:text-rose-400">
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>

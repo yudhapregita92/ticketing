@@ -38,16 +38,16 @@ router.get("/it-personnel", asyncHandler(async (req, res) => {
 }));
 
 router.post("/it-personnel", asyncHandler(async (req, res) => {
-  const { name } = req.body;
-  db.prepare("INSERT INTO it_personnel (name) VALUES (?)").run(name);
+  const { name, role } = req.body;
+  db.prepare("INSERT INTO it_personnel (name, role) VALUES (?, ?)").run(name, role || null);
   emitUpdate();
   res.json({ success: true });
 }));
 
 router.put("/it-personnel/:id", asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { name } = req.body;
-  db.prepare("UPDATE it_personnel SET name = ? WHERE id = ?").run(name, id);
+  const { name, role } = req.body;
+  db.prepare("UPDATE it_personnel SET name = ?, role = ? WHERE id = ?").run(name, role || null, id);
   emitUpdate();
   res.json({ success: true });
 }));

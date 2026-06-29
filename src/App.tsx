@@ -712,6 +712,12 @@ export default function App() {
         return;
       }
 
+      if (action === 'refresh') {
+        queryClient.invalidateQueries({ queryKey: ['managementData'] });
+        queryClient.invalidateQueries({ queryKey: ['publicData'] });
+        return;
+      }
+      
       const label = type === 'it' ? 'IT' : type === 'dept' ? 'Departemen' : 'Kategori';
       
       if (action === 'add') {

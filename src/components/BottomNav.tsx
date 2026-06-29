@@ -167,18 +167,18 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           <motion.div
             animate={{ 
               scale: [1, 1.15, 1],
-              filter: ["drop-shadow(0 0 0px rgba(0,0,0,0))", "drop-shadow(0 0 10px rgba(34,197,94,0.4))", "drop-shadow(0 0 0px rgba(0,0,0,0))"]
+              filter: ["drop-shadow(0 0 0px rgba(0,0,0,0))", "drop-shadow(0 0 15px rgba(34,197,94,0.5))", "drop-shadow(0 0 0px rgba(0,0,0,0))"]
             }}
             transition={{ 
               repeat: Infinity, 
               duration: 2,
               ease: "easeInOut"
             }}
-            className="relative"
+            className="w-5 h-5 flex items-center justify-center relative"
           >
-            <Send className="w-5.5 h-5.5 text-emerald-500" />
+            <Send className="w-7 h-7 absolute text-emerald-500 dark:text-emerald-400" style={{ top: '-6px' }} />
           </motion.div>
-          <span className="text-[9px] font-bold text-emerald-500">Buat Tiket</span>
+          <span className="text-[9px] font-bold text-emerald-500 dark:text-emerald-400">Buat Tiket</span>
         </motion.button>
 
         <motion.button 
