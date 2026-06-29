@@ -21,7 +21,8 @@ import {
   History,
   BookOpen,
   Edit3,
-  Search
+  Search,
+  Printer
 } from 'lucide-react';
 
 import * as xlsx from 'xlsx';
@@ -286,6 +287,170 @@ export const SettingsModal = React.memo(({
     const wb = xlsx.utils.book_new();
     xlsx.utils.book_append_sheet(wb, ws, 'Template Master User');
     xlsx.writeFile(wb, 'Template_Import_User.xlsx');
+  };
+
+  const handlePrintLabel = (user: any) => {
+    const printWindow = window.open('', '', 'width=600,height=400');
+    if (!printWindow) {
+      alert("Browser memblokir pop-up. Izinkan pop-up untuk mencetak label.");
+      return;
+    }
+    
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Print Label - ${user.full_name}</title>
+          <style>
+            @page { size: auto; margin: 0mm; }
+            body { 
+              margin: 0; 
+              padding: 0;
+              font-family: sans-serif;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 100%;
+              height: 100vh;
+              background-color: white;
+            }
+            .label-container {
+              width: 100%;
+              height: 100%;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
+              text-align: center;
+              box-sizing: border-box;
+              padding: 10px;
+            }
+            .name {
+              font-size: 16px;
+              font-weight: bold;
+              margin-bottom: 5px;
+            }
+            .kode {
+              font-size: 14px;
+              border: 1px solid black;
+              padding: 3px 8px;
+              border-radius: 4px;
+              display: inline-block;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="label-container">
+            <div class="name">${user.full_name}</div>
+            <div class="kode">Kode: ${user.kode_piranti || '-'}</div>
+          </div>
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+                window.close();
+              }, 500);
+            }
+          </script>
+        </body>
+      </html>
+    `;
+    
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+  };
+
+  const handlePrintAllLabels = () => {
+    if (!Array.isArray(masterUsers) || masterUsers.length === 0) {
+      alert('Tidak ada data master user untuk dicetak');
+      return;
+    }
+
+    const pcUsers = masterUsers.filter(user => user.kode_piranti && user.kode_piranti !== '-');
+    
+    if (pcUsers.length === 0) {
+      alert('Tidak ada user dengan kode piranti komputer');
+      return;
+    }
+
+    const printWindow = window.open('', '', 'width=800,height=600');
+    if (!printWindow) {
+      alert("Browser memblokir pop-up. Izinkan pop-up untuk mencetak label.");
+      return;
+    }
+    
+    let labelsHtml = '';
+    pcUsers.forEach(user => {
+      labelsHtml += `
+        <div class="label-box">
+          <div class="name">${user.full_name}</div>
+          <div class="kode">Kode: ${user.kode_piranti}</div>
+        </div>
+      `;
+    });
+    
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Print All Labels</title>
+          <style>
+            @page { size: A4; margin: 10mm; }
+            body { 
+              margin: 0; 
+              padding: 0;
+              font-family: sans-serif;
+              background-color: white;
+            }
+            .grid-container {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 10px;
+              width: 100%;
+            }
+            .label-box {
+              border: 1px dashed #ccc;
+              padding: 15px;
+              text-align: center;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
+              page-break-inside: avoid;
+              min-height: 80px;
+            }
+            .name {
+              font-size: 14px;
+              font-weight: bold;
+              margin-bottom: 5px;
+            }
+            .kode {
+              font-size: 12px;
+              border: 1px solid black;
+              padding: 3px 8px;
+              border-radius: 4px;
+              display: inline-block;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="grid-container">
+            ${labelsHtml}
+          </div>
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+                window.close();
+              }, 500);
+            }
+          </script>
+        </body>
+      </html>
+    `;
+    
+    printWindow.document.write(printContent);
+    printWindow.document.close();
   };
 
   const handleExportMasterUser = () => {
@@ -954,6 +1119,13 @@ export const SettingsModal = React.memo(({
                         >
                           <Plus className="w-3 h-3" /> + Tambah User
                         </button>
+                        <button 
+                          type="button"
+                          onClick={handlePrintAllLabels}
+                          className="text-[10px] font-black text-rose-600 hover:text-rose-700 capitalize tracking-widest flex items-center gap-1 bg-rose-50 dark:bg-rose-950/40 px-2 py-1 rounded-md"
+                        >
+                          <Printer className="w-3 h-3" /> Cetak All Label
+                        </button>
                       </div>
                     </div>
 
@@ -1135,6 +1307,14 @@ export const SettingsModal = React.memo(({
                               </span>
                             </div>
                             <div className="flex items-center gap-1">
+                              <button 
+                                type="button"
+                                onClick={() => handlePrintLabel(user)}
+                                className="p-1.5 text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg transition-colors"
+                                title="Cetak Label"
+                              >
+                                <Printer className="w-3.5 h-3.5" />
+                              </button>
                               <button 
                                 type="button"
                                 onClick={() => handleOpenEditMasterUser(user)}
