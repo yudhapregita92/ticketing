@@ -2,6 +2,42 @@ import express from "express";
 import db from "../db.ts";
 import ping from "ping";
 import mysql from "mysql2/promise";
+import { createRequire } from "module";
+import path from "path";
+
+// Dynamically resolve auth_plugins to avoid ERR_PACKAGE_PATH_NOT_EXPORTED in Node's strict ESM exports checking
+const getPlugins = () => {
+  try {
+    const req = createRequire(import.meta.url);
+    const mysql2Dir = path.dirname(req.resolve("mysql2/package.json"));
+    return {
+      caching_sha2_password: req(path.join(mysql2Dir, "lib/auth_plugins/caching_sha2_password.js")),
+      mysql_native_password: req(path.join(mysql2Dir, "lib/auth_plugins/mysql_native_password.js")),
+      sha256_password: req(path.join(mysql2Dir, "lib/auth_plugins/sha256_password.js")),
+    };
+  } catch (e) {
+    try {
+      const glob = globalThis as any;
+      const req = glob.require || (typeof require !== "undefined" ? require : null);
+      if (req) {
+        const mysql2Dir = path.dirname(req.resolve("mysql2/package.json"));
+        return {
+          caching_sha2_password: req(path.join(mysql2Dir, "lib/auth_plugins/caching_sha2_password.js")),
+          mysql_native_password: req(path.join(mysql2Dir, "lib/auth_plugins/mysql_native_password.js")),
+          sha256_password: req(path.join(mysql2Dir, "lib/auth_plugins/sha256_password.js")),
+        };
+      }
+    } catch (err) {
+      console.error("Failed to dynamically load mysql2 plugins via glob.require:", err);
+    }
+    throw e;
+  }
+};
+
+const plugins = getPlugins();
+const caching_sha2_password = plugins.caching_sha2_password;
+const mysql_native_password = plugins.mysql_native_password;
+const sha256_password = plugins.sha256_password;
 
 const router = express.Router();
 
@@ -174,7 +210,13 @@ router.post("/test-db-connection", async (req, res) => {
       password: password || '',
       database: database || undefined,
       connectTimeout: 3000, // 3 seconds timeout
-      allowPublicKeyRetrieval: true // Sangat penting untuk MySQL 8+ dengan caching_sha2_password / sha256_password
+      allowPublicKeyRetrieval: true, // Sangat penting untuk MySQL 8+ dengan caching_sha2_password / sha256_password
+      authPlugins: {
+        '': caching_sha2_password,
+        'caching_sha2_password': caching_sha2_password,
+        'mysql_native_password': mysql_native_password,
+        'sha256_password': sha256_password
+      }
     } as any);
     
     // Ping connection
