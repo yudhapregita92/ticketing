@@ -22,7 +22,8 @@ import {
   BookOpen,
   Edit3,
   Search,
-  Printer
+  Printer,
+  Key
 } from 'lucide-react';
 
 import * as xlsx from 'xlsx';
@@ -124,6 +125,30 @@ export const SettingsModal = React.memo(({
   const [adminUserPassword, setAdminUserPassword] = React.useState('');
   const [adminUserFullName, setAdminUserFullName] = React.useState('');
   const [adminUserRole, setAdminUserRole] = React.useState('Staff IT Support');
+  const [editingAdminUser, setEditingAdminUser] = React.useState<any | null>(null);
+  const [adminUserNewPassword, setAdminUserNewPassword] = React.useState('');
+  const [myNewPassword, setMyNewPassword] = React.useState('');
+
+  const handleUpdateMyPassword = async () => {
+    if (!myNewPassword.trim()) {
+      alert('Password baru wajib diisi');
+      return;
+    }
+    if (!adminUser?.username) {
+      alert('Informasi login tidak ditemukan');
+      return;
+    }
+    try {
+      await api.changePassword({
+        username: adminUser.username,
+        newPassword: myNewPassword.trim()
+      });
+      setMyNewPassword('');
+      alert('Password Anda berhasil diperbarui');
+    } catch (err: any) {
+      alert(err.message || 'Gagal mengubah password Anda');
+    }
+  };
 
   const [itName, setItName] = React.useState('');
   const [itRole, setItRole] = React.useState('Staff IT Support');
@@ -187,6 +212,27 @@ export const SettingsModal = React.memo(({
       handleManagementAction('admin-user', 'delete', { id });
     } catch (err: any) {
       alert(err.message || 'Gagal menghapus admin');
+    }
+  };
+
+  const handleUpdateAdminPassword = async () => {
+    if (!editingAdminUser || !adminUserNewPassword.trim()) {
+      alert('Password baru wajib diisi');
+      return;
+    }
+    try {
+      await api.updateAdminUser(editingAdminUser.id, {
+        username: editingAdminUser.username,
+        full_name: editingAdminUser.full_name,
+        role: editingAdminUser.role,
+        password: adminUserNewPassword.trim()
+      });
+      setEditingAdminUser(null);
+      setAdminUserNewPassword('');
+      alert('Password berhasil diperbarui');
+      handleManagementAction('admin-user', 'refresh');
+    } catch (err: any) {
+      alert(err.message || 'Gagal mengubah password');
     }
   };
 
@@ -617,6 +663,36 @@ export const SettingsModal = React.memo(({
                       ))}
                     </div>
                   </div>
+
+                  {/* Personal Security - Ganti Password Saya */}
+                  {adminUser && (
+                    <div className="space-y-3 pt-6 border-t border-slate-100 dark:border-slate-800/60">
+                      <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1 flex items-center gap-1.5">
+                        <Key className="w-3.5 h-3.5 text-emerald-500" /> Ganti Password Saya ({adminUser.username})
+                      </label>
+                      <div className={`p-4 rounded-2xl border ${themeClasses.border} ${themeClasses.bgSecondary} space-y-3`}>
+                        <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
+                          Ubah kata sandi untuk akun login Anda saat ini. Kata sandi harus aman dan mudah diingat.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <input 
+                            type="password"
+                            placeholder="Masukkan password baru"
+                            className={`flex-1 px-4 py-2 rounded-xl border text-xs outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                            value={myNewPassword}
+                            onChange={e => setMyNewPassword(e.target.value)}
+                          />
+                          <button 
+                            type="button"
+                            onClick={handleUpdateMyPassword}
+                            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider whitespace-nowrap cursor-pointer transition-all active:scale-95"
+                          >
+                            Ubah Password
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1472,19 +1548,67 @@ export const SettingsModal = React.memo(({
 
                     <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
                       {Array.isArray(adminUsers) && adminUsers.map(user => (
-                        <div key={user.id} className={`flex items-center justify-between p-2.5 rounded-xl border ${themeClasses.border} ${themeClasses.bgSecondary}`}>
-                          <div className="flex flex-col">
-                            <span className="text-[11px] font-bold">{user.full_name} ({user.username})</span>
-                            <span className="text-[9px] text-slate-400 capitalize font-black">{user.role}</span>
+                        <div key={user.id} className={`flex flex-col gap-2 p-2.5 rounded-xl border ${themeClasses.border} ${themeClasses.bgSecondary}`}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex flex-col">
+                              <span className="text-[11px] font-bold">{user.full_name} ({user.username})</span>
+                              <span className="text-[9px] text-slate-400 capitalize font-black">{user.role}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  if (editingAdminUser?.id === user.id) {
+                                    setEditingAdminUser(null);
+                                  } else {
+                                    setEditingAdminUser(user);
+                                    setAdminUserNewPassword('');
+                                  }
+                                }}
+                                className="p-1 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg transition-colors flex items-center gap-1 text-[9px] font-black uppercase tracking-wider"
+                                title="Ganti Password"
+                              >
+                                <Key className="w-3 h-3" />
+                                <span className="hidden sm:inline">Password</span>
+                              </button>
+                              
+                              {user.role !== 'Super Admin' && (
+                                <button 
+                                  type="button"
+                                  onClick={() => handleDeleteAdminUser(user.id)}
+                                  className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-colors"
+                                  title="Hapus Akun"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
                           </div>
-                          {user.role !== 'Super Admin' && (
-                            <button 
-                              type="button"
-                              onClick={() => handleDeleteAdminUser(user.id)}
-                              className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
+
+                          {editingAdminUser?.id === user.id && (
+                            <div className="flex gap-2 items-center pt-2 border-t border-slate-100 dark:border-slate-800/60 animate-in fade-in slide-in-from-top-1 duration-200">
+                              <input 
+                                type="password"
+                                placeholder="Password baru"
+                                className={`flex-1 px-3 py-1.5 rounded-lg border text-[10px] outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                                value={adminUserNewPassword}
+                                onChange={e => setAdminUserNewPassword(e.target.value)}
+                              />
+                              <button 
+                                type="button"
+                                onClick={handleUpdateAdminPassword}
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[9px] font-black uppercase tracking-wider whitespace-nowrap cursor-pointer"
+                              >
+                                Update
+                              </button>
+                              <button 
+                                type="button"
+                                onClick={() => setEditingAdminUser(null)}
+                                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider border ${themeClasses.border} ${themeClasses.textMuted} cursor-pointer`}
+                              >
+                                Batal
+                              </button>
+                            </div>
                           )}
                         </div>
                       ))}

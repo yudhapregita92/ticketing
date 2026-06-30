@@ -195,4 +195,18 @@ export const api = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   }).then(handleResponse),
+
+  // DB Connection test
+  testDbConnection: (data: any) => fetch('/api/network/test-db-connection', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(handleResponse),
+
+  // Personal Password Change
+  changePassword: (data: { username: string; newPassword: string }) => fetch('/api/change-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(handleResponse),
 };

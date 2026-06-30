@@ -1,6 +1,7 @@
 import express from "express";
 import db from "../db.ts";
 import ping from "ping";
+import mysql from "mysql2/promise";
 
 const router = express.Router();
 
@@ -153,6 +154,40 @@ router.post("/scan", async (req, res) => {
   } catch (error) {
     console.error("Error scanning devices:", error);
     res.status(500).json({ error: "Failed to scan devices" });
+  }
+});
+
+// Test MySQL database connection
+router.post("/test-db-connection", async (req, res) => {
+  const { host, port, user, password, database } = req.body;
+  
+  if (!host || !user) {
+    return res.status(400).json({ success: false, error: "Host dan User wajib diisi." });
+  }
+
+  try {
+    console.log(`[DB TEST] Menghubungi MySQL di ${host}:${port || 3306} as ${user}...`);
+    const connection = await mysql.createConnection({
+      host,
+      port: Number(port || 3306),
+      user,
+      password: password || '',
+      database: database || undefined,
+      connectTimeout: 3000 // 3 seconds timeout
+    });
+    
+    // Ping connection
+    await connection.ping();
+    await connection.end();
+    
+    console.log(`[DB TEST] Berhasil terhubung ke ${host}!`);
+    res.json({ success: true, message: `Terhubung sukses ke database MySQL di ${host}:${port || 3306}` });
+  } catch (error: any) {
+    console.error("[DB TEST] Gagal terhubung:", error);
+    res.json({ 
+      success: false, 
+      error: error.message || "Gagal menghubungkan ke database MySQL. Periksa IP, Port, Username, atau Password Anda." 
+    });
   }
 });
 

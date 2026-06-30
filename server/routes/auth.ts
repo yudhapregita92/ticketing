@@ -74,6 +74,23 @@ router.delete("/admin-users/:id", asyncHandler(async (req, res) => {
   res.json({ success: true });
 }));
 
+router.post("/change-password", asyncHandler(async (req, res) => {
+  const { username, newPassword } = req.body;
+  if (!username || !newPassword) {
+    throw new AppError("Username dan Password baru wajib diisi", 400);
+  }
+
+  const user = db.prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(?)").get(username.trim()) as User | undefined;
+  if (!user) {
+    throw new AppError("User tidak ditemukan", 404);
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  db.prepare("UPDATE users SET password = ? WHERE LOWER(username) = LOWER(?)").run(hashedPassword, username.trim().toLowerCase());
+  
+  res.json({ success: true, message: "Password berhasil diubah" });
+}));
+
 router.get("/users", asyncHandler(async (req, res) => {
   const users = db.prepare("SELECT id, username, full_name, role FROM users WHERE role != 'Super Admin'").all() as User[];
   res.json(users);

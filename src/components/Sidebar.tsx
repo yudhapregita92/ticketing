@@ -210,19 +210,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
 
           {adminUser && (
-            <button
-              onClick={() => setViewMode('settings')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all text-xs font-bold ${
-                viewMode === 'settings' 
-                  ? 'bg-emerald-500/10 text-emerald-600' 
-                  : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Settings2 className="w-4 h-4" />
-                <span>Pengaturan Sistem</span>
-              </div>
-            </button>
+            <>
+              <button
+                onClick={() => setViewMode('settings')}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all text-xs font-bold ${
+                  viewMode === 'settings' 
+                    ? 'bg-emerald-500/10 text-emerald-600' 
+                    : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Settings2 className="w-4 h-4" />
+                  <span>Pengaturan Sistem</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setViewMode('testing')}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all text-xs font-bold ${
+                  viewMode === 'testing' 
+                    ? 'bg-emerald-500/10 text-emerald-600' 
+                    : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Activity className="w-4 h-4 text-emerald-500" />
+                  <span>Menu Testing</span>
+                </div>
+              </button>
+            </>
           )}
 
           {!adminUser && setShowLogin && (

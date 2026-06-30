@@ -49,6 +49,7 @@ import NetworkMonitor from './components/NetworkMonitor';
 import BeritaAcara from './components/BeritaAcara';
 import { MobileAppNav } from './components/MobileAppNav';
 import { TicketList } from './components/TicketList';
+import { TestingView } from './components/TestingView';
 
 // Types, Constants, and Utils
 import { ITicket, IUser, IDepartment, ICategory, IMasterUser, ISettings, ViewMode } from './types';
@@ -1180,6 +1181,11 @@ export default function App() {
                 masterUsers={masterUsers}
                 adminUsers={adminUsers}
                 handleUploadExcel={handleUploadExcel}
+              />
+            ) : viewMode === 'testing' ? (
+              <TestingView 
+                isDark={isDark}
+                themeClasses={themeClasses}
               />
             ) : viewMode === 'panduan' ? (
               <Panduan isDark={isDark} primaryColor={primaryColor} appSettings={appSettings} />
