@@ -51,7 +51,7 @@ import { MobileAppNav } from './components/MobileAppNav';
 import { TicketList } from './components/TicketList';
 
 // Types, Constants, and Utils
-import { ITicket, IUser, IDepartment, ICategory, IMasterUser, ISettings } from './types';
+import { ITicket, IUser, IDepartment, ICategory, IMasterUser, ISettings, ViewMode } from './types';
 import { STATUSES, LOGO_OPTIONS, PRIORITIES } from './constants';
 import { parseSafeDate, formatDate } from './utils/dateUtils';
 import { getDeviceInfo } from './utils/deviceUtils';
@@ -244,7 +244,7 @@ export default function App() {
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [gpsError, setGpsError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'today' | 'all' | 'my_tickets' | 'dashboard' | 'assets' | 'network' | 'ba' | 'panduan'>(() => {
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
     return safeGetItem('adminUser') ? 'dashboard' : 'today';
   });
   const [userIdentifier, setUserIdentifier] = useState<string>(() => {
@@ -1074,7 +1074,13 @@ export default function App() {
               primaryColor={primaryColor}
               isDark={isDark}
               adminUser={adminUser}
-              setShowSettings={setShowSettings}
+              setShowSettings={(show) => {
+                if (window.innerWidth >= 1024) {
+                  setViewMode('settings');
+                } else {
+                  setShowSettings(show);
+                }
+              }}
               setShowImageManager={setShowImageManager}
               setShowResetConfirm={setShowResetConfirm}
               handleLogout={handleLogout}
@@ -1104,6 +1110,7 @@ export default function App() {
               fetchTickets={fetchTickets}
               viewMode={viewMode}
               setViewMode={setViewMode}
+              setShowLogin={setShowLogin}
             />
           </div>
 
@@ -1142,6 +1149,37 @@ export default function App() {
                 themeClasses={themeClasses}
                 primaryColor={primaryColor}
                 adminUser={adminUser}
+              />
+            ) : viewMode === 'settings' ? (
+              <SettingsModal 
+                inline={true}
+                isDark={isDark}
+                themeClasses={themeClasses}
+                settingsTab={settingsTab}
+                setSettingsTab={setSettingsTab}
+                appSettings={appSettings}
+                setAppSettings={setAppSettings}
+                LOGO_OPTIONS={LOGO_OPTIONS}
+                newEmailInput={newEmailInput}
+                setNewEmailInput={setNewEmailInput}
+                showEmailInput={showEmailInput}
+                setShowEmailInput={setShowEmailInput}
+                handleUpdateSettings={handleUpdateSettings}
+                primaryColor={primaryColor}
+                adminUser={adminUser}
+                itPersonnel={itPersonnel}
+                departments={departments}
+                categories={categories}
+                addingType={addingType}
+                setAddingType={setAddingType}
+                newItemName={newItemName}
+                setNewItemName={setNewItemName}
+                newItemAssignedTo={newItemAssignedTo}
+                setNewItemAssignedTo={setNewItemAssignedTo}
+                handleManagementAction={handleManagementAction}
+                masterUsers={masterUsers}
+                adminUsers={adminUsers}
+                handleUploadExcel={handleUploadExcel}
               />
             ) : viewMode === 'panduan' ? (
               <Panduan isDark={isDark} primaryColor={primaryColor} appSettings={appSettings} />

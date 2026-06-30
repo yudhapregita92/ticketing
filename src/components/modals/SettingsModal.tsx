@@ -31,8 +31,9 @@ import { api } from '../../services/api';
 import { APP_VERSION, BUILD_DATE, UPDATE_HISTORY, getEnvironment } from '../../version';
 
 interface SettingsModalProps {
-  showSettings: boolean;
-  setShowSettings: (show: boolean) => void;
+  showSettings?: boolean;
+  setShowSettings?: (show: boolean) => void;
+  inline?: boolean;
   isDark: boolean;
   themeClasses: any;
   settingsTab: 'general' | 'branding' | 'notifications' | 'data' | 'system' | 'panduan';
@@ -56,7 +57,7 @@ interface SettingsModalProps {
   setNewItemName: (name: string) => void;
   newItemAssignedTo: string;
   setNewItemAssignedTo: (user: string) => void;
-  handleManagementAction: (type: 'it' | 'dept' | 'cat' | 'master-user' | 'admin-user', action: 'add' | 'delete', item?: any) => void;
+  handleManagementAction: (type: 'it' | 'dept' | 'cat' | 'master-user' | 'admin-user', action: 'add' | 'delete' | 'refresh', item?: any) => void;
   masterUsers: any[];
   adminUsers: any[];
   handleUploadExcel: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -65,6 +66,7 @@ interface SettingsModalProps {
 export const SettingsModal = React.memo(({
   showSettings,
   setShowSettings,
+  inline = false,
   isDark,
   themeClasses,
   settingsTab,
@@ -93,7 +95,7 @@ export const SettingsModal = React.memo(({
   adminUsers,
   handleUploadExcel
 }: SettingsModalProps) => {
-  if (!showSettings) return null;
+  if (!inline && !showSettings) return null;
 
   const [masterUserName, setMasterUserName] = React.useState('');
   const [masterUserDept, setMasterUserDept] = React.useState('');
@@ -519,40 +521,31 @@ export const SettingsModal = React.memo(({
     setAppSettings({ ...appSettings, panduan_guides: JSON.stringify(newPanduan) });
   };
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={() => setShowSettings(false)}
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-      />
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className={`relative rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh] transition-colors ${themeClasses.card} ${themeClasses.text}`}
-      >
-        <div className={`p-4 sm:p-6 border-b shrink-0 ${themeClasses.border}`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
-                <Settings2 className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className={`text-lg font-black tracking-tight ${themeClasses.text}`}>Pengaturan Sistem</h2>
-                <p className={`text-[10px] font-bold capitalize tracking-widest ${themeClasses.textMuted}`}>Konfigurasi aplikasi & branding</p>
-              </div>
+  const content = (
+    <div 
+      className={`relative rounded-3xl overflow-hidden flex flex-col transition-colors ${themeClasses.card} ${themeClasses.text} ${inline ? 'w-full h-full border' : 'shadow-2xl w-full max-w-4xl max-h-[90vh]'}`}
+    >
+      <div className={`p-4 sm:p-6 border-b shrink-0 ${themeClasses.border}`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-950/40 rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <Settings2 className="w-5 h-5" />
             </div>
+            <div>
+              <h2 className={`text-lg font-black tracking-tight ${themeClasses.text}`}>Pengaturan Sistem</h2>
+              <p className={`text-[10px] font-bold capitalize tracking-widest ${themeClasses.textMuted}`}>Konfigurasi aplikasi & branding</p>
+            </div>
+          </div>
+          {!inline && (
             <button 
-              onClick={() => setShowSettings(false)}
+              onClick={() => setShowSettings?.(false)}
               className={`p-2 rounded-full transition-all ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
             >
               <X className="w-5 h-5" />
             </button>
-          </div>
+          )}
         </div>
+      </div>
 
         <div className="flex flex-col sm:flex-row flex-1 overflow-hidden">
           {/* Sidebar Tabs */}
@@ -1719,6 +1712,29 @@ export const SettingsModal = React.memo(({
             <Save className="w-4 h-4" /> Simpan Konfigurasi
           </button>
         </div>
+    </div>
+  );
+
+  if (inline) {
+    return content;
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={() => setShowSettings?.(false)}
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+      />
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="w-full max-w-4xl flex flex-col"
+      >
+        {content}
       </motion.div>
     </div>
   );
