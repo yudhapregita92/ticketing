@@ -173,8 +173,9 @@ router.post("/test-db-connection", async (req, res) => {
       user,
       password: password || '',
       database: database || undefined,
-      connectTimeout: 3000 // 3 seconds timeout
-    });
+      connectTimeout: 3000, // 3 seconds timeout
+      allowPublicKeyRetrieval: true // Sangat penting untuk MySQL 8+ dengan caching_sha2_password / sha256_password
+    } as any);
     
     // Ping connection
     await connection.ping();
