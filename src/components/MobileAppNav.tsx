@@ -42,7 +42,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className={`flex-none p-2 rounded-xl transition-all ${
-              isMenuOpen || ['dashboard', 'assets', 'network', 'ba'].includes(viewMode)
+              isMenuOpen || ['dashboard', 'assets', 'network', 'ba', 'membership'].includes(viewMode)
                 ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/15' 
                 : isDark ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
             }`}
@@ -118,6 +118,16 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
                 }`}
               >
                 Manajemen Aset
+              </button>
+              <button 
+                onClick={() => handleMenuClick('membership')}
+                className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                  viewMode === 'membership' 
+                    ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
+                    : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                Membership
               </button>
               {(adminUser.role === 'Super Admin' || adminUser.role === 'Staff IT Support') && (
                 <button 

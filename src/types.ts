@@ -83,11 +83,13 @@ export interface ISettings {
   notification_emails?: string;
   telegram_bot_token?: string;
   telegram_chat_ids?: string;
+  member_card_template?: string;
+  card_layout?: string;
 }
 
 export interface IAdminUser extends IUser {}
 export type IAppSettings = ISettings;
-export type ViewMode = 'today' | 'all' | 'my_tickets' | 'dashboard' | 'assets' | 'network' | 'ba' | 'panduan' | 'settings' | 'testing';
+export type ViewMode = 'today' | 'all' | 'my_tickets' | 'dashboard' | 'assets' | 'network' | 'ba' | 'panduan' | 'settings' | 'testing' | 'membership';
 export interface IAsset {
   id: number;
   asset_id: string;
@@ -101,6 +103,17 @@ export interface IAsset {
   notes?: string;
   assigned_to?: string;
 }
+export interface IMembership {
+  id: number;
+  kode_lokal: string;
+  indek_kdk: string;
+  indek_ggf: string;
+  nama: string;
+  bagian: string;
+  barcode: string;
+  foto?: string | null;
+}
+
 export const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 export const PRIORITIES = [
   { id: 'Low', label: 'Low', color: 'bg-emerald-500' },

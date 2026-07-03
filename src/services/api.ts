@@ -196,6 +196,22 @@ export const api = {
     body: JSON.stringify(data)
   }).then(handleResponse),
 
+  // Memberships
+  getMemberships: (): Promise<any[]> => fetch('/api/memberships').then(handleResponse),
+  addMembership: (data: any) => fetch('/api/memberships', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(handleResponse),
+  updateMembership: (id: number, data: any) => fetch(`/api/memberships/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(handleResponse),
+  deleteMembership: (id: number) => fetch(`/api/memberships/${id}`, {
+    method: 'DELETE'
+  }).then(handleResponse),
+
   // DB Connection test
   testDbConnection: (data: any) => fetch('/api/network/test-db-connection', {
     method: 'POST',

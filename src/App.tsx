@@ -47,6 +47,7 @@ import { Panduan } from './components/Panduan';
 import { AssetManagement } from './components/AssetManagement';
 import NetworkMonitor from './components/NetworkMonitor';
 import BeritaAcara from './components/BeritaAcara';
+import { MembershipManagement } from './components/MembershipManagement';
 import { MobileAppNav } from './components/MobileAppNav';
 import { TicketList } from './components/TicketList';
 import { TestingView } from './components/TestingView';
@@ -1150,6 +1151,12 @@ export default function App() {
                 themeClasses={themeClasses}
                 primaryColor={primaryColor}
                 adminUser={adminUser}
+              />
+            ) : viewMode === 'membership' ? (
+              <MembershipManagement
+                isDark={isDark}
+                themeClasses={themeClasses}
+                primaryColor={primaryColor}
               />
             ) : viewMode === 'settings' ? (
               <SettingsModal 

@@ -15,7 +15,8 @@ import {
   FileText,
   BookOpen,
   Settings2,
-  ShieldCheck
+  ShieldCheck,
+  UserPlus
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -158,6 +159,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div className="flex items-center gap-2.5">
                   <Package className="w-4 h-4" />
                   <span>Manajemen Aset</span>
+                </div>
+              </button>
+              
+              <button
+                onClick={() => setViewMode('membership')}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all text-xs font-bold ${
+                  viewMode === 'membership' 
+                    ? 'bg-emerald-500/10 text-emerald-600' 
+                    : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <UserPlus className="w-4 h-4" />
+                  <span>Membership</span>
                 </div>
               </button>
               

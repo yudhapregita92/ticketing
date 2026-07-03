@@ -114,10 +114,22 @@ export function initDb() {
       last_checked DATETIME,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS memberships (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      kode_lokal TEXT,
+      indek_kdk TEXT,
+      indek_ggf TEXT,
+      nama TEXT NOT NULL,
+      bagian TEXT,
+      barcode TEXT,
+      foto TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // Add missing columns if they don't exist
-  const tables = ['tickets', 'users', 'categories', 'master_users', 'ticket_logs'];
+  const tables = ['tickets', 'users', 'categories', 'master_users', 'ticket_logs', 'memberships'];
   for (const table of tables) {
     const columns = db.prepare(`PRAGMA table_info(${table})`).all() as any[];
     
