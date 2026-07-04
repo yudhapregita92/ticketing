@@ -40,7 +40,13 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
   });
 
   const [printMember, setPrintMember] = useState<IMembership | null>(null);
-  const [templateBg, setTemplateBg] = useState<string>("url('/template-id-card.png')");
+  const [templateBg, setTemplateBg] = useState<string>(() => {
+    try {
+      return localStorage.getItem('membershipTemplateBg') || "url('/template-id-card.png')";
+    } catch {
+      return "url('/template-id-card.png')";
+    }
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const defaultLayout = {
@@ -53,7 +59,27 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
     deptX: 27.1, deptY: 47, deptScale: 2,
     useIndividualLayout: true
   };
-  const [layout, setLayout] = useState(defaultLayout);
+  const [layout, setLayout] = useState(() => {
+    try {
+      const saved = localStorage.getItem('membershipLayout');
+      if (saved) {
+        return { ...defaultLayout, ...JSON.parse(saved) };
+      }
+    } catch {}
+    return defaultLayout;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('membershipTemplateBg', templateBg);
+    } catch {}
+  }, [templateBg]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('membershipLayout', JSON.stringify(layout));
+    } catch {}
+  }, [layout]);
 
   // States and Helpers for EAN-8 Barcode Generation
   const [showGeneratorPanel, setShowGeneratorPanel] = useState(false);
@@ -529,49 +555,49 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto pb-4">
+          <table className="w-full text-left text-sm whitespace-nowrap min-w-[800px]">
             <thead className={`border-b ${themeClasses.border}`}>
               <tr>
-                <th className={`pb-3 font-semibold ${themeClasses.textMuted}`}>Foto</th>
-                <th className={`pb-3 font-semibold ${themeClasses.textMuted}`}>Nama</th>
-                <th className={`pb-3 font-semibold ${themeClasses.textMuted}`}>Kode/Indek</th>
-                <th className={`pb-3 font-semibold ${themeClasses.textMuted}`}>Bagian</th>
-                <th className={`pb-3 font-semibold ${themeClasses.textMuted}`}>Barcode</th>
-                <th className={`pb-3 font-semibold ${themeClasses.textMuted} text-right`}>Aksi</th>
+                <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Foto</th>
+                <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Nama</th>
+                <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Kode/Indek</th>
+                <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Bagian</th>
+                <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Barcode</th>
+                <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted} text-right`}>Aksi</th>
               </tr>
             </thead>
             <tbody className={`divide-y ${themeClasses.border}`}>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-4 text-center">Loading...</td>
+                  <td colSpan={6} className="py-4 px-4 text-center">Loading...</td>
                 </tr>
               ) : filteredMemberships.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className={`py-8 text-center ${themeClasses.textMuted}`}>
+                  <td colSpan={6} className={`py-8 px-4 text-center ${themeClasses.textMuted}`}>
                     Data tidak ditemukan
                   </td>
                 </tr>
               ) : filteredMemberships.map(member => (
                 <tr key={member.id} className={`hover:${themeClasses.bgSecondary} transition-colors`}>
-                  <td className="py-3">
+                  <td className="py-3 px-4">
                     {member.foto ? (
-                      <img src={member.foto} alt={member.nama} className="w-10 h-10 rounded-full object-cover border" />
+                      <img src={member.foto} alt={member.nama} className="w-10 h-10 rounded-full object-cover border min-w-[40px]" />
                     ) : (
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${themeClasses.bgSecondary}`}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center min-w-[40px] ${themeClasses.bgSecondary}`}>
                         <ImageIcon className={`w-5 h-5 ${themeClasses.textMuted}`} />
                       </div>
                     )}
                   </td>
-                  <td className="py-3 font-medium">{member.nama}</td>
-                  <td className="py-3">
+                  <td className="py-3 px-4 font-medium">{member.nama}</td>
+                  <td className="py-3 px-4">
                     <div className="text-xs">Lokal: {member.kode_lokal || '-'}</div>
                     <div className="text-xs">KDK: {member.indek_kdk || '-'}</div>
                     <div className="text-xs">GGF: {member.indek_ggf || '-'}</div>
                   </td>
-                  <td className="py-3">{member.bagian || '-'}</td>
-                  <td className="py-3 font-mono text-xs">{member.barcode || '-'}</td>
-                  <td className="py-3 text-right">
+                  <td className="py-3 px-4">{member.bagian || '-'}</td>
+                  <td className="py-3 px-4 font-mono text-xs">{member.barcode || '-'}</td>
+                  <td className="py-3 px-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button 
                         onClick={() => setPrintMember(member)}
@@ -993,7 +1019,7 @@ const PrintCardModal = ({ member, onClose, isDark, themeClasses, templateBg, lay
                   width: ${localLayoutMerged.useIndividualLayout ? `${localLayoutMerged.infoW}mm` : 'auto'};
                   font-size: ${localLayoutMerged.useIndividualLayout ? `${localLayoutMerged.localScale}mm` : `${localLayoutMerged.fontIndex}mm`};
                   font-weight: 700;
-                  color: #4b5563;
+                  color: #1e3a8a;
                   margin: ${localLayoutMerged.useIndividualLayout ? '0' : '0.5mm 0'};
                   display: flex;
                   justify-content: center;
@@ -1020,7 +1046,7 @@ const PrintCardModal = ({ member, onClose, isDark, themeClasses, templateBg, lay
                   width: ${localLayoutMerged.useIndividualLayout ? `${localLayoutMerged.infoW}mm` : 'auto'};
                   font-size: ${localLayoutMerged.useIndividualLayout ? `${localLayoutMerged.deptScale}mm` : `${localLayoutMerged.fontDept}mm`};
                   font-weight: 700;
-                  color: #6b7280;
+                  color: #1e3a8a;
                   margin: 0;
                   text-transform: uppercase;
                   text-align: center;
@@ -1067,7 +1093,7 @@ const PrintCardModal = ({ member, onClose, isDark, themeClasses, templateBg, lay
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className={`relative ${themeClasses.card} rounded-xl shadow-xl overflow-hidden flex flex-col w-full max-w-4xl`}
+        className={`relative ${themeClasses.card} rounded-xl shadow-xl overflow-hidden flex flex-col w-full max-w-4xl max-h-[95vh]`}
       >
         <div className={`p-4 border-b ${themeClasses.border} flex items-center justify-between`}>
           <div className="flex items-center gap-4">
@@ -1089,8 +1115,8 @@ const PrintCardModal = ({ member, onClose, isDark, themeClasses, templateBg, lay
           </button>
         </div>
 
-        <div className="flex flex-col md:flex-row">
-          <div className="p-8 flex justify-center bg-gray-100 overflow-auto flex-1">
+        <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
+          <div className="p-8 flex justify-center bg-gray-100 overflow-auto flex-1 h-full min-h-[300px]">
             {/* Virtual Card View matching print dimensions roughly */}
             <div 
               ref={printRef}
@@ -1149,14 +1175,14 @@ const PrintCardModal = ({ member, onClose, isDark, themeClasses, templateBg, lay
                   
                   {/* Kode Lokal */}
                   <div className="info-index" style={{ position: 'absolute', top: `${localLayoutMerged.localY}mm`, left: `${localLayoutMerged.localX}mm`, width: `${localLayoutMerged.infoW}mm`, display: 'flex', justifyContent: 'center', alignItems: 'center', margin: 0 }}>
-                    <p style={{ fontSize: `${localLayoutMerged.localScale}mm`, fontWeight: 700, color: '#4b5563', margin: 0, textTransform: 'uppercase', textAlign: 'center', width: '100%' }}>
+                    <p style={{ fontSize: `${localLayoutMerged.localScale}mm`, fontWeight: 700, color: '#1e3a8a', margin: 0, textTransform: 'uppercase', textAlign: 'center', width: '100%' }}>
                       {member.indek_kdk || member.indek_ggf || member.kode_lokal || '-'}
                     </p>
                   </div>
 
                   {/* Bagian (Dept) */}
                   <div className="info-dept" style={{ position: 'absolute', top: `${localLayoutMerged.deptY}mm`, left: `${localLayoutMerged.deptX}mm`, width: `${localLayoutMerged.infoW}mm`, display: 'flex', justifyContent: 'center', alignItems: 'center', margin: 0 }}>
-                    <p style={{ fontSize: `${localLayoutMerged.deptScale}mm`, fontWeight: 700, color: '#6b7280', margin: 0, textTransform: 'uppercase', textAlign: 'center', width: '100%' }}>
+                    <p style={{ fontSize: `${localLayoutMerged.deptScale}mm`, fontWeight: 700, color: '#1e3a8a', margin: 0, textTransform: 'uppercase', textAlign: 'center', width: '100%' }}>
                       {member.bagian}
                     </p>
                   </div>
@@ -1164,17 +1190,17 @@ const PrintCardModal = ({ member, onClose, isDark, themeClasses, templateBg, lay
               ) : (
                 <div className="info-block" style={{ position: 'absolute', top: `${localLayoutMerged.infoY}mm`, left: `${localLayoutMerged.infoX}mm`, width: `${localLayoutMerged.infoW}mm`, textAlign: 'center' }}>
                   <p className="info-name" style={{ fontSize: `${localLayoutMerged.fontName || 3.2}mm`, fontWeight: 800, color: '#1e3a8a', margin: 0, textTransform: 'uppercase' }}>{member.nama}</p>
-                  <p className="info-index" style={{ fontSize: `${localLayoutMerged.fontIndex || 2.5}mm`, fontWeight: 700, color: '#4b5563', margin: '0.5mm 0', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1mm' }}>
+                  <p className="info-index" style={{ fontSize: `${localLayoutMerged.fontIndex || 2.5}mm`, fontWeight: 700, color: '#1e3a8a', margin: '0.5mm 0', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1mm' }}>
                     {member.indek_kdk || member.indek_ggf || member.kode_lokal || '-'}
                   </p>
-                  <p className="info-dept" style={{ fontSize: `${localLayoutMerged.fontDept || 2}mm`, fontWeight: 700, color: '#6b7280', margin: 0, textTransform: 'uppercase' }}>{member.bagian}</p>
+                  <p className="info-dept" style={{ fontSize: `${localLayoutMerged.fontDept || 2}mm`, fontWeight: 700, color: '#1e3a8a', margin: 0, textTransform: 'uppercase' }}>{member.bagian}</p>
                 </div>
               )}
             </div>
           </div>
 
           {isEditMode && (
-            <div className={`w-full md:w-80 p-4 border-l ${themeClasses.border} overflow-y-auto max-h-[60vh] space-y-4 bg-slate-50/50 dark:bg-slate-900/30`}>
+            <div className={`w-full md:w-80 p-4 border-t md:border-t-0 md:border-l ${themeClasses.border} overflow-y-auto space-y-4 bg-slate-50/50 dark:bg-slate-900/30`}>
               <div className="flex items-center justify-between pb-2 border-b">
                 <span className="text-xs font-bold uppercase text-slate-400">Pengaturan Posisi</span>
                 <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold">
@@ -1476,32 +1502,210 @@ const PrintCardModal = ({ member, onClose, isDark, themeClasses, templateBg, lay
                 </div>
               </div>
 
-              {/* PHOTO CONTROLLER (Originally configured) */}
+              {/* PHOTO CONTROLLER */}
               <div className="p-3 bg-white dark:bg-slate-800 rounded-xl border shadow-sm space-y-3">
                 <div className="flex items-center gap-2 border-b pb-1">
                   <div className="w-1.5 h-3 bg-indigo-500 rounded-full" />
-                  <span className="font-black text-xs text-indigo-500 uppercase tracking-wider font-bold">Foto</span>
+                  <span className="font-black text-xs text-indigo-500 uppercase tracking-wider">Foto</span>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <label className="block mb-1 opacity-70">X (Kiri)</label>
-                    <input type="number" step="0.5" value={localLayoutMerged.photoX} onChange={e => setLocalLayout({...localLayout, photoX: Number(e.target.value)})} className={`w-full px-2 py-1 rounded border ${themeClasses.input}`} />
+                
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="opacity-70">Posisi X:</span>
+                    <div className="flex items-center gap-1">
+                      <button 
+                        type="button" 
+                        onClick={() => setLocalLayout(prev => ({...prev, photoX: Math.max(0, Number(((prev.photoX ?? 59.6) - 0.5).toFixed(2)))}))}
+                        className="w-6 h-6 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded flex items-center justify-center font-bold active:scale-95 transition-all"
+                      >
+                        -
+                      </button>
+                      <input 
+                        type="number" 
+                        step="0.5" 
+                        value={localLayoutMerged.photoX} 
+                        onChange={e => setLocalLayout({...localLayout, photoX: Number(e.target.value)})}
+                        className={`w-12 py-0.5 text-center rounded border ${themeClasses.input} text-xs font-semibold`} 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setLocalLayout(prev => ({...prev, photoX: Number(((prev.photoX ?? 59.6) + 0.5).toFixed(2))}))}
+                        className="w-6 h-6 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded flex items-center justify-center font-bold active:scale-95 transition-all"
+                      >
+                        +
+                      </button>
+                      <span className="text-[10px] text-slate-400 ml-1">mm</span>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block mb-1 opacity-70">Y (Atas)</label>
-                    <input type="number" step="0.5" value={localLayoutMerged.photoY} onChange={e => setLocalLayout({...localLayout, photoY: Number(e.target.value)})} className={`w-full px-2 py-1 rounded border ${themeClasses.input}`} />
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="opacity-70">Posisi Y:</span>
+                    <div className="flex items-center gap-1">
+                      <button 
+                        type="button" 
+                        onClick={() => setLocalLayout(prev => ({...prev, photoY: Math.max(0, Number(((prev.photoY ?? 15) - 0.5).toFixed(2)))}))}
+                        className="w-6 h-6 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded flex items-center justify-center font-bold active:scale-95 transition-all"
+                      >
+                        -
+                      </button>
+                      <input 
+                        type="number" 
+                        step="0.5" 
+                        value={localLayoutMerged.photoY} 
+                        onChange={e => setLocalLayout({...localLayout, photoY: Number(e.target.value)})}
+                        className={`w-12 py-0.5 text-center rounded border ${themeClasses.input} text-xs font-semibold`} 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setLocalLayout(prev => ({...prev, photoY: Number(((prev.photoY ?? 15) + 0.5).toFixed(2))}))}
+                        className="w-6 h-6 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded flex items-center justify-center font-bold active:scale-95 transition-all"
+                      >
+                        +
+                      </button>
+                      <span className="text-[10px] text-slate-400 ml-1">mm</span>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block mb-1 opacity-70">Lebar</label>
-                    <input type="number" step="0.5" value={localLayoutMerged.photoW} onChange={e => setLocalLayout({...localLayout, photoW: Number(e.target.value)})} className={`w-full px-2 py-1 rounded border ${themeClasses.input}`} />
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="opacity-70">Lebar:</span>
+                    <div className="flex items-center gap-1">
+                      <button 
+                        type="button" 
+                        onClick={() => setLocalLayout(prev => ({...prev, photoW: Math.max(0.5, Number(((prev.photoW ?? 20) - 0.5).toFixed(2)))}))}
+                        className="w-6 h-6 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded flex items-center justify-center font-bold active:scale-95 transition-all"
+                      >
+                        -
+                      </button>
+                      <input 
+                        type="number" 
+                        step="0.5" 
+                        value={localLayoutMerged.photoW} 
+                        onChange={e => setLocalLayout({...localLayout, photoW: Number(e.target.value)})}
+                        className={`w-12 py-0.5 text-center rounded border ${themeClasses.input} text-xs font-semibold`} 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setLocalLayout(prev => ({...prev, photoW: Number(((prev.photoW ?? 20) + 0.5).toFixed(2))}))}
+                        className="w-6 h-6 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded flex items-center justify-center font-bold active:scale-95 transition-all"
+                      >
+                        +
+                      </button>
+                      <span className="text-[10px] text-slate-400 ml-1">mm</span>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block mb-1 opacity-70">Tinggi</label>
-                    <input type="number" step="0.5" value={localLayoutMerged.photoH} onChange={e => setLocalLayout({...localLayout, photoH: Number(e.target.value)})} className={`w-full px-2 py-1 rounded border ${themeClasses.input}`} />
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="opacity-70">Tinggi:</span>
+                    <div className="flex items-center gap-1">
+                      <button 
+                        type="button" 
+                        onClick={() => setLocalLayout(prev => ({...prev, photoH: Math.max(0.5, Number(((prev.photoH ?? 25) - 0.5).toFixed(2)))}))}
+                        className="w-6 h-6 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded flex items-center justify-center font-bold active:scale-95 transition-all"
+                      >
+                        -
+                      </button>
+                      <input 
+                        type="number" 
+                        step="0.5" 
+                        value={localLayoutMerged.photoH} 
+                        onChange={e => setLocalLayout({...localLayout, photoH: Number(e.target.value)})}
+                        className={`w-12 py-0.5 text-center rounded border ${themeClasses.input} text-xs font-semibold`} 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setLocalLayout(prev => ({...prev, photoH: Number(((prev.photoH ?? 25) + 0.5).toFixed(2))}))}
+                        className="w-6 h-6 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded flex items-center justify-center font-bold active:scale-95 transition-all"
+                      >
+                        +
+                      </button>
+                      <span className="text-[10px] text-slate-400 ml-1">mm</span>
+                    </div>
                   </div>
-                  <div className="col-span-2">
-                    <label className="block mb-1 opacity-70">Zoom/Scale Foto</label>
-                    <input type="number" step="0.1" value={localLayoutMerged.photoScale} onChange={e => setLocalLayout({...localLayout, photoScale: Number(e.target.value)})} className={`w-full px-2 py-1 rounded border ${themeClasses.input}`} />
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="opacity-70 font-semibold text-indigo-500">Zoom Scale:</span>
+                    <div className="flex items-center gap-1">
+                      <button 
+                        type="button" 
+                        onClick={() => setLocalLayout(prev => ({...prev, photoScale: Math.max(0.1, Number(((prev.photoScale ?? 1) - 0.1).toFixed(2)))}))}
+                        className="w-6 h-6 bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 rounded flex items-center justify-center font-bold active:scale-95 transition-all"
+                        title="Zoom Out Foto"
+                      >
+                        <ZoomOut className="w-3 h-3" />
+                      </button>
+                      <input 
+                        type="number" 
+                        step="0.1" 
+                        value={localLayoutMerged.photoScale} 
+                        onChange={e => setLocalLayout({...localLayout, photoScale: Number(e.target.value)})}
+                        className={`w-12 py-0.5 text-center rounded border ${themeClasses.input} text-xs font-semibold`} 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setLocalLayout(prev => ({...prev, photoScale: Number(((prev.photoScale ?? 1) + 0.1).toFixed(2))}))}
+                        className="w-6 h-6 bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 rounded flex items-center justify-center font-bold active:scale-95 transition-all"
+                        title="Zoom In Foto"
+                      >
+                        <ZoomIn className="w-3 h-3" />
+                      </button>
+                      <span className="text-[10px] text-slate-400 ml-1">x</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="opacity-70 font-semibold text-indigo-500">Geser X (%):</span>
+                    <div className="flex items-center gap-1">
+                      <button 
+                        type="button" 
+                        onClick={() => setLocalLayout(prev => ({...prev, photoOffsetX: Number(((prev.photoOffsetX ?? 50) - 1).toFixed(0))}))}
+                        className="w-6 h-6 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded flex items-center justify-center font-bold active:scale-95 transition-all"
+                      >
+                        -
+                      </button>
+                      <input 
+                        type="number" 
+                        step="1" 
+                        value={localLayoutMerged.photoOffsetX} 
+                        onChange={e => setLocalLayout({...localLayout, photoOffsetX: Number(e.target.value)})}
+                        className={`w-12 py-0.5 text-center rounded border ${themeClasses.input} text-xs font-semibold`} 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setLocalLayout(prev => ({...prev, photoOffsetX: Number(((prev.photoOffsetX ?? 50) + 1).toFixed(0))}))}
+                        className="w-6 h-6 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded flex items-center justify-center font-bold active:scale-95 transition-all"
+                      >
+                        +
+                      </button>
+                      <span className="text-[10px] text-slate-400 ml-1">%</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="opacity-70 font-semibold text-indigo-500">Geser Y (%):</span>
+                    <div className="flex items-center gap-1">
+                      <button 
+                        type="button" 
+                        onClick={() => setLocalLayout(prev => ({...prev, photoOffsetY: Number(((prev.photoOffsetY ?? 50) - 1).toFixed(0))}))}
+                        className="w-6 h-6 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded flex items-center justify-center font-bold active:scale-95 transition-all"
+                      >
+                        -
+                      </button>
+                      <input 
+                        type="number" 
+                        step="1" 
+                        value={localLayoutMerged.photoOffsetY} 
+                        onChange={e => setLocalLayout({...localLayout, photoOffsetY: Number(e.target.value)})}
+                        className={`w-12 py-0.5 text-center rounded border ${themeClasses.input} text-xs font-semibold`} 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setLocalLayout(prev => ({...prev, photoOffsetY: Number(((prev.photoOffsetY ?? 50) + 1).toFixed(0))}))}
+                        className="w-6 h-6 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded flex items-center justify-center font-bold active:scale-95 transition-all"
+                      >
+                        +
+                      </button>
+                      <span className="text-[10px] text-slate-400 ml-1">%</span>
+                    </div>
                   </div>
                 </div>
               </div>
