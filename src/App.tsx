@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Toaster, toast } from 'react-hot-toast';
@@ -246,9 +247,42 @@ export default function App() {
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [gpsError, setGpsError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    return safeGetItem('adminUser') ? 'dashboard' : 'today';
-  });
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const getViewModeFromPath = (path: string, hasAdmin: boolean): ViewMode => {
+    const p = path.replace(/^\//, '');
+    let view = p === '' ? (hasAdmin ? 'dashboard' : 'today') : p;
+
+    // Admin only routes fallback
+    if (!hasAdmin && ['dashboard', 'assets', 'network', 'membership'].includes(view)) {
+      view = 'today';
+    }
+
+    if (['today', 'all', 'my_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership'].includes(view)) {
+      return view as ViewMode;
+    }
+    return hasAdmin ? 'dashboard' : 'today';
+  };
+
+  const viewMode = getViewModeFromPath(location.pathname, !!adminUser);
+
+  const setViewMode = (mode: ViewMode) => {
+    if (mode === (adminUser ? 'dashboard' : 'today')) {
+      navigate('/');
+    } else {
+      navigate(`/${mode}`);
+    }
+  };
+
+  useEffect(() => {
+    const expectedPath = viewMode === (adminUser ? 'dashboard' : 'today') ? '/' : `/${viewMode}`;
+    if (location.pathname !== expectedPath) {
+      navigate(expectedPath, { replace: true });
+    }
+  }, [viewMode, adminUser, location.pathname, navigate]);
+
   const [userIdentifier, setUserIdentifier] = useState<string>(() => {
     return safeGetItem('userIdentifier') || '';
   });
