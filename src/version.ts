@@ -1,5 +1,5 @@
-export const APP_VERSION = "1.8.0";
-export const BUILD_DATE = "2026-03-24";
+export const APP_VERSION = "1.8.1";
+export const BUILD_DATE = "2026-07-04";
 
 // Deteksi apakah berjalan di Staging atau Production
 export const getEnvironment = () => {
@@ -18,6 +18,15 @@ export interface VersionUpdate {
 }
 
 export const UPDATE_HISTORY: VersionUpdate[] = [
+  {
+    version: "1.8.1",
+    date: "2026-07-04",
+    changes: [
+      "Penyimpanan riwayat update (log update) data member dengan keterangan perubahan",
+      "Tampilan tanggal update terakhir di dalam daftar list member",
+      "Modal detail riwayat perubahan untuk melacak log perubahan setiap member"
+    ]
+  },
   {
     version: "1.8.0",
     date: "2026-03-24",
