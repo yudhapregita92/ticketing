@@ -211,6 +211,7 @@ export const api = {
   deleteMembership: (id: number) => fetch(`/api/memberships/${id}`, {
     method: 'DELETE'
   }).then(handleResponse),
+  getMembershipLogs: (id: number): Promise<any[]> => fetch(`/api/memberships/${id}/logs`).then(handleResponse),
   uploadMemberships: (file: File) => {
     const formData = new FormData();
     formData.append('file', file);

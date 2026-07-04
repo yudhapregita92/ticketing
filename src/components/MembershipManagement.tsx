@@ -6,7 +6,7 @@ import {
   Plus, Search, Edit2, Trash2, Printer, 
   X, Image as ImageIcon, CreditCard, UploadCloud,
   Sparkles, ChevronDown, ChevronUp, RefreshCw, Copy, Check, Barcode as BarcodeIcon,
-  ZoomIn, ZoomOut, Download, Upload
+  ZoomIn, ZoomOut, Download, Upload, History
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Barcode from 'react-barcode';
@@ -32,7 +32,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   
-  const [formData, setFormData] = useState<Partial<IMembership>>({
+  const [formData, setFormData] = useState<Partial<IMembership> & { keterangan_update?: string }>({
     kode_lokal: '',
     indek_kdk: '',
     indek_ggf: '',
@@ -41,10 +41,12 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
     barcode: '',
     foto: '',
     nik_ktp: '',
-    no_hp: ''
+    no_hp: '',
+    keterangan_update: ''
   });
 
   const [printMember, setPrintMember] = useState<IMembership | null>(null);
+  const [showLogsFor, setShowLogsFor] = useState<IMembership | null>(null);
   const [templateBg, setTemplateBg] = useState<string>(() => {
     try {
       return localStorage.getItem('membershipTemplateBg') || "url('/template-id-card.png')";
@@ -215,7 +217,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
 
   const handleOpenForm = (member?: IMembership, prefill?: Partial<IMembership>) => {
     if (member) {
-      setFormData(member);
+      setFormData({ ...member, keterangan_update: '' });
       setEditingId(member.id);
     } else {
       setFormData({
@@ -227,7 +229,8 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
         barcode: prefill?.barcode || '',
         foto: '',
         nik_ktp: '',
-        no_hp: ''
+        no_hp: '',
+        keterangan_update: ''
       });
       setEditingId(null);
     }
@@ -675,6 +678,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Kode Lokal</th>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Bagian</th>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Barcode</th>
+                <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Update Terakhir</th>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted} text-right`}>Aksi</th>
               </tr>
             </thead>
@@ -704,8 +708,18 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                   <td className="py-3 px-4">{member.kode_lokal || '-'}</td>
                   <td className="py-3 px-4">{member.bagian || '-'}</td>
                   <td className="py-3 px-4 font-mono text-xs">{member.barcode || '-'}</td>
+                  <td className="py-3 px-4 text-xs">
+                    {member.updated_at ? new Date(member.updated_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : new Date(member.created_at || new Date()).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </td>
                   <td className="py-3 px-4 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <button 
+                        onClick={() => setShowLogsFor(member)}
+                        title="Lihat Riwayat Update"
+                        className="p-1.5 bg-emerald-500/10 text-emerald-600 rounded hover:bg-emerald-500/20 transition-colors"
+                      >
+                        <History className="w-4 h-4" />
+                      </button>
                       <button 
                         onClick={() => setPrintMember(member)}
                         title="Cetak Kartu"
@@ -965,6 +979,18 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                   </div>
                 </div>
 
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <label className="block text-xs font-semibold mb-1 text-emerald-600 dark:text-emerald-400">Keterangan Update (Riwayat)</label>
+                  <input 
+                    type="text" 
+                    value={formData.keterangan_update || ''}
+                    onChange={e => setFormData({ ...formData, keterangan_update: e.target.value })}
+                    className={`w-full px-3 py-2 rounded-lg text-sm border focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
+                    placeholder="Contoh: Update foto, perbaikan nama, member baru, dll..."
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">Isi keterangan ini untuk menyimpan riwayat perubahan data member.</p>
+                </div>
+
                 <div className="pt-4 flex justify-end gap-2">
                   <button
                     type="button"
@@ -1000,7 +1026,115 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
           />
         )}
       </AnimatePresence>
+      
+      {/* MODAL LOGS */}
+      <AnimatePresence>
+        {showLogsFor && (
+          <MembershipLogsModal
+            member={showLogsFor}
+            onClose={() => setShowLogsFor(null)}
+            themeClasses={themeClasses}
+          />
+        )}
+      </AnimatePresence>
     </div>
+  );
+};
+
+const MembershipLogsModal = ({ member, onClose, themeClasses }: { member: IMembership, onClose: () => void, themeClasses: any }) => {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        const data = await api.getMembershipLogs(member.id);
+        setLogs(data);
+      } catch (err) {
+        toast.error('Gagal memuat riwayat');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLogs();
+  }, [member.id]);
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+    >
+      <motion.div 
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className={`w-full max-w-lg ${themeClasses.card} rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]`}
+      >
+        <div className={`p-4 border-b flex justify-between items-center ${themeClasses.border}`}>
+          <div>
+            <h3 className="font-bold text-lg">Riwayat Update Member</h3>
+            <p className={`text-xs ${themeClasses.textMuted}`}>{member.nama} ({member.barcode || '-'})</p>
+          </div>
+          <button onClick={onClose} className={`p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors`}>
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-4 overflow-y-auto flex-1 bg-slate-50 dark:bg-slate-900/50">
+          {loading ? (
+            <div className="flex justify-center p-8">
+              <RefreshCw className="w-6 h-6 animate-spin text-emerald-500" />
+            </div>
+          ) : logs.length === 0 ? (
+            <div className={`text-center p-8 ${themeClasses.textMuted}`}>
+              Belum ada riwayat update.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {logs.map(log => (
+                <div key={log.id} className={`p-3 rounded-xl border ${themeClasses.card} ${themeClasses.border} relative shadow-sm`}>
+                  <div className="flex gap-3">
+                    <div className="mt-1">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20"></div>
+                    </div>
+                    <div>
+                      <p className={`text-sm font-medium ${themeClasses.text}`}>
+                        {log.keterangan || 'Update data member'}
+                      </p>
+                      <p className={`text-xs mt-1 opacity-70 ${themeClasses.textMuted}`}>
+                        {new Date(log.created_at).toLocaleString('id-ID', {
+                          day: 'numeric', month: 'long', year: 'numeric',
+                          hour: '2-digit', minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div className={`p-3 rounded-xl border ${themeClasses.card} ${themeClasses.border} relative shadow-sm`}>
+                <div className="flex gap-3">
+                  <div className="mt-1">
+                    <div className="w-2 h-2 rounded-full bg-indigo-500 ring-4 ring-indigo-500/20"></div>
+                  </div>
+                  <div>
+                    <p className={`text-sm font-medium ${themeClasses.text}`}>
+                      Member didaftarkan
+                    </p>
+                    <p className={`text-xs mt-1 opacity-70 ${themeClasses.textMuted}`}>
+                      {new Date(member.created_at || new Date()).toLocaleString('id-ID', {
+                        day: 'numeric', month: 'long', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
   );
 };
 

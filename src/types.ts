@@ -103,6 +103,13 @@ export interface IAsset {
   notes?: string;
   assigned_to?: string;
 }
+export interface IMembershipLog {
+  id: number;
+  membership_id: number;
+  keterangan: string;
+  created_at: string;
+}
+
 export interface IMembership {
   id: number;
   kode_lokal: string;
@@ -114,6 +121,8 @@ export interface IMembership {
   foto?: string | null;
   nik_ktp?: string | null;
   no_hp?: string | null;
+  updated_at?: string;
+  created_at?: string;
 }
 
 export const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];

@@ -126,12 +126,23 @@ export function initDb() {
       foto TEXT,
       nik_ktp TEXT,
       no_hp TEXT,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS membership_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      membership_id INTEGER NOT NULL,
+      keterangan TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (membership_id) REFERENCES memberships(id) ON DELETE CASCADE
+    );
+  `);
+
   // Add missing columns if they don't exist
-  const tables = ['tickets', 'users', 'categories', 'master_users', 'ticket_logs', 'memberships'];
+  const tables = ['tickets', 'users', 'categories', 'master_users', 'ticket_logs', 'memberships', 'membership_logs'];
   for (const table of tables) {
     const columns = db.prepare(`PRAGMA table_info(${table})`).all() as any[];
     
@@ -141,6 +152,9 @@ export function initDb() {
       }
       if (!columns.find(c => c.name === 'no_hp')) {
         db.prepare("ALTER TABLE memberships ADD COLUMN no_hp TEXT").run();
+      }
+      if (!columns.find(c => c.name === 'updated_at')) {
+        db.prepare("ALTER TABLE memberships ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP").run();
       }
     }
     

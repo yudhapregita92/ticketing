@@ -15,14 +15,29 @@ router.get("/", (req, res) => {
   }
 });
 
+router.get("/:id/logs", (req, res) => {
+  try {
+    const logs = db.prepare("SELECT * FROM membership_logs WHERE membership_id = ? ORDER BY created_at DESC").all(req.params.id);
+    res.json(logs);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.post("/", (req, res) => {
-  const { kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, foto, nik_ktp, no_hp } = req.body;
+  const { kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, foto, nik_ktp, no_hp, keterangan_update } = req.body;
   try {
     const info = db.prepare(
       "INSERT INTO memberships (kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, foto, nik_ktp, no_hp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
     ).run(kode_lokal || null, indek_kdk || null, indek_ggf || null, nama, bagian || null, barcode || null, foto || null, nik_ktp || null, no_hp || null);
     
-    const newMembership = db.prepare("SELECT * FROM memberships WHERE id = ?").get(info.lastInsertRowid);
+    const newId = info.lastInsertRowid;
+    
+    if (keterangan_update) {
+      db.prepare("INSERT INTO membership_logs (membership_id, keterangan) VALUES (?, ?)").run(newId, keterangan_update);
+    }
+    
+    const newMembership = db.prepare("SELECT * FROM memberships WHERE id = ?").get(newId);
     res.json({ success: true, data: newMembership });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -31,11 +46,15 @@ router.post("/", (req, res) => {
 
 router.put("/:id", (req, res) => {
   const { id } = req.params;
-  const { kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, foto, nik_ktp, no_hp } = req.body;
+  const { kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, foto, nik_ktp, no_hp, keterangan_update } = req.body;
   try {
     db.prepare(
-      "UPDATE memberships SET kode_lokal = ?, indek_kdk = ?, indek_ggf = ?, nama = ?, bagian = ?, barcode = ?, foto = ?, nik_ktp = ?, no_hp = ? WHERE id = ?"
+      "UPDATE memberships SET kode_lokal = ?, indek_kdk = ?, indek_ggf = ?, nama = ?, bagian = ?, barcode = ?, foto = ?, nik_ktp = ?, no_hp = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
     ).run(kode_lokal || null, indek_kdk || null, indek_ggf || null, nama, bagian || null, barcode || null, foto || null, nik_ktp || null, no_hp || null, id);
+    
+    if (keterangan_update) {
+      db.prepare("INSERT INTO membership_logs (membership_id, keterangan) VALUES (?, ?)").run(id, keterangan_update);
+    }
     
     const updated = db.prepare("SELECT * FROM memberships WHERE id = ?").get(id);
     res.json({ success: true, data: updated });

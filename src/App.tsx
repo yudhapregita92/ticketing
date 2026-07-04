@@ -1100,6 +1100,9 @@ export default function App() {
           onLogin={handleUserLogin}
           onAdminLoginClick={() => setShowLogin(true)}
           appSettings={appSettings}
+          loginData={loginData}
+          setLoginData={setLoginData}
+          handleAdminLogin={handleLogin}
         />
         <AnimatePresence>
           {showLogin && (
