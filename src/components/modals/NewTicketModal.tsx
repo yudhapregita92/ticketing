@@ -49,6 +49,7 @@ interface NewTicketModalProps {
   isSubmitting: boolean;
   primaryColor: string;
   masterUsers: {id: number, full_name: string, department: string, phone: string, employee_index?: string, jenis_piranti?: string, kode_piranti?: string}[];
+  currentUser?: any;
 }
 
 export const NewTicketModal = React.memo(({
@@ -64,7 +65,8 @@ export const NewTicketModal = React.memo(({
   handleSubmit,
   isSubmitting,
   primaryColor,
-  masterUsers
+  masterUsers,
+  currentUser
 }: NewTicketModalProps) => {
   const [showUserDropdown, setShowUserDropdown] = React.useState(false);
   const [deviceSelected, setDeviceSelected] = React.useState<string | null>(newTicket.device_type || null);
@@ -377,13 +379,15 @@ export const NewTicketModal = React.memo(({
 
   const onFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!correctIndex) {
-      alert('Silakan cari dan pilih nama Anda dari daftar terlebih dahulu.');
-      return;
-    }
-    if (inputIndex !== correctIndex) {
-      alert('Indek Karyawan yang Anda masukkan salah. Mohon periksa kembali.');
-      return;
+    if (!currentUser) {
+      if (!correctIndex) {
+        alert('Silakan cari dan pilih nama Anda dari daftar terlebih dahulu.');
+        return;
+      }
+      if (inputIndex !== correctIndex) {
+        alert('Indek Karyawan yang Anda masukkan salah. Mohon periksa kembali.');
+        return;
+      }
     }
     if (!newTicket.device_type) {
       alert('Silakan pilih tipe piranti yang Anda gunakan.');
@@ -699,6 +703,19 @@ export const NewTicketModal = React.memo(({
               </button>
             </div>
 
+          {currentUser ? (
+             <div className={`p-3 rounded-xl border ${themeClasses.border} ${themeClasses.bgSecondary}`}>
+               <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center font-bold text-lg border border-indigo-500/20 shadow-sm">
+                   {currentUser.full_name ? currentUser.full_name.charAt(0).toUpperCase() : 'U'}
+                 </div>
+                 <div>
+                   <div className={`text-sm font-bold ${themeClasses.text}`}>{currentUser.full_name}</div>
+                   <div className={`text-[10px] ${themeClasses.textMuted} font-medium`}>{currentUser.department} &bull; {currentUser.employee_index}</div>
+                 </div>
+               </div>
+             </div>
+          ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div className="space-y-0.5 relative" ref={dropdownRef}>
               <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
@@ -744,6 +761,7 @@ export const NewTicketModal = React.memo(({
               />
             </div>
           </div>
+          )}
 
           {deviceSelected === 'pc' && (
             <div className="space-y-0.5">
@@ -818,42 +836,6 @@ export const NewTicketModal = React.memo(({
             />
           </div>
 
-          <div className="space-y-0.5">
-            <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
-              <Camera className="w-2 h-2" /> Lampiran Foto Selfie (Opsional)
-            </label>
-            <div className="flex items-center gap-3">
-              <div className="flex-1 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => startCamera('photo')}
-                  className={`flex-1 flex flex-col items-center justify-center gap-1 px-3 py-2 border-2 border-dashed rounded-2xl transition-all hover:bg-emerald-50/50 group ${isDark ? 'border-slate-700 hover:border-emerald-500' : 'border-slate-200 hover:border-emerald-500'}`}
-                >
-                  <Camera className="w-4 h-4 text-slate-400 group-hover:text-emerald-500 transition-colors" />
-                  <span className={`text-[8px] font-bold group-hover:text-emerald-600 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Ambil via Kamera</span>
-                </button>
-              </div>
-
-              {newTicket.photo && (
-                <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-lg group">
-                  <img 
-                    src={newTicket.photo} 
-                    alt="Preview" 
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                  <button 
-                    type="button"
-                    onClick={() => setNewTicket({...newTicket, photo: null})}
-                    className="absolute inset-0 bg-rose-500/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Trash2 className="w-5 h-5 text-white" />
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
           {deviceSelected === 'smartphone' && (
             <div className={`p-3 rounded-2xl border flex items-center gap-3 ${isDark ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
               <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
@@ -864,55 +846,57 @@ export const NewTicketModal = React.memo(({
             </div>
           )}
 
-          <div className="space-y-0.5">
-            <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
-              <Ticket className="w-2 h-2" /> Indek Karyawan
-            </label>
-            <div className="relative">
-              <input 
-                required
-                type={showIndex ? "text" : "password"}
-                placeholder="Masukkan Indek Karyawan Anda..."
-                className={`w-full px-3 py-1.5 pr-10 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text} ${inputIndex && correctIndex && inputIndex === correctIndex ? 'border-emerald-500 ring-2 ring-emerald-500/20' : inputIndex && correctIndex && inputIndex !== correctIndex ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
-                value={inputIndex}
-                onChange={e => setInputIndex(e.target.value)}
-              />
-              <button
-                type="button"
-                onClick={() => setShowIndex(!showIndex)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-emerald-500 transition-colors"
-              >
-                {showIndex ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-              </button>
-            </div>
-            <div className="min-h-[16px] mt-1 relative">
-                {!correctIndex ? (
-                  <p className="text-[9px] font-bold text-rose-500 capitalize tracking-tight ml-0.5">
-                    * Pilih nama Anda dari daftar di atas terlebih dahulu
-                  </p>
-                ) : !inputIndex ? (
-                  <p className="text-[9px] font-bold text-rose-500 capitalize tracking-tight ml-0.5">
-                    * Masukkan indek karyawan untuk verifikasi
-                  </p>
-                ) : inputIndex === correctIndex ? (
-                  showIndexSuccess ? (
-                    <p className="text-[9px] font-bold text-emerald-500 capitalize tracking-tight ml-0.5 flex items-center gap-1">
-                      <CheckCircle2 className="w-2.5 h-2.5" /> Indek yang Anda ketik sudah benar
+          {!currentUser && (
+            <div className="space-y-0.5">
+              <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
+                <Ticket className="w-2 h-2" /> Indek Karyawan
+              </label>
+              <div className="relative">
+                <input 
+                  required
+                  type={showIndex ? "text" : "password"}
+                  placeholder="Masukkan Indek Karyawan Anda..."
+                  className={`w-full px-3 py-1.5 pr-10 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text} ${inputIndex && correctIndex && inputIndex === correctIndex ? 'border-emerald-500 ring-2 ring-emerald-500/20' : inputIndex && correctIndex && inputIndex !== correctIndex ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
+                  value={inputIndex}
+                  onChange={e => setInputIndex(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowIndex(!showIndex)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-emerald-500 transition-colors"
+                >
+                  {showIndex ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+              <div className="min-h-[16px] mt-1 relative">
+                  {!correctIndex ? (
+                    <p className="text-[9px] font-bold text-rose-500 capitalize tracking-tight ml-0.5">
+                      * Pilih nama Anda dari daftar di atas terlebih dahulu
                     </p>
-                  ) : null
-                ) : (
-                  <p className="text-[9px] font-bold text-rose-500 capitalize tracking-tight ml-0.5 animate-pulse">
-                    ⚠ Indek Karyawan tidak sesuai!
-                  </p>
-                )}
+                  ) : !inputIndex ? (
+                    <p className="text-[9px] font-bold text-rose-500 capitalize tracking-tight ml-0.5">
+                      * Masukkan indek karyawan untuk verifikasi
+                    </p>
+                  ) : inputIndex === correctIndex ? (
+                    showIndexSuccess ? (
+                      <p className="text-[9px] font-bold text-emerald-500 capitalize tracking-tight ml-0.5 flex items-center gap-1">
+                        <CheckCircle2 className="w-2.5 h-2.5" /> Indek yang Anda ketik sudah benar
+                      </p>
+                    ) : null
+                  ) : (
+                    <p className="text-[9px] font-bold text-rose-500 capitalize tracking-tight ml-0.5 animate-pulse">
+                      ⚠ Indek Karyawan tidak sesuai!
+                    </p>
+                  )}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="pt-0.5">
             <button 
               type="submit"
-              disabled={isSubmitting || !inputIndex}
-              style={{ backgroundColor: inputIndex ? primaryColor : '#94a3b8' }}
+              disabled={isSubmitting || (!currentUser && !inputIndex) || !newTicket.description?.trim()}
+              style={{ backgroundColor: ((currentUser || inputIndex) && newTicket.description?.trim()) ? primaryColor : '#94a3b8' }}
               className={`w-full py-2 sm:py-2.5 rounded-2xl text-white font-black capitalize tracking-widest text-[10px] sm:text-xs shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:cursor-not-allowed`}
             >
               {isSubmitting ? (

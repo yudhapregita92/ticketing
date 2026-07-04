@@ -37,8 +37,8 @@ interface SettingsModalProps {
   inline?: boolean;
   isDark: boolean;
   themeClasses: any;
-  settingsTab: 'general' | 'branding' | 'notifications' | 'data' | 'system' | 'panduan';
-  setSettingsTab: (tab: 'general' | 'branding' | 'notifications' | 'data' | 'system' | 'panduan') => void;
+  settingsTab: 'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan';
+  setSettingsTab: (tab: 'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan') => void;
   appSettings: any;
   setAppSettings: (settings: any) => void;
   LOGO_OPTIONS: any[];
@@ -609,6 +609,12 @@ export const SettingsModal = React.memo(({
               <Palette className="w-4 h-4" /> Branding
             </button>
             <button 
+              onClick={() => setSettingsTab('login')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'login' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+            >
+              <Key className="w-4 h-4" /> Halaman Login
+            </button>
+            <button 
               onClick={() => setSettingsTab('notifications')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'notifications' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
@@ -910,6 +916,125 @@ export const SettingsModal = React.memo(({
                         </div>
                       </div>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {settingsTab === 'login' && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-black text-emerald-600 capitalize tracking-widest flex items-center gap-2">
+                    <Edit3 className="w-4 h-4" /> Atur Halaman Login
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
+                    Kustomisasi tampilan halaman awal login (pilihan nama & indek user) agar sesuai dengan kebutuhan operasional di lapangan.
+                  </p>
+
+                  {/* Upload Logo Halaman Login */}
+                  <div className="space-y-1.5 pt-2">
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Logo Halaman Login</label>
+                    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
+                      <div className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shadow-sm">
+                        {appSettings.login_logo ? (
+                          <img src={appSettings.login_logo} alt="Login Logo" className="w-full h-full object-cover" />
+                        ) : appSettings.custom_logo ? (
+                          <img src={appSettings.custom_logo} alt="Application Logo" className="w-full h-full object-cover" />
+                        ) : (
+                          <ImageIcon className="w-8 h-8 text-slate-300" />
+                        )}
+                      </div>
+                      <div className="flex-1 text-center sm:text-left">
+                        <p className="text-[10px] font-bold text-slate-500 mb-2">Upload logo khusus untuk halaman login kustom. Jika kosong, logo ini akan menggunakan Logo Aplikasi Utama.</p>
+                        <div className="flex flex-wrap justify-center sm:justify-start gap-2">
+                          <label className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-[10px] font-black capitalize tracking-widest cursor-pointer hover:bg-emerald-700 transition-all flex items-center gap-2">
+                            <Upload className="w-3 h-3" /> Pilih Gambar
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              className="hidden" 
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    setAppSettings({...appSettings, login_logo: reader.result as string});
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }} 
+                            />
+                          </label>
+                          {appSettings.login_logo && (
+                            <button 
+                              type="button"
+                              onClick={() => setAppSettings({...appSettings, login_logo: ''})}
+                              className="px-4 py-2 bg-rose-500/10 text-rose-500 rounded-xl text-[10px] font-black capitalize tracking-widest hover:bg-rose-500 hover:text-white transition-all"
+                            >
+                              Reset Logo Login
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Judul Login */}
+                  <div className="space-y-1.5 pt-2">
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Judul Login</label>
+                    <input 
+                      type="text"
+                      placeholder="Masuk ke Aplikasi"
+                      className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                      value={appSettings.login_title || ''}
+                      onChange={e => setAppSettings({...appSettings, login_title: e.target.value})}
+                    />
+                  </div>
+
+                  {/* Subjudul Login */}
+                  <div className="space-y-1.5 pt-2">
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Subjudul Login</label>
+                    <input 
+                      type="text"
+                      placeholder="Silakan pilih nama dan masukkan indek Anda"
+                      className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                      value={appSettings.login_subtitle || ''}
+                      onChange={e => setAppSettings({...appSettings, login_subtitle: e.target.value})}
+                    />
+                  </div>
+
+                  {/* Edit Nama Kolom (Nama Anda) */}
+                  <div className="space-y-1.5 pt-2">
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Nama Kolom (User)</label>
+                    <input 
+                      type="text"
+                      placeholder="Nama Anda"
+                      className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                      value={appSettings.login_name_label || ''}
+                      onChange={e => setAppSettings({...appSettings, login_name_label: e.target.value})}
+                    />
+                  </div>
+
+                  {/* Edit Nama Kolom Indek */}
+                  <div className="space-y-1.5 pt-2">
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Nama Kolom (Indek)</label>
+                    <input 
+                      type="text"
+                      placeholder="Indek (KDK/GGF)"
+                      className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                      value={appSettings.login_index_label || ''}
+                      onChange={e => setAppSettings({...appSettings, login_index_label: e.target.value})}
+                    />
+                  </div>
+
+                  {/* Edit Placeholder Kolom Indek */}
+                  <div className="space-y-1.5 pt-2">
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Placeholder Kolom (Indek)</label>
+                    <input 
+                      type="text"
+                      placeholder="Masukkan indek Anda..."
+                      className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                      value={appSettings.login_index_placeholder || ''}
+                      onChange={e => setAppSettings({...appSettings, login_index_placeholder: e.target.value})}
+                    />
                   </div>
                 </div>
               )}

@@ -24,7 +24,10 @@ import {
   CheckCircle2, 
   ShieldCheck,
   Clock,
-  AlertCircle
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  Menu
 } from 'lucide-react';
 
 // Import modular components
@@ -36,6 +39,7 @@ import { NewTicketModal } from './components/modals/NewTicketModal';
 import { LoginModal } from './components/modals/LoginModal';
 import { SettingsModal } from './components/modals/SettingsModal';
 import { ConfirmModal } from './components/modals/ConfirmModal';
+import { UserLoginScreen } from './components/UserLoginScreen';
 import { BottomNav } from './components/BottomNav';
 import { TakeoverModal } from './components/modals/TakeoverModal';
 import { SuccessModal } from './components/modals/SuccessModal';
@@ -80,6 +84,13 @@ export default function App() {
 
   // --- State Management ---
   const [adminUser, setAdminUser] = useState<any>(null); // Data login admin
+  const [currentUser, setCurrentUser] = useState<any>(() => {
+    const saved = safeGetItem('currentUser');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return null;
+  }); // Data login user biasa
   const [appSettings, setAppSettings] = useState(() => {
     const saved = safeGetItem('appSettings');
     if (saved) {
@@ -235,7 +246,7 @@ export default function App() {
   const [loginData, setLoginData] = useState({ username: '', password: '' });
   const [showSettings, setShowSettings] = useState(false); // Toggle modal pengaturan aplikasi
   const [showImageManager, setShowImageManager] = useState(false); // Toggle modal manajemen gambar
-  const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'notifications' | 'data' | 'system' | 'panduan'>('general');
+  const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan'>('general');
   const [showResetConfirm, setShowResetConfirm] = useState(false); // Toggle konfirmasi reset data
   const [showTakeoverConfirm, setShowTakeoverConfirm] = useState<{id: number, type: 'takeover' | 'reassign', targetUser?: string} | null>(null);
   const [showDistribution, setShowDistribution] = useState(false); // Toggle distribusi masalah
@@ -247,6 +258,7 @@ export default function App() {
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [gpsError, setGpsError] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -329,13 +341,24 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, [viewMode]);
 
+  React.useEffect(() => {
+    if (currentUser) {
+      setFormData(prev => ({
+        ...prev,
+        name: currentUser.full_name || '',
+        department: currentUser.department || '',
+        phone: currentUser.phone || ''
+      }));
+    }
+  }, [currentUser]);
+
   const clearDraft = () => {
     safeRemoveItem('ticket_draft');
     setFormData({
-      name: '',
-      department: '',
+      name: currentUser ? currentUser.full_name : '',
+      department: currentUser ? currentUser.department : '',
       category: '',
-      phone: '',
+      phone: currentUser ? currentUser.phone : '',
       priority: 'Medium',
       description: '',
       photo: '',
@@ -656,6 +679,11 @@ export default function App() {
     };
   }, []);
 
+  const handleUserLogin = (user: any) => {
+    setCurrentUser(user);
+    safeSetItem('currentUser', JSON.stringify(user));
+  };
+
   /**
    * Menangani proses login admin
    */
@@ -714,6 +742,8 @@ export default function App() {
   const handleLogout = () => {
     setAdminUser(null);
     safeRemoveItem('adminUser');
+    setCurrentUser(null);
+    safeRemoveItem('currentUser');
     setViewMode('today');
   };
 
@@ -1058,6 +1088,37 @@ export default function App() {
     selection: adminUser ? 'selection:bg-violet-500/30' : 'selection:bg-emerald-500/30'
   };
 
+  if (!loading && !adminUser && !currentUser) {
+    return (
+      <div className={`min-h-screen font-sans transition-colors duration-300 ${themeClasses.bg} ${themeClasses.selection}`} style={{ '--primary': primaryColor } as any}>
+        <Toaster position="top-center" reverseOrder={false} />
+        <UserLoginScreen
+          isDark={isDark}
+          themeClasses={themeClasses}
+          primaryColor={primaryColor}
+          masterUsers={masterUsers}
+          onLogin={handleUserLogin}
+          onAdminLoginClick={() => setShowLogin(true)}
+          appSettings={appSettings}
+        />
+        <AnimatePresence>
+          {showLogin && (
+            <LoginModal 
+              showLogin={showLogin}
+              setShowLogin={setShowLogin}
+              isDark={isDark}
+              themeClasses={themeClasses}
+              loginData={loginData}
+              setLoginData={setLoginData}
+              handleLogin={handleLogin}
+              primaryColor={primaryColor}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-screen font-sans transition-colors duration-300 ${themeClasses.bg} ${themeClasses.selection}`} style={{ '--primary': primaryColor } as any}>
       <AnimatePresence mode="wait">
@@ -1128,30 +1189,43 @@ export default function App() {
               toggleTheme={toggleTheme}
             />
 
-      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-2 sm:py-4 pb-20 lg:pb-4">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-6">
+      <main className="w-full max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-6 py-2 sm:py-4 pb-20 lg:pb-4 transition-all duration-300">
+        <div className="flex flex-col lg:flex-row gap-3 lg:gap-6 relative">
+          
+          {/* Desktop Sidebar Toggle Button */}
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className={`hidden lg:flex absolute top-0 z-20 w-8 h-8 bg-white dark:bg-slate-800 border ${isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'} rounded-full items-center justify-center shadow hover:scale-105 transition-all ${isSidebarOpen ? '-left-3' : '-left-1'}`}
+            title={isSidebarOpen ? "Sembunyikan Menu" : "Tampilkan Menu"}
+          >
+            {isSidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          </button>
+
           {/* --- SIDEBAR: STATS & INFO --- */}
-          <div className="hidden lg:block">
-            <Sidebar 
-              isDark={isDark}
-              themeClasses={themeClasses}
-              tickets={tickets}
-              adminUser={adminUser}
-              setShowDistribution={setShowDistribution}
-              primaryColor={primaryColor}
-              filteredTickets={filteredTickets}
-              categoryStats={categoryStats}
-              showDistribution={showDistribution}
-              setShowForm={setShowForm}
-              fetchTickets={fetchTickets}
-              viewMode={viewMode}
-              setViewMode={setViewMode}
-              setShowLogin={setShowLogin}
-            />
+          <div className={`hidden lg:block shrink-0 transition-all duration-300 ease-in-out overflow-hidden ${isSidebarOpen ? 'w-56 xl:w-64 opacity-100' : 'w-0 opacity-0 lg:ml-6'}`}>
+            <div className="w-56 xl:w-64">
+              <Sidebar 
+                isDark={isDark}
+                themeClasses={themeClasses}
+                tickets={tickets}
+                adminUser={adminUser}
+                setShowDistribution={setShowDistribution}
+                primaryColor={primaryColor}
+                filteredTickets={filteredTickets}
+                categoryStats={categoryStats}
+                showDistribution={showDistribution}
+                setShowForm={setShowForm}
+                fetchTickets={fetchTickets}
+                viewMode={viewMode}
+                setViewMode={setViewMode}
+                setShowLogin={setShowLogin}
+                handleLogout={handleLogout}
+              />
+            </div>
           </div>
 
           {/* --- MAIN CONTENT --- */}
-          <div className="lg:col-span-2 space-y-2 sm:space-y-3">
+          <div className="flex-1 min-w-0 space-y-2 sm:space-y-3 transition-all duration-300">
             <MobileAppNav 
               viewMode={viewMode}
               setViewMode={setViewMode}
@@ -1360,6 +1434,7 @@ export default function App() {
             isSubmitting={submitting}
             primaryColor={primaryColor}
             masterUsers={masterUsers}
+            currentUser={currentUser}
           />
         )}
 

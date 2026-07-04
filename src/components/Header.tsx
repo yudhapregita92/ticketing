@@ -225,12 +225,12 @@ export const Header: React.FC<HeaderProps> = ({
             <motion.button 
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => setShowLogin(true)}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black capitalize tracking-wider transition-all shadow-sm border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-700/50"
-              title="Login Admin / IT"
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black capitalize tracking-wider transition-all shadow-sm border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-rose-500 dark:text-rose-400 hover:bg-slate-50 dark:hover:bg-zinc-700/50"
+              title="Keluar"
             >
-              <ShieldCheck className="w-4 h-4 text-emerald-500 animate-pulse" />
-              <span>Login Admin / IT</span>
+              <LogOut className="w-4 h-4 text-rose-500" />
+              <span>Keluar</span>
             </motion.button>
           )}
           </div>

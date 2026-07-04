@@ -192,11 +192,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
         <motion.button 
           whileTap={{ scale: 0.9 }}
-          onClick={() => setShowLogin(true)}
+          onClick={handleLogout}
           className={`flex flex-col items-center justify-center w-1/5 gap-0.5 ${textClass}`}
         >
-          <ShieldCheck className="w-5 h-5 stroke-2" />
-          <span className="text-[9px] font-bold">Login IT</span>
+          <LogOut className="w-5 h-5 stroke-2" />
+          <span className="text-[9px] font-bold">Keluar</span>
         </motion.button>
       </div>
     </div>

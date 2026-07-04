@@ -4,9 +4,9 @@
   "version": "1.2.0",
   "type": "module",
   "scripts": {
-    "start": "node dist/server.cjs",
+    "start": "node server.ts",
     "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
@@ -22,6 +22,7 @@
     "better-sqlite3": "^12.4.1",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
+    "esbuild": "^0.28.1",
     "express": "^4.22.2",
     "framer-motion": "^12.35.2",
     "lucide-react": "^0.546.0",
@@ -38,6 +39,9 @@
     "recharts": "^3.7.0",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
+    "tailwindcss": "^4.3.2",
+    "tsx": "^4.23.0",
+    "typescript": "^6.0.3",
     "vite": "^6.2.0",
     "xlsx": "^0.18.5"
   },
@@ -48,10 +52,6 @@
     "@types/node": "^22.14.0",
     "@types/nodemailer": "^7.0.11",
     "autoprefixer": "^10.4.21",
-    "esbuild": "^0.28.1",
-    "tailwindcss": "^4.1.14",
-    "tsx": "^4.22.4",
-    "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
 }

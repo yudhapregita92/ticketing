@@ -26,7 +26,9 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
   const [memberships, setMemberships] = useState<IMembership[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   
@@ -346,6 +348,17 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
     (m.barcode && m.barcode.toLowerCase().includes(search.toLowerCase())) ||
     (m.bagian && m.bagian.toLowerCase().includes(search.toLowerCase()))
   );
+
+  const paginatedMemberships = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredMemberships.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredMemberships, currentPage]);
+
+  const totalPages = Math.ceil(filteredMemberships.length / itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
 
   return (
     <div className={`space-y-4 ${themeClasses.text}`}>
@@ -676,7 +689,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                     Data tidak ditemukan
                   </td>
                 </tr>
-              ) : filteredMemberships.map(member => (
+              ) : paginatedMemberships.map(member => (
                 <tr key={member.id} className={`hover:${themeClasses.bgSecondary} transition-colors`}>
                   <td className="py-3 px-4">
                     {member.foto ? (
@@ -719,6 +732,69 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
             </tbody>
           </table>
         </div>
+        
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className={`flex items-center justify-between p-4 border-t ${themeClasses.border}`}>
+            <span className={`text-sm ${themeClasses.textMuted}`}>
+              Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredMemberships.length)} dari {filteredMemberships.length} data
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className={`px-3 py-1 rounded text-sm ${
+                  currentPage === 1 
+                    ? `opacity-50 cursor-not-allowed ${themeClasses.bgSecondary} ${themeClasses.textMuted}` 
+                    : `bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50`
+                }`}
+              >
+                Sebelumnya
+              </button>
+              
+              <div className="flex items-center gap-1 mx-2">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum = i + 1;
+                  // Handle page sliding if more than 5 pages
+                  if (totalPages > 5) {
+                    if (currentPage > 3) {
+                      pageNum = currentPage - 2 + i;
+                      if (pageNum > totalPages) {
+                        pageNum = totalPages - (4 - i);
+                      }
+                    }
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-8 h-8 rounded text-sm font-medium transition-colors ${
+                        currentPage === pageNum
+                          ? 'bg-indigo-600 text-white'
+                          : `hover:bg-indigo-50 dark:hover:bg-indigo-900/30 ${themeClasses.textMuted}`
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1 rounded text-sm ${
+                  currentPage === totalPages 
+                    ? `opacity-50 cursor-not-allowed ${themeClasses.bgSecondary} ${themeClasses.textMuted}` 
+                    : `bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50`
+                }`}
+              >
+                Selanjutnya
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* MODAL FORM */}

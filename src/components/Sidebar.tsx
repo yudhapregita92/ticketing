@@ -16,7 +16,8 @@ import {
   BookOpen,
   Settings2,
   ShieldCheck,
-  UserPlus
+  UserPlus,
+  LogOut
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -44,6 +45,7 @@ interface SidebarProps {
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
   setShowLogin?: (show: boolean) => void;
+  handleLogout?: () => void;
 }
 
 // Helper to safely parse date strings for Safari compatibility
@@ -69,7 +71,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   fetchTickets,
   viewMode,
   setViewMode,
-  setShowLogin
+  setShowLogin,
+  handleLogout
 }) => {
   return (
     <div className="lg:col-span-1 space-y-3 lg:space-y-4">
@@ -256,14 +259,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </>
           )}
 
-          {!adminUser && setShowLogin && (
+          {!adminUser && handleLogout && (
             <div className="pt-2 mt-2 border-t border-slate-100 dark:border-slate-800/60">
               <button
-                onClick={() => setShowLogin(true)}
+                onClick={handleLogout}
                 className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl transition-all text-xs font-black capitalize tracking-wider border border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
               >
-                <ShieldCheck className="w-4 h-4" />
-                <span>Login Admin & IT</span>
+                <LogOut className="w-4 h-4" />
+                <span>Keluar</span>
               </button>
             </div>
           )}
