@@ -124,6 +124,8 @@ export function initDb() {
       bagian TEXT,
       barcode TEXT,
       foto TEXT,
+      nik_ktp TEXT,
+      no_hp TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
@@ -132,6 +134,15 @@ export function initDb() {
   const tables = ['tickets', 'users', 'categories', 'master_users', 'ticket_logs', 'memberships'];
   for (const table of tables) {
     const columns = db.prepare(`PRAGMA table_info(${table})`).all() as any[];
+    
+    if (table === 'memberships') {
+      if (!columns.find(c => c.name === 'nik_ktp')) {
+        db.prepare("ALTER TABLE memberships ADD COLUMN nik_ktp TEXT").run();
+      }
+      if (!columns.find(c => c.name === 'no_hp')) {
+        db.prepare("ALTER TABLE memberships ADD COLUMN no_hp TEXT").run();
+      }
+    }
     
     if (table === 'ticket_logs') {
       if (columns.find(c => c.name === 'timestamp') && !columns.find(c => c.name === 'created_at')) {

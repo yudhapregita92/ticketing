@@ -112,6 +112,8 @@ export interface IMembership {
   bagian: string;
   barcode: string;
   foto?: string | null;
+  nik_ktp?: string | null;
+  no_hp?: string | null;
 }
 
 export const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];

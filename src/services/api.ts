@@ -211,6 +211,14 @@ export const api = {
   deleteMembership: (id: number) => fetch(`/api/memberships/${id}`, {
     method: 'DELETE'
   }).then(handleResponse),
+  uploadMemberships: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return fetch('/api/memberships/upload', {
+      method: 'POST',
+      body: formData
+    }).then(handleResponse);
+  },
 
   // DB Connection test
   testDbConnection: (data: any) => fetch('/api/network/test-db-connection', {

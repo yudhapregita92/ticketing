@@ -8,7 +8,11 @@ const router = express.Router();
 router.get("/api/settings", asyncHandler(async (req, res) => {
   const settings = db.prepare("SELECT * FROM settings").all();
   const settingsObj = settings.reduce((acc: any, curr: any) => {
-    acc[curr.key] = curr.value;
+    try {
+      acc[curr.key] = JSON.parse(curr.value);
+    } catch {
+      acc[curr.key] = curr.value;
+    }
     return acc;
   }, {});
   res.json(settingsObj);
@@ -18,7 +22,7 @@ router.patch("/api/settings", asyncHandler(async (req, res) => {
   const body = req.body;
   const update = db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)");
   Object.entries(body).forEach(([key, value]) => {
-    update.run(key, value !== null && value !== undefined ? String(value) : null);
+    update.run(key, typeof value === 'object' ? JSON.stringify(value) : (value !== null && value !== undefined ? String(value) : null));
   });
   res.json({ success: true });
 }));
@@ -27,7 +31,7 @@ router.post("/api/settings", asyncHandler(async (req, res) => {
   const body = req.body;
   const update = db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)");
   Object.entries(body).forEach(([key, value]) => {
-    update.run(key, value !== null && value !== undefined ? String(value) : null);
+    update.run(key, typeof value === 'object' ? JSON.stringify(value) : (value !== null && value !== undefined ? String(value) : null));
   });
   res.json({ success: true });
 }));

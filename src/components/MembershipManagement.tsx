@@ -6,10 +6,11 @@ import {
   Plus, Search, Edit2, Trash2, Printer, 
   X, Image as ImageIcon, CreditCard, UploadCloud,
   Sparkles, ChevronDown, ChevronUp, RefreshCw, Copy, Check, Barcode as BarcodeIcon,
-  ZoomIn, ZoomOut
+  ZoomIn, ZoomOut, Download, Upload
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Barcode from 'react-barcode';
+import * as XLSX from 'xlsx';
 
 interface MembershipManagementProps {
   isDark: boolean;
@@ -36,7 +37,9 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
     nama: '',
     bagian: '',
     barcode: '',
-    foto: ''
+    foto: '',
+    nik_ktp: '',
+    no_hp: ''
   });
 
   const [printMember, setPrintMember] = useState<IMembership | null>(null);
@@ -220,7 +223,9 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
         nama: '',
         bagian: '',
         barcode: prefill?.barcode || '',
-        foto: ''
+        foto: '',
+        nik_ktp: '',
+        no_hp: ''
       });
       setEditingId(null);
     }
@@ -236,6 +241,71 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
       } catch (err) {
         toast.error('Gagal menghapus');
       }
+    }
+  };
+
+  const handleExportExcel = () => {
+    try {
+      const exportData = memberships.map(m => ({
+        'Kode': m.kode_lokal || '',
+        'Indek KDK': m.indek_kdk || '',
+        'Indek GGF': m.indek_ggf || '',
+        'Nama Lengkap': m.nama,
+        'Bagian': m.bagian || '',
+        'Barcode': m.barcode || '',
+        'NIK KTP': m.nik_ktp || '',
+        'No HP': m.no_hp || ''
+      }));
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Memberships");
+      XLSX.writeFile(wb, "Data_Memberships.xlsx");
+      toast.success('Berhasil mengekspor data ke Excel');
+    } catch (err: any) {
+      toast.error('Gagal mengekspor: ' + err.message);
+    }
+  };
+
+  const excelImportRef = useRef<HTMLInputElement>(null);
+  
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setLoading(true);
+      const res = await api.uploadMemberships(file);
+      if (res.success) {
+        toast.success(`Berhasil mengimpor ${res.count} data`);
+        fetchMemberships();
+      }
+    } catch (err: any) {
+      toast.error('Gagal mengimpor data: ' + err.message);
+    } finally {
+      setLoading(false);
+      if (excelImportRef.current) excelImportRef.current.value = '';
+    }
+  };
+
+  const handleDownloadTemplateExcel = () => {
+    try {
+      const exportData = [{
+        'Kode Lokal': '123',
+        'Indek KDK': 'A',
+        'Indek GGF': 'B',
+        'Nama Lengkap': 'John Doe',
+        'Bagian': 'IT',
+        'Barcode': '12345678',
+        'NIK KTP': '3200000000000001',
+        'No HP': '08123456789'
+      }];
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Template");
+      XLSX.writeFile(wb, "Template_Import_Membership.xlsx");
+      toast.success('Berhasil mendownload template Excel');
+    } catch (err: any) {
+      toast.error('Gagal mendownload template: ' + err.message);
     }
   };
 
@@ -288,7 +358,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
           <p className={`text-sm ${themeClasses.textMuted}`}>Kelola anggota dan cetak kartu.</p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap sm:justify-end items-center gap-2 mt-2 sm:mt-0">
           <input 
             type="file" 
             accept="image/*" 
@@ -296,17 +366,45 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
             ref={fileInputRef} 
             onChange={handleTemplateUpload} 
           />
+          <input
+            type="file"
+            accept=".xlsx, .xls"
+            className="hidden"
+            ref={excelImportRef}
+            onChange={handleImportExcel}
+          />
+          <button 
+            onClick={handleDownloadTemplateExcel}
+            className={`px-3 py-1.5 text-sm ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} rounded-lg font-medium transition-colors flex items-center gap-1.5 border ${themeClasses.border}`}
+          >
+            <Download className="w-4 h-4" />
+            Template Excel
+          </button>
+          <button 
+            onClick={() => excelImportRef.current?.click()}
+            className={`px-3 py-1.5 text-sm ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} rounded-lg font-medium transition-colors flex items-center gap-1.5 border ${themeClasses.border}`}
+          >
+            <Upload className="w-4 h-4" />
+            Import Excel
+          </button>
+          <button 
+            onClick={handleExportExcel}
+            className={`px-3 py-1.5 text-sm ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} rounded-lg font-medium transition-colors flex items-center gap-1.5 border ${themeClasses.border}`}
+          >
+            <Download className="w-4 h-4" />
+            Export Excel
+          </button>
           <button 
             onClick={() => fileInputRef.current?.click()}
-            className={`px-4 py-2 ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} rounded-lg font-medium transition-colors flex items-center gap-2 border ${themeClasses.border}`}
+            className={`px-3 py-1.5 text-sm ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} rounded-lg font-medium transition-colors flex items-center gap-1.5 border ${themeClasses.border}`}
           >
-            <UploadCloud className="w-4 h-4" />
-            Upload Template
+            <ImageIcon className="w-4 h-4" />
+            Upload BG Kartu
           </button>
           
           <button 
             onClick={() => handleOpenForm()}
-            className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+            className="px-3 py-1.5 text-sm bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-medium transition-colors flex items-center gap-1.5"
           >
             <Plus className="w-4 h-4" />
             Tambah Member
@@ -561,7 +659,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
               <tr>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Foto</th>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Nama</th>
-                <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Kode/Indek</th>
+                <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Kode Lokal</th>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Bagian</th>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Barcode</th>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted} text-right`}>Aksi</th>
@@ -590,11 +688,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                     )}
                   </td>
                   <td className="py-3 px-4 font-medium">{member.nama}</td>
-                  <td className="py-3 px-4">
-                    <div className="text-xs">Lokal: {member.kode_lokal || '-'}</div>
-                    <div className="text-xs">KDK: {member.indek_kdk || '-'}</div>
-                    <div className="text-xs">GGF: {member.indek_ggf || '-'}</div>
-                  </td>
+                  <td className="py-3 px-4">{member.kode_lokal || '-'}</td>
                   <td className="py-3 px-4">{member.bagian || '-'}</td>
                   <td className="py-3 px-4 font-mono text-xs">{member.barcode || '-'}</td>
                   <td className="py-3 px-4 text-right">
@@ -757,6 +851,29 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                     onChange={e => setFormData({ ...formData, bagian: e.target.value })}
                     className={`w-full px-3 py-2 rounded-lg text-sm border ${themeClasses.input}`}
                   />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">NIK KTP (Data Diri)</label>
+                    <input 
+                      type="text" 
+                      value={formData.nik_ktp || ''}
+                      onChange={e => setFormData({ ...formData, nik_ktp: e.target.value })}
+                      className={`w-full px-3 py-2 rounded-lg text-sm border ${themeClasses.input}`}
+                      placeholder="Tidak dicetak di ID Card"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">No HP (Data Diri)</label>
+                    <input 
+                      type="text" 
+                      value={formData.no_hp || ''}
+                      onChange={e => setFormData({ ...formData, no_hp: e.target.value })}
+                      className={`w-full px-3 py-2 rounded-lg text-sm border ${themeClasses.input}`}
+                      placeholder="Tidak dicetak di ID Card"
+                    />
+                  </div>
                 </div>
 
                 <div>

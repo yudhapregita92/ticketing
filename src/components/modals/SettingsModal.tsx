@@ -940,8 +940,9 @@ export const SettingsModal = React.memo(({
                         <button 
                           type="button"
                           onClick={() => {
-                            if (newEmailInput && !appSettings.notification_emails.includes(newEmailInput)) {
-                              setAppSettings({...appSettings, notification_emails: [...appSettings.notification_emails, newEmailInput]});
+                            const currentEmails = Array.isArray(appSettings.notification_emails) ? appSettings.notification_emails : (appSettings.notification_emails ? [appSettings.notification_emails] : []);
+                            if (newEmailInput && !currentEmails.includes(newEmailInput)) {
+                              setAppSettings({...appSettings, notification_emails: [...currentEmails, newEmailInput]});
                               setNewEmailInput('');
                               setShowEmailInput(false);
                             }
@@ -954,10 +955,10 @@ export const SettingsModal = React.memo(({
                     )}
 
                     <div className="space-y-2">
-                      {(!appSettings.notification_emails || appSettings.notification_emails.length === 0) ? (
+                      {(!appSettings.notification_emails || (Array.isArray(appSettings.notification_emails) ? appSettings.notification_emails.length === 0 : !appSettings.notification_emails)) ? (
                         <p className="text-xs text-slate-400 italic text-center py-4">Belum ada email notifikasi.</p>
                       ) : (
-                        appSettings.notification_emails.map((email: string) => (
+                        (Array.isArray(appSettings.notification_emails) ? appSettings.notification_emails : [appSettings.notification_emails]).map((email: string) => (
                           <div key={email} className={`flex items-center justify-between p-3 rounded-xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
                             <div className="flex items-center gap-3">
                               <Mail className="w-4 h-4 text-slate-400" />
@@ -965,7 +966,10 @@ export const SettingsModal = React.memo(({
                             </div>
                             <button 
                               type="button"
-                              onClick={() => setAppSettings({...appSettings, notification_emails: appSettings.notification_emails.filter((e: string) => e !== email)})}
+                              onClick={() => {
+                                const currentEmails = Array.isArray(appSettings.notification_emails) ? appSettings.notification_emails : [appSettings.notification_emails];
+                                setAppSettings({...appSettings, notification_emails: currentEmails.filter((e: string) => e !== email)});
+                              }}
                               className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
                             >
                               <Trash2 className="w-4 h-4" />
