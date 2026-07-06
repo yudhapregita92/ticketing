@@ -111,11 +111,13 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
     const prefix = '8';
     
     let localPart = cleanLocal;
-    if (localPart.length > 5) {
-      localPart = localPart.substring(0, 5);
+    if (localPart.length > 6) {
+      localPart = localPart.substring(0, 6);
+    } else if (localPart.length < 6) {
+      localPart = localPart.padStart(6, '0');
     }
     
-    const neededRandom = Math.max(0, 7 - (1 + localPart.length));
+    const neededRandom = 1;
     
     let randomPart = '';
     if (existingRandom && existingRandom.length === neededRandom) {
@@ -126,15 +128,13 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
       }
     }
     
-    const digits7 = prefix + localPart + randomPart;
-    const checksum = calculateEan8Checksum(digits7);
-    const fullCode = digits7 + checksum.toString();
+    const fullCode = prefix + localPart + randomPart;
     
     return {
       prefix,
       localPart,
       randomPart,
-      checksum: checksum.toString(),
+      checksum: '',
       fullCode,
       isValid: cleanLocal.length > 0 && fullCode.length === 8,
       neededRandom
@@ -893,7 +893,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                             const res = generateEan8FromLocal(formData.kode_lokal || '');
                             if (res.isValid) {
                               setFormData(prev => ({ ...prev, barcode: res.fullCode }));
-                              toast.success('Barcode EAN-8 berhasil di-generate!');
+                              toast.success('Barcode berhasil di-generate!');
                             } else {
                               toast.error('Kode lokal harus mengandung angka!');
                             }
@@ -901,7 +901,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                           className="text-[10px] text-indigo-500 hover:text-indigo-600 font-bold flex items-center gap-0.5"
                         >
                           <Sparkles className="w-3 h-3" />
-                          Auto EAN-8
+                          Auto Barcode
                         </button>
                       )}
                     </label>
@@ -925,11 +925,11 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                         height={35}
                         fontSize={10}
                         background="transparent"
-                        format="EAN8"
+                        format="CODE128"
                         lineColor="#1e3a8a"
                       />
                     </div>
-                    <span className="text-[10px] text-slate-400 font-medium mt-1.5">Live Preview Barcode EAN-8</span>
+                    <span className="text-[10px] text-slate-400 font-medium mt-1.5">Live Preview Barcode (8 Digit)</span>
                   </div>
                 )}
 
@@ -1503,7 +1503,7 @@ const PrintCardModal = ({ member, onClose, isDark, themeClasses, templateBg, lay
                   {/* Kode Lokal */}
                   <div className="info-index" style={{ position: 'absolute', top: `${localLayoutMerged.localY}mm`, left: `${localLayoutMerged.localX}mm`, width: `${localLayoutMerged.infoW}mm`, display: 'flex', justifyContent: 'center', alignItems: 'center', margin: 0 }}>
                     <p style={{ fontSize: `${localLayoutMerged.localScale}mm`, fontWeight: 700, color: '#1e3a8a', margin: 0, textTransform: 'uppercase', textAlign: 'center', width: '100%' }}>
-                      {member.indek_kdk || member.indek_ggf || member.kode_lokal || '-'}
+                      {member.kode_lokal || '-'}
                     </p>
                   </div>
 
@@ -1518,7 +1518,7 @@ const PrintCardModal = ({ member, onClose, isDark, themeClasses, templateBg, lay
                 <div className="info-block" style={{ position: 'absolute', top: `${localLayoutMerged.infoY}mm`, left: `${localLayoutMerged.infoX}mm`, width: `${localLayoutMerged.infoW}mm`, textAlign: 'center' }}>
                   <p className="info-name" style={{ fontSize: `${localLayoutMerged.fontName || 3.2}mm`, fontWeight: 800, color: '#1e3a8a', margin: 0, textTransform: 'uppercase' }}>{member.nama}</p>
                   <p className="info-index" style={{ fontSize: `${localLayoutMerged.fontIndex || 2.5}mm`, fontWeight: 700, color: '#1e3a8a', margin: '0.5mm 0', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1mm' }}>
-                    {member.indek_kdk || member.indek_ggf || member.kode_lokal || '-'}
+                    {member.kode_lokal || '-'}
                   </p>
                   <p className="info-dept" style={{ fontSize: `${localLayoutMerged.fontDept || 2}mm`, fontWeight: 700, color: '#1e3a8a', margin: 0, textTransform: 'uppercase' }}>{member.bagian}</p>
                 </div>
