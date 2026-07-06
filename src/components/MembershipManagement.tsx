@@ -6,7 +6,7 @@ import {
   Plus, Search, Edit2, Trash2, Printer, 
   X, Image as ImageIcon, CreditCard, UploadCloud,
   Sparkles, ChevronDown, ChevronUp, RefreshCw, Copy, Check, Barcode as BarcodeIcon,
-  ZoomIn, ZoomOut, Download, Upload, History
+  ZoomIn, ZoomOut, Download, Upload, History, Camera, Video
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Barcode from 'react-barcode';
@@ -55,6 +55,82 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
     }
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraDevices, setCameraDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setIsCameraOpen(false);
+  };
+
+  const startCamera = async (deviceId?: string) => {
+    try {
+      // Stop existing stream if any
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+
+      const constraints: MediaStreamConstraints = {
+        video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'user' }
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      setIsCameraOpen(true);
+
+      // Enumerate devices
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(d => d.kind === 'videoinput');
+      setCameraDevices(videoDevices);
+      if (videoDevices.length > 0 && !deviceId) {
+        setSelectedDeviceId(videoDevices[0].deviceId);
+      }
+    } catch (err: any) {
+      console.error('Camera access error:', err);
+      toast.error('Gagal mengakses kamera: ' + (err.message || err.name || 'Pastikan izin kamera diberikan'));
+    }
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current) {
+      const video = videoRef.current;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        setFormData(prev => ({ ...prev, foto: dataUrl }));
+        toast.success('Foto berhasil diambil!');
+        stopCamera();
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!showForm) {
+      stopCamera();
+    }
+  }, [showForm]);
+
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   const defaultLayout = {
     barcodeX: 4, barcodeY: 23, barcodeScale: 1.1,
@@ -1038,14 +1114,105 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
 
                 <div>
                   <label className="block text-xs font-semibold mb-1">Foto</label>
-                  <div className="flex items-center gap-4">
-                    {formData.foto && (
-                      <img src={formData.foto} alt="Preview" className="w-16 h-16 object-cover rounded-md border" />
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-4">
+                      {formData.foto && (
+                        <div className="relative group">
+                          <img src={formData.foto} alt="Preview" className="w-16 h-16 object-cover rounded-md border" />
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, foto: '' }))}
+                            className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white rounded-full p-0.5 shadow-md hover:bg-rose-600 transition-colors flex items-center justify-center"
+                            title="Hapus Foto"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
+                      
+                      <div className="flex flex-wrap gap-2">
+                        <label className="px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-sm cursor-pointer transition-colors border border-indigo-200 flex items-center gap-1.5 font-medium">
+                          <ImageIcon className="w-4 h-4" />
+                          Pilih Foto
+                          <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+                        </label>
+
+                        {isCameraOpen ? (
+                          <button
+                            type="button"
+                            onClick={stopCamera}
+                            className="px-4 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg text-sm transition-colors border border-rose-200 flex items-center gap-1.5 font-medium"
+                          >
+                            <X className="w-4 h-4" />
+                            Batal Kamera
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => startCamera()}
+                            className="px-4 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg text-sm transition-colors border border-emerald-200 flex items-center gap-1.5 font-medium"
+                          >
+                            <Camera className="w-4 h-4" />
+                            Kamera Langsung
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {isCameraOpen && (
+                      <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 space-y-3">
+                        {cameraDevices.length > 1 && (
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-400 mb-1">PILIH KAMERA</label>
+                            <select
+                              value={selectedDeviceId}
+                              onChange={(e) => {
+                                setSelectedDeviceId(e.target.value);
+                                startCamera(e.target.value);
+                              }}
+                              className={`w-full text-xs px-2 py-1.5 rounded border ${themeClasses.input}`}
+                            >
+                              {cameraDevices.map((device) => (
+                                <option key={device.deviceId} value={device.deviceId}>
+                                  {device.label || `Kamera ${device.deviceId.substring(0, 5)}`}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+                        <div className="relative overflow-hidden rounded-lg bg-black aspect-video flex items-center justify-center border max-w-sm mx-auto">
+                          <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            className="w-full h-full object-cover scale-x-[-1]"
+                          />
+                          <div className="absolute top-2 left-2 px-2 py-0.5 bg-emerald-500 text-white text-[10px] font-bold rounded flex items-center gap-1 shadow animate-pulse">
+                            <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
+                            LIVE
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 max-w-sm mx-auto">
+                          <button
+                            type="button"
+                            onClick={capturePhoto}
+                            className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-md active:scale-[0.98]"
+                          >
+                            <Camera className="w-4 h-4" />
+                            Ambil Foto
+                          </button>
+                          <button
+                            type="button"
+                            onClick={stopCamera}
+                            className="px-3 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold transition-colors"
+                          >
+                            Tutup
+                          </button>
+                        </div>
+                      </div>
                     )}
-                    <label className="px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-sm cursor-pointer transition-colors border border-indigo-200">
-                      Pilih Foto
-                      <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
-                    </label>
                   </div>
                 </div>
 

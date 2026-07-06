@@ -84,8 +84,12 @@ router.post("/upload", upload.single('file'), (req, res) => {
     const sheet = workbook.Sheets[sheetName];
     const data = xlsx.utils.sheet_to_json(sheet);
     
-    const insert = db.prepare("INSERT INTO memberships (kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, foto, nik_ktp, no_hp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    const update = db.prepare("UPDATE memberships SET kode_lokal = ?, indek_kdk = ?, indek_ggf = ?, nama = ?, bagian = ?, barcode = ?, foto = ?, nik_ktp = ?, no_hp = ? WHERE barcode = ?");
+    const insert = db.prepare(
+      "INSERT INTO memberships (kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, foto, nik_ktp, no_hp, photo_scale, photo_offset_x, photo_offset_y) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    );
+    const update = db.prepare(
+      "UPDATE memberships SET kode_lokal = ?, indek_kdk = ?, indek_ggf = ?, nama = ?, bagian = ?, barcode = ?, foto = ?, nik_ktp = ?, no_hp = ?, photo_scale = ?, photo_offset_x = ?, photo_offset_y = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+    );
     
     let count = 0;
     
@@ -110,17 +114,44 @@ router.post("/upload", upload.single('file'), (req, res) => {
       
       if (!nama) continue; // Nama is required
       
+      let existing: any = null;
       if (barcode) {
-        const existing = db.prepare("SELECT * FROM memberships WHERE barcode = ?").get(barcode);
-        if (existing) {
-          update.run(kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, null, nik_ktp, no_hp, barcode);
-          count++;
-          continue;
-        }
+        existing = db.prepare("SELECT * FROM memberships WHERE barcode = ?").get(barcode);
+      }
+      if (!existing && kode_lokal) {
+        existing = db.prepare("SELECT * FROM memberships WHERE kode_lokal = ?").get(kode_lokal);
+      }
+      if (!existing && nik_ktp) {
+        existing = db.prepare("SELECT * FROM memberships WHERE nik_ktp = ?").get(nik_ktp);
       }
       
-      insert.run(kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, null, nik_ktp, no_hp);
-      count++;
+      if (existing) {
+        // Preserve existing photo and layout/offset details
+        const fotoToSave = existing.foto;
+        const scaleToSave = existing.photo_scale !== null && existing.photo_scale !== undefined ? existing.photo_scale : 1.0;
+        const offsetXToSave = existing.photo_offset_x !== null && existing.photo_offset_x !== undefined ? existing.photo_offset_x : 50.0;
+        const offsetYToSave = existing.photo_offset_y !== null && existing.photo_offset_y !== undefined ? existing.photo_offset_y : 50.0;
+        
+        update.run(
+          kode_lokal || existing.kode_lokal,
+          indek_kdk || existing.indek_kdk,
+          indek_ggf || existing.indek_ggf,
+          nama,
+          bagian || existing.bagian,
+          barcode || existing.barcode,
+          fotoToSave,
+          nik_ktp || existing.nik_ktp,
+          no_hp || existing.no_hp,
+          scaleToSave,
+          offsetXToSave,
+          offsetYToSave,
+          existing.id
+        );
+        count++;
+      } else {
+        insert.run(kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, null, nik_ktp, no_hp, 1.0, 50.0, 50.0);
+        count++;
+      }
     }
     
     res.json({ success: true, count });
