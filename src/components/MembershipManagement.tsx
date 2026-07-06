@@ -187,10 +187,23 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
     }).catch(console.error);
   }, []);
 
-  const handleSaveLayout = async (newLayout: any) => {
+  const handleSaveLayout = async (newLayout: any, memberPhotoLayout?: { scale: number, offsetX: number, offsetY: number }) => {
     try {
       await api.updateSettings({ card_layout: JSON.stringify(newLayout) });
       setLayout(newLayout);
+
+      if (memberPhotoLayout && printMember) {
+        const updatedMember = {
+          ...printMember,
+          photo_scale: memberPhotoLayout.scale,
+          photo_offset_x: memberPhotoLayout.offsetX,
+          photo_offset_y: memberPhotoLayout.offsetY
+        };
+        await api.updateMembership(printMember.id, updatedMember);
+        setMemberships(prev => prev.map(m => m.id === printMember.id ? { ...m, ...updatedMember } : m));
+        setPrintMember(updatedMember);
+      }
+
       toast.success('Layout disimpan');
     } catch (err) {
       toast.error('Gagal menyimpan layout');
@@ -381,7 +394,9 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
   const filteredMemberships = memberships.filter(m => 
     m.nama.toLowerCase().includes(search.toLowerCase()) ||
     (m.barcode && m.barcode.toLowerCase().includes(search.toLowerCase())) ||
-    (m.bagian && m.bagian.toLowerCase().includes(search.toLowerCase()))
+    (m.bagian && m.bagian.toLowerCase().includes(search.toLowerCase())) ||
+    (m.indek_ggf && m.indek_ggf.toLowerCase().includes(search.toLowerCase())) ||
+    (m.kode_lokal && m.kode_lokal.toLowerCase().includes(search.toLowerCase()))
   );
 
   const paginatedMemberships = React.useMemo(() => {
@@ -708,6 +723,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Foto</th>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Nama</th>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Kode Lokal</th>
+                <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Indek GGF</th>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Bagian</th>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Barcode</th>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Update Terakhir</th>
@@ -717,11 +733,11 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
             <tbody className={`divide-y ${themeClasses.border}`}>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-4 px-4 text-center">Loading...</td>
+                  <td colSpan={8} className="py-4 px-4 text-center">Loading...</td>
                 </tr>
               ) : filteredMemberships.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className={`py-8 px-4 text-center ${themeClasses.textMuted}`}>
+                  <td colSpan={8} className={`py-8 px-4 text-center ${themeClasses.textMuted}`}>
                     Data tidak ditemukan
                   </td>
                 </tr>
@@ -738,6 +754,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                   </td>
                   <td className="py-3 px-4 font-medium">{member.nama}</td>
                   <td className="py-3 px-4">{member.kode_lokal || '-'}</td>
+                  <td className="py-3 px-4">{member.indek_ggf || '-'}</td>
                   <td className="py-3 px-4">{member.bagian || '-'}</td>
                   <td className="py-3 px-4 font-mono text-xs">{member.barcode || '-'}</td>
                   <td className="py-3 px-4 text-xs">
@@ -1191,9 +1208,14 @@ const MembershipLogsModal = ({ member, onClose, themeClasses }: { member: IMembe
   );
 };
 
-const PrintCardModal = ({ member, onClose, isDark, themeClasses, templateBg, layout, onSaveLayout }: { member: IMembership, onClose: () => void, isDark: boolean, themeClasses: any, templateBg: string, layout: any, onSaveLayout: (l: any) => void }) => {
+const PrintCardModal = ({ member, onClose, isDark, themeClasses, templateBg, layout, onSaveLayout }: { member: IMembership, onClose: () => void, isDark: boolean, themeClasses: any, templateBg: string, layout: any, onSaveLayout: (l: any, memberPhoto?: { scale: number, offsetX: number, offsetY: number }) => void }) => {
   const printRef = useRef<HTMLDivElement>(null);
-  const [localLayout, setLocalLayout] = useState(layout);
+  const [localLayout, setLocalLayout] = useState<{ [key: string]: any }>(() => ({
+    ...layout,
+    photoScale: member.photo_scale ?? layout.photoScale ?? 1,
+    photoOffsetX: member.photo_offset_x ?? layout.photoOffsetX ?? 50,
+    photoOffsetY: member.photo_offset_y ?? layout.photoOffsetY ?? 50,
+  }));
   const [isEditMode, setIsEditMode] = useState(false);
 
   // Fallbacks and safe merging for newly added layout fields
@@ -2118,7 +2140,11 @@ const PrintCardModal = ({ member, onClose, isDark, themeClasses, templateBg, lay
 
               <div className="pt-2">
                 <button
-                  onClick={() => onSaveLayout(localLayoutMerged)}
+                  onClick={() => onSaveLayout(localLayoutMerged, {
+                    scale: localLayout.photoScale ?? 1,
+                    offsetX: localLayout.photoOffsetX ?? 50,
+                    offsetY: localLayout.photoOffsetY ?? 50
+                  })}
                   className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-md active:scale-[0.98]"
                 >
                   Simpan Layout

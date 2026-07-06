@@ -25,11 +25,11 @@ router.get("/:id/logs", (req, res) => {
 });
 
 router.post("/", (req, res) => {
-  const { kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, foto, nik_ktp, no_hp, keterangan_update } = req.body;
+  const { kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, foto, nik_ktp, no_hp, photo_scale, photo_offset_x, photo_offset_y, keterangan_update } = req.body;
   try {
     const info = db.prepare(
-      "INSERT INTO memberships (kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, foto, nik_ktp, no_hp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
-    ).run(kode_lokal || null, indek_kdk || null, indek_ggf || null, nama, bagian || null, barcode || null, foto || null, nik_ktp || null, no_hp || null);
+      "INSERT INTO memberships (kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, foto, nik_ktp, no_hp, photo_scale, photo_offset_x, photo_offset_y) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    ).run(kode_lokal || null, indek_kdk || null, indek_ggf || null, nama, bagian || null, barcode || null, foto || null, nik_ktp || null, no_hp || null, photo_scale !== undefined ? photo_scale : 1.0, photo_offset_x !== undefined ? photo_offset_x : 50.0, photo_offset_y !== undefined ? photo_offset_y : 50.0);
     
     const newId = info.lastInsertRowid;
     
@@ -46,11 +46,11 @@ router.post("/", (req, res) => {
 
 router.put("/:id", (req, res) => {
   const { id } = req.params;
-  const { kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, foto, nik_ktp, no_hp, keterangan_update } = req.body;
+  const { kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, foto, nik_ktp, no_hp, photo_scale, photo_offset_x, photo_offset_y, keterangan_update } = req.body;
   try {
     db.prepare(
-      "UPDATE memberships SET kode_lokal = ?, indek_kdk = ?, indek_ggf = ?, nama = ?, bagian = ?, barcode = ?, foto = ?, nik_ktp = ?, no_hp = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
-    ).run(kode_lokal || null, indek_kdk || null, indek_ggf || null, nama, bagian || null, barcode || null, foto || null, nik_ktp || null, no_hp || null, id);
+      "UPDATE memberships SET kode_lokal = ?, indek_kdk = ?, indek_ggf = ?, nama = ?, bagian = ?, barcode = ?, foto = ?, nik_ktp = ?, no_hp = ?, photo_scale = ?, photo_offset_x = ?, photo_offset_y = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+    ).run(kode_lokal || null, indek_kdk || null, indek_ggf || null, nama, bagian || null, barcode || null, foto || null, nik_ktp || null, no_hp || null, photo_scale !== undefined ? photo_scale : 1.0, photo_offset_x !== undefined ? photo_offset_x : 50.0, photo_offset_y !== undefined ? photo_offset_y : 50.0, id);
     
     if (keterangan_update) {
       db.prepare("INSERT INTO membership_logs (membership_id, keterangan) VALUES (?, ?)").run(id, keterangan_update);

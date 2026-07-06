@@ -123,6 +123,9 @@ export function initDb() {
       foto TEXT,
       nik_ktp TEXT,
       no_hp TEXT,
+      photo_scale REAL DEFAULT 1.0,
+      photo_offset_x REAL DEFAULT 50.0,
+      photo_offset_y REAL DEFAULT 50.0,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -248,6 +251,15 @@ export function initDb() {
       }
       if (!columns.find(c => c.name === 'no_hp')) {
         db.prepare("ALTER TABLE memberships ADD COLUMN no_hp TEXT").run();
+      }
+      if (!columns.find(c => c.name === 'photo_scale')) {
+        db.prepare("ALTER TABLE memberships ADD COLUMN photo_scale REAL DEFAULT 1.0").run();
+      }
+      if (!columns.find(c => c.name === 'photo_offset_x')) {
+        db.prepare("ALTER TABLE memberships ADD COLUMN photo_offset_x REAL DEFAULT 50.0").run();
+      }
+      if (!columns.find(c => c.name === 'photo_offset_y')) {
+        db.prepare("ALTER TABLE memberships ADD COLUMN photo_offset_y REAL DEFAULT 50.0").run();
       }
       if (!columns.find(c => c.name === 'updated_at')) {
         db.prepare("ALTER TABLE memberships ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP").run();

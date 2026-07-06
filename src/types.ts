@@ -121,6 +121,9 @@ export interface IMembership {
   foto?: string | null;
   nik_ktp?: string | null;
   no_hp?: string | null;
+  photo_scale?: number | null;
+  photo_offset_x?: number | null;
+  photo_offset_y?: number | null;
   updated_at?: string;
   created_at?: string;
 }
