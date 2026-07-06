@@ -429,7 +429,15 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <select 
                         value={formData.assigned_to}
-                        onChange={(e) => setFormData({...formData, assigned_to: e.target.value})}
+                        onChange={(e) => {
+                          const userName = e.target.value;
+                          const selectedUser = masterUsers.find(u => u.full_name === userName);
+                          setFormData(prev => ({
+                            ...prev,
+                            assigned_to: userName,
+                            department: selectedUser ? selectedUser.department : prev.department
+                          }));
+                        }}
                         className={`w-full pl-10 pr-4 py-2.5 rounded-xl text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                           isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                         }`}
@@ -455,8 +463,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
                         }`}
                       >
                         <option value="">Pilih Departemen</option>
-                        {departments.map(d => (
-                          <option key={d.id} value={d.name}>{d.name}</option>
+                        {Array.from(new Set(masterUsers.map(u => u.department).filter(Boolean).map(d => d.trim()))).sort().map(dept => (
+                          <option key={dept} value={dept}>{dept}</option>
                         ))}
                       </select>
                     </div>

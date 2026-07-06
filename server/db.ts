@@ -88,17 +88,14 @@ export function initDb() {
 
     CREATE TABLE IF NOT EXISTS assets (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      asset_tag TEXT UNIQUE NOT NULL,
+      asset_id TEXT UNIQUE NOT NULL,
       name TEXT NOT NULL,
-      type TEXT NOT NULL,
-      brand TEXT,
-      model TEXT,
-      serial_number TEXT,
-      department TEXT,
-      user_name TEXT,
+      category TEXT NOT NULL,
       status TEXT DEFAULT 'Active',
+      assigned_to TEXT,
+      department TEXT,
       purchase_date DATE,
-      warranty_expiry DATE,
+      condition TEXT DEFAULT 'Good',
       notes TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -142,10 +139,32 @@ export function initDb() {
   `);
 
   // Add missing columns if they don't exist
-  const tables = ['tickets', 'users', 'categories', 'master_users', 'ticket_logs', 'memberships', 'membership_logs'];
+  const tables = ['tickets', 'users', 'categories', 'master_users', 'ticket_logs', 'memberships', 'membership_logs', 'assets'];
   for (const table of tables) {
     const columns = db.prepare(`PRAGMA table_info(${table})`).all() as any[];
     
+    if (table === 'assets') {
+      if (columns.find(c => c.name === 'asset_tag')) {
+        db.prepare("DROP TABLE assets").run();
+        db.prepare(`
+          CREATE TABLE assets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            asset_id TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            category TEXT NOT NULL,
+            status TEXT DEFAULT 'Active',
+            assigned_to TEXT,
+            department TEXT,
+            purchase_date DATE,
+            condition TEXT DEFAULT 'Good',
+            notes TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          )
+        `).run();
+      }
+    }
+
     if (table === 'memberships') {
       if (!columns.find(c => c.name === 'nik_ktp')) {
         db.prepare("ALTER TABLE memberships ADD COLUMN nik_ktp TEXT").run();
