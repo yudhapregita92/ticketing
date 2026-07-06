@@ -14,13 +14,13 @@ import {
   Search,
   BookOpen
 } from 'lucide-react';
-import { IAdminUser } from '../types';
+import { IAdminUser, ViewMode } from '../types';
 import { Logo } from './Logo';
 
 interface BottomNavProps {
   adminUser: IAdminUser | null;
-  viewMode: 'today' | 'all' | 'my_tickets' | 'panduan';
-  setViewMode: (mode: 'today' | 'all' | 'my_tickets' | 'panduan') => void;
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
   setShowForm: (show: boolean) => void;
   setShowLogin: (show: boolean) => void;
   setShowSettings: (show: boolean) => void;

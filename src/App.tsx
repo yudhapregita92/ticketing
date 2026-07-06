@@ -50,6 +50,7 @@ import { hapticFeedback } from './utils/haptics';
 import { AdminDashboard } from './components/AdminDashboard';
 import { Panduan } from './components/Panduan';
 import { AssetManagement } from './components/AssetManagement';
+import { ProjectEvaluation } from './components/ProjectEvaluation';
 import NetworkMonitor from './components/NetworkMonitor';
 import BeritaAcara from './components/BeritaAcara';
 import { MembershipManagement } from './components/MembershipManagement';
@@ -268,11 +269,11 @@ export default function App() {
     let view = p === '' ? (hasAdmin ? 'dashboard' : 'today') : p;
 
     // Admin only routes fallback
-    if (!hasAdmin && ['dashboard', 'assets', 'network', 'membership'].includes(view)) {
+    if (!hasAdmin && ['dashboard', 'assets', 'network', 'membership', 'evaluasi_project'].includes(view)) {
       view = 'today';
     }
 
-    if (['today', 'all', 'my_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership'].includes(view)) {
+    if (['today', 'all', 'my_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership', 'evaluasi_project'].includes(view)) {
       return view as ViewMode;
     }
     return hasAdmin ? 'dashboard' : 'today';
@@ -1265,6 +1266,12 @@ export default function App() {
               />
             ) : viewMode === 'membership' ? (
               <MembershipManagement
+                isDark={isDark}
+                themeClasses={themeClasses}
+                primaryColor={primaryColor}
+              />
+            ) : viewMode === 'evaluasi_project' ? (
+              <ProjectEvaluation 
                 isDark={isDark}
                 themeClasses={themeClasses}
                 primaryColor={primaryColor}

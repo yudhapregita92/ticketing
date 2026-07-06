@@ -234,4 +234,41 @@ export const api = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   }).then(handleResponse),
+
+  // Evaluation Projects
+  getEvalProjects: (): Promise<any[]> => fetch('/api/eval-projects').then(handleResponse),
+  createEvalProject: (data: { name: string; description?: string; target_users?: number }) => fetch('/api/eval-projects', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(handleResponse),
+  deleteEvalProject: (id: number) => fetch(`/api/eval-projects/${id}`, {
+    method: 'DELETE'
+  }).then(handleResponse),
+  getEvalProjectDashboard: (id: number): Promise<any> => fetch(`/api/eval-projects/${id}/dashboard`).then(handleResponse),
+  importEvalProjectData: (id: number, records: any[]) => fetch(`/api/eval-projects/${id}/import`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ records })
+  }).then(handleResponse),
+  clearEvalProjectData: (id: number) => fetch(`/api/eval-projects/${id}/clear`, {
+    method: 'POST'
+  }).then(handleResponse),
+
+  // Evaluation Project Timelines
+  getOverallProjectTimelines: (): Promise<any[]> => fetch(`/api/eval-projects/all-timelines`).then(handleResponse),
+  getEvalProjectTimeline: (id: number): Promise<any[]> => fetch(`/api/eval-projects/${id}/timeline`).then(handleResponse),
+  createEvalProjectTimeline: (id: number, data: { title: string; description?: string; target_date: string; status?: string }) => fetch(`/api/eval-projects/${id}/timeline`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(handleResponse),
+  updateEvalProjectTimeline: (id: number, timelineId: number, data: { title: string; description?: string; target_date: string; status?: string }) => fetch(`/api/eval-projects/${id}/timeline/${timelineId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(handleResponse),
+  deleteEvalProjectTimeline: (id: number, timelineId: number) => fetch(`/api/eval-projects/${id}/timeline/${timelineId}`, {
+    method: 'DELETE'
+  }).then(handleResponse),
 };

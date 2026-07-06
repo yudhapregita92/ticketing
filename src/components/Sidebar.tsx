@@ -178,6 +178,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span>Membership</span>
                 </div>
               </button>
+
+              <button
+                onClick={() => setViewMode('evaluasi_project')}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all text-xs font-bold ${
+                  viewMode === 'evaluasi_project' 
+                    ? 'bg-emerald-500/10 text-emerald-600' 
+                    : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <TrendingUp className="w-4 h-4" />
+                  <span>Evaluasi Project</span>
+                </div>
+              </button>
               
               {(adminUser.role === 'Super Admin' || adminUser.role === 'Staff IT Support') && (
                 <button

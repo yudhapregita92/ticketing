@@ -138,6 +138,83 @@ export function initDb() {
     );
   `);
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS eval_projects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      target_users INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS eval_project_usage (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      user_name TEXT,
+      department TEXT,
+      activity_date DATE NOT NULL,
+      activity_type TEXT,
+      usage_count INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (project_id) REFERENCES eval_projects(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS eval_project_timeline (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      target_date DATE NOT NULL,
+      status TEXT DEFAULT 'pending', -- 'pending', 'on_progress', 'completed'
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (project_id) REFERENCES eval_projects(id) ON DELETE CASCADE
+    );
+  `);
+
+  try {
+    const projectCount = db.prepare("SELECT COUNT(*) as count FROM eval_projects").get() as any;
+    if (projectCount && projectCount.count === 0) {
+      const m365Id = db.prepare("INSERT INTO eval_projects (name, description, target_users) VALUES (?, ?, ?)").run(
+        "Project m365",
+        "Evaluasi penggunaan Microsoft 365 (Word, Excel, Teams, Outlook, OneDrive) di lingkup perusahaan.",
+        150
+      ).lastInsertRowid;
+
+      const waId = db.prepare("INSERT INTO eval_projects (name, description, target_users) VALUES (?, ?, ?)").run(
+        "Project Whatsapp Omni",
+        "Analisa aktivitas komunikasi pelanggan dan internal menggunakan sistem Whatsapp Omnichannel.",
+        100
+      ).lastInsertRowid;
+
+      // Seed M365 Milestones
+      const m365Timeline = [
+        { title: "Kickoff & Sosialisasi", desc: "Pertemuan pembukaan dan sosialisasi penggunaan lisensi M365", date: "2026-06-01", status: "completed" },
+        { title: "Setup Akun & Install", desc: "Konfigurasi admin portal, pembagian lisensi, dan installasi aplikasi client", date: "2026-06-15", status: "completed" },
+        { title: "Pelatihan Karyawan", desc: "Training modul dasar Outlook, Word, Excel, & kolaborasi Teams", date: "2026-07-01", status: "on_progress" },
+        { title: "Evaluasi Pemakaian Tahap 1", desc: "Review awal penyerapan adopsi & feedback kendala teknis pengguna", date: "2026-07-15", status: "pending" },
+        { title: "Migrasi OneDrive Penuh", desc: "Pemindahan berkas kerja personal ke cloud storage OneDrive", date: "2026-08-01", status: "pending" }
+      ];
+
+      // Seed WA Milestones
+      const waTimeline = [
+        { title: "Integrasi API & Sandbox", desc: "Setup WhatsApp Business API and channel integration", date: "2026-06-05", status: "completed" },
+        { title: "Konfigurasi Omni Inbox", desc: "Pendaftaran akun agen CS dan pengaturan antrean chat", date: "2026-06-20", status: "completed" },
+        { title: "Uji Coba Terbatas (UAT)", desc: "Simulasi penerimaan chat pelanggan oleh tim Customer Service", date: "2026-07-05", status: "on_progress" },
+        { title: "Go Live & Publikasi", desc: "Rilis resmi nomor kontak WA untuk seluruh pelanggan perusahaan", date: "2026-07-20", status: "pending" }
+      ];
+
+      const insertTimeline = db.prepare("INSERT INTO eval_project_timeline (project_id, title, description, target_date, status) VALUES (?, ?, ?, ?, ?)");
+      for (const t of m365Timeline) {
+        insertTimeline.run(m365Id, t.title, t.desc, t.date, t.status);
+      }
+      for (const t of waTimeline) {
+        insertTimeline.run(waId, t.title, t.desc, t.date, t.status);
+      }
+    }
+  } catch (err) {
+    console.error("Error seeding eval_projects:", err);
+  }
+
   // Add missing columns if they don't exist
   const tables = ['tickets', 'users', 'categories', 'master_users', 'ticket_logs', 'memberships', 'membership_logs', 'assets'];
   for (const table of tables) {
