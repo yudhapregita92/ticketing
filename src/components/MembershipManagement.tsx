@@ -314,12 +314,44 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
     }
   };
 
+  // Check for duplicates
+  const duplicateLocal = React.useMemo(() => {
+    if (!formData.kode_lokal) return null;
+    return memberships.find(m => m.id !== editingId && m.kode_lokal === formData.kode_lokal);
+  }, [formData.kode_lokal, memberships, editingId]);
+
+  const duplicateKdk = React.useMemo(() => {
+    if (!formData.indek_kdk) return null;
+    const cleanKdk = formData.indek_kdk.trim().toLowerCase();
+    return memberships.find(m => m.id !== editingId && m.indek_kdk?.trim().toLowerCase() === cleanKdk);
+  }, [formData.indek_kdk, memberships, editingId]);
+
+  const duplicateGgf = React.useMemo(() => {
+    if (!formData.indek_ggf) return null;
+    const cleanGgf = formData.indek_ggf.trim().toLowerCase();
+    return memberships.find(m => m.id !== editingId && m.indek_ggf?.trim().toLowerCase() === cleanGgf);
+  }, [formData.indek_ggf, memberships, editingId]);
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.nama) {
       toast.error('Nama wajib diisi');
       return;
     }
+
+    if (duplicateLocal) {
+      toast.error(`Kode Lokal "${formData.kode_lokal}" sudah terdaftar pada member "${duplicateLocal.nama}"!`);
+      return;
+    }
+    if (duplicateKdk) {
+      toast.error(`Indek KDK "${formData.indek_kdk}" sudah terdaftar pada member "${duplicateKdk.nama}"!`);
+      return;
+    }
+    if (duplicateGgf) {
+      toast.error(`Indek GGF "${formData.indek_ggf}" sudah terdaftar pada member "${duplicateGgf.nama}"!`);
+      return;
+    }
+
     try {
       if (editingId) {
         await api.updateMembership(editingId, formData);
@@ -859,8 +891,15 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                       placeholder="Masukkan angka..."
                       value={formData.kode_lokal || ''}
                       onChange={e => setFormData({ ...formData, kode_lokal: e.target.value.replace(/\D/g, '') })}
-                      className={`w-full px-3 py-2 rounded-lg text-sm border ${themeClasses.input}`}
+                      className={`w-full px-3 py-2 rounded-lg text-sm border ${
+                        duplicateLocal ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500 bg-rose-500/5' : themeClasses.input
+                      }`}
                     />
+                    {duplicateLocal && (
+                      <p className="text-[10px] text-rose-500 font-semibold mt-1">
+                        ⚠️ Sudah ada ({duplicateLocal.nama})
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-semibold mb-1">Indek KDK</label>
@@ -868,8 +907,15 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                       type="text" 
                       value={formData.indek_kdk || ''}
                       onChange={e => setFormData({ ...formData, indek_kdk: e.target.value })}
-                      className={`w-full px-3 py-2 rounded-lg text-sm border ${themeClasses.input}`}
+                      className={`w-full px-3 py-2 rounded-lg text-sm border ${
+                        duplicateKdk ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500 bg-rose-500/5' : themeClasses.input
+                      }`}
                     />
+                    {duplicateKdk && (
+                      <p className="text-[10px] text-rose-500 font-semibold mt-1">
+                        ⚠️ Sudah ada ({duplicateKdk.nama})
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -880,8 +926,15 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                       type="text" 
                       value={formData.indek_ggf || ''}
                       onChange={e => setFormData({ ...formData, indek_ggf: e.target.value })}
-                      className={`w-full px-3 py-2 rounded-lg text-sm border ${themeClasses.input}`}
+                      className={`w-full px-3 py-2 rounded-lg text-sm border ${
+                        duplicateGgf ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500 bg-rose-500/5' : themeClasses.input
+                      }`}
                     />
+                    {duplicateGgf && (
+                      <p className="text-[10px] text-rose-500 font-semibold mt-1">
+                        ⚠️ Sudah ada ({duplicateGgf.nama})
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-semibold mb-1 flex items-center justify-between">
