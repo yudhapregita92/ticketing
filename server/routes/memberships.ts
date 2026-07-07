@@ -161,4 +161,58 @@ router.post("/upload", upload.single('file'), (req, res) => {
   }
 });
 
+router.get("/journals/list", (req: any, res: any) => {
+  try {
+    const journals = db.prepare("SELECT * FROM membership_journals ORDER BY created_at DESC").all();
+    res.json(journals);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/journals/submit", (req: any, res: any) => {
+  const { member_id, nama, kode_lokal, indek_ggf, bagian, barcode, signature, keterangan } = req.body;
+  if (!nama) {
+    return res.status(400).json({ error: "Nama wajib diisi" });
+  }
+  if (!signature) {
+    return res.status(400).json({ error: "Tanda tangan wajib diisi" });
+  }
+  try {
+    const info = db.prepare(
+      "INSERT INTO membership_journals (member_id, nama, kode_lokal, indek_ggf, bagian, barcode, signature, keterangan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    ).run(
+      member_id || null,
+      nama,
+      kode_lokal || null,
+      indek_ggf || null,
+      bagian || null,
+      barcode || null,
+      signature,
+      keterangan || null
+    );
+    
+    // Also record this as a log in membership_logs if member_id exists
+    if (member_id) {
+      db.prepare("INSERT INTO membership_logs (membership_id, keterangan) VALUES (?, ?)").run(
+        member_id,
+        "Mengisi buku jurnal cetak kartu & melakukan tanda tangan digital."
+      );
+    }
+    
+    res.json({ success: true, id: info.lastInsertRowid });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete("/journals/:id", (req: any, res: any) => {
+  try {
+    db.prepare("DELETE FROM membership_journals WHERE id = ?").run(req.params.id);
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

@@ -139,6 +139,20 @@ export function initDb() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (membership_id) REFERENCES memberships(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS membership_journals (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      member_id INTEGER,
+      nama TEXT NOT NULL,
+      kode_lokal TEXT,
+      indek_ggf TEXT,
+      bagian TEXT,
+      barcode TEXT,
+      signature TEXT,
+      keterangan TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (member_id) REFERENCES memberships(id) ON DELETE SET NULL
+    );
   `);
 
   db.exec(`

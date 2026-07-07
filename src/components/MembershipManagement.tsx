@@ -6,7 +6,8 @@ import {
   Plus, Search, Edit2, Trash2, Printer, 
   X, Image as ImageIcon, CreditCard, UploadCloud,
   Sparkles, ChevronDown, ChevronUp, RefreshCw, Copy, Check, Barcode as BarcodeIcon,
-  ZoomIn, ZoomOut, Download, Upload, History, Camera, Video
+  ZoomIn, ZoomOut, Download, Upload, History, Camera, Video,
+  BookOpen, User
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Barcode from 'react-barcode';
@@ -23,6 +24,20 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
   themeClasses,
   primaryColor 
 }) => {
+  const [activeTab, setActiveTab] = useState<'members' | 'journals'>('members');
+  const [journals, setJournals] = useState<any[]>([]);
+  const [journalsLoading, setJournalsLoading] = useState(false);
+  const [journalSearch, setJournalSearch] = useState('');
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [copiedLink, setCopiedLink] = useState<string | null>(null);
+
+  const handleCopyLink = (url: string, key: string) => {
+    navigator.clipboard.writeText(url);
+    setCopiedLink(key);
+    toast.success('Link berhasil disalin!');
+    setTimeout(() => setCopiedLink(null), 2000);
+  };
+
   const [memberships, setMemberships] = useState<IMembership[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -249,6 +264,46 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
     }
   };
 
+  const fetchJournals = async () => {
+    try {
+      setJournalsLoading(true);
+      const res = await fetch('/api/memberships/journals/list');
+      if (res.ok) {
+        const data = await res.json();
+        setJournals(data);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal mengambil data jurnal');
+    } finally {
+      setJournalsLoading(false);
+    }
+  };
+
+  const deleteJournal = async (id: number) => {
+    if (!window.confirm('Apakah Anda yakin ingin menghapus catatan jurnal ini?')) return;
+    try {
+      const res = await fetch(`/api/memberships/journals/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        toast.success('Jurnal berhasil dihapus');
+        fetchJournals();
+      } else {
+        toast.error('Gagal menghapus jurnal');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Terjadi kesalahan saat menghapus');
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'journals') {
+      fetchJournals();
+    }
+  }, [activeTab]);
+
   useEffect(() => {
     fetchMemberships();
     api.getSettings().then(settings => {
@@ -355,6 +410,32 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
       XLSX.utils.book_append_sheet(wb, ws, "Memberships");
       XLSX.writeFile(wb, "Data_Memberships.xlsx");
       toast.success('Berhasil mengekspor data ke Excel');
+    } catch (err: any) {
+      toast.error('Gagal mengekspor: ' + err.message);
+    }
+  };
+
+  const handleExportJournalsExcel = () => {
+    try {
+      if (journals.length === 0) {
+        toast.error('Tidak ada data jurnal untuk diekspor');
+        return;
+      }
+      const exportData = journals.map(j => ({
+        'ID Jurnal': j.id,
+        'Waktu': new Date(j.created_at).toLocaleString('id-ID'),
+        'Nama Lengkap': j.nama,
+        'Kode Lokal (NIK)': j.kode_lokal || '',
+        'Indek GGF': j.indek_ggf || '',
+        'Bagian / Dept': j.bagian || '',
+        'Barcode': j.barcode || '',
+        'Keterangan': j.keterangan || ''
+      }));
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Jurnal_Cetak_Kartu");
+      XLSX.writeFile(wb, "Jurnal_Cetak_Kartu_Member.xlsx");
+      toast.success('Berhasil mengekspor data jurnal ke Excel');
     } catch (err: any) {
       toast.error('Gagal mengekspor: ' + err.message);
     }
@@ -488,70 +569,124 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
 
   return (
     <div className={`space-y-4 ${themeClasses.text}`}>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
             <CreditCard className="w-5 h-5 text-indigo-500" />
             Manajemen Membership
           </h2>
-          <p className={`text-sm ${themeClasses.textMuted}`}>Kelola anggota dan cetak kartu.</p>
+          <p className={`text-sm ${themeClasses.textMuted}`}>Kelola anggota, cetak kartu, dan tanda tangan buku jurnal.</p>
         </div>
-        
-        <div className="flex flex-wrap sm:justify-end items-center gap-2 mt-2 sm:mt-0">
-          <input 
-            type="file" 
-            accept="image/*" 
-            className="hidden" 
-            ref={fileInputRef} 
-            onChange={handleTemplateUpload} 
-          />
-          <input
-            type="file"
-            accept=".xlsx, .xls"
-            className="hidden"
-            ref={excelImportRef}
-            onChange={handleImportExcel}
-          />
-          <button 
-            onClick={handleDownloadTemplateExcel}
-            className={`px-3 py-1.5 text-sm ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} rounded-lg font-medium transition-colors flex items-center gap-1.5 border ${themeClasses.border}`}
+
+        {/* Tab switchers */}
+        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60 self-start sm:self-center">
+          <button
+            onClick={() => setActiveTab('members')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+              activeTab === 'members'
+                ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
           >
-            <Download className="w-4 h-4" />
-            Template Excel
+            <User className="w-3.5 h-3.5" />
+            Daftar Anggota
           </button>
-          <button 
-            onClick={() => excelImportRef.current?.click()}
-            className={`px-3 py-1.5 text-sm ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} rounded-lg font-medium transition-colors flex items-center gap-1.5 border ${themeClasses.border}`}
+          <button
+            onClick={() => setActiveTab('journals')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+              activeTab === 'journals'
+                ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
           >
-            <Upload className="w-4 h-4" />
-            Import Excel
-          </button>
-          <button 
-            onClick={handleExportExcel}
-            className={`px-3 py-1.5 text-sm ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} rounded-lg font-medium transition-colors flex items-center gap-1.5 border ${themeClasses.border}`}
-          >
-            <Download className="w-4 h-4" />
-            Export Excel
-          </button>
-          <button 
-            onClick={() => fileInputRef.current?.click()}
-            className={`px-3 py-1.5 text-sm ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} rounded-lg font-medium transition-colors flex items-center gap-1.5 border ${themeClasses.border}`}
-          >
-            <ImageIcon className="w-4 h-4" />
-            Upload BG Kartu
-          </button>
-          
-          <button 
-            onClick={() => handleOpenForm()}
-            className="px-3 py-1.5 text-sm bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-medium transition-colors flex items-center gap-1.5"
-          >
-            <Plus className="w-4 h-4" />
-            Tambah Member
+            <BookOpen className="w-3.5 h-3.5" />
+            Buku Jurnal Cetak Kartu
           </button>
         </div>
+
+        {activeTab === 'members' ? (
+          <div className="flex flex-wrap sm:justify-end items-center gap-2 mt-2 sm:mt-0 w-full lg:w-auto">
+            <input 
+              type="file" 
+              accept="image/*" 
+              className="hidden" 
+              ref={fileInputRef} 
+              onChange={handleTemplateUpload} 
+            />
+            <input
+              type="file"
+              accept=".xlsx, .xls"
+              className="hidden"
+              ref={excelImportRef}
+              onChange={handleImportExcel}
+            />
+            <button 
+              onClick={handleDownloadTemplateExcel}
+              className={`px-3 py-1.5 text-sm ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} rounded-lg font-medium transition-colors flex items-center gap-1.5 border ${themeClasses.border}`}
+            >
+              <Download className="w-4 h-4" />
+              Template Excel
+            </button>
+            <button 
+              onClick={() => excelImportRef.current?.click()}
+              className={`px-3 py-1.5 text-sm ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} rounded-lg font-medium transition-colors flex items-center gap-1.5 border ${themeClasses.border}`}
+            >
+              <Upload className="w-4 h-4" />
+              Import Excel
+            </button>
+            <button 
+              onClick={handleExportExcel}
+              className={`px-3 py-1.5 text-sm ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} rounded-lg font-medium transition-colors flex items-center gap-1.5 border ${themeClasses.border}`}
+            >
+              <Download className="w-4 h-4" />
+              Export Excel
+            </button>
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className={`px-3 py-1.5 text-sm ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} rounded-lg font-medium transition-colors flex items-center gap-1.5 border ${themeClasses.border}`}
+            >
+              <ImageIcon className="w-4 h-4" />
+              BG Kartu
+            </button>
+            
+            <button 
+              onClick={() => handleOpenForm()}
+              className="px-3 py-1.5 text-sm bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-medium transition-colors flex items-center gap-1.5 shadow-sm active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              Tambah Member
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-wrap sm:justify-end items-center gap-2 mt-2 sm:mt-0 w-full lg:w-auto">
+            <button 
+              onClick={() => setShowQrModal(true)}
+              className="px-3 py-1.5 text-sm bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors flex items-center gap-1.5 shadow-sm active:scale-95"
+            >
+              <BarcodeIcon className="w-4 h-4" />
+              Tampilkan QR Jurnal
+            </button>
+            <button 
+              onClick={handleExportJournalsExcel}
+              className={`px-3 py-1.5 text-sm ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} rounded-lg font-medium transition-colors flex items-center gap-1.5 border ${themeClasses.border}`}
+            >
+              <Download className="w-4 h-4" />
+              Export Jurnal Excel
+            </button>
+            <button 
+              onClick={fetchJournals}
+              className={`p-1.5 rounded-lg border ${themeClasses.border} ${themeClasses.bgSecondary} hover:opacity-85 transition-all`}
+              title="Refresh Jurnal"
+            >
+              <RefreshCw className={`w-4 h-4 ${journalsLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* TOOL GENERATOR BARCODE EAN-8 */}
+      {activeTab === 'members' && (
+        <>
+          {/* TOOL GENERATOR BARCODE EAN-8 */}
       <div className={`p-4 rounded-xl ${themeClasses.card} ${themeClasses.border} border shadow-sm`}>
         <button
           onClick={() => setShowGeneratorPanel(!showGeneratorPanel)}
@@ -935,6 +1070,187 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
           </div>
         )}
       </div>
+        </>
+      )}
+
+      {activeTab === 'journals' && (
+        <div className="space-y-4">
+          <div className={`p-4 rounded-xl ${themeClasses.card} ${themeClasses.border} border shadow-sm`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+              <h3 className="font-bold text-base flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-indigo-500" />
+                Catatan Buku Jurnal Digital (Tanda Tangan Penerimaan Kartu)
+              </h3>
+              <div className="relative w-full sm:w-64">
+                <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${themeClasses.textMuted}`} />
+                <input 
+                  type="text" 
+                  placeholder="Cari nama / bagian / kode..." 
+                  value={journalSearch}
+                  onChange={e => setJournalSearch(e.target.value)}
+                  className={`w-full pl-9 pr-4 py-2 rounded-lg text-sm transition-colors border ${themeClasses.input}`}
+                />
+              </div>
+            </div>
+
+            <div className="overflow-x-auto pb-4">
+              <table className="w-full text-left text-sm whitespace-nowrap min-w-[800px]">
+                <thead className={`border-b ${themeClasses.border}`}>
+                  <tr>
+                    <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Waktu</th>
+                    <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Nama Anggota</th>
+                    <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Kode Lokal / NIK</th>
+                    <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Indek GGF</th>
+                    <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Bagian</th>
+                    <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Tanda Tangan Digital</th>
+                    <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Keterangan</th>
+                    <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted} text-right`}>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className={`divide-y ${themeClasses.border}`}>
+                  {journalsLoading ? (
+                    <tr>
+                      <td colSpan={8} className="py-8 px-4 text-center">Loading data jurnal...</td>
+                    </tr>
+                  ) : journals.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className={`py-12 px-4 text-center ${themeClasses.textMuted}`}>
+                        <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3 border">
+                          <BookOpen className="w-6 h-6 opacity-40" />
+                        </div>
+                        <p className="font-semibold text-sm">Belum Ada Tanda Tangan Buku Jurnal</p>
+                        <p className="text-xs opacity-75 mt-0.5">Berikan QR Code Jurnal kepada anggota yang mencetak kartu agar mereka bisa menandatangani langsung dari HP.</p>
+                      </td>
+                    </tr>
+                  ) : journals
+                      .filter(j => 
+                        j.nama.toLowerCase().includes(journalSearch.toLowerCase()) ||
+                        (j.kode_lokal && j.kode_lokal.toLowerCase().includes(journalSearch.toLowerCase())) ||
+                        (j.bagian && j.bagian.toLowerCase().includes(journalSearch.toLowerCase())) ||
+                        (j.keterangan && j.keterangan.toLowerCase().includes(journalSearch.toLowerCase()))
+                      )
+                      .map(journal => (
+                        <tr key={journal.id} className={`hover:${themeClasses.bgSecondary} transition-colors`}>
+                          <td className="py-3 px-4 text-xs font-semibold">
+                            {new Date(journal.created_at).toLocaleString('id-ID', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </td>
+                          <td className="py-3 px-4 font-bold text-indigo-500 dark:text-indigo-400">{journal.nama}</td>
+                          <td className="py-3 px-4">{journal.kode_lokal || '-'}</td>
+                          <td className="py-3 px-4">{journal.indek_ggf || '-'}</td>
+                          <td className="py-3 px-4">{journal.bagian || '-'}</td>
+                          <td className="py-2 px-4">
+                            {journal.signature ? (
+                              <div className="bg-slate-950 p-1 rounded border border-slate-800/80 w-24 h-10 flex items-center justify-center">
+                                <img 
+                                  src={journal.signature} 
+                                  alt={`Sign ${journal.nama}`} 
+                                  className="h-full object-contain filter invert dark:invert-0" 
+                                />
+                              </div>
+                            ) : (
+                              <span className="text-xs text-rose-500 font-bold">Tidak ada tanda tangan</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-xs italic text-slate-500 dark:text-slate-400">
+                            {journal.keterangan || '-'}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <button
+                              onClick={() => deleteJournal(journal.id)}
+                              className="p-1.5 bg-rose-500/10 text-rose-600 rounded hover:bg-rose-500/20 transition-colors"
+                              title="Hapus Jurnal"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* GLOBAL JURNAL QR CODE MODAL */}
+      <AnimatePresence>
+        {showQrModal && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+              onClick={() => setShowQrModal(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className={`relative ${themeClasses.card} rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center border ${themeClasses.border} z-10`}
+            >
+              <button 
+                onClick={() => setShowQrModal(false)}
+                className="absolute top-4 right-4 p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-850 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="mx-auto w-12 h-12 bg-indigo-50 dark:bg-indigo-950/40 rounded-full flex items-center justify-center text-indigo-600 mb-3">
+                <BarcodeIcon className="w-6 h-6" />
+              </div>
+
+              <h3 className="font-bold text-base">QR Code Buku Jurnal Digital</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-4 leading-relaxed">
+                Arahkan kamera HP anggota Anda ke QR Code di bawah untuk menandatangani buku jurnal serah terima kartu.
+              </p>
+
+              <div className="bg-white p-4 rounded-2xl border border-indigo-100 shadow-inner flex justify-center inline-block mx-auto mb-4">
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(window.location.origin + '/jurnal')}`} 
+                  alt="QR Code Jurnal" 
+                  className="w-48 h-48 object-contain"
+                />
+              </div>
+
+              <div className="space-y-2 mt-2">
+                <a 
+                  href={`${window.location.origin}/jurnal`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-xs text-indigo-500 dark:text-indigo-400 font-bold hover:underline break-all font-mono bg-indigo-500/10 dark:bg-indigo-500/5 py-2 px-3 rounded-xl border border-indigo-500/20 transition-all hover:bg-indigo-500/15"
+                >
+                  {window.location.origin}/jurnal
+                </a>
+                
+                <button
+                  type="button"
+                  onClick={() => handleCopyLink(`${window.location.origin}/jurnal`, 'global_jurnal')}
+                  className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg text-xs font-bold transition-all"
+                >
+                  {copiedLink === 'global_jurnal' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                      <span className="text-emerald-500">Tersalin ke Clipboard!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Salin Link Jurnal</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* MODAL FORM */}
       <AnimatePresence>
@@ -1685,7 +2001,7 @@ const PrintCardModal = ({ member, onClose, isDark, themeClasses, templateBg, lay
         </div>
 
         <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
-          <div className="p-8 flex justify-center bg-gray-100 overflow-auto flex-1 h-full min-h-[300px]">
+          <div className="p-6 flex flex-col items-center justify-center bg-gray-100 dark:bg-slate-900/60 overflow-auto flex-1 h-full min-h-[300px] space-y-6">
             {/* Virtual Card View matching print dimensions roughly */}
             <div 
               ref={printRef}
@@ -1765,6 +2081,54 @@ const PrintCardModal = ({ member, onClose, isDark, themeClasses, templateBg, lay
                   <p className="info-dept" style={{ fontSize: `${localLayoutMerged.fontDept || 2}mm`, fontWeight: 700, color: '#1e3a8a', margin: 0, textTransform: 'uppercase' }}>{member.bagian}</p>
                 </div>
               )}
+            </div>
+
+            {/* SCAN JURNAL INSTANT BARCODE/QR ACCENT FOR RECEIPT */}
+            <div className="w-full max-w-sm bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex items-center gap-3">
+              <div className="bg-slate-50 p-1.5 rounded-lg border border-slate-100 shrink-0">
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(window.location.origin + '/jurnal?member_id=' + member.id)}`} 
+                  alt="QR Tanda Tangan" 
+                  className="w-14 h-14 object-contain"
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h4 className="text-xs font-black uppercase text-indigo-600 dark:text-indigo-400 tracking-wider flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Isi Buku Jurnal Instan
+                </h4>
+                <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 mt-0.5 leading-snug">
+                  Minta anggota scan QR ini untuk tanda tangan serah terima kartu.
+                </p>
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <a 
+                    href={`${window.location.origin}/jurnal?member_id=${member.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-indigo-500 font-bold hover:underline font-mono truncate max-w-[150px] bg-indigo-50 dark:bg-indigo-950/40 py-0.5 px-1.5 rounded border border-indigo-100 dark:border-indigo-900"
+                    title="Buka Link Jurnal Member"
+                  >
+                    Buka Link
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyLink(`${window.location.origin}/jurnal?member_id=${member.id}`, `member_${member.id}`)}
+                    className="text-[10px] text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-bold bg-slate-100 dark:bg-slate-700 py-0.5 px-1.5 rounded flex items-center gap-1 transition-colors"
+                  >
+                    {copiedLink === `member_${member.id}` ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-500" />
+                        <span className="text-emerald-500">Tersalin</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Salin Link</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 

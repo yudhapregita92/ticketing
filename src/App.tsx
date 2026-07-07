@@ -54,6 +54,7 @@ import { ProjectEvaluation } from './components/ProjectEvaluation';
 import NetworkMonitor from './components/NetworkMonitor';
 import BeritaAcara from './components/BeritaAcara';
 import { MembershipManagement } from './components/MembershipManagement';
+import { MembershipJournalForm } from './components/MembershipJournalForm';
 import { MobileAppNav } from './components/MobileAppNav';
 import { TicketList } from './components/TicketList';
 import { TestingView } from './components/TestingView';
@@ -273,7 +274,7 @@ export default function App() {
       view = 'today';
     }
 
-    if (['today', 'all', 'my_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership', 'evaluasi_project'].includes(view)) {
+    if (['today', 'all', 'my_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership', 'evaluasi_project', 'jurnal'].includes(view)) {
       return view as ViewMode;
     }
     return hasAdmin ? 'dashboard' : 'today';
@@ -1089,7 +1090,21 @@ export default function App() {
     selection: adminUser ? 'selection:bg-violet-500/30' : 'selection:bg-emerald-500/30'
   };
 
-  if (!loading && !adminUser && !currentUser) {
+  const isPublicJurnalRoute = location.pathname === '/jurnal';
+
+  if (isPublicJurnalRoute) {
+    return (
+      <div className={`min-h-screen font-sans transition-colors duration-300 ${themeClasses.bg} ${themeClasses.selection}`} style={{ '--primary': primaryColor } as any}>
+        <MembershipJournalForm 
+          isDark={isDark} 
+          themeClasses={themeClasses} 
+          primaryColor={primaryColor} 
+        />
+      </div>
+    );
+  }
+
+  if (!loading && !adminUser && !currentUser && !isPublicJurnalRoute) {
     return (
       <div className={`min-h-screen font-sans transition-colors duration-300 ${themeClasses.bg} ${themeClasses.selection}`} style={{ '--primary': primaryColor } as any}>
         <Toaster position="top-center" reverseOrder={false} />
@@ -1319,8 +1334,8 @@ export default function App() {
                 adminUser={adminUser}
                 isDark={isDark}
                 themeClasses={themeClasses}
-                viewMode={viewMode}
-                setViewMode={setViewMode}
+                viewMode={viewMode as any}
+                setViewMode={setViewMode as any}
                 filterDept={filterDept}
                 setFilterDept={setFilterDept}
                 filterStatus={filterStatus}
