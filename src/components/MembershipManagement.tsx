@@ -1700,6 +1700,14 @@ const PrintCardModal = ({ member, onClose, isDark, themeClasses, templateBg, lay
     photoOffsetY: member.photo_offset_y ?? layout.photoOffsetY ?? 50,
   }));
   const [isEditMode, setIsEditMode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState<string | null>(null);
+
+  const handleCopyLink = (url: string, key: string) => {
+    navigator.clipboard.writeText(url);
+    setCopiedLink(key);
+    toast.success('Link berhasil disalin!');
+    setTimeout(() => setCopiedLink(null), 2000);
+  };
 
   // Fallbacks and safe merging for newly added layout fields
   const localLayoutMerged = {
