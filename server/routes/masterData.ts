@@ -243,8 +243,8 @@ router.post("/master-users", asyncHandler(async (req, res) => {
   }));
 
   router.post("/voucher-requests", asyncHandler(async (req: any, res: any) => {
-    const { requester_name, department, deadline, theme, slogan, validity_date, qty, created_by } = req.body;
-    db.prepare("INSERT INTO voucher_requests (requester_name, department, deadline, theme, slogan, validity_date, qty, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, 'Baru Diminta', ?)").run(
+    const { requester_name, department, deadline, theme, slogan, validity_date, qty, created_by, voucher_value } = req.body;
+    db.prepare("INSERT INTO voucher_requests (requester_name, department, deadline, theme, slogan, validity_date, qty, status, created_by, voucher_value) VALUES (?, ?, ?, ?, ?, ?, ?, 'Baru Diminta', ?, ?)").run(
       requester_name,
       department,
       deadline,
@@ -252,7 +252,8 @@ router.post("/master-users", asyncHandler(async (req, res) => {
       slogan || '',
       validity_date,
       parseInt(qty as string) || 0,
-      created_by || 'Umum'
+      created_by || 'Umum',
+      voucher_value || ''
     );
     emitUpdate();
     res.json({ success: true });

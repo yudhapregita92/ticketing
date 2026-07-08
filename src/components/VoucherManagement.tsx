@@ -397,9 +397,12 @@ export const VoucherManagement: React.FC<{
   const [reqSlogan, setReqSlogan] = useState('');
   const [reqValidity, setReqValidity] = useState('');
   const [reqQty, setReqQty] = useState(10);
+  const [reqVoucherValue, setReqVoucherValue] = useState('');
   const [reqSubmitting, setReqSubmitting] = useState(false);
   const [activeRequestId, setActiveRequestId] = useState<number | null>(null);
   const [globalTemplatesBackup, setGlobalTemplatesBackup] = useState<IVoucherTemplate[] | null>(null);
+  const [historySearchQuery, setHistorySearchQuery] = useState('');
+  const [historyStatusFilter, setHistoryStatusFilter] = useState<string>('Semua');
 
   const handleDesignForRequest = async (req: any) => {
     if (req.status === 'Baru Diminta') {
@@ -443,6 +446,7 @@ export const VoucherManagement: React.FC<{
           subtitle: req.theme.toUpperCase(),
           category: req.department.toUpperCase(),
           slogan: req.slogan || baseTpl.slogan || '',
+          value: req.voucher_value || baseTpl.value || '',
           validity: req.validity_date ? formatVoucherValidityDate(req.validity_date) : '',
           authorizedName: 'PUJI SULASTIANA'
         };
@@ -529,7 +533,7 @@ export const VoucherManagement: React.FC<{
 
   const handleCreateRequestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reqRequesterName || !reqDept || !reqDeadline || !reqTheme || !reqValidity || !reqQty) {
+    if (!reqRequesterName || !reqDept || !reqDeadline || !reqTheme || !reqValidity || !reqQty || !reqVoucherValue) {
       toast.error('Mohon lengkapi semua field form!');
       return;
     }
@@ -543,6 +547,7 @@ export const VoucherManagement: React.FC<{
         slogan: reqSlogan,
         validity_date: reqValidity,
         qty: Number(reqQty) || 10,
+        voucher_value: reqVoucherValue,
         created_by: loggedInMasterUser?.full_name || currentUser?.full_name || 'Umum'
       });
       toast.success('Permintaan voucher berhasil dikirim!');
@@ -553,6 +558,7 @@ export const VoucherManagement: React.FC<{
       setReqDeadline('');
       setReqValidity('');
       setReqQty(10);
+      setReqVoucherValue('');
       fetchRequests();
     } catch (err: any) {
       toast.error('Gagal mengirim permintaan: ' + err.message);
@@ -1746,12 +1752,87 @@ export const VoucherManagement: React.FC<{
   })();
 
   if (!adminUser) {
-    const myRequests = voucherRequests
+    const handleExportMyRequestsExcel = (filteredRequests: any[]) => {
+      if (filteredRequests.length === 0) {
+        toast.error("Tidak ada data untuk diexport.");
+        return;
+      }
+
+      // Headers
+      const headers = [
+        "No",
+        "ID Pengajuan",
+        "Pemohon",
+        "Departemen",
+        "Tema / Agenda Event",
+        "Slogan",
+        "Nilai Voucher (Rp)",
+        "Jumlah (Qty)",
+        "Masa Berlaku",
+        "Deadline Pembuatan",
+        "Status",
+        "Tanggal Pengajuan"
+      ];
+
+      // Build CSV Content (semicolon delimited for perfect Excel auto-column parsing on Indonesian/European locales, and quoted strings)
+      const csvRows = [headers.join(";")];
+
+      filteredRequests.forEach((req, idx) => {
+        const row = [
+          idx + 1,
+          req.id,
+          `"${(req.requester_name || '').replace(/"/g, '""')}"`,
+          `"${(req.department || '').replace(/"/g, '""')}"`,
+          `"${(req.theme || '').replace(/"/g, '""')}"`,
+          `"${(req.slogan || '').replace(/"/g, '""')}"`,
+          `"${(req.voucher_value || '').replace(/"/g, '""')}"`,
+          req.qty,
+          req.validity_date ? formatIndonesianDateOnly(req.validity_date) : '',
+          req.deadline ? formatIndonesianDateOnly(req.deadline) : '',
+          req.status,
+          req.created_at ? new Date(req.created_at).toLocaleDateString('id-ID') : ''
+        ];
+        csvRows.push(row.join(";"));
+      });
+
+      // Use UTF-8 BOM so Excel opens it with correct encoding
+      const csvContent = "\uFEFF" + csvRows.join("\r\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Riwayat_Pengajuan_Voucher_${currentUser?.full_name || 'User'}_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Berhasil mengunduh file export Excel (CSV)!");
+    };
+
+    const allMyRequests = voucherRequests
       .filter(r => 
         r.created_by === (loggedInMasterUser?.full_name || currentUser?.full_name || 'Umum') ||
         r.requester_name === (loggedInMasterUser?.full_name || currentUser?.full_name || 'Umum')
       )
       .sort((a, b) => b.id - a.id);
+
+    const myRequests = allMyRequests.filter(r => {
+      // 1. Status Filter
+      if (historyStatusFilter !== 'Semua' && r.status !== historyStatusFilter) {
+        return false;
+      }
+      // 2. Keyword Search
+      if (historySearchQuery) {
+        const query = historySearchQuery.toLowerCase();
+        const themeMatch = (r.theme || '').toLowerCase().includes(query);
+        const sloganMatch = (r.slogan || '').toLowerCase().includes(query);
+        const deptMatch = (r.department || '').toLowerCase().includes(query);
+        const requesterMatch = (r.requester_name || '').toLowerCase().includes(query);
+        const valueMatch = (r.voucher_value || '').toLowerCase().includes(query);
+        const statusMatch = (r.status || '').toLowerCase().includes(query);
+        return themeMatch || sloganMatch || deptMatch || requesterMatch || valueMatch || statusMatch;
+      }
+      return true;
+    });
 
     return (
       <div className="space-y-6 text-left animate-fade-in">
@@ -1848,6 +1929,17 @@ export const VoucherManagement: React.FC<{
                 </div>
 
                 <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nilai Voucher (Rp)</label>
+                  <input
+                    type="text"
+                    value={reqVoucherValue}
+                    onChange={(e) => setReqVoucherValue(e.target.value)}
+                    placeholder="Contoh: Rp 50.000"
+                    className="w-full px-3 py-2 text-xs font-bold border rounded-xl dark:bg-slate-800 dark:border-slate-700 bg-white dark:bg-slate-900"
+                  />
+                </div>
+
+                <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Jumlah Voucher (Qty)</label>
                   <input
                     type="number"
@@ -1878,9 +1970,67 @@ export const VoucherManagement: React.FC<{
           {/* Right Side: Requests History (col-span-7) */}
           <div className="xl:col-span-7 space-y-4">
             <div className={`${themeClasses.card} border rounded-3xl p-6 shadow-xs space-y-4`}>
-              <div>
-                <h3 className="text-sm font-black text-slate-800 dark:text-slate-200">Riwayat Pengajuan Saya ({myRequests.length})</h3>
-                <p className="text-[10px] text-slate-400 font-bold mt-0.5">Pantau status permintaan voucher Anda di bawah ini.</p>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+                <div>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    Riwayat Pengajuan Saya ({myRequests.length})
+                    {allMyRequests.length !== myRequests.length && (
+                      <span className="text-[10px] text-indigo-500 font-bold">
+                        (Difilter dari {allMyRequests.length})
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-bold mt-0.5">Pantau status permintaan voucher Anda di bawah ini.</p>
+                </div>
+                
+                {/* Export Button */}
+                <button
+                  type="button"
+                  onClick={() => handleExportMyRequestsExcel(myRequests)}
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-1 shadow-xs transition-all active:scale-95 self-start md:self-auto shrink-0"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  Export Excel (CSV)
+                </button>
+              </div>
+
+              {/* Filter Controls Row */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-2 bg-slate-50 dark:bg-slate-900/40 p-3 rounded-2xl border border-slate-100 dark:border-slate-800/60">
+                {/* Search Keyword */}
+                <div className="md:col-span-7 relative">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    value={historySearchQuery}
+                    onChange={(e) => setHistorySearchQuery(e.target.value)}
+                    placeholder="Cari tema, slogan, bagian, nilai..."
+                    className="w-full pl-8 pr-8 py-1.5 text-xs font-semibold border rounded-xl dark:bg-slate-800 dark:border-slate-700 bg-white"
+                  />
+                  {historySearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setHistorySearchQuery('')}
+                      className="absolute right-2.5 top-2 hover:text-red-500 transition-colors text-slate-400"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Status Filter Dropdown */}
+                <div className="md:col-span-5 flex items-center gap-1">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1 hidden sm:inline">Status:</span>
+                  <select
+                    value={historyStatusFilter}
+                    onChange={(e) => setHistoryStatusFilter(e.target.value)}
+                    className="w-full px-2 py-1.5 text-xs font-bold border rounded-xl dark:bg-slate-800 dark:border-slate-700 bg-white"
+                  >
+                    <option value="Semua">Semua Status</option>
+                    <option value="Baru Diminta">Baru Diminta</option>
+                    <option value="Proses">Proses</option>
+                    <option value="Done">Done</option>
+                  </select>
+                </div>
               </div>
 
               {reqLoading ? (
@@ -1889,10 +2039,28 @@ export const VoucherManagement: React.FC<{
                   <span className="text-xs font-bold">Memuat data permintaan...</span>
                 </div>
               ) : myRequests.length === 0 ? (
-                <div className="py-12 text-center border-2 border-dashed rounded-2xl text-slate-400">
-                  <ClipboardList className="w-10 h-10 mx-auto opacity-30 mb-2" />
-                  <p className="text-xs font-bold">Belum ada riwayat pengajuan voucher.</p>
-                  <p className="text-[10px] text-slate-400 font-normal mt-1">Silakan buat pengajuan pertama Anda melalui formulir di sebelah kiri.</p>
+                <div className="py-12 text-center border-2 border-dashed rounded-2xl text-slate-400 space-y-2">
+                  <ClipboardList className="w-10 h-10 mx-auto opacity-30" />
+                  {allMyRequests.length > 0 ? (
+                    <>
+                      <p className="text-xs font-bold text-slate-500">Tidak ada pengajuan yang cocok dengan filter aktif.</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setHistorySearchQuery('');
+                          setHistoryStatusFilter('Semua');
+                        }}
+                        className="mt-2 px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 rounded-lg text-[10px] font-bold transition-all"
+                      >
+                        Atur Ulang Filter
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-xs font-bold">Belum ada riwayat pengajuan voucher.</p>
+                      <p className="text-[10px] text-slate-400 font-normal mt-1">Silakan buat pengajuan pertama Anda melalui formulir di sebelah kiri.</p>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3 max-h-[500px] overflow-y-auto">
@@ -1920,8 +2088,9 @@ export const VoucherManagement: React.FC<{
                         <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px] text-slate-500 font-semibold">
                           <div>Departemen: <span className="font-bold text-slate-700 dark:text-slate-300">{req.department}</span></div>
                           <div>Jumlah: <span className="font-bold text-slate-700 dark:text-slate-300">{req.qty} Pcs</span></div>
+                          <div>Nilai Voucher: <span className="font-bold text-indigo-600 dark:text-indigo-400">{req.voucher_value || '-'}</span></div>
                           <div>Masa Berlaku: <span className="font-bold text-slate-700 dark:text-slate-300">{req.validity_date ? formatIndonesianDateOnly(req.validity_date) : ''}</span></div>
-                          <div>Deadline: <span className="font-bold text-slate-700 dark:text-slate-300">{req.deadline ? formatIndonesianDateOnly(req.deadline) : ''}</span></div>
+                          <div className="col-span-2">Deadline: <span className="font-bold text-slate-700 dark:text-slate-300">{req.deadline ? formatIndonesianDateOnly(req.deadline) : ''}</span></div>
                         </div>
                       </div>
 
@@ -3327,9 +3496,10 @@ export const VoucherManagement: React.FC<{
 
                         <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[9px] text-slate-500 font-semibold border-t pt-1.5">
                           <div>Qty: <span className="font-bold text-slate-700 dark:text-slate-300">{req.qty} Pcs</span></div>
+                          <div>Nilai Voucher: <span className="font-bold text-indigo-600 dark:text-indigo-400">{req.voucher_value || '-'}</span></div>
                           <div>Masa Berlaku: <span className="font-bold text-slate-700 dark:text-slate-300">{req.validity_date ? formatIndonesianDateOnly(req.validity_date) : ''}</span></div>
                           <div>Deadline: <span className="font-bold text-slate-700 dark:text-slate-300">{req.deadline ? formatIndonesianDateOnly(req.deadline) : ''}</span></div>
-                          <div>Dibuat: <span className="font-bold text-slate-700 dark:text-slate-300">{req.created_at ? new Date(req.created_at).toLocaleDateString('id-ID') : ''}</span></div>
+                          <div className="col-span-2">Dibuat: <span className="font-bold text-slate-700 dark:text-slate-300">{req.created_at ? new Date(req.created_at).toLocaleDateString('id-ID') : ''}</span></div>
                         </div>
 
                         <div className="flex items-center justify-between gap-2 border-t pt-2 mt-1">

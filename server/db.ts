@@ -198,6 +198,7 @@ export function initDb() {
       qty INTEGER NOT NULL,
       status TEXT DEFAULT 'Baru Diminta', -- 'Baru Diminta', 'Proses', 'Done'
       created_by TEXT,
+      voucher_value TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -261,6 +262,9 @@ export function initDb() {
       }
       if (!columns.find(c => c.name === 'created_by')) {
         db.prepare("ALTER TABLE voucher_requests ADD COLUMN created_by TEXT").run();
+      }
+      if (!columns.find(c => c.name === 'voucher_value')) {
+        db.prepare("ALTER TABLE voucher_requests ADD COLUMN voucher_value TEXT").run();
       }
     }
 

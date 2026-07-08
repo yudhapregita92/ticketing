@@ -279,7 +279,7 @@ export const api = {
     body: JSON.stringify({ can_request_voucher })
   }).then(handleResponse),
   getVoucherRequests: (): Promise<any[]> => fetch('/api/voucher-requests').then(handleResponse),
-  createVoucherRequest: (data: { requester_name: string; department: string; deadline: string; theme: string; slogan?: string; validity_date: string; qty: number; created_by?: string }) => fetch('/api/voucher-requests', {
+  createVoucherRequest: (data: { requester_name: string; department: string; deadline: string; theme: string; slogan?: string; validity_date: string; qty: number; created_by?: string; voucher_value?: string }) => fetch('/api/voucher-requests', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
