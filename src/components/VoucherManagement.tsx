@@ -121,6 +121,26 @@ interface IVoucherRecord {
   printedAt?: string;
 }
 
+const formatRupiah = (val: string | number) => {
+  if (val === undefined || val === null) return '';
+  const valStr = String(val).trim();
+  if (/^rp/i.test(valStr)) {
+    return valStr;
+  }
+  const digits = valStr.replace(/[^0-9]/g, '');
+  if (!digits) return valStr;
+  
+  const num = parseInt(digits, 10);
+  const formatted = new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(num);
+  
+  return formatted.replace(/IDR\s?|Rp\s?/, 'Rp ');
+};
+
 const formatVoucherValidityDate = (dateStr: string) => {
   if (!dateStr) return '';
   const parts = dateStr.split('-');
@@ -728,7 +748,7 @@ export const VoucherManagement: React.FC<{
               <div class="voucher-body">
                 <div class="body-left">
                   <div class="voucher-slogan">"${tempTemplate.slogan}"</div>
-                  <div class="voucher-value">${tempTemplate.value}</div>
+                  <div class="voucher-value">${formatRupiah(tempTemplate.value)}</div>
                   <div class="voucher-validity-box">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #dc2626"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                     <span>${tempTemplate.validity}</span>
@@ -1242,6 +1262,8 @@ export const VoucherManagement: React.FC<{
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      align-items: center;
+      text-align: center;
     }
     .voucher-slogan {
       font-size: ${activeTemplate.sloganSize ?? 10}px;
@@ -1575,7 +1597,7 @@ export const VoucherManagement: React.FC<{
                   <!-- Left Body -->
                   <div class="body-left">
                     <div class="voucher-slogan">"${activeTemplate.slogan}"</div>
-                    <div class="voucher-value">${activeTemplate.value}</div>
+                    <div class="voucher-value">${formatRupiah(activeTemplate.value)}</div>
                     <div class="voucher-validity-box">
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #dc2626"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                       <span>${activeTemplate.validity}</span>
@@ -1671,7 +1693,7 @@ export const VoucherManagement: React.FC<{
                 <!-- Left Body -->
                 <div class="body-left">
                   <div class="voucher-slogan">"${activeTemplate.slogan}"</div>
-                  <div class="voucher-value">${activeTemplate.value}</div>
+                  <div class="voucher-value">${formatRupiah(activeTemplate.value)}</div>
                   <div class="voucher-validity-box">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #dc2626"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                     <span>${activeTemplate.validity}</span>
@@ -1785,7 +1807,7 @@ export const VoucherManagement: React.FC<{
           `"${(req.department || '').replace(/"/g, '""')}"`,
           `"${(req.theme || '').replace(/"/g, '""')}"`,
           `"${(req.slogan || '').replace(/"/g, '""')}"`,
-          `"${(req.voucher_value || '').replace(/"/g, '""')}"`,
+          `"${formatRupiah(req.voucher_value).replace(/"/g, '""')}"`,
           req.qty,
           req.validity_date ? formatIndonesianDateOnly(req.validity_date) : '',
           req.deadline ? formatIndonesianDateOnly(req.deadline) : '',
@@ -2088,7 +2110,7 @@ export const VoucherManagement: React.FC<{
                         <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px] text-slate-500 font-semibold">
                           <div>Departemen: <span className="font-bold text-slate-700 dark:text-slate-300">{req.department}</span></div>
                           <div>Jumlah: <span className="font-bold text-slate-700 dark:text-slate-300">{req.qty} Pcs</span></div>
-                          <div>Nilai Voucher: <span className="font-bold text-indigo-600 dark:text-indigo-400">{req.voucher_value || '-'}</span></div>
+                          <div>Nilai Voucher: <span className="font-bold text-indigo-600 dark:text-indigo-400">{formatRupiah(req.voucher_value)}</span></div>
                           <div>Masa Berlaku: <span className="font-bold text-slate-700 dark:text-slate-300">{req.validity_date ? formatIndonesianDateOnly(req.validity_date) : ''}</span></div>
                           <div className="col-span-2">Deadline: <span className="font-bold text-slate-700 dark:text-slate-300">{req.deadline ? formatIndonesianDateOnly(req.deadline) : ''}</span></div>
                         </div>
@@ -3496,7 +3518,7 @@ export const VoucherManagement: React.FC<{
 
                         <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[9px] text-slate-500 font-semibold border-t pt-1.5">
                           <div>Qty: <span className="font-bold text-slate-700 dark:text-slate-300">{req.qty} Pcs</span></div>
-                          <div>Nilai Voucher: <span className="font-bold text-indigo-600 dark:text-indigo-400">{req.voucher_value || '-'}</span></div>
+                          <div>Nilai Voucher: <span className="font-bold text-indigo-600 dark:text-indigo-400">{formatRupiah(req.voucher_value)}</span></div>
                           <div>Masa Berlaku: <span className="font-bold text-slate-700 dark:text-slate-300">{req.validity_date ? formatIndonesianDateOnly(req.validity_date) : ''}</span></div>
                           <div>Deadline: <span className="font-bold text-slate-700 dark:text-slate-300">{req.deadline ? formatIndonesianDateOnly(req.deadline) : ''}</span></div>
                           <div className="col-span-2">Dibuat: <span className="font-bold text-slate-700 dark:text-slate-300">{req.created_at ? new Date(req.created_at).toLocaleDateString('id-ID') : ''}</span></div>
@@ -3664,7 +3686,7 @@ export const VoucherManagement: React.FC<{
                     {/* Left Body */}
                     <div className="body-left">
                       <div className="voucher-slogan">"{activeTemplate.slogan}"</div>
-                      <div className="voucher-value">{activeTemplate.value}</div>
+                      <div className="voucher-value">{formatRupiah(activeTemplate.value)}</div>
                       <div className="voucher-validity-box">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#dc2626' }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                         <span>{activeTemplate.validity}</span>
