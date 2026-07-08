@@ -17,6 +17,7 @@ import {
   Settings2,
   ShieldCheck,
   UserPlus,
+  Printer,
   LogOut
 } from 'lucide-react';
 import { 
@@ -46,6 +47,7 @@ interface SidebarProps {
   setViewMode: (mode: ViewMode) => void;
   setShowLogin?: (show: boolean) => void;
   handleLogout?: () => void;
+  userCanVoucher?: boolean;
 }
 
 // Helper to safely parse date strings for Safari compatibility
@@ -72,7 +74,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   viewMode,
   setViewMode,
   setShowLogin,
-  handleLogout
+  handleLogout,
+  userCanVoucher
 }) => {
   return (
     <div className="lg:col-span-1 space-y-3 lg:space-y-4">
@@ -148,6 +151,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span>{adminUser ? 'Tiket Saya' : 'Riwayat Tiket'}</span>
             </div>
           </button>
+
+          {(adminUser || userCanVoucher) && (
+            <button
+              onClick={() => setViewMode('voucher')}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all text-xs font-bold ${
+                viewMode === 'voucher' 
+                  ? 'bg-emerald-500/10 text-emerald-600' 
+                  : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Printer className="w-4 h-4" />
+                <span>{adminUser ? 'Cetak Voucher' : 'Buat Voucher'}</span>
+              </div>
+            </button>
+          )}
           
           {adminUser && (
             <>

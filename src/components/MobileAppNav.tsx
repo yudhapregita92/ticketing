@@ -8,13 +8,15 @@ interface MobileAppNavProps {
   setViewMode: (mode: ViewMode) => void;
   isDark: boolean;
   adminUser: IAdminUser | null;
+  userCanVoucher?: boolean;
 }
 
 export const MobileAppNav: React.FC<MobileAppNavProps> = ({
   viewMode,
   setViewMode,
   isDark,
-  adminUser
+  adminUser,
+  userCanVoucher
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -38,11 +40,11 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
     <div className="lg:hidden mb-4 relative" ref={menuRef}>
       <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-zinc-900/40 p-1.5 rounded-2xl border border-slate-100/80 dark:border-zinc-800/60">
         
-        {adminUser && (
+        {(adminUser || userCanVoucher) && (
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className={`flex-none p-2 rounded-xl transition-all ${
-              isMenuOpen || ['dashboard', 'assets', 'network', 'ba', 'membership', 'evaluasi_project'].includes(viewMode)
+              isMenuOpen || ['dashboard', 'assets', 'network', 'ba', 'membership', 'evaluasi_project', 'voucher'].includes(viewMode)
                 ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/15' 
                 : isDark ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
             }`}
@@ -88,7 +90,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
       </div>
 
       <AnimatePresence>
-        {isMenuOpen && adminUser && (
+        {isMenuOpen && (adminUser || userCanVoucher) && (
           <motion.div
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -99,69 +101,91 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
             }`}
           >
             <div className="flex flex-col p-1.5 gap-1">
-              <button 
-                onClick={() => handleMenuClick('dashboard')}
-                className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
-                  viewMode === 'dashboard' 
-                    ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
-                    : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                Dashboard
-              </button>
-              <button 
-                onClick={() => handleMenuClick('assets')}
-                className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
-                  viewMode === 'assets' 
-                    ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
-                    : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                Manajemen Aset
-              </button>
-              <button 
-                onClick={() => handleMenuClick('membership')}
-                className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
-                  viewMode === 'membership' 
-                    ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
-                    : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                Membership
-              </button>
-              <button 
-                onClick={() => handleMenuClick('evaluasi_project')}
-                className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
-                  viewMode === 'evaluasi_project' 
-                    ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
-                    : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                Evaluasi Project
-              </button>
-              {(adminUser.role === 'Super Admin' || adminUser.role === 'Staff IT Support') && (
+              {adminUser && (
+                <>
+                  <button 
+                    onClick={() => handleMenuClick('dashboard')}
+                    className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                      viewMode === 'dashboard' 
+                        ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
+                        : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    Dashboard
+                  </button>
+                  <button 
+                    onClick={() => handleMenuClick('assets')}
+                    className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                      viewMode === 'assets' 
+                        ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
+                        : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    Manajemen Aset
+                  </button>
+                  <button 
+                    onClick={() => handleMenuClick('membership')}
+                    className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                      viewMode === 'membership' 
+                        ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
+                        : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    Membership
+                  </button>
+                </>
+              )}
+
+              {(adminUser || userCanVoucher) && (
                 <button 
-                  onClick={() => handleMenuClick('network')}
+                  onClick={() => handleMenuClick('voucher')}
                   className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
-                    viewMode === 'network' 
+                    viewMode === 'voucher' 
                       ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
                       : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
                   }`}
                 >
-                  Network
+                  {adminUser ? 'Cetak Voucher' : 'Buat Voucher'}
                 </button>
               )}
-              {adminUser.role === 'Super Admin' && (
-                <button 
-                  onClick={() => handleMenuClick('ba')}
-                  className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
-                    viewMode === 'ba' 
-                      ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
-                      : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
-                  }`}
-                >
-                  Surat Rekomendasi
-                </button>
+
+              {adminUser && (
+                <>
+                  <button 
+                    onClick={() => handleMenuClick('evaluasi_project')}
+                    className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                      viewMode === 'evaluasi_project' 
+                        ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
+                        : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    Evaluasi Project
+                  </button>
+                  {(adminUser.role === 'Super Admin' || adminUser.role === 'Staff IT Support') && (
+                    <button 
+                      onClick={() => handleMenuClick('network')}
+                      className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                        viewMode === 'network' 
+                          ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
+                          : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      Network
+                    </button>
+                  )}
+                  {adminUser.role === 'Super Admin' && (
+                    <button 
+                      onClick={() => handleMenuClick('ba')}
+                      className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                        viewMode === 'ba' 
+                          ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
+                          : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      Surat Rekomendasi
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </motion.div>

@@ -58,6 +58,7 @@ import { MembershipJournalForm } from './components/MembershipJournalForm';
 import { MobileAppNav } from './components/MobileAppNav';
 import { TicketList } from './components/TicketList';
 import { TestingView } from './components/TestingView';
+import { VoucherManagement } from './components/VoucherManagement';
 
 // Types, Constants, and Utils
 import { ITicket, IUser, IDepartment, ICategory, IMasterUser, ISettings, ViewMode } from './types';
@@ -174,6 +175,15 @@ export default function App() {
     return { it: [], depts: [], cats: [], users: [], masters: [], admins: [] };
   }, [adminUser, managementData, publicData]);
 
+  const loggedInMasterUser = useMemo(() => {
+    if (!currentUser) return null;
+    return masterUsers.find((u: any) => u.full_name === currentUser.full_name || u.employee_index === currentUser.employee_index);
+  }, [currentUser, masterUsers]);
+
+  const userCanVoucher = useMemo(() => {
+    return loggedInMasterUser?.can_request_voucher === 1;
+  }, [loggedInMasterUser]);
+
   const createTicketMutation = useCreateTicket();
   const updateTicketMutation = useUpdateTicket();
   const deleteTicketMutation = useDeleteTicket();
@@ -270,11 +280,15 @@ export default function App() {
     let view = p === '' ? (hasAdmin ? 'dashboard' : 'today') : p;
 
     // Admin only routes fallback
-    if (!hasAdmin && ['dashboard', 'assets', 'network', 'membership', 'evaluasi_project'].includes(view)) {
-      view = 'today';
+    if (!hasAdmin && ['dashboard', 'assets', 'network', 'membership', 'evaluasi_project', 'voucher'].includes(view)) {
+      if (view === 'voucher' && userCanVoucher) {
+        // Allowed
+      } else {
+        view = 'today';
+      }
     }
 
-    if (['today', 'all', 'my_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership', 'evaluasi_project', 'jurnal'].includes(view)) {
+    if (['today', 'all', 'my_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership', 'evaluasi_project', 'jurnal', 'voucher'].includes(view)) {
       return view as ViewMode;
     }
     return hasAdmin ? 'dashboard' : 'today';
@@ -1010,6 +1024,15 @@ export default function App() {
   const isDark = adminUser ? adminUser.theme_mode === 'dark' : appSettings.theme_mode === 'dark';
   const primaryColor = adminUser ? adminUser.primary_color : appSettings.primary_color;
 
+  // Sync dark mode class with HTML element
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDark]);
+
   // Sync appSettings with adminUser settings when adminUser changes
   useEffect(() => {
     if (adminUser) {
@@ -1239,6 +1262,7 @@ export default function App() {
                 setViewMode={setViewMode}
                 setShowLogin={setShowLogin}
                 handleLogout={handleLogout}
+                userCanVoucher={userCanVoucher}
               />
             </div>
           </div>
@@ -1250,6 +1274,7 @@ export default function App() {
               setViewMode={setViewMode}
               isDark={isDark}
               adminUser={adminUser}
+              userCanVoucher={userCanVoucher}
             />
             {viewMode === 'dashboard' ? (
               <AdminDashboard 
@@ -1284,6 +1309,15 @@ export default function App() {
                 isDark={isDark}
                 themeClasses={themeClasses}
                 primaryColor={primaryColor}
+              />
+            ) : viewMode === 'voucher' ? (
+              <VoucherManagement
+                isDark={isDark}
+                themeClasses={themeClasses}
+                primaryColor={primaryColor}
+                adminUser={adminUser}
+                currentUser={currentUser}
+                loggedInMasterUser={loggedInMasterUser}
               />
             ) : viewMode === 'evaluasi_project' ? (
               <ProjectEvaluation 

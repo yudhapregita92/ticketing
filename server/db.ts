@@ -186,6 +186,21 @@ export function initDb() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (project_id) REFERENCES eval_projects(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS voucher_requests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      requester_name TEXT NOT NULL,
+      department TEXT NOT NULL,
+      deadline TEXT NOT NULL,
+      theme TEXT NOT NULL,
+      slogan TEXT,
+      validity_date TEXT NOT NULL,
+      qty INTEGER NOT NULL,
+      status TEXT DEFAULT 'Baru Diminta', -- 'Baru Diminta', 'Proses', 'Done'
+      created_by TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   try {
@@ -233,10 +248,22 @@ export function initDb() {
   }
 
   // Add missing columns if they don't exist
-  const tables = ['tickets', 'users', 'categories', 'master_users', 'ticket_logs', 'memberships', 'membership_logs', 'assets'];
+  const tables = ['tickets', 'users', 'categories', 'master_users', 'ticket_logs', 'memberships', 'membership_logs', 'assets', 'voucher_requests'];
   for (const table of tables) {
     const columns = db.prepare(`PRAGMA table_info(${table})`).all() as any[];
     
+    if (table === 'voucher_requests') {
+      if (!columns.find(c => c.name === 'design_data')) {
+        db.prepare("ALTER TABLE voucher_requests ADD COLUMN design_data TEXT").run();
+      }
+      if (!columns.find(c => c.name === 'slogan')) {
+        db.prepare("ALTER TABLE voucher_requests ADD COLUMN slogan TEXT").run();
+      }
+      if (!columns.find(c => c.name === 'created_by')) {
+        db.prepare("ALTER TABLE voucher_requests ADD COLUMN created_by TEXT").run();
+      }
+    }
+
     if (table === 'assets') {
       if (columns.find(c => c.name === 'asset_tag')) {
         db.prepare("DROP TABLE assets").run();
@@ -346,6 +373,9 @@ export function initDb() {
       }
       if (!columns.find(c => c.name === 'kode_piranti')) {
         db.prepare("ALTER TABLE master_users ADD COLUMN kode_piranti TEXT").run();
+      }
+      if (!columns.find(c => c.name === 'can_request_voucher')) {
+        db.prepare("ALTER TABLE master_users ADD COLUMN can_request_voucher INTEGER DEFAULT 0").run();
       }
       db.prepare("UPDATE master_users SET jenis_piranti = '(Tidak Ada)' WHERE jenis_piranti IS NULL OR jenis_piranti = ''").run();
       db.prepare("UPDATE master_users SET kode_piranti = '-' WHERE kode_piranti IS NULL OR kode_piranti = ''").run();

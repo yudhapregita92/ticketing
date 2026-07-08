@@ -332,6 +332,17 @@ export const SettingsModal = React.memo(({
     }
   };
 
+  const handleToggleVoucherPrivilege = async (user: any) => {
+    const nextVal = user.can_request_voucher === 1 ? 0 : 1;
+    try {
+      await api.toggleVoucherPrivilege(user.id, nextVal === 1);
+      alert(`Izin buat voucher untuk ${user.full_name} berhasil ${nextVal === 1 ? 'diberikan' : 'dicabut'}`);
+      handleManagementAction('master-user', 'refresh');
+    } catch (err: any) {
+      alert(err.message || 'Gagal mengubah izin voucher');
+    }
+  };
+
   const handleDownloadTemplate = () => {
     const templateData = [
       {
@@ -1566,7 +1577,14 @@ export const SettingsModal = React.memo(({
                         filteredMasterUsers.map(user => (
                           <div key={user.id} className={`flex items-center justify-between p-2.5 rounded-xl border ${themeClasses.border} ${themeClasses.bgSecondary}`}>
                             <div className="flex flex-col text-left">
-                              <span className="text-[11px] font-bold">{user.full_name}</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] font-bold">{user.full_name}</span>
+                                {user.can_request_voucher === 1 && (
+                                  <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 text-[8px] font-black rounded-md uppercase tracking-wider shrink-0">
+                                    Akses Voucher
+                                  </span>
+                                )}
+                              </div>
                               <span className="text-[9px] text-slate-400 capitalize font-black">
                                 {user.department} • {user.phone} • Indek: {user.employee_index}
                                 {user.jenis_piranti ? ` • Piranti: ${user.jenis_piranti}` : ''}
@@ -1575,6 +1593,18 @@ export const SettingsModal = React.memo(({
                               </span>
                             </div>
                             <div className="flex items-center gap-1">
+                              <button 
+                                type="button"
+                                onClick={() => handleToggleVoucherPrivilege(user)}
+                                className={`p-1.5 rounded-lg transition-colors ${
+                                  user.can_request_voucher === 1 
+                                    ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60' 
+                                    : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                }`}
+                                title={user.can_request_voucher === 1 ? "Cabut Hak Akses Voucher" : "Berikan Hak Akses Voucher"}
+                              >
+                                <Key className="w-3.5 h-3.5" />
+                              </button>
                               <button 
                                 type="button"
                                 onClick={() => handlePrintLabel(user)}

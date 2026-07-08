@@ -224,5 +224,76 @@ router.post("/master-users", asyncHandler(async (req, res) => {
   res.json({ success: true, count });
 }));
 
+  // Voucher Request Toggle
+  router.put("/master-users/:id/toggle-voucher", asyncHandler(async (req: any, res: any) => {
+    const { id } = req.params;
+    const { can_request_voucher } = req.body;
+    db.prepare("UPDATE master_users SET can_request_voucher = ? WHERE id = ?").run(
+      can_request_voucher ? 1 : 0,
+      id
+    );
+    emitUpdate();
+    res.json({ success: true });
+  }));
+
+  // Voucher Requests
+  router.get("/voucher-requests", asyncHandler(async (req: any, res: any) => {
+    const requests = db.prepare("SELECT * FROM voucher_requests ORDER BY created_at DESC").all();
+    res.json(requests);
+  }));
+
+  router.post("/voucher-requests", asyncHandler(async (req: any, res: any) => {
+    const { requester_name, department, deadline, theme, slogan, validity_date, qty, created_by } = req.body;
+    db.prepare("INSERT INTO voucher_requests (requester_name, department, deadline, theme, slogan, validity_date, qty, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, 'Baru Diminta', ?)").run(
+      requester_name,
+      department,
+      deadline,
+      theme,
+      slogan || '',
+      validity_date,
+      parseInt(qty as string) || 0,
+      created_by || 'Umum'
+    );
+    emitUpdate();
+    res.json({ success: true });
+  }));
+
+  router.put("/voucher-requests/:id/status", asyncHandler(async (req: any, res: any) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    db.prepare("UPDATE voucher_requests SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(
+      status,
+      id
+    );
+    emitUpdate();
+    res.json({ success: true });
+  }));
+
+  router.put("/voucher-requests/:id/design", asyncHandler(async (req: any, res: any) => {
+    const { id } = req.params;
+    const { design_data, status } = req.body;
+    if (design_data !== undefined && status !== undefined) {
+      db.prepare("UPDATE voucher_requests SET design_data = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(
+        design_data,
+        status,
+        id
+      );
+    } else if (design_data !== undefined) {
+      db.prepare("UPDATE voucher_requests SET design_data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(
+        design_data,
+        id
+      );
+    }
+    emitUpdate();
+    res.json({ success: true });
+  }));
+
+  router.delete("/voucher-requests/:id", asyncHandler(async (req: any, res: any) => {
+    const { id } = req.params;
+    db.prepare("DELETE FROM voucher_requests WHERE id = ?").run(id);
+    emitUpdate();
+    res.json({ success: true });
+  }));
+
   return router;
 }

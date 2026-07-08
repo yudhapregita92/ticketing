@@ -271,4 +271,30 @@ export const api = {
   deleteEvalProjectTimeline: (id: number, timelineId: number) => fetch(`/api/eval-projects/${id}/timeline/${timelineId}`, {
     method: 'DELETE'
   }).then(handleResponse),
+
+  // Vouchers & Request Privileges
+  toggleVoucherPrivilege: (id: number, can_request_voucher: boolean) => fetch(`/api/master-users/${id}/toggle-voucher`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ can_request_voucher })
+  }).then(handleResponse),
+  getVoucherRequests: (): Promise<any[]> => fetch('/api/voucher-requests').then(handleResponse),
+  createVoucherRequest: (data: { requester_name: string; department: string; deadline: string; theme: string; slogan?: string; validity_date: string; qty: number; created_by?: string }) => fetch('/api/voucher-requests', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(handleResponse),
+  updateVoucherRequestStatus: (id: number, status: string) => fetch(`/api/voucher-requests/${id}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status })
+  }).then(handleResponse),
+  updateVoucherRequestDesign: (id: number, design_data: string, status?: string) => fetch(`/api/voucher-requests/${id}/design`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ design_data, status })
+  }).then(handleResponse),
+  deleteVoucherRequest: (id: number) => fetch(`/api/voucher-requests/${id}`, {
+    method: 'DELETE'
+  }).then(handleResponse),
 };
