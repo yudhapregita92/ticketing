@@ -15,6 +15,19 @@ router.get("/", (req, res) => {
   }
 });
 
+router.post("/delete-all", (req, res) => {
+  const { password } = req.body;
+  if (password !== "root") {
+    return res.status(403).json({ error: "Password salah!" });
+  }
+  try {
+    db.prepare("DELETE FROM memberships").run();
+    res.json({ success: true, message: "Semua data membership berhasil dihapus" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get("/:id/logs", (req, res) => {
   try {
     const logs = db.prepare("SELECT * FROM membership_logs WHERE membership_id = ? ORDER BY created_at DESC").all(req.params.id);

@@ -211,6 +211,11 @@ export const api = {
   deleteMembership: (id: number) => fetch(`/api/memberships/${id}`, {
     method: 'DELETE'
   }).then(handleResponse),
+  deleteAllMemberships: (password: string) => fetch('/api/memberships/delete-all', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password })
+  }).then(handleResponse),
   getMembershipLogs: (id: number): Promise<any[]> => fetch(`/api/memberships/${id}/logs`).then(handleResponse),
   uploadMemberships: (file: File) => {
     const formData = new FormData();

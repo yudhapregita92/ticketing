@@ -46,6 +46,9 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+  const [deleteAllPassword, setDeleteAllPassword] = useState('');
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
   
   const [formData, setFormData] = useState<Partial<IMembership> & { keterangan_update?: string }>({
     kode_lokal: '',
@@ -393,6 +396,27 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
     }
   };
 
+  const handleDeleteAll = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (deleteAllPassword !== 'root') {
+      toast.error('Password salah!');
+      return;
+    }
+
+    try {
+      setIsDeletingAll(true);
+      await api.deleteAllMemberships(deleteAllPassword);
+      toast.success('Semua data membership berhasil dihapus');
+      setShowDeleteAllModal(false);
+      setDeleteAllPassword('');
+      fetchMemberships();
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal menghapus semua data membership');
+    } finally {
+      setIsDeletingAll(false);
+    }
+  };
+
   const handleExportExcel = () => {
     try {
       const exportData = memberships.map(m => ({
@@ -655,6 +679,14 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
             >
               <Plus className="w-4 h-4" />
               Tambah Member
+            </button>
+
+            <button 
+              onClick={() => setShowDeleteAllModal(true)}
+              className="px-3 py-1.5 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center gap-1.5 shadow-sm active:scale-95"
+            >
+              <Trash2 className="w-4 h-4" />
+              Hapus Semua
             </button>
           </div>
         ) : (
@@ -1247,6 +1279,87 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                   )}
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL HAPUS SEMUA DATA MEMBERSHIP */}
+      <AnimatePresence>
+        {showDeleteAllModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => {
+                setShowDeleteAllModal(false);
+                setDeleteAllPassword('');
+              }}
+            />
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className={`relative w-full max-w-md ${themeClasses.card} rounded-xl shadow-xl overflow-hidden`}
+            >
+              <div className={`p-4 border-b ${themeClasses.border} flex items-center justify-between`}>
+                <h3 className="font-bold text-red-600 flex items-center gap-1.5">
+                  <Trash2 className="w-5 h-5" />
+                  Hapus Semua Data Membership
+                </h3>
+                <button 
+                  onClick={() => {
+                    setShowDeleteAllModal(false);
+                    setDeleteAllPassword('');
+                  }}
+                  className={`p-1 rounded-full hover:${themeClasses.bgSecondary} transition-colors`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleDeleteAll} className="p-4 space-y-4">
+                <p className={`text-xs ${themeClasses.textMuted} leading-relaxed`}>
+                  Apakah Anda yakin ingin menghapus <span className="font-bold text-red-600">SEMUA</span> data membership? Tindakan ini bersifat permanen dan tidak dapat dibatalkan.
+                </p>
+
+                <div>
+                  <label className="block text-xs font-semibold mb-1.5 text-slate-500 dark:text-slate-400">
+                    Masukkan Password untuk Konfirmasi
+                  </label>
+                  <input 
+                    type="password" 
+                    required
+                    placeholder="Masukkan password..."
+                    value={deleteAllPassword}
+                    onChange={e => setDeleteAllPassword(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-lg text-sm border ${themeClasses.input} focus:outline-none focus:ring-2 focus:ring-red-500/50`}
+                  />
+                </div>
+
+                <div className="flex gap-2 justify-end pt-2 border-t border-slate-100 dark:border-slate-850">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowDeleteAllModal(false);
+                      setDeleteAllPassword('');
+                    }}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 transition-all`}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isDeletingAll || !deleteAllPassword}
+                    className="px-3 py-1.5 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 text-white transition-all disabled:opacity-50 flex items-center gap-1"
+                  >
+                    {isDeletingAll ? 'Menghapus...' : 'Hapus Semua'}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}
