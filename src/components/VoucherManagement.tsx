@@ -464,12 +464,30 @@ export const VoucherManagement: React.FC<{
     toast(`Formulir diisi otomatis berdasarkan pengajuan: "${req.theme}"`);
   };
 
+  const handleSaveDesignDraft = async () => {
+    if (!activeRequestId) return;
+    try {
+      const designJson = JSON.stringify(activeTemplate);
+      await api.updateVoucherRequestDesign(activeRequestId, designJson, 'Proses');
+      toast.success('Draft desain voucher berhasil disimpan!');
+      setActiveRequestId(null);
+      if (globalTemplatesBackup) {
+        setTemplates(globalTemplatesBackup);
+        setGlobalTemplatesBackup(null);
+      }
+      fetchRequests();
+      setActiveTab('requests');
+    } catch (err: any) {
+      toast.error('Gagal menyimpan draft desain: ' + err.message);
+    }
+  };
+
   const handleShareDesignToUser = async () => {
     if (!activeRequestId) return;
     try {
       const designJson = JSON.stringify(activeTemplate);
       await api.updateVoucherRequestDesign(activeRequestId, designJson, 'Done');
-      toast.success('Desain voucher berhasil disimpan dan dibagikan ke pemohon!');
+      toast.success('Desain voucher berhasil dibagikan ke pemohon!');
       setActiveRequestId(null);
       if (globalTemplatesBackup) {
         setTemplates(globalTemplatesBackup);
@@ -676,7 +694,7 @@ export const VoucherManagement: React.FC<{
       return;
     }
 
-    const cssRules = `${printGlobalCssRules}\n${cardCssRules}`;
+    const cssRules = `${printGlobalCssRules}\n${generateCardCssRules(tempTemplate)}`;
     const chunked: IVoucherRecord[][] = [];
     for (let i = 0; i < tempRecords.length; i += 4) {
       chunked.push(tempRecords.slice(i, i + 4));
@@ -684,6 +702,7 @@ export const VoucherManagement: React.FC<{
 
     const pagesHtml = chunked.map((pageVouchers) => {
       const vouchersHtml = pageVouchers.map((rec) => {
+        const qrDataUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(rec.serialNumber)}`;
         return `
           <div class="card-print-scale-wrapper-4">
             <div class="print-voucher-card ${tempTemplate.fontFamily}">
@@ -714,7 +733,13 @@ export const VoucherManagement: React.FC<{
                     <span class="auth-title">${tempTemplate.authorizedTitle}</span>
                   </div>
                   
-                  <div style="display:flex; justify-content: flex-end; align-items: flex-end; position: relative; width: 100%;">
+                  <div style="display:flex; justify-content: space-between; align-items: flex-end; transform: translate(${tempTemplate.qrSerialX ?? 0}px, ${tempTemplate.qrSerialY ?? 0}px); position: relative; width: 100%;">
+                    ${tempTemplate.showQr !== false ? `
+                      <div style="background: white; padding: 3px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); display: flex; transform: translate(${tempTemplate.qrX ?? 0}px, ${tempTemplate.qrY ?? 0}px); position: relative;">
+                        <img src="${qrDataUrl}" alt="QR Code" width="${tempTemplate.qrSize ?? 40}" height="${tempTemplate.qrSize ?? 40}" />
+                      </div>
+                    ` : '<div style="width: 0; height: 0; overflow: hidden;"></div>'}
+                    
                     <div class="serial-box">
                       ${tempTemplate.serialPrefix}${rec.serialNumber}
                     </div>
@@ -1117,7 +1142,7 @@ export const VoucherManagement: React.FC<{
   });
 
   // Printing Trigger
-  const cardCssRules = `
+  const generateCardCssRules = (activeTemplate: IVoucherTemplate) => `
     .font-sans {
       font-family: 'Inter', system-ui, sans-serif !important;
     }
@@ -1493,7 +1518,7 @@ export const VoucherManagement: React.FC<{
       return r;
     }));
 
-    const cssRules = `${printGlobalCssRules}\n${cardCssRules}`;
+    const cssRules = `${printGlobalCssRules}\n${generateCardCssRules(activeTemplate)}`;
 
     let htmlContent = '';
 
@@ -1979,11 +2004,19 @@ export const VoucherManagement: React.FC<{
                 </button>
                 <button
                   type="button"
+                  onClick={handleSaveDesignDraft}
+                  className="px-3 py-1.5 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900 dark:hover:bg-indigo-800 text-indigo-700 dark:text-indigo-200 rounded-xl text-[10px] font-black transition-all flex items-center gap-1"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  Simpan Draft
+                </button>
+                <button
+                  type="button"
                   onClick={handleShareDesignToUser}
                   className="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-1 shadow-sm transition-all"
                 >
                   <Share2 className="w-3.5 h-3.5" />
-                  Simpan & Share Desain ke User
+                  Share ke User
                 </button>
               </div>
             </div>
@@ -3362,7 +3395,7 @@ export const VoucherManagement: React.FC<{
                   50%
                 </button>
               </div>              {/* Scaled wrapper container to keep original aspect ratio layout */}
-              <style dangerouslySetInnerHTML={{ __html: cardCssRules }} />
+              <style dangerouslySetInnerHTML={{ __html: generateCardCssRules(activeTemplate) }} />
               <div 
                 style={{ 
                   width: `${800 * scaleFactor}px`, 
