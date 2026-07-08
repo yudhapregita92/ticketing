@@ -442,7 +442,7 @@ export const VoucherManagement: React.FC<{
           category: req.department.toUpperCase(),
           slogan: req.slogan || baseTpl.slogan || '',
           validity: req.validity_date ? formatVoucherValidityDate(req.validity_date) : '',
-          authorizedName: req.requester_name
+          authorizedName: 'PUJI SULASTIANA'
         };
       }
       return t;
@@ -585,6 +585,7 @@ export const VoucherManagement: React.FC<{
     if (req.design_data) {
       try {
         tempTemplate = JSON.parse(req.design_data);
+        tempTemplate.authorizedName = 'PUJI SULASTIANA'; // Force to Puji Sulastiana
       } catch (e) {
         console.error('Gagal mem-parse design_data, menggunakan default', e);
         tempTemplate = {
@@ -597,7 +598,7 @@ export const VoucherManagement: React.FC<{
           value: 'Rp 50.000',
           validity: req.validity_date ? formatVoucherValidityDate(req.validity_date) : '',
           authorizedByLabel: 'Disahkan oleh',
-          authorizedName: req.requester_name,
+          authorizedName: 'PUJI SULASTIANA',
           authorizedTitle: 'Bag. Panitia',
           serialPrefix: 'EVT-',
           footerText: 'KOPERASI KONSUMEN KARYAWAN DWI KARYA - GREAT GIANT FOODS',
@@ -643,7 +644,7 @@ export const VoucherManagement: React.FC<{
         value: 'Rp 50.000',
         validity: req.validity_date ? formatVoucherValidityDate(req.validity_date) : '',
         authorizedByLabel: 'Disahkan oleh',
-        authorizedName: req.requester_name,
+        authorizedName: 'PUJI SULASTIANA',
         authorizedTitle: 'Bag. Panitia',
         serialPrefix: 'EVT-',
         footerText: 'KOPERASI KONSUMEN KARYAWAN DWI KARYA - GREAT GIANT FOODS',
@@ -2518,10 +2519,9 @@ export const VoucherManagement: React.FC<{
                     <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider block">Bagian 2: Nama</span>
                     <input
                       type="text"
-                      value={activeTemplate.authorizedName}
-                      onChange={(e) => handleTemplateChange('authorizedName', e.target.value)}
-                      placeholder="Nama Pengesah"
-                      className="w-full px-2 py-1 text-[11px] font-bold border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700"
+                      value="PUJI SULASTIANA"
+                      disabled
+                      className="w-full px-2 py-1 text-[11px] font-bold border rounded-lg bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 cursor-not-allowed"
                     />
                     <div className="grid grid-cols-3 gap-1.5 pt-1">
                       <div>
