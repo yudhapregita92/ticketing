@@ -211,10 +211,10 @@ export const api = {
   deleteMembership: (id: number) => fetch(`/api/memberships/${id}`, {
     method: 'DELETE'
   }).then(handleResponse),
-  deleteAllMemberships: (password: string) => fetch('/api/memberships/delete-all', {
+  deleteAllMemberships: (password: string, excludeWithPhotoAndSignature?: boolean) => fetch('/api/memberships/delete-all', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password })
+    body: JSON.stringify({ password, excludeWithPhotoAndSignature })
   }).then(handleResponse),
   getMembershipLogs: (id: number): Promise<any[]> => fetch(`/api/memberships/${id}/logs`).then(handleResponse),
   uploadMemberships: (file: File) => {
@@ -223,7 +223,18 @@ export const api = {
     return fetch('/api/memberships/upload', {
       method: 'POST',
       body: formData
-    }).then(handleResponse);
+    }).then(async res => {
+      if (!res.ok) {
+        const text = await res.text();
+        try {
+          const parsed = JSON.parse(text);
+          return { success: false, ...parsed };
+        } catch (e) {
+          throw new Error(`API error ${res.status}: ${text}`);
+        }
+      }
+      return res.json().then(data => ({ success: true, ...data }));
+    });
   },
 
   // DB Connection test

@@ -7,7 +7,7 @@ import {
   X, Image as ImageIcon, CreditCard, UploadCloud,
   Sparkles, ChevronDown, ChevronUp, RefreshCw, Copy, Check, Barcode as BarcodeIcon,
   ZoomIn, ZoomOut, Download, Upload, History, Camera, Video,
-  BookOpen, User
+  BookOpen, User, AlertTriangle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Barcode from 'react-barcode';
@@ -49,6 +49,9 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
   const [deleteAllPassword, setDeleteAllPassword] = useState('');
   const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [excludeWithPhotoAndSignature, setExcludeWithPhotoAndSignature] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicateData, setDuplicateData] = useState<{ duplicatesInFile: any[], duplicatesWithDb: any[] } | null>(null);
   
   const [formData, setFormData] = useState<Partial<IMembership> & { keterangan_update?: string }>({
     kode_lokal: '',
@@ -405,10 +408,11 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
 
     try {
       setIsDeletingAll(true);
-      await api.deleteAllMemberships(deleteAllPassword);
-      toast.success('Semua data membership berhasil dihapus');
+      const res = await api.deleteAllMemberships(deleteAllPassword, excludeWithPhotoAndSignature);
+      toast.success(res.message || 'Semua data membership berhasil dihapus');
       setShowDeleteAllModal(false);
       setDeleteAllPassword('');
+      setExcludeWithPhotoAndSignature(false);
       fetchMemberships();
     } catch (err: any) {
       toast.error(err.message || 'Gagal menghapus semua data membership');
@@ -477,6 +481,17 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
       if (res.success) {
         toast.success(`Berhasil mengimpor ${res.count} data`);
         fetchMemberships();
+      } else {
+        if (res.duplicatesInFile || res.duplicatesWithDb) {
+          setDuplicateData({
+            duplicatesInFile: res.duplicatesInFile || [],
+            duplicatesWithDb: res.duplicatesWithDb || []
+          });
+          setShowDuplicateModal(true);
+          toast.error(res.error || 'Gagal mengimpor: Ditemukan data duplikat!');
+        } else {
+          toast.error(res.error || 'Gagal mengimpor data');
+        }
       }
     } catch (err: any) {
       toast.error('Gagal mengimpor data: ' + err.message);
@@ -965,10 +980,9 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
               <tr>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Foto</th>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Nama</th>
-                <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Kode Lokal</th>
-                <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Indek GGF</th>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Bagian</th>
-                <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Barcode</th>
+                <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Indek KDK</th>
+                <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Indek GGF</th>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Update Terakhir</th>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted} text-right`}>Aksi</th>
               </tr>
@@ -976,11 +990,11 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
             <tbody className={`divide-y ${themeClasses.border}`}>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-4 px-4 text-center">Loading...</td>
+                  <td colSpan={7} className="py-4 px-4 text-center">Loading...</td>
                 </tr>
               ) : filteredMemberships.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className={`py-8 px-4 text-center ${themeClasses.textMuted}`}>
+                  <td colSpan={7} className={`py-8 px-4 text-center ${themeClasses.textMuted}`}>
                     Data tidak ditemukan
                   </td>
                 </tr>
@@ -996,10 +1010,9 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                     )}
                   </td>
                   <td className="py-3 px-4 font-medium">{member.nama}</td>
-                  <td className="py-3 px-4">{member.kode_lokal || '-'}</td>
-                  <td className="py-3 px-4">{member.indek_ggf || '-'}</td>
                   <td className="py-3 px-4">{member.bagian || '-'}</td>
-                  <td className="py-3 px-4 font-mono text-xs">{member.barcode || '-'}</td>
+                  <td className="py-3 px-4">{member.indek_kdk || '-'}</td>
+                  <td className="py-3 px-4">{member.indek_ggf || '-'}</td>
                   <td className="py-3 px-4 text-xs">
                     {member.updated_at ? new Date(member.updated_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : new Date(member.created_at || new Date()).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </td>
@@ -1296,6 +1309,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
               onClick={() => {
                 setShowDeleteAllModal(false);
                 setDeleteAllPassword('');
+                setExcludeWithPhotoAndSignature(false);
               }}
             />
             
@@ -1314,6 +1328,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                   onClick={() => {
                     setShowDeleteAllModal(false);
                     setDeleteAllPassword('');
+                    setExcludeWithPhotoAndSignature(false);
                   }}
                   className={`p-1 rounded-full hover:${themeClasses.bgSecondary} transition-colors`}
                 >
@@ -1340,12 +1355,29 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                   />
                 </div>
 
+                <div className="flex items-start gap-2.5 pt-1">
+                  <input
+                    type="checkbox"
+                    id="excludeWithPhotoAndSignature"
+                    checked={excludeWithPhotoAndSignature}
+                    onChange={e => setExcludeWithPhotoAndSignature(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded text-red-600 focus:ring-red-500 border-gray-300 cursor-pointer"
+                  />
+                  <label 
+                    htmlFor="excludeWithPhotoAndSignature" 
+                    className="text-xs font-medium text-slate-600 dark:text-slate-300 cursor-pointer select-none leading-relaxed"
+                  >
+                    Kecualikan data yang memiliki foto atau tanda tangan buku jurnal
+                  </label>
+                </div>
+
                 <div className="flex gap-2 justify-end pt-2 border-t border-slate-100 dark:border-slate-850">
                   <button
                     type="button"
                     onClick={() => {
                       setShowDeleteAllModal(false);
                       setDeleteAllPassword('');
+                      setExcludeWithPhotoAndSignature(false);
                     }}
                     className={`px-3 py-1.5 text-xs font-bold rounded-lg ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 transition-all`}
                   >
@@ -1360,6 +1392,93 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL PERINGATAN DUPLIKASI DATA IMPORT */}
+      <AnimatePresence>
+        {showDuplicateModal && duplicateData && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setShowDuplicateModal(false)}
+            />
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className={`relative w-full max-w-lg ${themeClasses.card} rounded-xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col z-10`}
+            >
+              <div className={`p-4 border-b ${themeClasses.border} flex items-center justify-between bg-red-50 dark:bg-red-950/20`}>
+                <h3 className="font-bold text-red-600 flex items-center gap-1.5">
+                  <AlertTriangle className="w-5 h-5" />
+                  Gagal Upload: Duplikasi Indek KDK
+                </h3>
+                <button 
+                  onClick={() => setShowDuplicateModal(false)}
+                  className={`p-1 rounded-full hover:${themeClasses.bgSecondary} transition-colors`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-4 overflow-y-auto space-y-4 flex-1">
+                <p className={`text-xs ${themeClasses.textMuted} leading-relaxed`}>
+                  Seluruh proses impor Excel dibatalkan karena ditemukan duplikasi pada nilai <span className="font-semibold text-slate-850 dark:text-slate-100">Indek KDK</span>. Harap perbaiki data pada berkas Excel Anda dan lakukan upload ulang.
+                </p>
+
+                {duplicateData.duplicatesInFile.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold text-red-650 flex items-center gap-1">
+                      <span>•</span> Duplikasi di Dalam File Excel ({duplicateData.duplicatesInFile.length})
+                    </h4>
+                    <div className="text-xs space-y-1.5 pl-3 border-l-2 border-red-300">
+                      {duplicateData.duplicatesInFile.map((dup, idx) => (
+                        <div key={idx} className="p-2 rounded bg-amber-500/5 border border-amber-500/10">
+                          <div>Indek KDK: <span className="font-mono font-bold text-red-650">{dup.indek_kdk}</span></div>
+                          <div className={`text-[11px] ${themeClasses.textMuted}`}>
+                            Dimiliki oleh: <span className="font-semibold text-slate-700 dark:text-slate-300">{dup.names.join(', ')}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {duplicateData.duplicatesWithDb.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold text-red-650 flex items-center gap-1">
+                      <span>•</span> Bentrok dengan Database ({duplicateData.duplicatesWithDb.length})
+                    </h4>
+                    <div className="text-xs space-y-1.5 pl-3 border-l-2 border-red-300">
+                      {duplicateData.duplicatesWithDb.map((dup, idx) => (
+                        <div key={idx} className="p-2 rounded bg-rose-500/5 border border-rose-500/10">
+                          <div>Indek KDK: <span className="font-mono font-bold text-red-650">{dup.indek_kdk}</span></div>
+                          <div className="grid grid-cols-2 gap-2 text-[11px] mt-1">
+                            <div>Nama di Excel: <span className="font-semibold text-slate-700 dark:text-slate-300">{dup.excelName}</span></div>
+                            <div>Nama di Database: <span className="font-semibold text-red-500">{dup.dbName}</span></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className={`p-3 border-t ${themeClasses.border} flex justify-end bg-slate-50 dark:bg-slate-900`}>
+                <button
+                  onClick={() => setShowDuplicateModal(false)}
+                  className="px-4 py-1.5 text-xs font-bold text-white rounded-lg bg-slate-600 hover:bg-slate-700 transition-all shadow-sm active:scale-95"
+                >
+                  Tutup
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

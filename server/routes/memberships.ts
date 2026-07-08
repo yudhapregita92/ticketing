@@ -16,13 +16,28 @@ router.get("/", (req, res) => {
 });
 
 router.post("/delete-all", (req, res) => {
-  const { password } = req.body;
+  const { password, excludeWithPhotoAndSignature } = req.body;
   if (password !== "root") {
     return res.status(403).json({ error: "Password salah!" });
   }
   try {
-    db.prepare("DELETE FROM memberships").run();
-    res.json({ success: true, message: "Semua data membership berhasil dihapus" });
+    if (excludeWithPhotoAndSignature) {
+      db.prepare(`
+        DELETE FROM memberships 
+        WHERE (foto IS NULL OR foto = '') 
+          AND id NOT IN (
+            SELECT DISTINCT member_id 
+            FROM membership_journals 
+            WHERE member_id IS NOT NULL 
+              AND signature IS NOT NULL 
+              AND signature != ''
+          )
+      `).run();
+      res.json({ success: true, message: "Semua data membership berhasil dihapus (kecuali yang memiliki foto atau tanda tangan)" });
+    } else {
+      db.prepare("DELETE FROM memberships").run();
+      res.json({ success: true, message: "Semua data membership berhasil dihapus" });
+    }
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -115,7 +130,15 @@ router.post("/upload", upload.single('file'), (req, res) => {
       return matchedKey ? String(row[matchedKey]) : null;
     };
 
-    for (const row of data as any[]) {
+    // First, extract and validate all rows to prevent partial imports
+    const parsedRows: any[] = [];
+    const fileKdkMap = new Map<string, any[]>(); // indek_kdk -> array of { nama, rowIdx }
+    
+    const doubleRecordsInFile: { indek_kdk: string, names: string[] }[] = [];
+    const doubleRecordsWithDb: { indek_kdk: string, excelName: string, dbName: string }[] = [];
+
+    for (let i = 0; i < data.length; i++) {
+      const row: any = data[i];
       const kode_lokal = findValue(row, ['kodelokal', 'kode']);
       const indek_kdk = findValue(row, ['indekkdk']);
       const indek_ggf = findValue(row, ['indekggf']);
@@ -125,7 +148,84 @@ router.post("/upload", upload.single('file'), (req, res) => {
       const nik_ktp = findValue(row, ['nik', 'nikktp', 'ktp']);
       const no_hp = findValue(row, ['nohp', 'hp', 'phone', 'telepon']);
       
-      if (!nama) continue; // Nama is required
+      if (!nama) continue; // Skip rows without a name
+
+      const kdkClean = indek_kdk ? indek_kdk.trim() : '';
+      
+      if (kdkClean) {
+        if (!fileKdkMap.has(kdkClean)) {
+          fileKdkMap.set(kdkClean, []);
+        }
+        fileKdkMap.get(kdkClean)!.push({ nama, rowIdx: i + 1 });
+      }
+
+      parsedRows.push({
+        kode_lokal,
+        indek_kdk: kdkClean,
+        indek_ggf,
+        nama,
+        bagian,
+        barcode,
+        nik_ktp,
+        no_hp
+      });
+    }
+
+    // Check duplicate Indek KDK inside the Excel file
+    for (const [kdk, occurrences] of fileKdkMap.entries()) {
+      if (occurrences.length > 1) {
+        doubleRecordsInFile.push({
+          indek_kdk: kdk,
+          names: occurrences.map(o => `${o.nama} (Baris ${o.rowIdx})`)
+        });
+      }
+    }
+
+    // Check duplicates against the database
+    for (const pRow of parsedRows) {
+      if (!pRow.indek_kdk) continue;
+
+      // Find if this row matches an existing member (update path)
+      let existingToUpdate: any = null;
+      if (pRow.barcode) {
+        existingToUpdate = db.prepare("SELECT * FROM memberships WHERE barcode = ?").get(pRow.barcode);
+      }
+      if (!existingToUpdate && pRow.kode_lokal) {
+        existingToUpdate = db.prepare("SELECT * FROM memberships WHERE kode_lokal = ?").get(pRow.kode_lokal);
+      }
+      if (!existingToUpdate && pRow.nik_ktp) {
+        existingToUpdate = db.prepare("SELECT * FROM memberships WHERE nik_ktp = ?").get(pRow.nik_ktp);
+      }
+
+      // Find if anyone else already has this indek_kdk
+      const dbMatchWithKdk = db.prepare("SELECT * FROM memberships WHERE indek_kdk = ?").get(pRow.indek_kdk);
+
+      if (dbMatchWithKdk) {
+        if (!existingToUpdate || existingToUpdate.id !== dbMatchWithKdk.id) {
+          if (!doubleRecordsWithDb.some(d => d.indek_kdk === pRow.indek_kdk)) {
+            doubleRecordsWithDb.push({
+              indek_kdk: pRow.indek_kdk,
+              excelName: pRow.nama,
+              dbName: dbMatchWithKdk.nama
+            });
+          }
+        }
+      }
+    }
+
+    // If duplicates found, reject request
+    if (doubleRecordsInFile.length > 0 || doubleRecordsWithDb.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Duplikasi Indek KDK ditemukan!",
+        duplicatesInFile: doubleRecordsInFile,
+        duplicatesWithDb: doubleRecordsWithDb
+      });
+    }
+
+    // Run actual insertions/updates
+    for (const pRow of parsedRows) {
+      const { kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, nik_ktp, no_hp } = pRow;
       
       let existing: any = null;
       if (barcode) {
