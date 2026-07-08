@@ -179,14 +179,14 @@ async function handleTicketUpdate(req: any, res: any, io: Server) {
   if (!currentTicket) throw new AppError("Ticket not found", 404);
 
   let respondedAt = currentTicket.responded_at;
-  let resolvedAt = currentTicket.resolved_at;
+  let resolvedAt: any = currentTicket.resolved_at;
   let newStatus = status !== undefined ? status : currentTicket.status;
   let newAssignedTo = assigned_to !== undefined ? assigned_to : currentTicket.assigned_to;
   let newPriority = priority !== undefined ? priority : currentTicket.priority;
   let newAdminReply = admin_reply !== undefined ? admin_reply : currentTicket.admin_reply;
   let newInternalNotes = internal_notes !== undefined ? internal_notes : currentTicket.internal_notes;
 
-  const logs = [];
+  const logs: any[] = [];
 
   if (takeover_by) {
     newAssignedTo = takeover_by;

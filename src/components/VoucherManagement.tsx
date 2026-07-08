@@ -346,7 +346,7 @@ export const VoucherManagement: React.FC<{
 
   // Tabs: 'content' | 'design' | 'recipients' | 'print' | 'requests'
   const [activeTab, setActiveTab] = useState<'content' | 'design' | 'recipients' | 'print' | 'requests'>(
-    adminUser ? 'content' : 'requests'
+    'requests'
   );
   
   // Bulk generation inputs
@@ -367,7 +367,8 @@ export const VoucherManagement: React.FC<{
   const [editStatus, setEditStatus] = useState<'Belum Dicetak' | 'Dicetak' | 'Digunakan'>('Belum Dicetak');
 
   // Print settings
-  const [printLayout, setPrintLayout] = useState<'4-per-a4' | '2-col' | '1-col'>('4-per-a4');
+  const [printLayout, setPrintLayout] = useState<'4-per-a4' | '2-col' | '1-col' | 'custom'>('4-per-a4');
+  const [customPrintWidthCm, setCustomPrintWidthCm] = useState<number>(18);
   const [selectedRecordIds, setSelectedRecordIds] = useState<string[]>([]);
   const [searchRecordQuery, setSearchRecordQuery] = useState('');
 
@@ -425,11 +426,12 @@ export const VoucherManagement: React.FC<{
         baseTpl = JSON.parse(req.design_data);
       } catch (e) {
         console.error('Failed to parse design_data, using default', e);
-        baseTpl = DEFAULT_TEMPLATES.find(t => t.id === activeTemplateId) || DEFAULT_TEMPLATES[0];
+        baseTpl = activeTemplate;
       }
     } else {
-      // Use clean template from DEFAULT_TEMPLATES so it has no background or styles from another ticket
-      baseTpl = DEFAULT_TEMPLATES.find(t => t.id === activeTemplateId) || DEFAULT_TEMPLATES[0];
+      // Opsi A: Mewarisi tata letak dan posisi yang sudah ideal dari template aktif saat ini
+      // agar admin tidak perlu mengatur ulang posisi teks dari awal untuk tiket baru.
+      baseTpl = activeTemplate;
     }
 
     // Overwrite fields of active template in memory
@@ -1389,14 +1391,14 @@ export const VoucherManagement: React.FC<{
 
     /* Precision scale wrappers to ensure 100% identical layout in print vs editor */
     .card-print-scale-wrapper-4 {
-      width: 170mm;
-      height: 68mm;
+      width: 160mm;
+      height: 64mm;
       position: relative;
       overflow: visible;
       margin: 0 auto;
     }
     .card-print-scale-wrapper-4 .print-voucher-card {
-      transform: scale(0.80);
+      transform: scale(0.75);
       transform-origin: top left;
       position: absolute;
       top: 0;
@@ -1435,6 +1437,21 @@ export const VoucherManagement: React.FC<{
       left: 0;
       box-shadow: none !important;
     }
+    .card-print-scale-wrapper-custom {
+      width: ${customPrintWidthCm * 10}mm;
+      height: ${customPrintWidthCm * 4}mm;
+      position: relative;
+      overflow: visible;
+      margin: 15px auto;
+    }
+    .card-print-scale-wrapper-custom .print-voucher-card {
+      transform: scale(${customPrintWidthCm / 21.166666});
+      transform-origin: top left;
+      position: absolute;
+      top: 0;
+      left: 0;
+      box-shadow: none !important;
+    }
   `;
 
   const printGlobalCssRules = `
@@ -1462,10 +1479,10 @@ export const VoucherManagement: React.FC<{
       width: 210mm;
       height: 297mm;
       box-sizing: border-box;
-      padding: 12mm 10mm;
+      padding: 8mm;
       display: flex;
       flex-direction: column;
-      gap: 6mm;
+      gap: 2mm;
       background: #fff;
       page-break-after: always;
       page-break-inside: avoid;
@@ -1628,7 +1645,7 @@ export const VoucherManagement: React.FC<{
     } else {
       const vouchersHtml = vouchersToPrint.map((rec, idx) => {
         const qrDataUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(rec.serialNumber)}`;
-        const wrapperClass = `card-print-scale-wrapper-${printLayout === '2-col' ? '2' : '1'}`;
+        const wrapperClass = printLayout === 'custom' ? 'card-print-scale-wrapper-custom' : `card-print-scale-wrapper-${printLayout === '2-col' ? '2' : '1'}`;
         return `
           <div class="${wrapperClass} ${idx > 0 && idx % (printLayout === '2-col' ? 6 : 3) === 0 ? 'page-break' : ''}">
             <div class="print-voucher-card ${activeTemplate.fontFamily}">
@@ -3181,6 +3198,41 @@ export const VoucherManagement: React.FC<{
                       </div>
                       {printLayout === '2-col' && <div className="w-2 h-2 rounded-full bg-indigo-500" />}
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setPrintLayout('custom')}
+                      className={`py-2.5 px-3 border rounded-xl text-xs font-bold transition-all flex items-center justify-between gap-1.5 ${
+                        printLayout === 'custom'
+                          ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400'
+                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-indigo-500" />
+                        <div className="text-left">
+                          <p className="font-extrabold text-[12px]">Ukuran Kustom (Manual)</p>
+                          <p className="text-[10px] font-normal text-slate-400">Tentukan ukuran cetak sendiri</p>
+                        </div>
+                      </div>
+                      {printLayout === 'custom' && <div className="w-2 h-2 rounded-full bg-indigo-500" />}
+                    </button>
+                    {printLayout === 'custom' && (
+                      <div className="pl-8 py-2">
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">Lebar Cetak (cm)</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min="5"
+                            max="30"
+                            step="0.5"
+                            value={customPrintWidthCm}
+                            onChange={(e) => setCustomPrintWidthCm(Number(e.target.value))}
+                            className="w-24 px-2 py-1.5 text-xs font-bold border rounded-lg dark:bg-slate-800 dark:border-slate-700"
+                          />
+                          <span className="text-[10px] text-slate-400">Estimasi Tinggi: {(customPrintWidthCm * 0.4).toFixed(1)} cm</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

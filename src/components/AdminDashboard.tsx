@@ -71,7 +71,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     // Get last 6 months
     const currentMonth = new Date().getMonth();
     const startIndex = (currentMonth - 5 + 12) % 12;
-    const result = [];
+    const result: any[] = [];
     for (let i = 0; i < 6; i++) {
       result.push(data[(startIndex + i) % 12]);
     }

@@ -17,7 +17,7 @@ router.post("/login", asyncHandler(async (req, res) => {
   const user = db.prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(?)").get(cleanUsername) as User | undefined;
   
   if (user) {
-    const isMatch = await bcrypt.compare(cleanPassword, user.password);
+    const isMatch = await bcrypt.compare(cleanPassword, user.password || '');
     
     if (isMatch) {
       console.log(`Login success for: ${user.username}, Role: ${user.role}`);

@@ -17,7 +17,7 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
     
     return {
       docType: parsed.docType || 'rekomendasi',
-      recommenderName: adminUser?.name || '',
+      recommenderName: adminUser?.full_name || '',
       recommenderDept: 'IT KDK',
       recommendeeName: '',
       recommendeeDept: '',

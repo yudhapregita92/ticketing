@@ -36,7 +36,7 @@ export const UserLoginScreen = React.memo(({
   
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [clickCount, setClickCount] = useState(0);
-  const clickTimeoutRef = useRef<NodeJS.Timeout>();
+  const clickTimeoutRef = useRef<any>(null);
 
   const handleLogoClick = () => {
     setClickCount(prev => {

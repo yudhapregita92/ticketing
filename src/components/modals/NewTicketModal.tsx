@@ -286,7 +286,7 @@ export const NewTicketModal = React.memo(({
   React.useEffect(() => {
     if (showForm) {
       setDeviceSelected(null);
-      setNewTicket(prev => ({
+      setNewTicket((prev: any) => ({
         ...prev,
         device_type: '',
         pc_code: ''

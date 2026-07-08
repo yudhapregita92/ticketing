@@ -94,7 +94,7 @@ export default function App() {
     }
     return null;
   }); // Data login user biasa
-  const [appSettings, setAppSettings] = useState(() => {
+  const [appSettings, setAppSettings] = useState<any>(() => {
     const saved = safeGetItem('appSettings');
     if (saved) {
       try {
@@ -263,7 +263,7 @@ export default function App() {
   const [showTakeoverConfirm, setShowTakeoverConfirm] = useState<{id: number, type: 'takeover' | 'reassign', targetUser?: string} | null>(null);
   const [showDistribution, setShowDistribution] = useState(false); // Toggle distribusi masalah
   const [pendingUpdate, setPendingUpdate] = useState<{id: number, status: string, assigned_to: string | null, admin_reply: string | null, internal_notes: string | null} | null>(null); // Data update yang menunggu konfirmasi
-  const [addingType, setAddingType] = useState<'it' | 'dept' | 'cat' | 'master-user' | null>(null);
+  const [addingType, setAddingType] = useState<'it' | 'dept' | 'cat' | 'master-user' | 'admin-user' | null>(null);
   const [newItemName, setNewItemName] = useState('');
   const [newItemAssignedTo, setNewItemAssignedTo] = useState('');
   const [newEmailInput, setNewEmailInput] = useState('');

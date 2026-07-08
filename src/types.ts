@@ -67,6 +67,7 @@ export interface ISettings {
   allow_new_tickets: boolean;
   auto_assign_it: boolean;
   enable_notifications: boolean;
+  logo_type?: string;
   footer_text: string;
   header_gradient_start: string;
   header_gradient_end: string;
