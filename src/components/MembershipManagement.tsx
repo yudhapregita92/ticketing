@@ -1153,7 +1153,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                   </tr>
                 </thead>
                 <tbody className={`divide-y ${themeClasses.border}`}>
-                  {journalsLoading ? (
+                  {journalsLoading && journals.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="py-8 px-4 text-center">Loading data jurnal...</td>
                     </tr>

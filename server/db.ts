@@ -2,6 +2,8 @@ import Database from "better-sqlite3";
 import bcrypt from "bcryptjs";
 
 const db = new Database("tickets.db");
+db.pragma("journal_mode = WAL");
+db.pragma("synchronous = NORMAL");
 
 // Initialize database tables
 export function initDb() {
