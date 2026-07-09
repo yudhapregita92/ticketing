@@ -420,8 +420,17 @@ export const VoucherManagement: React.FC<{
   const [editStatus, setEditStatus] = useState<'Belum Dicetak' | 'Dicetak' | 'Digunakan'>('Belum Dicetak');
 
   // Print settings
-  const [printLayout, setPrintLayout] = useState<'4-per-a4' | '2-col' | '1-col' | 'custom'>('4-per-a4');
-  const [customPrintWidthCm, setCustomPrintWidthCm] = useState<number>(18);
+  const [printLayout, setPrintLayout] = useState<'4-per-a4' | '2-col' | '1-col' | 'custom'>(() => {
+    return (localStorage.getItem('print_layout') as any) || '4-per-a4';
+  });
+  const [customPrintWidthCm, setCustomPrintWidthCm] = useState<number>(() => {
+    const saved = localStorage.getItem('custom_print_width_cm');
+    return saved ? Number(saved) : 16.93;
+  });
+  const [customPrintHeightCm, setCustomPrintHeightCm] = useState<number>(() => {
+    const saved = localStorage.getItem('custom_print_height_cm');
+    return saved ? Number(saved) : 5.08;
+  });
   const [selectedRecordIds, setSelectedRecordIds] = useState<string[]>([]);
   const [searchRecordQuery, setSearchRecordQuery] = useState('');
 
@@ -521,6 +530,40 @@ export const VoucherManagement: React.FC<{
 
     setActiveTab('content');
     toast(`Formulir diisi otomatis berdasarkan pengajuan: "${req.theme}"`);
+  };
+
+  const handleManualSave = async () => {
+    try {
+      // 1. Save templates
+      localStorage.setItem('voucher_templates', JSON.stringify(templates));
+      // 2. Save records
+      if (activeTemplateId) {
+        localStorage.setItem(`voucher_records_${activeTemplateId}`, JSON.stringify(records));
+      }
+      
+      // 3. Save print settings
+      localStorage.setItem('print_layout', printLayout);
+      localStorage.setItem('custom_print_width_cm', String(customPrintWidthCm));
+      localStorage.setItem('custom_print_height_cm', String(customPrintHeightCm));
+
+      // 4. Save global settings
+      localStorage.setItem('global_voucher_enabled', String(globalVoucherEnabled));
+      localStorage.setItem('global_voucher_prefix', globalVoucherPrefix);
+      localStorage.setItem('global_voucher_next_number', String(globalVoucherNextNumber));
+      localStorage.setItem('global_voucher_padding', String(globalVoucherPadding));
+
+      // 5. Backend sync if requested
+      if (activeRequestId) {
+        const designJson = JSON.stringify(activeTemplate);
+        await api.updateVoucherRequestDesign(activeRequestId, designJson, 'Proses');
+        fetchRequests();
+        toast.success('Desain Pengajuan & Template berhasil disimpan!');
+      } else {
+        toast.success('Semua perubahan data voucher berhasil disimpan!');
+      }
+    } catch (err: any) {
+      toast.error('Gagal menyimpan perubahan: ' + err.message);
+    }
   };
 
   const handleSaveDesignDraft = async () => {
@@ -774,16 +817,108 @@ export const VoucherManagement: React.FC<{
     }
 
     const cssRules = `${printGlobalCssRules}\n${generateCardCssRules(tempTemplate)}`;
-    const chunked: IVoucherRecord[][] = [];
-    for (let i = 0; i < tempRecords.length; i += 4) {
-      chunked.push(tempRecords.slice(i, i + 4));
-    }
+    let htmlContent = '';
 
-    const pagesHtml = chunked.map((pageVouchers) => {
-      const vouchersHtml = pageVouchers.map((rec) => {
-        const qrDataUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(rec.serialNumber)}`;
+    if (printLayout === '4-per-a4') {
+      const chunked: IVoucherRecord[][] = [];
+      for (let i = 0; i < tempRecords.length; i += 4) {
+        chunked.push(tempRecords.slice(i, i + 4));
+      }
+
+      const pagesHtml = chunked.map((pageVouchers) => {
+        const vouchersHtml = pageVouchers.map((rec) => {
+          const qrDataUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(rec.serialNumber)}`;
+          return `
+            <div class="card-print-scale-wrapper-4">
+              <div class="print-voucher-card ${tempTemplate.fontFamily}">
+                <div class="voucher-header">
+                  ${logoLeft ? `<img src="${logoLeft}" class="logo-img" alt="GGF Logo" />` : '<div style="width:40px"></div>'}
+                  <div class="header-title-container">
+                    <h1 class="voucher-main-title">${tempTemplate.title}</h1>
+                    <div class="voucher-subtitle">${tempTemplate.subtitle}</div>
+                    <div class="voucher-category">${tempTemplate.category}</div>
+                  </div>
+                  ${logoRight ? `<img src="${logoRight}" class="logo-img" alt="KDK Logo" />` : '<div style="width:40px"></div>'}
+                </div>
+
+                <div class="voucher-body">
+                  <div class="body-left">
+                    <div class="voucher-slogan">"${tempTemplate.slogan}"</div>
+                    <div class="voucher-value">${formatRupiah(tempTemplate.value)}</div>
+                    <div class="voucher-validity-box">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #dc2626"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                      <span>${tempTemplate.validity}</span>
+                    </div>
+                  </div>
+
+                  <div class="body-right">
+                    <div class="authorized-section">
+                      <span class="auth-label">${tempTemplate.authorizedByLabel}</span>
+                      <span class="auth-name">${tempTemplate.authorizedName}</span>
+                      <span class="auth-title">${tempTemplate.authorizedTitle}</span>
+                    </div>
+                    
+                    <div style="display:flex; justify-content: space-between; align-items: flex-end; transform: translate(${tempTemplate.qrSerialX ?? 0}px, ${tempTemplate.qrSerialY ?? 0}px); position: relative; width: 100%;">
+                      ${tempTemplate.showQr !== false ? `
+                        <div style="background: white; padding: 3px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); display: flex; transform: translate(${tempTemplate.qrX ?? 0}px, ${tempTemplate.qrY ?? 0}px); position: relative;">
+                          <img src="${qrDataUrl}" alt="QR Code" width="${tempTemplate.qrSize ?? 40}" height="${tempTemplate.qrSize ?? 40}" />
+                        </div>
+                      ` : '<div style="width: 0; height: 0; overflow: hidden;"></div>'}
+                      
+                      <div class="serial-box">
+                        ${tempTemplate.serialPrefix}${rec.serialNumber}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="terms-section">
+                  <div class="terms-title">Syarat & Ketentuan :</div>
+                  <ul class="terms-list">
+                    ${tempTemplate.terms.map(t => `<li class="terms-item">${t}</li>`).join('')}
+                  </ul>
+                </div>
+
+                <div class="voucher-footer">
+                  ${tempTemplate.footerText}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
         return `
-          <div class="card-print-scale-wrapper-4">
+          <div class="print-page">
+            ${vouchersHtml}
+          </div>
+        `;
+      }).join('');
+
+      htmlContent = `
+        <html>
+          <head>
+            <title>Cetak Voucher Event - ${req.theme}</title>
+            <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap">
+            <style>${cssRules}</style>
+          </head>
+          <body>
+            <button class="print-btn-floating no-print" onclick="window.print()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+              Mulai Cetak Sekarang (Print / Save PDF)
+            </button>
+            
+            <div class="print-pages-container">
+              ${pagesHtml}
+            </div>
+          </body>
+        </html>
+      `;
+    } else {
+      const vouchersHtml = tempRecords.map((rec, idx) => {
+        const qrDataUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(rec.serialNumber)}`;
+        const wrapperClass = printLayout === 'custom' ? 'card-print-scale-wrapper-custom' : `card-print-scale-wrapper-${printLayout === '2-col' ? '2' : '1'}`;
+        return `
+          <div class="${wrapperClass} ${idx > 0 && idx % (printLayout === '2-col' ? 6 : 3) === 0 ? 'page-break' : ''}">
             <div class="print-voucher-card ${tempTemplate.fontFamily}">
               <div class="voucher-header">
                 ${logoLeft ? `<img src="${logoLeft}" class="logo-img" alt="GGF Logo" />` : '<div style="width:40px"></div>'}
@@ -817,7 +952,7 @@ export const VoucherManagement: React.FC<{
                       <div style="background: white; padding: 3px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); display: flex; transform: translate(${tempTemplate.qrX ?? 0}px, ${tempTemplate.qrY ?? 0}px); position: relative;">
                         <img src="${qrDataUrl}" alt="QR Code" width="${tempTemplate.qrSize ?? 40}" height="${tempTemplate.qrSize ?? 40}" />
                       </div>
-                    ` : '<div style="width: 0; height: 0; overflow: hidden;"></div>'}
+                    ` : '<div style="width:0;height:0;overflow:hidden;"></div>'}
                     
                     <div class="serial-box">
                       ${tempTemplate.serialPrefix}${rec.serialNumber}
@@ -841,32 +976,26 @@ export const VoucherManagement: React.FC<{
         `;
       }).join('');
 
-      return `
-        <div class="print-page">
-          ${vouchersHtml}
-        </div>
+      htmlContent = `
+        <html>
+          <head>
+            <title>Cetak Voucher Event - ${req.theme}</title>
+            <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap">
+            <style>${cssRules}</style>
+          </head>
+          <body>
+            <button class="print-btn-floating no-print" onclick="window.print()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+              Mulai Cetak Sekarang (Print / Save PDF)
+            </button>
+            
+            <div class="print-grid">
+              ${vouchersHtml}
+            </div>
+          </body>
+        </html>
       `;
-    }).join('');
-
-    const htmlContent = `
-      <html>
-        <head>
-          <title>Cetak Voucher Event - ${req.theme}</title>
-          <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap">
-          <style>${cssRules}</style>
-        </head>
-        <body>
-          <button class="print-btn-floating no-print" onclick="window.print()">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-            Mulai Cetak Sekarang (Print / Save PDF)
-          </button>
-          
-          <div class="print-pages-container">
-            ${pagesHtml}
-          </div>
-        </body>
-      </html>
-    `;
+    }
 
     printWindow.document.write(htmlContent);
     printWindow.document.close();
@@ -1571,13 +1700,13 @@ export const VoucherManagement: React.FC<{
     }
     .card-print-scale-wrapper-custom {
       width: ${customPrintWidthCm * 10}mm;
-      height: ${customPrintWidthCm * 4}mm;
+      height: ${customPrintHeightCm * 10}mm;
       position: relative;
       overflow: visible;
       margin: 15px auto;
     }
     .card-print-scale-wrapper-custom .print-voucher-card {
-      transform: scale(${customPrintWidthCm / 21.166666});
+      transform: scale(${customPrintWidthCm / 21.166666}, ${customPrintHeightCm / 8.466666});
       transform-origin: top left;
       position: absolute;
       top: 0;
@@ -3021,6 +3150,17 @@ export const VoucherManagement: React.FC<{
                     </div>
                   </div>
                 </div>
+
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80">
+                  <button
+                    type="button"
+                    onClick={handleManualSave}
+                    className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white rounded-xl font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-indigo-600/15 transition-all"
+                  >
+                    <Save className="w-4 h-4" />
+                    Simpan Perubahan Konten
+                  </button>
+                </div>
               </div>
             )}
 
@@ -3297,6 +3437,17 @@ export const VoucherManagement: React.FC<{
                     />
                   </div>
                 </div>
+
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80">
+                  <button
+                    type="button"
+                    onClick={handleManualSave}
+                    className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white rounded-xl font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-indigo-600/15 transition-all"
+                  >
+                    <Save className="w-4 h-4" />
+                    Simpan Perubahan Desain
+                  </button>
+                </div>
               </div>
             )}
 
@@ -3519,6 +3670,17 @@ export const VoucherManagement: React.FC<{
                     </div>
                   </div>
                 </div>
+
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80">
+                  <button
+                    type="button"
+                    onClick={handleManualSave}
+                    className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white rounded-xl font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-indigo-600/15 transition-all"
+                  >
+                    <Save className="w-4 h-4" />
+                    Simpan Daftar Seri & Urutan
+                  </button>
+                </div>
               </div>
             )}
 
@@ -3605,19 +3767,81 @@ export const VoucherManagement: React.FC<{
                       {printLayout === 'custom' && <div className="w-2 h-2 rounded-full bg-indigo-500" />}
                     </button>
                     {printLayout === 'custom' && (
-                      <div className="pl-8 py-2">
-                        <label className="text-[10px] font-bold text-slate-500 block mb-1">Lebar Cetak (cm)</label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            min="5"
-                            max="30"
-                            step="0.5"
-                            value={customPrintWidthCm}
-                            onChange={(e) => setCustomPrintWidthCm(Number(e.target.value))}
-                            className="w-24 px-2 py-1.5 text-xs font-bold border rounded-lg dark:bg-slate-800 dark:border-slate-700"
-                          />
-                          <span className="text-[10px] text-slate-400">Estimasi Tinggi: {(customPrintWidthCm * 0.4).toFixed(1)} cm</span>
+                      <div className="pl-8 py-3 space-y-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-800 mt-2">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1">Lebar Cetak (cm)</label>
+                            <input
+                              type="number"
+                              min="5"
+                              max="30"
+                              step="0.01"
+                              value={customPrintWidthCm}
+                              onChange={(e) => setCustomPrintWidthCm(Number(e.target.value))}
+                              className="w-full px-2.5 py-1.5 text-xs font-bold border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 text-indigo-600 dark:text-indigo-400"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1">Tinggi Cetak (cm)</label>
+                            <input
+                              type="number"
+                              min="2"
+                              max="20"
+                              step="0.01"
+                              value={customPrintHeightCm}
+                              onChange={(e) => setCustomPrintHeightCm(Number(e.target.value))}
+                              className="w-full px-2.5 py-1.5 text-xs font-bold border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 text-indigo-600 dark:text-indigo-400"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">PILIHAN PRESISI QUICK-SELECT</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCustomPrintWidthCm(16.93);
+                                setCustomPrintHeightCm(5.08);
+                                toast.success("Ukuran 16.93 x 5.08 cm diterapkan!");
+                              }}
+                              className={`px-2 py-1 text-[10px] font-black rounded-md border transition-all ${
+                                customPrintWidthCm === 16.93 && customPrintHeightCm === 5.08
+                                  ? 'bg-indigo-600 border-indigo-600 text-white'
+                                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                              }`}
+                            >
+                              16.93 x 5.08 cm
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCustomPrintWidthCm(18);
+                                setCustomPrintHeightCm(7.2);
+                              }}
+                              className={`px-2 py-1 text-[10px] font-black rounded-md border transition-all ${
+                                customPrintWidthCm === 18 && customPrintHeightCm === 7.2
+                                  ? 'bg-indigo-600 border-indigo-600 text-white'
+                                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                              }`}
+                            >
+                              18.00 x 7.20 cm
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCustomPrintWidthCm(15);
+                                setCustomPrintHeightCm(6);
+                              }}
+                              className={`px-2 py-1 text-[10px] font-black rounded-md border transition-all ${
+                                customPrintWidthCm === 15 && customPrintHeightCm === 6
+                                  ? 'bg-indigo-600 border-indigo-600 text-white'
+                                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                              }`}
+                            >
+                              15.00 x 6.00 cm
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -3638,6 +3862,17 @@ export const VoucherManagement: React.FC<{
                       </span>
                     </div>
                   </div>
+                </div>
+
+                <div className="pt-2 pb-1">
+                  <button
+                    type="button"
+                    onClick={handleManualSave}
+                    className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white rounded-xl font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-indigo-600/15 transition-all"
+                  >
+                    <Save className="w-4 h-4" />
+                    Simpan Format Cetak
+                  </button>
                 </div>
 
                 <button
@@ -3839,8 +4074,8 @@ export const VoucherManagement: React.FC<{
               <style dangerouslySetInnerHTML={{ __html: generateCardCssRules(activeTemplate) }} />
               <div 
                 style={{ 
-                  width: `${800 * scaleFactor}px`, 
-                  height: `${320 * scaleFactor}px`,
+                  width: `${(printLayout === 'custom' ? (800 * (customPrintWidthCm / 21.166666)) : 800) * scaleFactor}px`, 
+                  height: `${(printLayout === 'custom' ? (320 * (customPrintHeightCm / 8.466666)) : 320) * scaleFactor}px`,
                   transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
                 }} 
                 className="relative overflow-visible flex items-center justify-center shrink-0 mt-6"
@@ -3848,7 +4083,7 @@ export const VoucherManagement: React.FC<{
                 <div
                   ref={printRef}
                   style={{
-                    transform: `scale(${scaleFactor})`,
+                    transform: `scale(${scaleFactor * (printLayout === 'custom' ? (customPrintWidthCm / 21.166666) : 1)}, ${scaleFactor * (printLayout === 'custom' ? (customPrintHeightCm / 8.466666) : 1)})`,
                     transformOrigin: 'top left',
                     position: 'absolute',
                     top: 0,
