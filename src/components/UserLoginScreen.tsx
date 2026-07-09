@@ -82,23 +82,25 @@ export const UserLoginScreen = React.memo(({
   };
 
   const handleLogoClick = () => {
-    setClickCount(prev => {
-      const newCount = prev + 1;
-      if (newCount >= 5) {
-        setIsAdminMode(!isAdminMode);
-        return 0;
-      }
-      
+    const newCount = clickCount + 1;
+    if (newCount >= 5) {
+      setIsAdminMode(prev => !prev);
+      setClickCount(0);
       if (clickTimeoutRef.current) {
         clearTimeout(clickTimeoutRef.current);
       }
-      
-      clickTimeoutRef.current = setTimeout(() => {
-        setClickCount(0);
-      }, 1000);
+      return;
+    }
 
-      return newCount;
-    });
+    setClickCount(newCount);
+
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+    }
+
+    clickTimeoutRef.current = setTimeout(() => {
+      setClickCount(0);
+    }, 1000);
   };
 
   const filteredUsers = masterUsers.filter(u => 
