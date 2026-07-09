@@ -294,6 +294,11 @@ export const api = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ can_request_voucher })
   }).then(handleResponse),
+  toggleFunnyEggPrivilege: (id: number, enable_funny_egg: boolean) => fetch(`/api/master-users/${id}/toggle-funny-egg`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enable_funny_egg })
+  }).then(handleResponse),
   getVoucherRequests: (): Promise<any[]> => fetch('/api/voucher-requests').then(handleResponse),
   createVoucherRequest: (data: { requester_name: string; department: string; deadline: string; theme: string; slogan?: string; validity_date: string; qty: number; created_by?: string; voucher_value?: string }) => fetch('/api/voucher-requests', {
     method: 'POST',

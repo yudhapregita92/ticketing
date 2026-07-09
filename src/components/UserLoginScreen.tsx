@@ -38,6 +38,49 @@ export const UserLoginScreen = React.memo(({
   const [clickCount, setClickCount] = useState(0);
   const clickTimeoutRef = useRef<any>(null);
 
+  // Funny Egg states
+  const [eggOffset, setEggOffset] = useState({ x: 0, y: 0 });
+  const [eggCount, setEggCount] = useState(0);
+
+  React.useEffect(() => {
+    if (selectedUser) {
+      setEggOffset({ x: 0, y: 0 });
+      setEggCount(0);
+    }
+  }, [selectedUser]);
+
+  const triggerEggMove = () => {
+    if (selectedUser?.enable_funny_egg === 1) {
+      if (eggCount >= 5) {
+        setTimeout(() => {
+          setEggOffset({ x: 0, y: 0 });
+        }, 0);
+        return;
+      }
+      
+      const dist = 70;
+      const angle = Math.random() * Math.PI * 2;
+      const randomX = Math.cos(angle) * dist;
+      const randomY = Math.sin(angle) * (dist / 2);
+      
+      setTimeout(() => {
+        setEggOffset({ x: randomX, y: randomY });
+        setEggCount(prev => {
+          const next = prev + 1;
+          if (next === 5) {
+            setTimeout(() => {
+              setEggOffset({ x: 0, y: 0 });
+              toast('Ok ok, ampun! Silakan diketik sekarang... 😂✌️', { icon: '🫣' });
+            }, 800);
+          } else {
+            toast.error('Kolomnya lari! 🏃‍♂️💨', { duration: 800 });
+          }
+          return next;
+        });
+      }, 0);
+    }
+  };
+
   const handleLogoClick = () => {
     setClickCount(prev => {
       const newCount = prev + 1;
@@ -263,7 +306,12 @@ export const UserLoginScreen = React.memo(({
                 </div>
 
                 {/* Index Input */}
-                <div>
+                <motion.div
+                  animate={{ x: eggOffset.x, y: eggOffset.y }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+                  onMouseEnter={triggerEggMove}
+                  onClick={triggerEggMove}
+                >
                   <label className={`block text-[10px] font-bold uppercase tracking-wider mb-1 ${themeClasses.textMuted}`}>
                     {indexLabel}
                   </label>
@@ -277,7 +325,7 @@ export const UserLoginScreen = React.memo(({
                       className="w-full bg-transparent border-none outline-none p-0 m-0 focus:ring-0 text-xs text-inherit"
                     />
                   </div>
-                </div>
+                </motion.div>
               </motion.div>
             )}
           </AnimatePresence>

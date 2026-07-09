@@ -383,8 +383,17 @@ export function initDb() {
       if (!columns.find(c => c.name === 'can_request_voucher')) {
         db.prepare("ALTER TABLE master_users ADD COLUMN can_request_voucher INTEGER DEFAULT 0").run();
       }
+      if (!columns.find(c => c.name === 'enable_funny_egg')) {
+        db.prepare("ALTER TABLE master_users ADD COLUMN enable_funny_egg INTEGER DEFAULT 0").run();
+      }
       db.prepare("UPDATE master_users SET jenis_piranti = '(Tidak Ada)' WHERE jenis_piranti IS NULL OR jenis_piranti = ''").run();
       db.prepare("UPDATE master_users SET kode_piranti = '-' WHERE kode_piranti IS NULL OR kode_piranti = ''").run();
+      
+      // Seed 'Dita Faradila' if she doesn't exist
+      const ditaExists = db.prepare("SELECT COUNT(*) as count FROM master_users WHERE full_name = 'Dita Faradila'").get() as { count: number };
+      if (ditaExists.count === 0) {
+        db.prepare("INSERT INTO master_users (full_name, department, phone, employee_index, enable_funny_egg) VALUES ('Dita Faradila', 'OSS', '081298765432', '14022', 1)").run();
+      }
     }
 
     // Add role to it_personnel if not exists

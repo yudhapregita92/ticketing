@@ -23,7 +23,8 @@ import {
   Edit3,
   Search,
   Printer,
-  Key
+  Key,
+  Sparkles
 } from 'lucide-react';
 
 import * as xlsx from 'xlsx';
@@ -344,6 +345,17 @@ export const SettingsModal = React.memo(({
       handleManagementAction('master-user', 'refresh');
     } catch (err: any) {
       alert(err.message || 'Gagal mengubah izin voucher');
+    }
+  };
+
+  const handleToggleFunnyEgg = async (user: any) => {
+    const nextVal = user.enable_funny_egg === 1 ? 0 : 1;
+    try {
+      await api.toggleFunnyEggPrivilege(user.id, nextVal === 1);
+      alert(`Fitur "Kolom Lari-Lari" (Funny Egg) untuk ${user.full_name} berhasil ${nextVal === 1 ? 'diaktifkan' : 'dinonaktifkan'}`);
+      handleManagementAction('master-user', 'refresh');
+    } catch (err: any) {
+      alert(err.message || 'Gagal mengubah fitur lari-lari');
     }
   };
 
@@ -1699,6 +1711,11 @@ export const SettingsModal = React.memo(({
                                     Akses Voucher
                                   </span>
                                 )}
+                                {user.enable_funny_egg === 1 && (
+                                  <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 text-[8px] font-black rounded-md uppercase tracking-wider shrink-0 flex items-center gap-0.5 animate-pulse">
+                                    <Sparkles className="w-2 h-2 text-amber-600 dark:text-amber-400" /> Lari-Lari
+                                  </span>
+                                )}
                               </div>
                               <span className="text-[9px] text-slate-400 capitalize font-black">
                                 {user.department} • {user.phone} • Indek: {user.employee_index}
@@ -1719,6 +1736,18 @@ export const SettingsModal = React.memo(({
                                 title={user.can_request_voucher === 1 ? "Cabut Hak Akses Voucher" : "Berikan Hak Akses Voucher"}
                               >
                                 <Key className="w-3.5 h-3.5" />
+                              </button>
+                              <button 
+                                type="button"
+                                onClick={() => handleToggleFunnyEgg(user)}
+                                className={`p-1.5 rounded-lg transition-colors ${
+                                  user.enable_funny_egg === 1 
+                                    ? 'text-amber-600 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60' 
+                                    : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                }`}
+                                title={user.enable_funny_egg === 1 ? "Matikan Fitur Kolom Lari-Lari" : "Aktifkan Fitur Kolom Lari-Lari"}
+                              >
+                                <Sparkles className="w-3.5 h-3.5" />
                               </button>
                               <button 
                                 type="button"

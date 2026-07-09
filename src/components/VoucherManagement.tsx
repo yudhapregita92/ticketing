@@ -517,14 +517,33 @@ export const VoucherManagement: React.FC<{
     }));
 
     // Generate matching records qty
-    const startNum = 500000 + Math.floor(Math.random() * 400000);
-    const generatedRecords = Array.from({ length: req.qty }, (_, i) => ({
-      id: `r_${Date.now()}_${i}`,
-      serialNumber: (startNum + i).toString(),
-      recipientName: 'Peserta Event',
-      department: req.department,
-      status: 'Belum Dicetak' as const
-    }));
+    let generatedRecords: IVoucherRecord[] = [];
+    if (globalVoucherEnabled) {
+      const currentNext = globalVoucherNextNumber;
+      generatedRecords = Array.from({ length: req.qty }, (_, i) => {
+        const generatedNum = (currentNext + i).toString().padStart(globalVoucherPadding, '0');
+        return {
+          id: `r_${Date.now()}_${i}`,
+          serialNumber: `${globalVoucherPrefix}${generatedNum}`,
+          recipientName: 'Peserta Event',
+          department: req.department,
+          status: 'Belum Dicetak' as const
+        };
+      });
+      const nextNum = currentNext + req.qty;
+      setGlobalVoucherNextNumber(nextNum);
+      localStorage.setItem('global_voucher_next_number', String(nextNum));
+      toast.success(`Nomor seri otomatis dialokasikan: ${globalVoucherPrefix}${currentNext.toString().padStart(globalVoucherPadding, '0')} s.d ${globalVoucherPrefix}${(nextNum - 1).toString().padStart(globalVoucherPadding, '0')}`);
+    } else {
+      const startNum = 500000 + Math.floor(Math.random() * 400000);
+      generatedRecords = Array.from({ length: req.qty }, (_, i) => ({
+        id: `r_${Date.now()}_${i}`,
+        serialNumber: (startNum + i).toString(),
+        recipientName: 'Peserta Event',
+        department: req.department,
+        status: 'Belum Dicetak' as const
+      }));
+    }
     setRecords(generatedRecords);
     localStorage.setItem(`voucher_records_${activeTemplateId}`, JSON.stringify(generatedRecords));
 
@@ -2487,7 +2506,7 @@ export const VoucherManagement: React.FC<{
             ))}
           </div>
 
-          <div className={`${themeClasses.card} border rounded-3xl p-5 shadow-sm xl:max-h-[calc(100vh-220px)] xl:overflow-y-auto`}>
+          <div className={`${themeClasses.card} border rounded-3xl p-5 shadow-sm`}>
             {/* CONTENT TAB */}
             {activeTab === 'content' && (
               <div className="space-y-4 text-left">
@@ -4143,7 +4162,13 @@ export const VoucherManagement: React.FC<{
                         )}
                         
                         <div className="serial-box">
-                          {activeTemplate.serialPrefix}2011248
+                          {records.length > 0 
+                            ? records[0].serialNumber 
+                            : (globalVoucherEnabled 
+                              ? `${globalVoucherPrefix}${globalVoucherNextNumber.toString().padStart(globalVoucherPadding, '0')}` 
+                              : `${activeTemplate.serialPrefix}2011248`
+                            )
+                          }
                         </div>
                       </div>
                     </div>

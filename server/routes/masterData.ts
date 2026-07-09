@@ -236,6 +236,18 @@ router.post("/master-users", asyncHandler(async (req, res) => {
     res.json({ success: true });
   }));
 
+  // Funny Egg Toggle
+  router.put("/master-users/:id/toggle-funny-egg", asyncHandler(async (req: any, res: any) => {
+    const { id } = req.params;
+    const { enable_funny_egg } = req.body;
+    db.prepare("UPDATE master_users SET enable_funny_egg = ? WHERE id = ?").run(
+      enable_funny_egg ? 1 : 0,
+      id
+    );
+    emitUpdate();
+    res.json({ success: true });
+  }));
+
   // Voucher Requests
   router.get("/voucher-requests", asyncHandler(async (req: any, res: any) => {
     const requests = db.prepare("SELECT * FROM voucher_requests ORDER BY created_at DESC").all();
