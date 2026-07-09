@@ -27,7 +27,16 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
-  Menu
+  Menu,
+  BarChart3, 
+  Printer, 
+  Package, 
+  UserPlus, 
+  TrendingUp, 
+  Activity, 
+  FileText, 
+  BookOpen, 
+  Settings2
 } from 'lucide-react';
 
 // Import modular components
@@ -87,6 +96,9 @@ export default function App() {
 
   // --- State Management ---
   const [adminUser, setAdminUser] = useState<any>(null); // Data login admin
+  const [adminThemeLayout, setAdminThemeLayout] = useState<string>(() => {
+    return safeGetItem('adminThemeLayout') || 'modern';
+  });
   const [currentUser, setCurrentUser] = useState<any>(() => {
     const saved = safeGetItem('currentUser');
     if (saved) {
@@ -1022,7 +1034,15 @@ export default function App() {
   
   // Dynamic theme based on user role
   const isDark = adminUser ? adminUser.theme_mode === 'dark' : appSettings.theme_mode === 'dark';
-  const primaryColor = adminUser ? adminUser.primary_color : appSettings.primary_color;
+  const primaryColor = useMemo(() => {
+    if (adminUser) {
+      if (adminThemeLayout === 'cosmic') return '#0d9488'; // Neon Teal
+      if (adminThemeLayout === 'compact') return '#f43f5e'; // Rose
+      if (adminThemeLayout === 'executive') return '#d97706'; // Amber/Gold
+      return adminUser.primary_color || '#8b5cf6'; // Violet
+    }
+    return appSettings.primary_color;
+  }, [adminUser, adminThemeLayout, appSettings.primary_color, adminUser?.primary_color]);
 
   // Sync dark mode class with HTML element
   useEffect(() => {
@@ -1085,33 +1105,174 @@ export default function App() {
   }, [appSettings.custom_favicon, appSettings.custom_logo, appSettings.custom_pwa_icon, appSettings.app_name, primaryColor, isDark]);
 
   // Theme-aware color variables
-  const themeClasses = {
-    bg: adminUser 
-      ? (isDark ? 'bg-zinc-950 text-zinc-100' : 'bg-zinc-50 text-zinc-900')
-      : (isDark ? 'bg-slate-950 text-slate-100' : 'bg-[#F8FAFC] text-slate-900'),
-    header: adminUser
-      ? (isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-zinc-100/80 border-zinc-200')
-      : (isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200'),
-    card: adminUser
-      ? (isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200')
-      : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'),
-    text: adminUser
-      ? (isDark ? 'text-zinc-100' : 'text-zinc-900')
-      : (isDark ? 'text-slate-100' : 'text-slate-900'),
-    textMuted: adminUser
-      ? (isDark ? 'text-zinc-400' : 'text-zinc-500')
-      : (isDark ? 'text-slate-400' : 'text-slate-500'),
-    border: adminUser
-      ? (isDark ? 'border-zinc-800' : 'border-zinc-200')
-      : (isDark ? 'border-slate-800' : 'border-slate-200'),
-    bgSecondary: adminUser
-      ? (isDark ? 'bg-zinc-800' : 'bg-zinc-100')
-      : (isDark ? 'bg-slate-800' : 'bg-slate-100'),
-    input: adminUser
-      ? (isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-750' : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50')
-      : (isDark ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-750' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'),
-    selection: adminUser ? 'selection:bg-violet-500/30' : 'selection:bg-emerald-500/30'
-  };
+  const themeClasses = useMemo(() => {
+    if (!adminUser) {
+      return {
+        bg: isDark ? 'bg-slate-950 text-slate-100' : 'bg-[#F8FAFC] text-slate-900',
+        header: isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200',
+        card: isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200',
+        text: isDark ? 'text-slate-100' : 'text-slate-900',
+        textMuted: isDark ? 'text-slate-400' : 'text-slate-500',
+        border: isDark ? 'border-slate-800' : 'border-slate-200',
+        bgSecondary: isDark ? 'bg-slate-800' : 'bg-slate-100',
+        input: isDark ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-750' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50',
+        selection: 'selection:bg-emerald-500/30'
+      };
+    }
+
+    if (adminThemeLayout === 'cosmic') {
+      return {
+        bg: isDark 
+          ? 'bg-[#030712] text-teal-50 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-teal-950/20 via-slate-950 to-slate-950' 
+          : 'bg-[#f0fdfa] text-slate-900 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-teal-500/5 via-slate-50 to-slate-50',
+        header: isDark 
+          ? 'bg-slate-950/40 backdrop-blur-xl border-teal-500/20 shadow-[0_0_20px_rgba(13,148,136,0.05)]' 
+          : 'bg-white/40 backdrop-blur-xl border-teal-500/20 shadow-[0_0_20px_rgba(13,148,136,0.03)]',
+        card: isDark 
+          ? 'bg-slate-900/40 backdrop-blur-md border border-teal-500/10 shadow-[0_4px_30px_rgba(0,0,0,0.3)]' 
+          : 'bg-white/60 backdrop-blur-md border border-teal-500/20 shadow-[0_4px_30px_rgba(13,148,136,0.02)]',
+        text: isDark ? 'text-teal-50' : 'text-slate-900',
+        textMuted: isDark ? 'text-teal-400/70' : 'text-slate-500',
+        border: 'border-teal-500/10 dark:border-teal-500/20',
+        bgSecondary: isDark ? 'bg-teal-950/30' : 'bg-teal-50/50',
+        input: isDark 
+          ? 'bg-slate-900/30 border-teal-500/20 text-teal-100 hover:border-teal-500/40 focus:border-teal-500 focus:ring-teal-500/30' 
+          : 'bg-white/50 border-teal-500/20 text-slate-800 hover:border-teal-500/40 focus:border-teal-500 focus:ring-teal-500/20',
+        selection: 'selection:bg-teal-500/30'
+      };
+    } else if (adminThemeLayout === 'compact') {
+      return {
+        bg: isDark ? 'bg-slate-900 text-slate-100' : 'bg-[#F1F5F9] text-slate-900',
+        header: isDark ? 'bg-slate-950 border-rose-500/20' : 'bg-white border-rose-500/20',
+        card: isDark ? 'bg-slate-950/80 border border-slate-800' : 'bg-white border border-slate-200',
+        text: isDark ? 'text-slate-100' : 'text-slate-900',
+        textMuted: isDark ? 'text-slate-400' : 'text-slate-500',
+        border: 'border-slate-800 dark:border-slate-800/80',
+        bgSecondary: isDark ? 'bg-slate-900' : 'bg-slate-100',
+        input: isDark 
+          ? 'bg-slate-900/60 border-slate-800 text-slate-200 hover:border-slate-700' 
+          : 'bg-slate-50 border-slate-200 text-slate-800 hover:border-slate-300',
+        selection: 'selection:bg-rose-500/20'
+      };
+    } else if (adminThemeLayout === 'executive') {
+      return {
+        bg: isDark ? 'bg-[#09090b] text-[#fafafa]' : 'bg-[#FAFaf6] text-[#1c1917]',
+        header: isDark ? 'bg-[#121214] border-amber-900/30' : 'bg-[#F5F5ED] border-amber-900/20',
+        card: isDark ? 'bg-[#121214] border border-amber-900/20' : 'bg-[#FCFCF9] border border-amber-900/10 shadow-[0_4px_20px_rgba(217,119,6,0.02)]',
+        text: isDark ? 'text-amber-50' : 'text-amber-950',
+        textMuted: isDark ? 'text-amber-200/50' : 'text-amber-800/70',
+        border: 'border-amber-900/10 dark:border-amber-900/20',
+        bgSecondary: isDark ? 'bg-[#1c1c1f]' : 'bg-[#F2F2E8]',
+        input: isDark 
+          ? 'bg-[#18181b] border-amber-950 text-amber-100 focus:border-amber-600 focus:ring-amber-900/50' 
+          : 'bg-[#FCFCF9] border-amber-900/20 text-amber-950 focus:border-amber-600 focus:ring-amber-500/20',
+        selection: 'selection:bg-amber-500/20'
+      };
+    } else if (adminThemeLayout === 'cyberpunk') {
+      return {
+        bg: isDark 
+          ? 'bg-[#0a0014] text-fuchsia-100 bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-fuchsia-950/20 via-slate-950 to-slate-950' 
+          : 'bg-[#fff5ff] text-slate-900 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-fuchsia-500/5 via-slate-50 to-slate-50',
+        header: isDark 
+          ? 'bg-[#0f0022]/60 backdrop-blur-xl border-fuchsia-500/30 shadow-[0_0_20px_rgba(217,70,239,0.15)]' 
+          : 'bg-white/60 backdrop-blur-xl border-fuchsia-500/20 shadow-[0_0_20px_rgba(217,70,239,0.04)]',
+        card: isDark 
+          ? 'bg-[#120026]/40 backdrop-blur-md border border-fuchsia-500/30 shadow-[0_4px_30px_rgba(217,70,239,0.1)]' 
+          : 'bg-white/80 backdrop-blur-md border border-fuchsia-500/20 shadow-[0_4px_30px_rgba(217,70,239,0.02)]',
+        text: isDark ? 'text-fuchsia-100' : 'text-slate-900',
+        textMuted: isDark ? 'text-fuchsia-400' : 'text-fuchsia-600/70',
+        border: 'border-fuchsia-500/20 dark:border-fuchsia-500/30',
+        bgSecondary: isDark ? 'bg-fuchsia-950/20' : 'bg-fuchsia-50',
+        input: isDark 
+          ? 'bg-[#16002c]/50 border-fuchsia-500/30 text-fuchsia-100 focus:border-fuchsia-400 focus:ring-fuchsia-500/30' 
+          : 'bg-white border-fuchsia-500/20 text-slate-800 focus:border-fuchsia-500 focus:ring-fuchsia-500/20',
+        selection: 'selection:bg-fuchsia-500/30'
+      };
+    } else if (adminThemeLayout === 'forest') {
+      return {
+        bg: isDark ? 'bg-[#022c22] text-emerald-50' : 'bg-[#f4fcf7] text-slate-900',
+        header: isDark ? 'bg-emerald-950/80 border-emerald-800/40' : 'bg-[#e6f4ea] border-emerald-200',
+        card: isDark ? 'bg-emerald-950 border border-emerald-800/40 shadow-sm' : 'bg-white border border-emerald-100 shadow-sm',
+        text: isDark ? 'text-emerald-50' : 'text-emerald-950',
+        textMuted: isDark ? 'text-emerald-300/70' : 'text-emerald-800/70',
+        border: 'border-emerald-800/30 dark:border-emerald-800/40',
+        bgSecondary: isDark ? 'bg-emerald-900/40' : 'bg-emerald-50',
+        input: isDark 
+          ? 'bg-emerald-900/30 border-emerald-800 text-emerald-100 focus:border-emerald-500' 
+          : 'bg-white border-emerald-200 text-emerald-950 focus:border-emerald-600',
+        selection: 'selection:bg-emerald-500/20'
+      };
+    } else if (adminThemeLayout === 'retro') {
+      return {
+        bg: isDark ? 'bg-[#0f171c] text-amber-500 font-mono' : 'bg-[#faf6ee] text-amber-900 font-mono',
+        header: isDark ? 'bg-slate-950 border-amber-500/40' : 'bg-amber-100/40 border-amber-900/40',
+        card: isDark ? 'bg-slate-950 border-2 border-amber-500/50 shadow-[4px_4px_0px_rgba(245,158,11,0.2)]' : 'bg-[#fffdfa] border-2 border-amber-900/50 shadow-[4px_4px_0px_rgba(120,53,4,0.1)]',
+        text: isDark ? 'text-amber-500 font-mono' : 'text-amber-900 font-mono',
+        textMuted: isDark ? 'text-amber-600/70' : 'text-amber-700/70',
+        border: 'border-amber-500/40 dark:border-amber-500/40',
+        bgSecondary: isDark ? 'bg-slate-900' : 'bg-amber-50',
+        input: isDark 
+          ? 'bg-slate-950 border-2 border-amber-500/40 text-amber-400 focus:border-amber-500 font-mono' 
+          : 'bg-white border-2 border-amber-900/40 text-amber-900 focus:border-amber-900 font-mono',
+        selection: 'selection:bg-amber-500/40'
+      };
+    } else if (adminThemeLayout === 'ocean') {
+      return {
+        bg: isDark ? 'bg-[#050e1e] text-sky-50' : 'bg-[#f0f7ff] text-slate-900',
+        header: isDark ? 'bg-[#0a1931]/80 border-sky-900/30' : 'bg-[#e1f0ff]/90 border-sky-200',
+        card: isDark ? 'bg-[#0b1e36] border border-sky-900/40 shadow-sm shadow-black/20' : 'bg-white border border-sky-100 shadow-sm',
+        text: isDark ? 'text-sky-100' : 'text-sky-950',
+        textMuted: isDark ? 'text-sky-400' : 'text-sky-600',
+        border: 'border-sky-900/30 dark:border-sky-800/40',
+        bgSecondary: isDark ? 'bg-sky-950/40' : 'bg-sky-50',
+        input: isDark 
+          ? 'bg-[#07162c] border-sky-800 text-sky-100 focus:border-sky-400 focus:ring-sky-500/20' 
+          : 'bg-white border-sky-200 text-sky-950 focus:border-sky-500 focus:ring-sky-500/10',
+        selection: 'selection:bg-sky-500/20'
+      };
+    } else if (adminThemeLayout === 'sakura') {
+      return {
+        bg: isDark ? 'bg-[#1c0b11] text-rose-50' : 'bg-[#fff5f7] text-slate-900',
+        header: isDark ? 'bg-[#260f17]/80 border-rose-950' : 'bg-[#ffe4e9]/90 border-rose-200',
+        card: isDark ? 'bg-[#251018] border border-rose-900/30 shadow-sm shadow-rose-950/20' : 'bg-white border border-rose-100 shadow-sm',
+        text: isDark ? 'text-rose-100' : 'text-rose-950',
+        textMuted: isDark ? 'text-rose-400' : 'text-rose-600',
+        border: 'border-rose-900/20 dark:border-rose-900/30',
+        bgSecondary: isDark ? 'bg-rose-950/40' : 'bg-rose-50/50',
+        input: isDark 
+          ? 'bg-[#210c14] border-rose-900/50 text-rose-100 focus:border-rose-400 focus:ring-rose-500/20' 
+          : 'bg-white border-rose-200 text-rose-950 focus:border-rose-500 focus:ring-rose-500/10',
+        selection: 'selection:bg-rose-500/20'
+      };
+    } else if (adminThemeLayout === 'royal') {
+      return {
+        bg: isDark ? 'bg-[#0a0414] text-amber-100' : 'bg-[#f9f6fc] text-purple-950',
+        header: isDark ? 'bg-[#120924]/80 border-amber-500/30' : 'bg-[#f1ebfa] border-amber-600/30',
+        card: isDark ? 'bg-[#120924]/90 border-2 border-amber-500/30 shadow-[0_4px_25px_rgba(245,158,11,0.04)]' : 'bg-white border-2 border-amber-600/20 shadow-[2px_2px_10px_rgba(217,119,6,0.01)]',
+        text: isDark ? 'text-amber-100' : 'text-purple-950',
+        textMuted: isDark ? 'text-purple-300' : 'text-purple-800/70',
+        border: 'border-purple-950 dark:border-purple-900/40',
+        bgSecondary: isDark ? 'bg-purple-950/50' : 'bg-purple-50',
+        input: isDark 
+          ? 'bg-[#150a2b] border-amber-500/30 text-amber-200 focus:border-amber-400 focus:ring-amber-500/20' 
+          : 'bg-white border-amber-600/20 text-purple-950 focus:border-amber-600 focus:ring-amber-600/10',
+        selection: 'selection:bg-amber-500/20'
+      };
+    }
+
+    // Default 'modern' (Violet / Zinc)
+    return {
+      bg: isDark ? 'bg-zinc-950 text-zinc-100' : 'bg-zinc-50 text-zinc-900',
+      header: isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-zinc-100/80 border-zinc-200',
+      card: isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200',
+      text: isDark ? 'text-zinc-100' : 'text-zinc-900',
+      textMuted: isDark ? 'text-zinc-400' : 'text-zinc-500',
+      border: 'border-zinc-800 dark:border-zinc-800',
+      bgSecondary: isDark ? 'bg-zinc-800' : 'bg-zinc-100',
+      input: isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-750' : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50',
+      selection: 'selection:bg-violet-500/30'
+    };
+  }, [adminUser, isDark, adminThemeLayout]);
 
   const isPublicJurnalRoute = location.pathname === '/jurnal';
 
@@ -1235,37 +1396,42 @@ export default function App() {
         <div className="flex flex-col lg:flex-row gap-3 lg:gap-6 relative">
           
           {/* Desktop Sidebar Toggle Button */}
-          <button 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className={`hidden lg:flex absolute top-0 z-20 w-8 h-8 bg-white dark:bg-slate-800 border ${isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'} rounded-full items-center justify-center shadow hover:scale-105 transition-all ${isSidebarOpen ? '-left-3' : '-left-1'}`}
-            title={isSidebarOpen ? "Sembunyikan Menu" : "Tampilkan Menu"}
-          >
-            {isSidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-          </button>
+          {!(adminThemeLayout === 'executive' && adminUser) && (
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className={`hidden lg:flex absolute top-0 z-20 w-8 h-8 bg-white dark:bg-slate-800 border ${isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'} rounded-full items-center justify-center shadow hover:scale-105 transition-all ${isSidebarOpen ? '-left-3' : '-left-1'}`}
+              title={isSidebarOpen ? "Sembunyikan Menu" : "Tampilkan Menu"}
+            >
+              {isSidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
+          )}
 
           {/* --- SIDEBAR: STATS & INFO --- */}
-          <div className={`hidden lg:block shrink-0 transition-all duration-300 ease-in-out overflow-hidden ${isSidebarOpen ? 'w-56 xl:w-64 opacity-100' : 'w-0 opacity-0 lg:ml-6'}`}>
-            <div className="w-56 xl:w-64">
-              <Sidebar 
-                isDark={isDark}
-                themeClasses={themeClasses}
-                tickets={tickets}
-                adminUser={adminUser}
-                setShowDistribution={setShowDistribution}
-                primaryColor={primaryColor}
-                filteredTickets={filteredTickets}
-                categoryStats={categoryStats}
-                showDistribution={showDistribution}
-                setShowForm={setShowForm}
-                fetchTickets={fetchTickets}
-                viewMode={viewMode}
-                setViewMode={setViewMode}
-                setShowLogin={setShowLogin}
-                handleLogout={handleLogout}
-                userCanVoucher={userCanVoucher}
-              />
+          {!(adminThemeLayout === 'executive' && adminUser) && (
+            <div className={`hidden lg:block shrink-0 transition-all duration-300 ease-in-out overflow-hidden ${isSidebarOpen ? 'w-56 xl:w-64 opacity-100' : 'w-0 opacity-0 lg:ml-6'}`}>
+              <div className="w-56 xl:w-64">
+                <Sidebar 
+                  isDark={isDark}
+                  themeClasses={themeClasses}
+                  tickets={tickets}
+                  adminUser={adminUser}
+                  setShowDistribution={setShowDistribution}
+                  primaryColor={primaryColor}
+                  filteredTickets={filteredTickets}
+                  categoryStats={categoryStats}
+                  showDistribution={showDistribution}
+                  setShowForm={setShowForm}
+                  fetchTickets={fetchTickets}
+                  viewMode={viewMode}
+                  setViewMode={setViewMode}
+                  setShowLogin={setShowLogin}
+                  handleLogout={handleLogout}
+                  userCanVoucher={userCanVoucher}
+                  adminThemeLayout={adminThemeLayout}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* --- MAIN CONTENT --- */}
           <div className="flex-1 min-w-0 space-y-2 sm:space-y-3 transition-all duration-300">
@@ -1276,6 +1442,176 @@ export default function App() {
               adminUser={adminUser}
               userCanVoucher={userCanVoucher}
             />
+            {adminThemeLayout === 'executive' && adminUser && (
+              <div className={`hidden lg:flex items-center gap-1.5 p-2 ${themeClasses.card} rounded-2xl border ${themeClasses.border} overflow-x-auto shadow-sm no-scrollbar`}>
+                <button
+                  onClick={() => setViewMode('dashboard')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    viewMode === 'dashboard'
+                      ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  <span>Dashboard</span>
+                </button>
+
+                <button
+                  onClick={() => setViewMode('today')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap relative ${
+                    viewMode === 'today'
+                      ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <Zap className="w-4 h-4" />
+                  <span>Antrian Hari Ini</span>
+                  {tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length > 0 && (
+                    <span className="px-1.5 py-0.5 bg-rose-500 text-white text-[9px] font-black rounded-full">
+                      {tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setViewMode('all')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    viewMode === 'all'
+                      ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Semua Antrian</span>
+                </button>
+
+                <button
+                  onClick={() => setViewMode('my_tickets')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    viewMode === 'my_tickets'
+                      ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Tiket Saya</span>
+                </button>
+
+                {(adminUser || userCanVoucher) && (
+                  <button
+                    onClick={() => setViewMode('voucher')}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                      viewMode === 'voucher'
+                        ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                        : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span>Cetak Voucher</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => setViewMode('assets')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    viewMode === 'assets'
+                      ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <Package className="w-4 h-4" />
+                  <span>Aset</span>
+                </button>
+
+                <button
+                  onClick={() => setViewMode('membership')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    viewMode === 'membership'
+                      ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>Membership</span>
+                </button>
+
+                <button
+                  onClick={() => setViewMode('evaluasi_project')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    viewMode === 'evaluasi_project'
+                      ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  <span>Evaluasi</span>
+                </button>
+
+                {(adminUser.role === 'Super Admin' || adminUser.role === 'Staff IT Support') && (
+                  <button
+                    onClick={() => setViewMode('network')}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                      viewMode === 'network'
+                        ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                        : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <Activity className="w-4 h-4" />
+                    <span>Jaringan</span>
+                  </button>
+                )}
+
+                {adminUser.role === 'Super Admin' && (
+                  <button
+                    onClick={() => setViewMode('ba')}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                      viewMode === 'ba'
+                        ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                        : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span>Surat / BA</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => setViewMode('panduan')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    viewMode === 'panduan'
+                      ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span>Panduan</span>
+                </button>
+
+                <button
+                  onClick={() => setViewMode('settings')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    viewMode === 'settings'
+                      ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <Settings2 className="w-4 h-4" />
+                  <span>Pengaturan</span>
+                </button>
+
+                <button
+                  onClick={() => setViewMode('testing')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    viewMode === 'testing'
+                      ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <Activity className="w-4 h-4 text-emerald-500" />
+                  <span>Testing</span>
+                </button>
+              </div>
+            )}
             {viewMode === 'dashboard' ? (
               <AdminDashboard 
                 tickets={tickets}
@@ -1355,6 +1691,8 @@ export default function App() {
                 masterUsers={masterUsers}
                 adminUsers={adminUsers}
                 handleUploadExcel={handleUploadExcel}
+                adminThemeLayout={adminThemeLayout}
+                setAdminThemeLayout={setAdminThemeLayout}
               />
             ) : viewMode === 'testing' ? (
               <TestingView 
@@ -1583,6 +1921,8 @@ export default function App() {
             masterUsers={masterUsers}
             adminUsers={adminUsers}
             handleUploadExcel={handleUploadExcel}
+            adminThemeLayout={adminThemeLayout}
+            setAdminThemeLayout={setAdminThemeLayout}
           />
         )}
 

@@ -62,6 +62,8 @@ interface SettingsModalProps {
   masterUsers: any[];
   adminUsers: any[];
   handleUploadExcel: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  adminThemeLayout?: string;
+  setAdminThemeLayout?: (layout: string) => void;
 }
 
 export const SettingsModal = React.memo(({
@@ -94,7 +96,9 @@ export const SettingsModal = React.memo(({
   handleManagementAction,
   masterUsers,
   adminUsers,
-  handleUploadExcel
+  handleUploadExcel,
+  adminThemeLayout = 'modern',
+  setAdminThemeLayout
 }: SettingsModalProps) => {
   if (!inline && !showSettings) return null;
 
@@ -791,6 +795,117 @@ export const SettingsModal = React.memo(({
                           </button>
                         </div>
                       </div>
+
+                      {setAdminThemeLayout && (
+                        <div className="space-y-1.5 pt-2">
+                          <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Tata Letak (Layout) Menu Admin</label>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAdminThemeLayout('modern');
+                                localStorage.setItem('adminThemeLayout', 'modern');
+                              }}
+                              className={`py-2 px-3 rounded-xl border text-[9px] font-black capitalize tracking-wider transition-all text-center ${adminThemeLayout === 'modern' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
+                            >
+                              Modern (Sidebar)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAdminThemeLayout('cosmic');
+                                localStorage.setItem('adminThemeLayout', 'cosmic');
+                              }}
+                              className={`py-2 px-3 rounded-xl border text-[9px] font-black capitalize tracking-wider transition-all text-center ${adminThemeLayout === 'cosmic' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
+                            >
+                              Cosmic (Teal Neon)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAdminThemeLayout('compact');
+                                localStorage.setItem('adminThemeLayout', 'compact');
+                              }}
+                              className={`py-2 px-3 rounded-xl border text-[9px] font-black capitalize tracking-wider transition-all text-center ${adminThemeLayout === 'compact' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
+                            >
+                              Compact (Minimal)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAdminThemeLayout('executive');
+                                localStorage.setItem('adminThemeLayout', 'executive');
+                              }}
+                              className={`py-2 px-3 rounded-xl border text-[9px] font-black capitalize tracking-wider transition-all text-center ${adminThemeLayout === 'executive' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
+                            >
+                              Executive (Top)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAdminThemeLayout('cyberpunk');
+                                localStorage.setItem('adminThemeLayout', 'cyberpunk');
+                              }}
+                              className={`py-2 px-3 rounded-xl border text-[9px] font-black capitalize tracking-wider transition-all text-center ${adminThemeLayout === 'cyberpunk' ? 'bg-pink-600 text-white border-pink-600 shadow-sm shadow-pink-500/10' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
+                            >
+                              Cyberpunk (Sunset)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAdminThemeLayout('forest');
+                                localStorage.setItem('adminThemeLayout', 'forest');
+                              }}
+                              className={`py-2 px-3 rounded-xl border text-[9px] font-black capitalize tracking-wider transition-all text-center ${adminThemeLayout === 'forest' ? 'bg-emerald-700 text-white border-emerald-700 shadow-sm' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
+                            >
+                              Forest (Organic)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAdminThemeLayout('retro');
+                                localStorage.setItem('adminThemeLayout', 'retro');
+                              }}
+                              className={`py-2 px-3 rounded-xl border text-[9px] font-black capitalize tracking-wider transition-all text-center ${adminThemeLayout === 'retro' ? 'bg-amber-600 text-white border-amber-600 shadow-sm shadow-amber-500/10' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
+                            >
+                              Terminal (Amber)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAdminThemeLayout('ocean');
+                                localStorage.setItem('adminThemeLayout', 'ocean');
+                              }}
+                              className={`py-2 px-3 rounded-xl border text-[9px] font-black capitalize tracking-wider transition-all text-center ${adminThemeLayout === 'ocean' ? 'bg-sky-600 text-white border-sky-600 shadow-sm shadow-sky-500/10' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
+                            >
+                              Ocean Breeze
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAdminThemeLayout('sakura');
+                                localStorage.setItem('adminThemeLayout', 'sakura');
+                              }}
+                              className={`py-2 px-3 rounded-xl border text-[9px] font-black capitalize tracking-wider transition-all text-center ${adminThemeLayout === 'sakura' ? 'bg-rose-400 text-white border-rose-400 shadow-sm shadow-rose-300/10' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
+                            >
+                              Sakura Dream
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAdminThemeLayout('royal');
+                                localStorage.setItem('adminThemeLayout', 'royal');
+                              }}
+                              className={`py-2 px-3 rounded-xl border text-[9px] font-black capitalize tracking-wider transition-all text-center ${adminThemeLayout === 'royal' ? 'bg-indigo-900 text-amber-400 border-amber-500 shadow-sm shadow-indigo-900/40' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400`}`}
+                            >
+                              Royal Velvet
+                            </button>
+                          </div>
+                          <p className="text-[8px] font-bold text-slate-400 mt-1 ml-1 leading-normal">
+                            * Pilih layout & tema visual Dashboard Admin Anda. Pilihan "Executive" memindahkan seluruh navigasi ke menu horizontal di bagian atas halaman.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 

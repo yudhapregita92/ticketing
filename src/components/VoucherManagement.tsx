@@ -364,6 +364,39 @@ export const VoucherManagement: React.FC<{
     }
   }, [records, activeTemplateId]);
 
+  // Global automatic numbering states
+  const [globalVoucherEnabled, setGlobalVoucherEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('global_voucher_enabled');
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [globalVoucherPrefix, setGlobalVoucherPrefix] = useState<string>(() => {
+    return localStorage.getItem('global_voucher_prefix') || 'VMC-';
+  });
+  const [globalVoucherNextNumber, setGlobalVoucherNextNumber] = useState<number>(() => {
+    const saved = localStorage.getItem('global_voucher_next_number');
+    return saved ? parseInt(saved, 10) : 2011251;
+  });
+  const [globalVoucherPadding, setGlobalVoucherPadding] = useState<number>(() => {
+    const saved = localStorage.getItem('global_voucher_padding');
+    return saved ? parseInt(saved, 10) : 7;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('global_voucher_enabled', String(globalVoucherEnabled));
+  }, [globalVoucherEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('global_voucher_prefix', globalVoucherPrefix);
+  }, [globalVoucherPrefix]);
+
+  useEffect(() => {
+    localStorage.setItem('global_voucher_next_number', String(globalVoucherNextNumber));
+  }, [globalVoucherNextNumber]);
+
+  useEffect(() => {
+    localStorage.setItem('global_voucher_padding', String(globalVoucherPadding));
+  }, [globalVoucherPadding]);
+
   // Tabs: 'content' | 'design' | 'recipients' | 'print' | 'requests'
   const [activeTab, setActiveTab] = useState<'content' | 'design' | 'recipients' | 'print' | 'requests'>(
     'requests'
@@ -708,14 +741,31 @@ export const VoucherManagement: React.FC<{
       };
     }
 
-    const startNum = 100001 + Math.floor(Math.random() * 80000);
-    const tempRecords: IVoucherRecord[] = Array.from({ length: req.qty }, (_, i) => ({
-      id: `temp_rec_${i}`,
-      serialNumber: (startNum + i).toString(),
-      recipientName: 'Peserta Event',
-      department: req.department,
-      status: 'Belum Dicetak'
-    }));
+    let tempRecords: IVoucherRecord[] = [];
+    if (globalVoucherEnabled) {
+      const currentNext = globalVoucherNextNumber;
+      tempRecords = Array.from({ length: req.qty }, (_, i) => {
+        const generatedNum = (currentNext + i).toString().padStart(globalVoucherPadding, '0');
+        return {
+          id: `temp_rec_${i}`,
+          serialNumber: `${globalVoucherPrefix}${generatedNum}`,
+          recipientName: 'Peserta Event',
+          department: req.department,
+          status: 'Belum Dicetak'
+        };
+      });
+      setGlobalVoucherNextNumber(prev => prev + req.qty);
+      toast.success(`Mengalokasikan nomor seri global ${globalVoucherPrefix}${currentNext.toString().padStart(globalVoucherPadding, '0')} s.d ${globalVoucherPrefix}${(currentNext + req.qty - 1).toString().padStart(globalVoucherPadding, '0')}!`);
+    } else {
+      const startNum = 100001 + Math.floor(Math.random() * 80000);
+      tempRecords = Array.from({ length: req.qty }, (_, i) => ({
+        id: `temp_rec_${i}`,
+        serialNumber: (startNum + i).toString(),
+        recipientName: 'Peserta Event',
+        department: req.department,
+        status: 'Belum Dicetak'
+      }));
+    }
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -943,23 +993,33 @@ export const VoucherManagement: React.FC<{
   // Record actions
   const handleAddRecord = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSerial.trim()) {
+    let serialToUse = newSerial.trim();
+    if (globalVoucherEnabled) {
+      serialToUse = `${globalVoucherPrefix}${globalVoucherNextNumber.toString().padStart(globalVoucherPadding, '0')}`;
+    }
+
+    if (!serialToUse) {
       toast.error('Nomor Seri / Kode harus diisi!');
       return;
     }
-    if (records.some(r => r.serialNumber === newSerial.trim())) {
-      toast.error('Nomor Seri sudah terdaftar!');
+    if (records.some(r => r.serialNumber === serialToUse)) {
+      toast.error('Nomor Seri sudah terdaftar! Harap sesuaikan nomor urut berikutnya agar tidak bertabrakan.');
       return;
     }
     const newRec: IVoucherRecord = {
       id: `r_${Date.now()}`,
-      serialNumber: newSerial.trim(),
+      serialNumber: serialToUse,
       recipientName: newName.trim() || 'Umum / Guest',
       department: newDept.trim() || '-',
       status: 'Belum Dicetak'
     };
     setRecords(prev => [newRec, ...prev]);
-    setNewSerial('');
+    
+    if (globalVoucherEnabled) {
+      setGlobalVoucherNextNumber(prev => prev + 1);
+    } else {
+      setNewSerial('');
+    }
     setNewName('');
     setNewDept('');
     toast.success('Penerima voucher berhasil ditambahkan!');
@@ -967,51 +1027,95 @@ export const VoucherManagement: React.FC<{
 
   const handleGenerateBulk = () => {
     const count = parseInt(bulkCount as any);
-    if (!bulkStart.trim() || isNaN(count) || count <= 0) {
-      toast.error('Lengkapi data pembuatan seri massal!');
+    if (isNaN(count) || count <= 0) {
+      toast.error('Jumlah pembuatan seri massal tidak valid!');
       return;
     }
-    
-    const startNumMatch = bulkStart.match(/\d+$/);
-    if (!startNumMatch) {
-      toast.error('Nomor seri awal harus diakhiri dengan angka agar bisa di-generate berurutan!');
-      return;
-    }
-    
-    const startNumStr = startNumMatch[0];
-    const prefixStr = bulkStart.substring(0, bulkStart.length - startNumStr.length);
-    let startNum = parseInt(startNumStr);
-    const paddingLength = startNumStr.length;
 
     const newRecs: IVoucherRecord[] = [];
     let duplicateCount = 0;
 
-    for (let i = 0; i < count; i++) {
-      const generatedNum = (startNum + i).toString().padStart(paddingLength, '0');
-      const finalSerial = `${bulkPrefix}${prefixStr}${generatedNum}`;
-      
-      if (records.some(r => r.serialNumber === finalSerial)) {
-        duplicateCount++;
-        continue;
+    if (globalVoucherEnabled) {
+      let currentNext = globalVoucherNextNumber;
+      for (let i = 0; i < count; i++) {
+        const generatedNum = currentNext.toString().padStart(globalVoucherPadding, '0');
+        const finalSerial = `${globalVoucherPrefix}${generatedNum}`;
+        
+        if (records.some(r => r.serialNumber === finalSerial)) {
+          duplicateCount++;
+          currentNext++;
+          i--; // retry with next number to ensure we get 'count' vouchers
+          if (currentNext > globalVoucherNextNumber + count + 1000) {
+            toast.error('Mencapai batas pencarian duplikasi nomor seri global!');
+            break;
+          }
+          continue;
+        }
+
+        newRecs.push({
+          id: `r_bulk_${Date.now()}_${i}`,
+          serialNumber: finalSerial,
+          recipientName: `Penerima Massal ${i + 1}`,
+          department: '-',
+          status: 'Belum Dicetak'
+        });
+        currentNext++;
       }
 
-      newRecs.push({
-        id: `r_bulk_${Date.now()}_${i}`,
-        serialNumber: finalSerial,
-        recipientName: `Penerima Massal ${i + 1}`,
-        department: '-',
-        status: 'Belum Dicetak'
-      });
-    }
-
-    if (newRecs.length > 0) {
-      setRecords(prev => [...newRecs, ...prev]);
-      toast.success(`${newRecs.length} seri voucher berhasil di-generate secara massal!`);
-      if (duplicateCount > 0) {
-        toast.error(`${duplicateCount} nomor seri dilewati karena duplikat.`);
+      if (newRecs.length > 0) {
+        setGlobalVoucherNextNumber(currentNext);
+        setRecords(prev => [...newRecs, ...prev]);
+        toast.success(`${newRecs.length} seri voucher global berhasil di-generate secara massal!`);
+        if (duplicateCount > 0) {
+          toast(`${duplicateCount} nomor seri dilewati karena sudah terdaftar.`);
+        }
+      } else {
+        toast.error('Gagal men-generate nomor seri massal global.');
       }
     } else {
-      toast.error('Semua nomor seri hasil generate sudah terdaftar sebelumnya!');
+      if (!bulkStart.trim()) {
+        toast.error('Lengkapi data pembuatan seri massal!');
+        return;
+      }
+      
+      const startNumMatch = bulkStart.match(/\d+$/);
+      if (!startNumMatch) {
+        toast.error('Nomor seri awal harus diakhiri dengan angka agar bisa di-generate berurutan!');
+        return;
+      }
+      
+      const startNumStr = startNumMatch[0];
+      const prefixStr = bulkStart.substring(0, bulkStart.length - startNumStr.length);
+      let startNum = parseInt(startNumStr);
+      const paddingLength = startNumStr.length;
+
+      for (let i = 0; i < count; i++) {
+        const generatedNum = (startNum + i).toString().padStart(paddingLength, '0');
+        const finalSerial = `${bulkPrefix}${prefixStr}${generatedNum}`;
+        
+        if (records.some(r => r.serialNumber === finalSerial)) {
+          duplicateCount++;
+          continue;
+        }
+
+        newRecs.push({
+          id: `r_bulk_${Date.now()}_${i}`,
+          serialNumber: finalSerial,
+          recipientName: `Penerima Massal ${i + 1}`,
+          department: '-',
+          status: 'Belum Dicetak'
+        });
+      }
+
+      if (newRecs.length > 0) {
+        setRecords(prev => [...newRecs, ...prev]);
+        toast.success(`${newRecs.length} seri voucher berhasil di-generate secara massal!`);
+        if (duplicateCount > 0) {
+          toast.error(`${duplicateCount} nomor seri dilewati karena duplikat.`);
+        }
+      } else {
+        toast.error('Semua nomor seri hasil generate sudah terdaftar sebelumnya!');
+      }
     }
   };
 
@@ -3199,6 +3303,84 @@ export const VoucherManagement: React.FC<{
             {/* RECIPIENTS TAB */}
             {activeTab === 'recipients' && (
               <div className="space-y-4">
+                {/* Global Sequential Serial Settings */}
+                <div className="p-4 bg-indigo-50/40 dark:bg-indigo-950/20 rounded-2xl border border-indigo-100 dark:border-indigo-900/60 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-black uppercase text-indigo-600 dark:text-indigo-400 tracking-wider flex items-center gap-1.5">
+                      <Settings className="w-4 h-4" />
+                      Urutan Nomor Seri Global
+                    </h3>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        id="global-numbering-toggle"
+                        checked={globalVoucherEnabled} 
+                        onChange={(e) => setGlobalVoucherEnabled(e.target.checked)}
+                        className="sr-only peer" 
+                      />
+                      <div className="w-8 h-4 bg-slate-200 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-indigo-600"></div>
+                      <span className="ml-1.5 text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                        {globalVoucherEnabled ? 'Aktif' : 'Nonaktif'}
+                      </span>
+                    </label>
+                  </div>
+                  
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
+                    Jika aktif, semua jenis voucher akan menggunakan satu urutan nomor seri global yang sama secara berurutan. Sangat cocok jika Anda ingin mengatur/setup nomor awal voucher di sistem (misal setelah migrasi dari manual).
+                  </p>
+
+                  {globalVoucherEnabled && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                      <div>
+                        <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Prefix Global</label>
+                        <input
+                          type="text"
+                          id="global-prefix-input"
+                          value={globalVoucherPrefix}
+                          onChange={(e) => setGlobalVoucherPrefix(e.target.value)}
+                          placeholder="Misal: VMC-"
+                          className="w-full px-2.5 py-1.5 text-xs font-bold border rounded-lg bg-white dark:bg-slate-800 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">
+                          Nomor Urut Berikutnya
+                        </label>
+                        <input
+                          type="number"
+                          id="global-next-number-input"
+                          value={globalVoucherNextNumber}
+                          onChange={(e) => setGlobalVoucherNextNumber(parseInt(e.target.value) || 0)}
+                          placeholder="Misal: 2011251"
+                          className="w-full px-2.5 py-1.5 text-xs font-bold border rounded-lg bg-white dark:bg-slate-800 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Panjang Digit (Padding)</label>
+                        <input
+                          type="number"
+                          id="global-padding-input"
+                          min="1"
+                          max="15"
+                          value={globalVoucherPadding}
+                          onChange={(e) => setGlobalVoucherPadding(parseInt(e.target.value) || 7)}
+                          placeholder="Misal: 7"
+                          className="w-full px-2.5 py-1.5 text-xs font-bold border rounded-lg bg-white dark:bg-slate-800 font-mono"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {globalVoucherEnabled && (
+                    <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/50 p-2 rounded-xl border border-indigo-100/40 text-[10px] font-bold text-indigo-700 dark:text-indigo-300">
+                      <span>Preview Seri Berikutnya:</span>
+                      <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900 rounded font-mono text-xs font-black tracking-wider">
+                        {globalVoucherPrefix}{globalVoucherNextNumber.toString().padStart(globalVoucherPadding, '0')}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
                 {/* Manual input */}
                 <form onSubmit={handleAddRecord} className="space-y-3 border-b pb-4">
                   <h3 className="text-xs font-black uppercase text-indigo-600 dark:text-indigo-400 tracking-wider">Tambah Seri Penerima</h3>
@@ -3208,10 +3390,15 @@ export const VoucherManagement: React.FC<{
                       <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Nomor Seri / Kode</label>
                       <input
                         type="text"
-                        value={newSerial}
-                        onChange={(e) => setNewSerial(e.target.value)}
+                        value={globalVoucherEnabled ? `${globalVoucherPrefix}${globalVoucherNextNumber.toString().padStart(globalVoucherPadding, '0')}` : newSerial}
+                        onChange={(e) => !globalVoucherEnabled && setNewSerial(e.target.value)}
                         placeholder="Contoh: 2011248"
-                        className="w-full px-2.5 py-1.5 text-xs font-bold border rounded-lg dark:bg-slate-800"
+                        disabled={globalVoucherEnabled}
+                        className={`w-full px-2.5 py-1.5 text-xs font-bold border rounded-lg ${
+                          globalVoucherEnabled 
+                            ? 'bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 border-indigo-200 cursor-not-allowed font-mono' 
+                            : 'dark:bg-slate-800'
+                        }`}
                       />
                     </div>
                     <div>
@@ -3256,9 +3443,14 @@ export const VoucherManagement: React.FC<{
                       <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Mulai Seri</label>
                       <input
                         type="text"
-                        value={bulkStart}
-                        onChange={(e) => setBulkStart(e.target.value)}
-                        className="w-full px-2 py-1.5 text-xs font-mono font-bold border rounded-lg dark:bg-slate-800"
+                        value={globalVoucherEnabled ? globalVoucherNextNumber.toString().padStart(globalVoucherPadding, '0') : bulkStart}
+                        onChange={(e) => !globalVoucherEnabled && setBulkStart(e.target.value)}
+                        disabled={globalVoucherEnabled}
+                        className={`w-full px-2 py-1.5 text-xs font-mono font-bold border rounded-lg ${
+                          globalVoucherEnabled 
+                            ? 'bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 border-indigo-200 cursor-not-allowed' 
+                            : 'dark:bg-slate-800'
+                        }`}
                       />
                     </div>
                     <div>
@@ -3274,10 +3466,15 @@ export const VoucherManagement: React.FC<{
                       <label className="block text-[9px] font-bold text-slate-400 uppercase mb-1">Prefix</label>
                       <input
                         type="text"
-                        value={bulkPrefix}
-                        onChange={(e) => setBulkPrefix(e.target.value)}
+                        value={globalVoucherEnabled ? globalVoucherPrefix : bulkPrefix}
+                        onChange={(e) => !globalVoucherEnabled && setBulkPrefix(e.target.value)}
                         placeholder="Opsional"
-                        className="w-full px-2 py-1.5 text-xs font-bold border rounded-lg dark:bg-slate-800"
+                        disabled={globalVoucherEnabled}
+                        className={`w-full px-2 py-1.5 text-xs font-bold border rounded-lg ${
+                          globalVoucherEnabled 
+                            ? 'bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 border-indigo-200 cursor-not-allowed' 
+                            : 'dark:bg-slate-800'
+                        }`}
                       />
                     </div>
                   </div>
