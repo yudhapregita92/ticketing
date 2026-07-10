@@ -29,7 +29,8 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
       logo2: parsed.logo2 || null,
       headerTitle: parsed.headerTitle || 'KOPKAR DWI KARYA',
       headerSubtitle: parsed.headerSubtitle || 'SURAT REKOMENDASI',
-      headerDocNo: parsed.headerDocNo || 'No. Dok: F/KDK/18/XII/2022 Rev. 5, Tanggal 27 September 2024'
+      headerDocNo: parsed.headerDocNo || 'No. Dok: F/KDK/18/XII/2022 Rev. 5, Tanggal 27 September 2024',
+      headerFontSize: parsed.headerFontSize || 18 // Default to 18px (text-lg)
     };
   });
 
@@ -51,9 +52,10 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
       logo2: formData.logo2,
       headerTitle: formData.headerTitle,
       headerSubtitle: formData.headerSubtitle,
-      headerDocNo: formData.headerDocNo
+      headerDocNo: formData.headerDocNo,
+      headerFontSize: formData.headerFontSize
     }));
-  }, [formData.docType, formData.logo1, formData.logo2, formData.headerTitle, formData.headerSubtitle, formData.headerDocNo]);
+  }, [formData.docType, formData.logo1, formData.logo2, formData.headerTitle, formData.headerSubtitle, formData.headerDocNo, formData.headerFontSize]);
 
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.6);
@@ -346,6 +348,17 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
               <h4 className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Pengaturan Kop Surat</h4>
               <div className="grid grid-cols-1 gap-4">
                 <div>
+                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Ukuran Font Header (px)</label>
+                  <input
+                    type="number"
+                    value={formData.headerFontSize}
+                    onChange={(e) => setFormData({...formData, headerFontSize: parseInt(e.target.value) || 18})}
+                    className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                      isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                    }`}
+                  />
+                </div>
+                <div>
                   <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Teks Header Utama</label>
                   <input
                     type="text"
@@ -541,7 +554,7 @@ const PrintableContent = ({ formData, formattedDate }: { formData: any, formatte
         
         {/* Text Center */}
         <div className="w-[60%] flex flex-col justify-between items-center text-center">
-          <div className="h-1/2 w-full border-b border-black flex items-center justify-center uppercase font-bold text-lg tracking-wider">
+          <div className="h-1/2 w-full border-b border-black flex items-center justify-center uppercase font-bold tracking-wider" style={{ fontSize: `${formData.headerFontSize}px` }}>
             {formData.headerTitle}
           </div>
           <div className="h-1/2 w-full flex flex-col items-center justify-center">
