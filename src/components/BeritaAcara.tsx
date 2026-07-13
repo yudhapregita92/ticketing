@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Printer, FileText, AlertCircle, Plus, Trash2, Edit2, History } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { IAdminUser } from '../types';
+import { api } from '../services/api';
 
 interface BeritaAcaraProps {
   isDark: boolean;
@@ -11,6 +13,13 @@ interface BeritaAcaraProps {
 }
 
 const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primaryColor, adminUser }) => {
+  const queryClient = useQueryClient();
+
+  const { data: savedDocs = [] } = useQuery({
+    queryKey: ['beritaAcara'],
+    queryFn: () => api.getBeritaAcara()
+  });
+
   const [formData, setFormData] = useState(() => {
     const saved = localStorage.getItem('beritaAcaraSettings');
     const parsed = saved ? JSON.parse(saved) : {};
@@ -34,16 +43,7 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
     };
   });
 
-  const [savedDocs, setSavedDocs] = useState<any[]>(() => {
-    const saved = localStorage.getItem('savedBeritaAcaraList');
-    return saved ? JSON.parse(saved) : [];
-  });
-
   const [currentId, setCurrentId] = useState<string>(() => Date.now().toString());
-
-  useEffect(() => {
-    localStorage.setItem('savedBeritaAcaraList', JSON.stringify(savedDocs));
-  }, [savedDocs]);
 
   useEffect(() => {
     localStorage.setItem('beritaAcaraSettings', JSON.stringify({
@@ -84,7 +84,21 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
     }
   };
 
-  const handlePrint = () => {
+  const saveMutation = useMutation({
+    mutationFn: (doc: any) => api.saveBeritaAcara(doc),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['beritaAcara'] });
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.deleteBeritaAcara(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['beritaAcara'] });
+    }
+  });
+
+  const handlePrint = async () => {
     const newDoc = {
       id: currentId,
       docType: formData.docType,
@@ -98,15 +112,7 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
       date: formData.date,
     };
     
-    setSavedDocs(prev => {
-      const exists = prev.findIndex(d => d.id === currentId);
-      if (exists >= 0) {
-        const next = [...prev];
-        next[exists] = newDoc;
-        return next;
-      }
-      return [newDoc, ...prev];
-    });
+    await saveMutation.mutateAsync(newDoc);
 
     setTimeout(() => {
       window.print();
@@ -132,7 +138,7 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
   const deleteDoc = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm('Hapus dokumen ini?')) {
-      setSavedDocs(prev => prev.filter(d => d.id !== id));
+      deleteMutation.mutate(id);
       if (currentId === id) {
         handleNew();
       }

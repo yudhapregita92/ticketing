@@ -248,6 +248,60 @@ router.post("/master-users", asyncHandler(async (req, res) => {
     res.json({ success: true });
   }));
 
+  // Berita Acara
+  router.get("/berita-acara", asyncHandler(async (req: any, res: any) => {
+    const docs = db.prepare("SELECT * FROM berita_acara ORDER BY created_at DESC").all();
+    res.json(docs.map((d: any) => ({
+      id: d.id,
+      createdAt: d.created_at,
+      docType: d.doc_type,
+      recommenderName: d.recommender_name,
+      recommenderDept: d.recommender_dept,
+      recommendeeName: d.recommendee_name,
+      recommendeeDept: d.recommendee_dept,
+      recommendeePosition: d.recommendee_position,
+      reason: d.reason,
+      location: d.location,
+      date: d.date
+    })));
+  }));
+
+  router.post("/berita-acara", asyncHandler(async (req: any, res: any) => {
+    const doc = req.body;
+    db.prepare(`
+      INSERT INTO berita_acara (id, created_at, doc_type, recommender_name, recommender_dept, recommendee_name, recommendee_dept, recommendee_position, reason, location, date)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        doc_type=excluded.doc_type,
+        recommender_name=excluded.recommender_name,
+        recommender_dept=excluded.recommender_dept,
+        recommendee_name=excluded.recommendee_name,
+        recommendee_dept=excluded.recommendee_dept,
+        recommendee_position=excluded.recommendee_position,
+        reason=excluded.reason,
+        location=excluded.location,
+        date=excluded.date
+    `).run(
+      doc.id,
+      doc.createdAt || new Date().toISOString(),
+      doc.docType,
+      doc.recommenderName,
+      doc.recommenderDept,
+      doc.recommendeeName,
+      doc.recommendeeDept,
+      doc.recommendeePosition,
+      doc.reason,
+      doc.location,
+      doc.date
+    );
+    res.json({ success: true, id: doc.id });
+  }));
+
+  router.delete("/berita-acara/:id", asyncHandler(async (req: any, res: any) => {
+    db.prepare("DELETE FROM berita_acara WHERE id = ?").run(req.params.id);
+    res.json({ success: true });
+  }));
+
   // Voucher Requests
   router.get("/voucher-requests", asyncHandler(async (req: any, res: any) => {
     const requests = db.prepare("SELECT * FROM voucher_requests ORDER BY created_at DESC").all();

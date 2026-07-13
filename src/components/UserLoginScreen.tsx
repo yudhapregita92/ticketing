@@ -12,7 +12,7 @@ interface UserLoginScreenProps {
   onAdminLoginClick: () => void;
   appSettings?: any;
   loginData?: any;
-  setLoginData?: (data: any) => void;
+  setLoginData?: React.Dispatch<React.SetStateAction<any>>;
   handleAdminLogin?: (e: React.FormEvent) => void;
 }
 
@@ -203,7 +203,7 @@ export const UserLoginScreen = React.memo(({
                       type="text"
                       placeholder="Masukkan username"
                       value={loginData?.username || ''}
-                      onChange={e => setLoginData?.({...loginData, username: e.target.value})}
+                      onChange={e => setLoginData?.(prev => ({...prev, username: e.target.value}))}
                       className="w-full bg-transparent border-none outline-none p-0 m-0 focus:ring-0 text-xs text-inherit"
                     />
                   </div>
@@ -219,7 +219,7 @@ export const UserLoginScreen = React.memo(({
                       type="password"
                       placeholder="Masukkan password"
                       value={loginData?.password || ''}
-                      onChange={e => setLoginData?.({...loginData, password: e.target.value})}
+                      onChange={e => setLoginData?.(prev => ({...prev, password: e.target.value}))}
                       className="w-full bg-transparent border-none outline-none p-0 m-0 focus:ring-0 text-xs text-inherit"
                     />
                   </div>

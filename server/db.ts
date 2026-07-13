@@ -189,6 +189,60 @@ export function initDb() {
       FOREIGN KEY (project_id) REFERENCES eval_projects(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS eval_m365_usage (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      periode_bulan TEXT,
+      user_principal_name TEXT,
+      display_name TEXT,
+      department TEXT,
+      activet TEXT,
+      license_m365 TEXT,
+      email_exchange TEXT,
+      one_drive TEXT,
+      storage_used TEXT,
+      teams TEXT,
+      reason_teams TEXT,
+      outlook_for_mobile TEXT,
+      reason_hp TEXT,
+      outlook_for_web TEXT,
+      reason_web TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (project_id) REFERENCES eval_projects(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS eval_whatsapp_usage (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      agent_name TEXT,
+      department TEXT,
+      case_count INTEGER DEFAULT 0,
+      already_rated INTEGER DEFAULT 0,
+      not_rated INTEGER DEFAULT 0,
+      very_dissatisfied INTEGER DEFAULT 0,
+      dissatisfied INTEGER DEFAULT 0,
+      neutral INTEGER DEFAULT 0,
+      satisfied INTEGER DEFAULT 0,
+      very_satisfied INTEGER DEFAULT 0,
+      case_details TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (project_id) REFERENCES eval_projects(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS berita_acara (
+      id TEXT PRIMARY KEY,
+      created_at TEXT,
+      doc_type TEXT,
+      recommender_name TEXT,
+      recommender_dept TEXT,
+      recommendee_name TEXT,
+      recommendee_dept TEXT,
+      recommendee_position TEXT,
+      reason TEXT,
+      location TEXT,
+      date TEXT
+    );
+
     CREATE TABLE IF NOT EXISTS voucher_requests (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       requester_name TEXT NOT NULL,
@@ -251,10 +305,16 @@ export function initDb() {
   }
 
   // Add missing columns if they don't exist
-  const tables = ['tickets', 'users', 'categories', 'master_users', 'ticket_logs', 'memberships', 'membership_logs', 'assets', 'voucher_requests'];
+  const tables = ['tickets', 'users', 'categories', 'master_users', 'ticket_logs', 'memberships', 'membership_logs', 'assets', 'voucher_requests', 'eval_m365_usage'];
   for (const table of tables) {
     const columns = db.prepare(`PRAGMA table_info(${table})`).all() as any[];
     
+    if (table === 'eval_m365_usage') {
+      if (!columns.find(c => c.name === 'license_m365')) {
+        db.prepare("ALTER TABLE eval_m365_usage ADD COLUMN license_m365 TEXT").run();
+      }
+    }
+
     if (table === 'voucher_requests') {
       if (!columns.find(c => c.name === 'design_data')) {
         db.prepare("ALTER TABLE voucher_requests ADD COLUMN design_data TEXT").run();

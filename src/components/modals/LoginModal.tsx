@@ -8,7 +8,7 @@ interface LoginModalProps {
   isDark: boolean;
   themeClasses: any;
   loginData: any;
-  setLoginData: (data: any) => void;
+  setLoginData: React.Dispatch<React.SetStateAction<any>>;
   handleLogin: (e: React.FormEvent) => void;
   primaryColor: string;
 }
@@ -71,7 +71,7 @@ export const LoginModal = React.memo(({
               placeholder="Masukkan username"
               className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
               value={loginData.username}
-              onChange={e => setLoginData({...loginData, username: e.target.value})}
+              onChange={e => setLoginData(prev => ({...prev, username: e.target.value}))}
             />
           </div>
           <div className="space-y-1.5">
@@ -84,7 +84,7 @@ export const LoginModal = React.memo(({
               placeholder="Masukkan password"
               className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
               value={loginData.password}
-              onChange={e => setLoginData({...loginData, password: e.target.value})}
+              onChange={e => setLoginData(prev => ({...prev, password: e.target.value}))}
             />
           </div>
 

@@ -299,6 +299,15 @@ export const api = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ enable_funny_egg })
   }).then(handleResponse),
+  
+  getBeritaAcara: (): Promise<any[]> => fetch('/api/berita-acara').then(handleResponse),
+  saveBeritaAcara: (doc: any) => fetch('/api/berita-acara', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(doc)
+  }).then(handleResponse),
+  deleteBeritaAcara: (id: string) => fetch(`/api/berita-acara/${id}`, { method: 'DELETE' }).then(handleResponse),
+
   getVoucherRequests: (): Promise<any[]> => fetch('/api/voucher-requests').then(handleResponse),
   createVoucherRequest: (data: { requester_name: string; department: string; deadline: string; theme: string; slogan?: string; validity_date: string; qty: number; created_by?: string; voucher_value?: string }) => fetch('/api/voucher-requests', {
     method: 'POST',
