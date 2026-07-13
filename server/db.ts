@@ -211,24 +211,6 @@ export function initDb() {
       FOREIGN KEY (project_id) REFERENCES eval_projects(id) ON DELETE CASCADE
     );
 
-    CREATE TABLE IF NOT EXISTS eval_whatsapp_usage (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      project_id INTEGER NOT NULL,
-      agent_name TEXT,
-      department TEXT,
-      case_count INTEGER DEFAULT 0,
-      already_rated INTEGER DEFAULT 0,
-      not_rated INTEGER DEFAULT 0,
-      very_dissatisfied INTEGER DEFAULT 0,
-      dissatisfied INTEGER DEFAULT 0,
-      neutral INTEGER DEFAULT 0,
-      satisfied INTEGER DEFAULT 0,
-      very_satisfied INTEGER DEFAULT 0,
-      case_details TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (project_id) REFERENCES eval_projects(id) ON DELETE CASCADE
-    );
-
     CREATE TABLE IF NOT EXISTS berita_acara (
       id TEXT PRIMARY KEY,
       created_at TEXT,

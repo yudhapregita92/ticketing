@@ -75,7 +75,6 @@ router.post("/:id/import", asyncHandler(async (req, res) => {
   }
 
   const isM365 = project.name.toLowerCase().includes("m365");
-  const isWhatsapp = project.name.toLowerCase().includes("whatsapp") || project.name.toLowerCase().includes("omni");
 
   if (isM365) {
     const insertTransaction = db.transaction((projectId: number, rows: any[]) => {
@@ -171,81 +170,6 @@ router.post("/:id/import", asyncHandler(async (req, res) => {
     });
 
     insertTransaction(Number(id), records);
-  } else if (isWhatsapp) {
-    const insertTransaction = db.transaction((projectId: number, rows: any[]) => {
-      const checkStmt = db.prepare(`
-        SELECT id FROM eval_whatsapp_usage 
-        WHERE project_id = ? AND agent_name = ? AND department = ? AND case_details = ?
-      `);
-
-      const insertStmt = db.prepare(`
-        INSERT INTO eval_whatsapp_usage (
-          project_id, agent_name, department, case_count, already_rated, not_rated,
-          very_dissatisfied, dissatisfied, neutral, satisfied, very_satisfied, case_details
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-
-      const updateStmt = db.prepare(`
-        UPDATE eval_whatsapp_usage
-        SET case_count = ?,
-            already_rated = ?,
-            not_rated = ?,
-            very_dissatisfied = ?,
-            dissatisfied = ?,
-            neutral = ?,
-            satisfied = ?,
-            very_satisfied = ?
-        WHERE id = ?
-      `);
-
-      for (const r of rows) {
-        const agentName = r.agent_name || 'User Umum';
-        const department = r.department || 'Divisi Umum';
-        const caseCount = Number(r.case_count) || 0;
-        const alreadyRated = Number(r.already_rated) || 0;
-        const notRated = Number(r.not_rated) || 0;
-        const veryDissatisfied = Number(r.very_dissatisfied) || 0;
-        const dissatisfied = Number(r.dissatisfied) || 0;
-        const neutral = Number(r.neutral) || 0;
-        const satisfied = Number(r.satisfied) || 0;
-        const verySatisfied = Number(r.very_satisfied) || 0;
-        const caseDetails = String(r.case_details || '');
-
-        if (!agentName && !department) continue;
-
-        const existing = checkStmt.get(projectId, agentName, department, caseDetails) as any;
-        if (existing) {
-          updateStmt.run(
-            caseCount,
-            alreadyRated,
-            notRated,
-            veryDissatisfied,
-            dissatisfied,
-            neutral,
-            satisfied,
-            verySatisfied,
-            existing.id
-          );
-        } else {
-          insertStmt.run(
-            projectId,
-            agentName,
-            department,
-            caseCount,
-            alreadyRated,
-            notRated,
-            veryDissatisfied,
-            dissatisfied,
-            neutral,
-            satisfied,
-            verySatisfied,
-            caseDetails
-          );
-        }
-      }
-    });
-
-    insertTransaction(Number(id), records);
   } else {
     // Insert records inside an atomic fast transaction
     const insertTransaction = db.transaction((projectId: number, rows: any[]) => {
@@ -278,8 +202,6 @@ router.post("/:id/clear", asyncHandler(async (req, res) => {
   const project = db.prepare("SELECT * FROM eval_projects WHERE id = ?").get(id) as any;
   if (project && project.name.toLowerCase().includes("m365")) {
     db.prepare("DELETE FROM eval_m365_usage WHERE project_id = ?").run(id);
-  } else if (project && (project.name.toLowerCase().includes("whatsapp") || project.name.toLowerCase().includes("omni"))) {
-    db.prepare("DELETE FROM eval_whatsapp_usage WHERE project_id = ?").run(id);
   } else {
     db.prepare("DELETE FROM eval_project_usage WHERE project_id = ?").run(id);
   }
@@ -296,7 +218,6 @@ router.get("/:id/dashboard", asyncHandler(async (req, res) => {
   }
 
   const isM365 = project.name.toLowerCase().includes("m365");
-  const isWhatsapp = project.name.toLowerCase().includes("whatsapp") || project.name.toLowerCase().includes("omni");
 
   if (isM365) {
     // M365 Stats
@@ -390,91 +311,6 @@ router.get("/:id/dashboard", asyncHandler(async (req, res) => {
       activityDistribution,
       topUsers,
       m365Records: m365Raw
-    });
-
-  } else if (isWhatsapp) {
-    // WhatsApp stats
-    const counters = db.prepare(`
-      SELECT 
-        COUNT(*) as total_records,
-        COUNT(DISTINCT agent_name) as active_users,
-        COUNT(DISTINCT department) as active_departments,
-        SUM(case_count) as total_usage
-      FROM eval_whatsapp_usage
-      WHERE project_id = ?
-    `).get(id) as any;
-
-    // Department distribution
-    const departmentDistribution = db.prepare(`
-      SELECT 
-        department,
-        SUM(case_count) as count,
-        COUNT(DISTINCT agent_name) as users
-      FROM eval_whatsapp_usage
-      WHERE project_id = ?
-      GROUP BY department
-      ORDER BY count DESC
-    `).all(id) as any[];
-
-    // Ratings breakdown
-    const ratingStats = db.prepare(`
-      SELECT 
-        SUM(case_count) as total_cases,
-        SUM(already_rated) as total_rated,
-        SUM(not_rated) as total_unrated,
-        SUM(very_dissatisfied) as very_dissatisfied,
-        SUM(dissatisfied) as dissatisfied,
-        SUM(neutral) as neutral,
-        SUM(satisfied) as satisfied,
-        SUM(very_satisfied) as very_satisfied
-      FROM eval_whatsapp_usage
-      WHERE project_id = ?
-    `).get(id) as any;
-
-    const activityDistribution = [
-      { type: 'Sangat Tidak Puas', count: ratingStats?.very_dissatisfied || 0 },
-      { type: 'Tidak Puas', count: ratingStats?.dissatisfied || 0 },
-      { type: 'Netral', count: ratingStats?.neutral || 0 },
-      { type: 'Puas', count: ratingStats?.satisfied || 0 },
-      { type: 'Sangat Puas', count: ratingStats?.very_satisfied || 0 }
-    ];
-
-    // Top active agents (by case_count)
-    const topUsers = db.prepare(`
-      SELECT 
-        agent_name as user_name,
-        department,
-        SUM(case_count) as count
-      FROM eval_whatsapp_usage
-      WHERE project_id = ?
-      GROUP BY agent_name, department
-      ORDER BY count DESC
-      LIMIT 15
-    `).all(id) as any[];
-
-    const whatsappRecords = db.prepare(`
-      SELECT * FROM eval_whatsapp_usage WHERE project_id = ?
-    `).all(id) as any[];
-
-    res.json({
-      project,
-      stats: {
-        total_records: counters?.total_records || 0,
-        active_users: counters?.active_users || 0,
-        active_departments: counters?.active_departments || 0,
-        total_usage: counters?.total_usage || 0,
-        target_users: project.target_users,
-        adoption_rate: project.target_users > 0 ? Math.round(((counters?.active_users || 0) / project.target_users) * 100) : 0,
-        total_cases: ratingStats?.total_cases || 0,
-        total_rated: ratingStats?.total_rated || 0,
-        total_unrated: ratingStats?.total_unrated || 0,
-        rating_stats: ratingStats
-      },
-      trend: departmentDistribution.map(d => ({ date: d.department, count: d.count, active_users: d.users })),
-      departmentDistribution,
-      activityDistribution,
-      topUsers,
-      whatsappRecords
     });
 
   } else {

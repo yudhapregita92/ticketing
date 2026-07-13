@@ -184,10 +184,6 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
     return dashboardData?.project?.name?.toLowerCase().includes('m365') || false;
   }, [dashboardData]);
 
-  const isWhatsapp = useMemo(() => {
-    return dashboardData?.project?.name?.toLowerCase().includes('whatsapp') || dashboardData?.project?.name?.toLowerCase().includes('omni') || false;
-  }, [dashboardData]);
-
   const uniqueMonths = useMemo(() => {
     if (!dashboardData || !dashboardData.m365Records) return [];
     const months = dashboardData.m365Records
@@ -740,62 +736,48 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
 
     try {
       setIsImporting(true);
-      let records: any[] = [];
+      const lines = pasteData.split('\n').map(l => l.trim()).filter(Boolean);
+      if (lines.length === 0) {
+        toast.error('Data tidak valid');
+        return;
+      }
+
+      // Detect header if exists
+      let startIndex = 0;
+      const headers = lines[0].toLowerCase();
+      const hasHeader = headers.includes('user') || headers.includes('nama') || headers.includes('dept') || headers.includes('tanggal') || headers.includes('date');
       
-      if (pasteData.trim().startsWith('[')) {
-        const jsonData = JSON.parse(pasteData);
-        records = jsonData.map((row: any) => ({
-          user_name: row['Nama Pengguna'] || row['User'] || row['user_name'] || '',
-          department: row['Departemen'] || row['Department'] || row['department'] || '',
-          activity_date: row['Tanggal'] || row['Date'] || row['activity_date'] || '',
-          activity_type: row['Aktivitas'] || row['Activity'] || row['activity_type'] || 'Akses Aplikasi',
-          usage_count: row['Jumlah'] || row['Count'] || row['usage_count'] || 1
-        }));
-      } else {
-        const lines = pasteData.split('\n').map(l => l.trim()).filter(Boolean);
-        if (lines.length === 0) {
-          toast.error('Data tidak valid');
-          setIsImporting(false);
-          return;
-        }
+      if (hasHeader) {
+        startIndex = 1;
+      }
 
-        // Detect header if exists
-        let startIndex = 0;
-        const headers = lines[0].toLowerCase();
-        const hasHeader = headers.includes('user') || headers.includes('nama') || headers.includes('dept') || headers.includes('tanggal') || headers.includes('date');
-        
-        if (hasHeader) {
-          startIndex = 1;
-        }
+      const records: any[] = [];
+      const columnSeparator = lines[0].includes(';') ? ';' : lines[0].includes('\t') ? '\t' : ',';
 
-        const columnSeparator = lines[0].includes(';') ? ';' : lines[0].includes('\t') ? '\t' : ',';
+      for (let i = startIndex; i < lines.length; i++) {
+        const parts = lines[i].split(columnSeparator).map(p => p.trim().replace(/^["']|["']$/g, ''));
+        if (parts.length >= 3) {
+          // Columns structure assumption: user_name, department, activity_date, activity_type (optional), usage_count (optional)
+          const user_name = parts[0];
+          const department = parts[1];
+          const activity_date = parts[2];
+          const activity_type = parts[3] || 'Akses Aplikasi';
+          const usage_count = parts[4] ? parseInt(parts[4]) || 1 : 1;
 
-        for (let i = startIndex; i < lines.length; i++) {
-          const parts = lines[i].split(columnSeparator).map(p => p.trim().replace(/^["']|["']$/g, ''));
-          if (parts.length >= 3) {
-            // Columns structure assumption: user_name, department, activity_date, activity_type (optional), usage_count (optional)
-            const user_name = parts[0];
-            const department = parts[1];
-            const activity_date = parts[2];
-            const activity_type = parts[3] || 'Akses Aplikasi';
-            const usage_count = parts[4] ? parseInt(parts[4]) || 1 : 1;
-
-            if (user_name && department && activity_date) {
-              records.push({
-                user_name,
-                department,
-                activity_date,
-                activity_type,
-                usage_count
-              });
-            }
+          if (user_name && department && activity_date) {
+            records.push({
+              user_name,
+              department,
+              activity_date,
+              activity_type,
+              usage_count
+            });
           }
         }
       }
 
       if (records.length === 0) {
         toast.error('Format data salah. Pastikan minimal ada kolom: Pengguna, Departemen, Tanggal (YYYY-MM-DD)');
-        setIsImporting(false);
         return;
       }
 
@@ -886,45 +868,25 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
         }
       } else {
         // whatsapp omni
-        const whatsappAgents = [
-          { name: 'Ocha', dept: 'HRGA', details: 'Pendaftaran anggota' },
-          { name: 'Dewi Lestari', dept: 'Customer Service', details: 'Keluhan tagihan' },
-          { name: 'Amalia Putri', dept: 'Pemasaran & Sales', details: 'Informasi produk baru' },
-          { name: 'Rian Hidayat', dept: 'Operasional', details: 'Pengiriman barang' },
-          { name: 'Andi Wijaya', dept: 'Customer Service', details: 'Reset password akun' },
-          { name: 'Novianti', dept: 'Customer Service', details: 'Bantuan pendaftaran' },
-          { name: 'Gilang Ramadhan', dept: 'Operasional', details: 'Verifikasi dokumen' }
-        ];
+        for (let day = 14; day >= 0; day--) {
+          const actDateObj = new Date();
+          actDateObj.setDate(today.getDate() - day);
+          const actDateStr = actDateObj.toISOString().split('T')[0];
 
-        for (const agent of whatsappAgents) {
-          const cases = Math.floor(Math.random() * 25) + 5;
-          const alreadyRated = Math.floor(Math.random() * (cases - 2)) + 2;
-          const notRated = cases - alreadyRated;
-          
-          let remaining = alreadyRated;
-          const verySatisfied = Math.floor(Math.random() * (remaining + 1));
-          remaining -= verySatisfied;
-          const satisfied = Math.floor(Math.random() * (remaining + 1));
-          remaining -= satisfied;
-          const neutral = Math.floor(Math.random() * (remaining + 1));
-          remaining -= neutral;
-          const dissatisfied = Math.floor(Math.random() * (remaining + 1));
-          remaining -= dissatisfied;
-          const veryDissatisfied = remaining;
-
-          records.push({
-            'Bagian - Nama': agent.name,
-            'Bagian - Nama_1': agent.dept,
-            'Case (Jumlah Responden)': cases,
-            'Sudah Rating': alreadyRated,
-            'Belum Rating': notRated,
-            'Sangat Tidak Puas': veryDissatisfied,
-            'Tidak Puas': dissatisfied,
-            'Netral': neutral,
-            'Puas': satisfied,
-            'Sangat Puas': verySatisfied,
-            'Rincian Case': agent.details
-          });
+          // generate random entries per day
+          const entriesCount = Math.floor(Math.random() * 10) + 5; // 5 to 14 entries
+          for (let e = 0; e < entriesCount; e++) {
+            const user = whatsappUsers[Math.floor(Math.random() * whatsappUsers.length)];
+            const activity = whatsappActions[Math.floor(Math.random() * whatsappActions.length)];
+            const count = Math.floor(Math.random() * 12) + 2;
+            records.push({
+              user_name: user.name,
+              department: user.dept,
+              activity_date: actDateStr,
+              activity_type: activity,
+              usage_count: count
+            });
+          }
         }
       }
 
@@ -945,34 +907,13 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsImporting(true);
     const reader = new FileReader();
-    reader.onload = async (evt) => {
-      try {
-        const bstr = evt.target?.result;
-        const wb = XLSX.read(bstr, { type: 'binary' });
-        const wsname = wb.SheetNames[0];
-        const ws = wb.Sheets[wsname];
-        const data = XLSX.utils.sheet_to_json(ws) as any[];
-
-        if (!data || data.length === 0) {
-          toast.error("File Excel kosong atau tidak valid");
-          setIsImporting(false);
-          return;
-        }
-        
-        // Assuming we need to convert this to the same format as pasteData or handle it directly
-        // Based on the usage, it seems this is just for importing data.
-        // Let's set the data directly to trigger the same logic as the import process
-        setPasteData(JSON.stringify(data));
-        toast.success(`File ${file.name} terbaca. Klik 'Import Sekarang' untuk memproses.`);
-        setIsImporting(false);
-      } catch (err) {
-        toast.error("Gagal membaca file Excel");
-        setIsImporting(false);
-      }
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      setPasteData(content);
+      toast.success(`File ${file.name} terbaca. Klik 'Import Sekarang' untuk memproses.`);
     };
-    reader.readAsBinaryString(file);
+    reader.readAsText(file);
   };
 
   const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1004,24 +945,8 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
             return '';
           };
 
-          if (isWhatsapp) {
-            return {
-              agent_name: findVal(['Nama Agen', 'Bagian - Nama']),
-              department: findVal(['Nama Divisi', 'Bagian - Nama__1', 'Bagian - Nama ']),
-              case_count: findVal(['Case (Jumlah Responden)', 'Case (Jumlah Responden)']),
-              already_rated: findVal(['Sudah Rating']),
-              not_rated: findVal(['Belum Rating']),
-              very_dissatisfied: findVal(['Sangat Tidak Puas']),
-              dissatisfied: findVal(['Tidak Puas']),
-              neutral: findVal(['Netral']),
-              satisfied: findVal(['Puas']),
-              very_satisfied: findVal(['Sangat Puas']),
-              case_details: findVal(['Rincian Case'])
-            };
-          }
-
           return {
-            periode_bulan: findVal(['periode_bulan', 'periode bulan', 'periode', 'bulan']),
+            periode_bulan: findVal(['periode bulan', 'periode_bulan', 'periode', 'bulan']),
             user_principal_name: findVal(['user principal name', 'user_principal_name', 'upn', 'username']),
             display_name: findVal(['display name', 'display_name', 'nama', 'name']),
             department: findVal(['department', 'departemen', 'divisi']),
@@ -1040,7 +965,7 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
         });
 
         await api.importEvalProjectData(selectedProjectId!, normalizedData);
-        toast.success(`Berhasil mengimport ${normalizedData.length} data ${isWhatsapp ? 'WhatsApp Omnichannel' : 'Microsoft 365'}!`);
+        toast.success(`Berhasil mengimport ${normalizedData.length} data Microsoft 365!`);
         fetchDashboard(selectedProjectId!);
         fetchProjects();
       } catch (err) {
@@ -1055,31 +980,6 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
   };
 
   const handleDownloadTemplate = () => {
-    if (isWhatsapp) {
-      const templateData = [
-        {
-          "Nama Agen": "Ocha",
-          "Nama Divisi": "HRGA",
-          "Case (Jumlah Responden)": 5,
-          "Sudah Rating": 1,
-          "Belum Rating": 4,
-          "Sangat Tidak Puas": 0,
-          "Tidak Puas": 1,
-          "Netral": 0,
-          "Puas": 0,
-          "Sangat Puas": 0,
-          "Rincian Case": "Pendaftaran anggota"
-        }
-      ];
-
-      const ws = XLSX.utils.json_to_sheet(templateData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Template WhatsApp Omni');
-      XLSX.writeFile(wb, 'Template_Import_WhatsApp_Omni.xlsx');
-      toast.success('Template WhatsApp Omni berhasil diunduh');
-      return;
-    }
-
     const templateData = [
       {
         "Periode bulan": "01-07-2026-07/11/2026",
@@ -1108,34 +1008,6 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
   };
 
   const handleExportDataExcel = () => {
-    if (isWhatsapp) {
-      if (!activeDashboardData || !activeDashboardData.whatsappRecords || activeDashboardData.whatsappRecords.length === 0) {
-        toast.error("Tidak ada data untuk diexport");
-        return;
-      }
-
-      const exportData = activeDashboardData.whatsappRecords.map((r: any) => ({
-        "Bagian - Nama": r.agent_name,
-        "Bagian - Nama ": r.department,
-        "Case (Jumlah Responden)": r.case_count,
-        "Sudah Rating": r.already_rated,
-        "Belum Rating": r.not_rated,
-        "Sangat Tidak Puas": r.very_dissatisfied,
-        "Tidak Puas": r.dissatisfied,
-        "Netral": r.neutral,
-        "Puas": r.satisfied,
-        "Sangat Puas": r.very_satisfied,
-        "Rincian Case": r.case_details
-      }));
-
-      const ws = XLSX.utils.json_to_sheet(exportData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Data WhatsApp Omni');
-      XLSX.writeFile(wb, 'Data_Evaluasi_WhatsApp_Omni.xlsx');
-      toast.success('Data WhatsApp Omni berhasil diexport');
-      return;
-    }
-
     if (!activeDashboardData || !activeDashboardData.m365Records || activeDashboardData.m365Records.length === 0) {
       toast.error("Tidak ada data untuk diexport");
       return;
@@ -1172,9 +1044,6 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
     if (activeDashboardData.project?.name?.toLowerCase().includes('m365')) {
       return activeDashboardData.m365Records || [];
     }
-    if (activeDashboardData.project?.name?.toLowerCase().includes('whatsapp') || activeDashboardData.project?.name?.toLowerCase().includes('omni')) {
-      return activeDashboardData.whatsappRecords || [];
-    }
     return activeDashboardData.topUsers || [];
   }, [activeDashboardData]);
 
@@ -1189,12 +1058,6 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
           (r.display_name || '').toLowerCase().includes(q) ||
           (r.user_principal_name || '').toLowerCase().includes(q) ||
           (r.department || '').toLowerCase().includes(q)
-        );
-      } else if (isWhatsapp) {
-        records = records.filter((r: any) => 
-          (r.agent_name || '').toLowerCase().includes(q) ||
-          (r.department || '').toLowerCase().includes(q) ||
-          (r.case_details || '').toLowerCase().includes(q)
         );
       } else {
         records = records.filter((r: any) => 
@@ -2970,7 +2833,7 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                             } transition-colors`}>
                               <input 
                                 type="file" 
-                                accept=".xlsx,.xls"
+                                accept=".xlsx,.xls,.csv"
                                 onChange={handleImportExcel}
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                               />
@@ -2979,15 +2842,11 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                               <p className="text-xs text-slate-400 max-w-md mx-auto">Format didukung: File hasil download template M365 dengan 14 kolom lengkap</p>
                             </div>
                           </>
-                        ) : isWhatsapp ? (
-                          <div className={`p-8 text-center ${cardClass}`}>
-                            <p className={`text-sm ${textMuted}`}>Fitur import data tidak tersedia untuk project ini.</p>
-                          </div>
                         ) : (
                           <>
                             <div>
-                              <h3 className={`text-sm font-black ${textMain}`}>Import Data Excel</h3>
-                              <p className={`text-xs ${textMuted}`}>Pilih file Excel untuk diimport.</p>
+                              <h3 className={`text-sm font-black ${textMain}`}>Import Data Mentah (CSV / Pemisah Kolom)</h3>
+                              <p className={`text-xs ${textMuted}`}>Paste baris data atau pilih file CSV. Pemisah dideteksi otomatis (koma, titik koma, tab).</p>
                             </div>
 
                             {/* File selector drag/drop */}
@@ -2996,12 +2855,12 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                             } transition-colors`}>
                               <input 
                                 type="file" 
-                                accept=".xlsx,.xls"
+                                accept=".csv,.txt"
                                 onChange={handleFileUpload}
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                               />
                               <CloudUpload className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-                              <h4 className={`text-xs font-bold ${textMain} mb-0.5`}>Pilih File Excel</h4>
+                              <h4 className={`text-xs font-bold ${textMain} mb-0.5`}>Pilih File CSV Log Penggunaan</h4>
                               <p className="text-[10px] text-slate-400">Format kolom: Nama Pengguna, Departemen, Tanggal (YYYY-MM-DD), Tipe Aktivitas, Jumlah</p>
                             </div>
 
@@ -3054,7 +2913,7 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                                 </div>
                                 <div>
                                   <h4 className="text-xs font-black">Download Template Excel</h4>
-                                  <p className="text-[10px] text-slate-400">Unduh format template</p>
+                                  <p className="text-[10px] text-slate-400">Unduh format template 14 kolom</p>
                                 </div>
                               </button>
 
@@ -3084,11 +2943,11 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                                 <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center font-bold">⚡</div>
                                 <div>
                                   <h4 className="text-xs font-black">Generate Data M365</h4>
-                                  <p className="text-[10px] text-slate-400">Simulasi instan data Microsoft 365</p>
+                                  <p className="text-[10px] text-slate-400">Simulasi instan 11 user Microsoft 365</p>
                                 </div>
                               </button>
                             </>
-                          ) : !isWhatsapp && (
+                          ) : (
                             <>
                               <button
                                 onClick={() => loadExampleData('m365')}
@@ -3297,44 +3156,6 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                                         <td className="py-3 px-3 text-slate-400 italic max-w-[150px] truncate" title={row.reason_web}>
                                           {row.reason_web || '-'}
                                         </td>
-                                      </tr>
-                                    ))
-                                  }
-                                </tbody>
-                              </>
-                            ) : isWhatsapp ? (
-                              <>
-                                <thead>
-                                  <tr className={`border-b ${isDark ? 'border-slate-800 text-slate-400' : 'border-slate-100 text-slate-500'} font-bold`}>
-                                    <th className="pb-2.5 px-3 font-bold uppercase tracking-wider text-[10px]">Bagian - Nama</th>
-                                    <th className="pb-2.5 px-3 font-bold uppercase tracking-wider text-[10px]">Bagian - Nama (Divisi)</th>
-                                    <th className="pb-2.5 px-3 font-bold uppercase tracking-wider text-[10px] text-right">Case (Jumlah Responden)</th>
-                                    <th className="pb-2.5 px-3 font-bold uppercase tracking-wider text-[10px] text-right">Sudah Rating</th>
-                                    <th className="pb-2.5 px-3 font-bold uppercase tracking-wider text-[10px] text-right">Belum Rating</th>
-                                    <th className="pb-2.5 px-3 font-bold uppercase tracking-wider text-[10px] text-right text-red-500">Sangat Tidak Puas</th>
-                                    <th className="pb-2.5 px-3 font-bold uppercase tracking-wider text-[10px] text-right text-orange-400">Tidak Puas</th>
-                                    <th className="pb-2.5 px-3 font-bold uppercase tracking-wider text-[10px] text-right text-amber-500">Netral</th>
-                                    <th className="pb-2.5 px-3 font-bold uppercase tracking-wider text-[10px] text-right text-emerald-400">Puas</th>
-                                    <th className="pb-2.5 px-3 font-bold uppercase tracking-wider text-[10px] text-right text-emerald-500">Sangat Puas</th>
-                                    <th className="pb-2.5 px-3 font-bold uppercase tracking-wider text-[10px]">Rincian Case</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {filteredRawRecords
-                                    .slice((currentPage - 1) * 10, currentPage * 10)
-                                    .map((row: any, idx: number) => (
-                                      <tr key={idx} className={`border-b ${isDark ? 'border-slate-800/50 hover:bg-slate-800/20' : 'border-slate-100 hover:bg-slate-50/50'} transition-colors`}>
-                                        <td className={`py-3 px-3 font-bold ${textMain}`}>{row.agent_name}</td>
-                                        <td className="py-3 px-3 text-slate-400">{row.department}</td>
-                                        <td className="py-3 px-3 font-mono font-bold text-right text-purple-500">{row.case_count}</td>
-                                        <td className="py-3 px-3 font-mono text-right text-emerald-500">{row.already_rated}</td>
-                                        <td className="py-3 px-3 font-mono text-right text-slate-400">{row.not_rated}</td>
-                                        <td className="py-3 px-3 font-mono text-right text-red-400">{row.very_dissatisfied}</td>
-                                        <td className="py-3 px-3 font-mono text-right text-orange-400">{row.dissatisfied}</td>
-                                        <td className="py-3 px-3 font-mono text-right text-amber-400">{row.neutral}</td>
-                                        <td className="py-3 px-3 font-mono text-right text-emerald-400">{row.satisfied}</td>
-                                        <td className="py-3 px-3 font-mono text-right text-emerald-600 font-bold">{row.very_satisfied}</td>
-                                        <td className="py-3 px-3 text-slate-400 italic max-w-[200px] truncate" title={row.case_details}>{row.case_details || '-'}</td>
                                       </tr>
                                     ))
                                   }
