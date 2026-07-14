@@ -587,13 +587,23 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
     reader.readAsDataURL(file);
   };
 
-  const filteredMemberships = memberships.filter(m => 
-    m.nama.toLowerCase().includes(search.toLowerCase()) ||
-    (m.barcode && m.barcode.toLowerCase().includes(search.toLowerCase())) ||
-    (m.bagian && m.bagian.toLowerCase().includes(search.toLowerCase())) ||
-    (m.indek_ggf && m.indek_ggf.toLowerCase().includes(search.toLowerCase())) ||
-    (m.kode_lokal && m.kode_lokal.toLowerCase().includes(search.toLowerCase()))
-  );
+  const filteredMemberships = React.useMemo(() => {
+    const filtered = memberships.filter(m => 
+      m.nama.toLowerCase().includes(search.toLowerCase()) ||
+      (m.barcode && m.barcode.toLowerCase().includes(search.toLowerCase())) ||
+      (m.bagian && m.bagian.toLowerCase().includes(search.toLowerCase())) ||
+      (m.indek_ggf && m.indek_ggf.toLowerCase().includes(search.toLowerCase())) ||
+      (m.kode_lokal && m.kode_lokal.toLowerCase().includes(search.toLowerCase()))
+    );
+    
+    return filtered.sort((a, b) => {
+      const aHasPhoto = !!a.foto;
+      const bHasPhoto = !!b.foto;
+      if (aHasPhoto && !bHasPhoto) return -1;
+      if (!aHasPhoto && bHasPhoto) return 1;
+      return 0;
+    });
+  }, [memberships, search]);
 
   const paginatedMemberships = React.useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
