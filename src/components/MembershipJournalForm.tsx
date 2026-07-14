@@ -373,7 +373,7 @@ export const MembershipJournalForm: React.FC<MembershipJournalFormProps> = ({
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="block text-[10px] font-bold uppercase tracking-wider mb-1 text-slate-400">
-                        Indek GGF
+                        Index GGF
                       </label>
                       <input
                         type="text"
@@ -474,7 +474,7 @@ export const MembershipJournalForm: React.FC<MembershipJournalFormProps> = ({
                     >
                       <div className="flex justify-between"><span className="font-medium">NIK / Kode:</span> <span className="text-slate-200">{selectedMember.kode_lokal || '-'}</span></div>
                       <div className="flex justify-between"><span className="font-medium">Bagian / Dept:</span> <span className="text-slate-200">{selectedMember.bagian || '-'}</span></div>
-                      <div className="flex justify-between"><span className="font-medium">Indek GGF:</span> <span className="text-slate-200">{selectedMember.indek_ggf || '-'}</span></div>
+                      <div className="flex justify-between"><span className="font-medium">Index GGF:</span> <span className="text-slate-200">{selectedMember.indek_ggf || '-'}</span></div>
                       <div className="flex justify-between"><span className="font-medium">Barcode:</span> <span className="text-slate-200">{selectedMember.barcode || '-'}</span></div>
                     </motion.div>
                   )}

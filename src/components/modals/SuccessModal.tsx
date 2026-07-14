@@ -52,7 +52,7 @@ export const SuccessModal: React.FC<SuccessModalProps> = ({
             onClick={onViewHistory}
             className="w-full py-3.5 bg-emerald-500 text-white rounded-2xl text-sm font-black capitalize tracking-widest shadow-lg shadow-emerald-500/30"
           >
-            Lihat Riwayat Tiket
+            Lihat Riwayat Tiket Saya
           </motion.button>
           <button
             onClick={onClose}

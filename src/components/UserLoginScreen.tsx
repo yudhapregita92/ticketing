@@ -123,13 +123,13 @@ export const UserLoginScreen = React.memo(({
     }
 
     if (!indexCode) {
-      setError(`Silakan masukkan ${appSettings?.login_index_label || "indek (KDK/GGF)"} Anda`);
+      setError(`Silakan masukkan ${appSettings?.login_index_label || "index (KDK/GGF)"} Anda`);
       return;
     }
 
     // Verify index
     if (selectedUser.employee_index !== indexCode) {
-      setError(`${appSettings?.login_index_label || "Indek"} yang Anda masukkan salah`);
+      setError(`${appSettings?.login_index_label || "Index"} yang Anda masukkan salah`);
       return;
     }
 
@@ -139,10 +139,10 @@ export const UserLoginScreen = React.memo(({
   };
 
   const loginTitle = isAdminMode ? "Portal Admin" : (appSettings?.login_title || "Masuk ke Aplikasi");
-  const loginSubtitle = isAdminMode ? "Login untuk mengelola tiket" : (appSettings?.login_subtitle || "Silakan pilih nama dan masukkan indek Anda");
+  const loginSubtitle = isAdminMode ? "Login untuk mengelola tiket" : (appSettings?.login_subtitle || "Silakan pilih nama dan masukkan index Anda");
   const nameLabel = appSettings?.login_name_label || "Nama Anda";
-  const indexLabel = appSettings?.login_index_label || "Indek (KDK/GGF)";
-  const indexPlaceholder = appSettings?.login_index_placeholder || "Masukkan indek Anda...";
+  const indexLabel = appSettings?.login_index_label || "Index (KDK/GGF)";
+  const indexPlaceholder = appSettings?.login_index_placeholder || "Masukkan index Anda...";
 
   return (
     <div className={`min-h-screen flex items-center justify-center p-3 relative overflow-hidden ${themeClasses.bg}`}>
@@ -266,7 +266,7 @@ export const UserLoginScreen = React.memo(({
                         <div className={`p-1.5 border-b ${themeClasses.border}`}>
                           <input 
                             type="text"
-                            placeholder="Cari nama atau indek..."
+                            placeholder="Cari nama atau index..."
                             value={searchName}
                             onChange={(e) => setSearchName(e.target.value)}
                             className={`w-full px-2 py-1 rounded bg-transparent border-none focus:ring-0 text-xs ${themeClasses.text}`}

@@ -110,6 +110,7 @@ export const SettingsModal = React.memo(({
   const [masterUserEmail, setMasterUserEmail] = React.useState('');
   const [masterUserJenisPiranti, setMasterUserJenisPiranti] = React.useState('(Tidak Ada)');
   const [masterUserKodePiranti, setMasterUserKodePiranti] = React.useState('');
+  const [masterUserJabatan, setMasterUserJabatan] = React.useState('');
   const [editingMasterUser, setEditingMasterUser] = React.useState<any | null>(null);
   const [masterUserSearch, setMasterUserSearch] = React.useState('');
 
@@ -256,7 +257,8 @@ export const SettingsModal = React.memo(({
           employee_index: masterUserIndex,
           email: masterUserEmail || null,
           jenis_piranti: masterUserJenisPiranti,
-          kode_piranti: masterUserKodePiranti
+          kode_piranti: masterUserKodePiranti,
+          jabatan: masterUserJabatan
         });
         setAddingType(null);
         setEditingMasterUser(null);
@@ -267,6 +269,7 @@ export const SettingsModal = React.memo(({
         setMasterUserEmail('');
         setMasterUserJenisPiranti('(Tidak Ada)');
         setMasterUserKodePiranti('');
+        setMasterUserJabatan('');
         handleManagementAction('master-user', 'delete', { id: editingMasterUser.id }); // Invalidate queries/refresh
       } else {
         // Add Mode
@@ -277,7 +280,8 @@ export const SettingsModal = React.memo(({
           employee_index: masterUserIndex,
           email: masterUserEmail || null,
           jenis_piranti: masterUserJenisPiranti,
-          kode_piranti: masterUserKodePiranti
+          kode_piranti: masterUserKodePiranti,
+          jabatan: masterUserJabatan
         });
         setAddingType(null);
         setMasterUserName('');
@@ -287,6 +291,7 @@ export const SettingsModal = React.memo(({
         setMasterUserEmail('');
         setMasterUserJenisPiranti('(Tidak Ada)');
         setMasterUserKodePiranti('');
+        setMasterUserJabatan('');
         handleManagementAction('master-user', 'add');
       }
     } catch (err: any) {
@@ -303,6 +308,7 @@ export const SettingsModal = React.memo(({
     setMasterUserEmail('');
     setMasterUserJenisPiranti('(Tidak Ada)');
     setMasterUserKodePiranti('');
+    setMasterUserJabatan('');
     setAddingType('master-user');
   };
 
@@ -324,6 +330,7 @@ export const SettingsModal = React.memo(({
     setMasterUserEmail(user.email || '');
     setMasterUserJenisPiranti(normalizeJenisPiranti(user.jenis_piranti));
     setMasterUserKodePiranti(user.kode_piranti && user.kode_piranti !== '-' ? user.kode_piranti : '');
+    setMasterUserJabatan(user.jabatan || '');
     setAddingType('master-user');
   };
 
@@ -363,30 +370,33 @@ export const SettingsModal = React.memo(({
     const templateData = [
       {
         'Nama Lengkap': 'Budi Santoso',
-        'Bagian': 'HRGA',
-        'No HP': '081234567890',
-        'Indek': '12345',
-        'Email': 'budi@example.com',
+        'Bagian / Departemen': 'HRGA',
+        'No. Telepon': '081234567890',
+        'Index Karyawan': '12345',
         'Jenis Piranti': 'Komputer',
-        'Kode Piranti': 'KMP-001'
+        'Kode Piranti': 'KMP-001',
+        'Email': 'budi@example.com',
+        'Jabatan': 'Staff GA'
       },
       {
         'Nama Lengkap': 'Siti Aminah',
-        'Bagian': 'CE Business',
-        'No HP': '081234567891',
-        'Indek': '67890',
-        'Email': 'siti@example.com',
+        'Bagian / Departemen': 'CE Business',
+        'No. Telepon': '081234567891',
+        'Index Karyawan': '67890',
         'Jenis Piranti': 'Laptop',
-        'Kode Piranti': 'LPT-002'
+        'Kode Piranti': 'LPT-002',
+        'Email': 'siti@example.com',
+        'Jabatan': 'Supervisor CE'
       },
       {
         'Nama Lengkap': 'Andi Wijaya',
-        'Bagian': 'Fleet Business',
-        'No HP': '081234567892',
-        'Indek': '11223',
-        'Email': '',
+        'Bagian / Departemen': 'Fleet Business',
+        'No. Telepon': '081234567892',
+        'Index Karyawan': '11223',
         'Jenis Piranti': '(Tidak Ada)',
-        'Kode Piranti': '-'
+        'Kode Piranti': '-',
+        'Email': '',
+        'Jabatan': 'Driver'
       }
     ];
 
@@ -432,23 +442,23 @@ export const SettingsModal = React.memo(({
               box-sizing: border-box;
               padding: 10px;
             }
-            .name {
-              font-size: 16px;
-              font-weight: bold;
-              margin-bottom: 5px;
+            .jabatan {
+              font-size: 14px;
+              margin-bottom: 8px;
             }
             .kode {
-              font-size: 14px;
+              font-size: 16px;
               border: 1px solid black;
-              padding: 3px 8px;
+              padding: 5px 10px;
               border-radius: 4px;
               display: inline-block;
+              font-weight: bold;
             }
           </style>
         </head>
         <body>
           <div class="label-container">
-            <div class="name">${user.full_name}</div>
+            <div class="jabatan">${user.jabatan || '-'}</div>
             <div class="kode">Kode: ${user.kode_piranti || '-'}</div>
           </div>
           <script>
@@ -476,7 +486,7 @@ export const SettingsModal = React.memo(({
     const pcUsers = masterUsers.filter(user => user.kode_piranti && user.kode_piranti !== '-');
     
     if (pcUsers.length === 0) {
-      alert('Tidak ada user dengan kode piranti komputer');
+      alert('Tidak ada user dengan kode piranti');
       return;
     }
 
@@ -485,16 +495,6 @@ export const SettingsModal = React.memo(({
       alert("Browser memblokir pop-up. Izinkan pop-up untuk mencetak label.");
       return;
     }
-    
-    let labelsHtml = '';
-    pcUsers.forEach(user => {
-      labelsHtml += `
-        <div class="label-box">
-          <div class="name">${user.full_name}</div>
-          <div class="kode">Kode: ${user.kode_piranti}</div>
-        </div>
-      `;
-    });
     
     const printContent = `
       <!DOCTYPE html>
@@ -512,37 +512,42 @@ export const SettingsModal = React.memo(({
             .grid-container {
               display: grid;
               grid-template-columns: repeat(3, 1fr);
-              gap: 10px;
+              gap: 15px;
               width: 100%;
             }
             .label-box {
               border: 1px dashed #ccc;
-              padding: 15px;
+              padding: 20px;
               text-align: center;
               display: flex;
               flex-direction: column;
               justify-content: center;
               align-items: center;
               page-break-inside: avoid;
-              min-height: 80px;
+              min-height: 100px;
             }
-            .name {
-              font-size: 14px;
-              font-weight: bold;
-              margin-bottom: 5px;
+            .jabatan {
+              font-size: 12px;
+              margin-bottom: 8px;
             }
             .kode {
-              font-size: 12px;
+              font-size: 14px;
               border: 1px solid black;
-              padding: 3px 8px;
+              padding: 4px 8px;
               border-radius: 4px;
               display: inline-block;
+              font-weight: bold;
             }
           </style>
         </head>
         <body>
           <div class="grid-container">
-            ${labelsHtml}
+            ${pcUsers.map(user => `
+              <div class="label-box">
+                <div class="jabatan">${user.jabatan || '-'}</div>
+                <div class="kode">Kode: ${user.kode_piranti}</div>
+              </div>
+            `).join('')}
           </div>
           <script>
             window.onload = function() {
@@ -568,12 +573,13 @@ export const SettingsModal = React.memo(({
 
     const exportData = masterUsers.map(user => ({
       'Nama Lengkap': user.full_name || '',
-      'Bagian': user.department || '',
-      'No HP': user.phone || '',
-      'Indek': user.employee_index || '',
-      'Email': user.email || '',
+      'Bagian / Departemen': user.department || '',
+      'No. Telepon': user.phone || '',
+      'Index Karyawan': user.employee_index || '',
       'Jenis Piranti': user.jenis_piranti || '(Tidak Ada)',
-      'Kode Piranti': user.kode_piranti || '-'
+      'Kode Piranti': user.kode_piranti || '-',
+      'Email': user.email || '',
+      'Jabatan': user.jabatan || '-'
     }));
 
     const ws = xlsx.utils.json_to_sheet(exportData);
@@ -1064,7 +1070,7 @@ export const SettingsModal = React.memo(({
                     <Edit3 className="w-4 h-4" /> Atur Halaman Login
                   </h3>
                   <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
-                    Kustomisasi tampilan halaman awal login (pilihan nama & indek user) agar sesuai dengan kebutuhan operasional di lapangan.
+                    Kustomisasi tampilan halaman awal login (pilihan nama & index user) agar sesuai dengan kebutuhan operasional di lapangan.
                   </p>
 
                   {/* Upload Logo Halaman Login */}
@@ -1132,7 +1138,7 @@ export const SettingsModal = React.memo(({
                     <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Subjudul Login</label>
                     <input 
                       type="text"
-                      placeholder="Silakan pilih nama dan masukkan indek Anda"
+                      placeholder="Silakan pilih nama dan masukkan index Anda"
                       className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                       value={appSettings.login_subtitle || ''}
                       onChange={e => setAppSettings({...appSettings, login_subtitle: e.target.value})}
@@ -1151,24 +1157,24 @@ export const SettingsModal = React.memo(({
                     />
                   </div>
 
-                  {/* Edit Nama Kolom Indek */}
+                  {/* Edit Nama Kolom Index */}
                   <div className="space-y-1.5 pt-2">
-                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Nama Kolom (Indek)</label>
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Nama Kolom (Index)</label>
                     <input 
                       type="text"
-                      placeholder="Indek (KDK/GGF)"
+                      placeholder="Index (KDK/GGF)"
                       className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                       value={appSettings.login_index_label || ''}
                       onChange={e => setAppSettings({...appSettings, login_index_label: e.target.value})}
                     />
                   </div>
 
-                  {/* Edit Placeholder Kolom Indek */}
+                  {/* Edit Placeholder Kolom Index */}
                   <div className="space-y-1.5 pt-2">
-                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Placeholder Kolom (Indek)</label>
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Placeholder Kolom (Index)</label>
                     <input 
                       type="text"
-                      placeholder="Masukkan indek Anda..."
+                      placeholder="Masukkan index Anda..."
                       className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                       value={appSettings.login_index_placeholder || ''}
                       onChange={e => setAppSettings({...appSettings, login_index_placeholder: e.target.value})}
@@ -1540,7 +1546,7 @@ export const SettingsModal = React.memo(({
                       <Search className="absolute left-3.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
                       <input
                         type="text"
-                        placeholder="Cari Master User berdasarkan Nama, Bagian, atau Indek..."
+                        placeholder="Cari Master User berdasarkan Nama, Bagian, atau Index..."
                         className={`w-full pl-9 pr-8 py-2 rounded-xl text-xs font-medium outline-none border transition-all focus:ring-2 focus:ring-emerald-500/20 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                         value={masterUserSearch}
                         onChange={e => setMasterUserSearch(e.target.value)}
@@ -1626,10 +1632,10 @@ export const SettingsModal = React.memo(({
                               
                               <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Indek Karyawan (Opsional)</label>
+                                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Index Karyawan (Opsional)</label>
                                   <input 
                                     type="text"
-                                    placeholder="Indek Karyawan"
+                                    placeholder="Index Karyawan"
                                     className={`w-full px-3 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                                     value={masterUserIndex}
                                     onChange={e => setMasterUserIndex(e.target.value)}
@@ -1669,6 +1675,18 @@ export const SettingsModal = React.memo(({
                                     className={`w-full px-3 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                                     value={masterUserEmail}
                                     onChange={e => setMasterUserEmail(e.target.value)}
+                                  />
+                                </div>
+                              </div>
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Jabatan (Opsional)</label>
+                                  <input 
+                                    type="text"
+                                    placeholder="Masukkan jabatan"
+                                    className={`w-full px-3 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                                    value={masterUserJabatan}
+                                    onChange={e => setMasterUserJabatan(e.target.value)}
                                   />
                                 </div>
                               </div>
@@ -1718,7 +1736,7 @@ export const SettingsModal = React.memo(({
                                 )}
                               </div>
                               <span className="text-[9px] text-slate-400 capitalize font-black">
-                                {user.department} • {user.phone} • Indek: {user.employee_index}
+                                {user.department} • {user.phone} • Index: {user.employee_index}
                                 {user.jenis_piranti ? ` • Piranti: ${user.jenis_piranti}` : ''}
                                 {user.kode_piranti ? ` • Kode Piranti: ${user.kode_piranti}` : ''}
                                 {user.email ? ` • ${user.email}` : ''}

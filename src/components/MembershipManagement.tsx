@@ -425,8 +425,8 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
     try {
       const exportData = memberships.map(m => ({
         'Kode': m.kode_lokal || '',
-        'Indek KDK': m.indek_kdk || '',
-        'Indek GGF': m.indek_ggf || '',
+        'Index KDK': m.indek_kdk || '',
+        'Index GGF': m.indek_ggf || '',
         'Nama Lengkap': m.nama,
         'Bagian': m.bagian || '',
         'Barcode': m.barcode || '',
@@ -454,7 +454,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
         'Waktu': new Date(j.created_at).toLocaleString('id-ID'),
         'Nama Lengkap': j.nama,
         'Kode Lokal (NIK)': j.kode_lokal || '',
-        'Indek GGF': j.indek_ggf || '',
+        'Index GGF': j.indek_ggf || '',
         'Bagian / Dept': j.bagian || '',
         'Barcode': j.barcode || '',
         'Keterangan': j.keterangan || ''
@@ -505,8 +505,8 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
     try {
       const exportData = [{
         'Kode Lokal': '123',
-        'Indek KDK': 'A',
-        'Indek GGF': 'B',
+        'Index KDK': 'A',
+        'Index GGF': 'B',
         'Nama Lengkap': 'John Doe',
         'Bagian': 'IT',
         'Barcode': '12345678',
@@ -553,11 +553,11 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
       return;
     }
     if (duplicateKdk) {
-      toast.error(`Indek KDK "${formData.indek_kdk}" sudah terdaftar pada member "${duplicateKdk.nama}"!`);
+      toast.error(`Index KDK "${formData.indek_kdk}" sudah terdaftar pada member "${duplicateKdk.nama}"!`);
       return;
     }
     if (duplicateGgf) {
-      toast.error(`Indek GGF "${formData.indek_ggf}" sudah terdaftar pada member "${duplicateGgf.nama}"!`);
+      toast.error(`Index GGF "${formData.indek_ggf}" sudah terdaftar pada member "${duplicateGgf.nama}"!`);
       return;
     }
 
@@ -991,8 +991,8 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Foto</th>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Nama</th>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Bagian</th>
-                <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Indek KDK</th>
-                <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Indek GGF</th>
+                <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Index KDK</th>
+                <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Index GGF</th>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Update Terakhir</th>
                 <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted} text-right`}>Aksi</th>
               </tr>
@@ -1155,7 +1155,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                     <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Waktu</th>
                     <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Nama Anggota</th>
                     <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Kode Lokal / NIK</th>
-                    <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Indek GGF</th>
+                    <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Index GGF</th>
                     <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Bagian</th>
                     <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Tanda Tangan Digital</th>
                     <th className={`pb-3 font-semibold px-4 ${themeClasses.textMuted}`}>Keterangan</th>
@@ -1428,7 +1428,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
               <div className={`p-4 border-b ${themeClasses.border} flex items-center justify-between bg-red-50 dark:bg-red-950/20`}>
                 <h3 className="font-bold text-red-600 flex items-center gap-1.5">
                   <AlertTriangle className="w-5 h-5" />
-                  Gagal Upload: Duplikasi Indek KDK
+                  Gagal Upload: Duplikasi Index KDK
                 </h3>
                 <button 
                   onClick={() => setShowDuplicateModal(false)}
@@ -1440,7 +1440,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
 
               <div className="p-4 overflow-y-auto space-y-4 flex-1">
                 <p className={`text-xs ${themeClasses.textMuted} leading-relaxed`}>
-                  Seluruh proses impor Excel dibatalkan karena ditemukan duplikasi pada nilai <span className="font-semibold text-slate-850 dark:text-slate-100">Indek KDK</span>. Harap perbaiki data pada berkas Excel Anda dan lakukan upload ulang.
+                  Seluruh proses impor Excel dibatalkan karena ditemukan duplikasi pada nilai <span className="font-semibold text-slate-850 dark:text-slate-100">Index KDK</span>. Harap perbaiki data pada berkas Excel Anda dan lakukan upload ulang.
                 </p>
 
                 {duplicateData.duplicatesInFile.length > 0 && (
@@ -1451,7 +1451,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                     <div className="text-xs space-y-1.5 pl-3 border-l-2 border-red-300">
                       {duplicateData.duplicatesInFile.map((dup, idx) => (
                         <div key={idx} className="p-2 rounded bg-amber-500/5 border border-amber-500/10">
-                          <div>Indek KDK: <span className="font-mono font-bold text-red-650">{dup.indek_kdk}</span></div>
+                          <div>Index KDK: <span className="font-mono font-bold text-red-650">{dup.indek_kdk}</span></div>
                           <div className={`text-[11px] ${themeClasses.textMuted}`}>
                             Dimiliki oleh: <span className="font-semibold text-slate-700 dark:text-slate-300">{dup.names.join(', ')}</span>
                           </div>
@@ -1469,7 +1469,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                     <div className="text-xs space-y-1.5 pl-3 border-l-2 border-red-300">
                       {duplicateData.duplicatesWithDb.map((dup, idx) => (
                         <div key={idx} className="p-2 rounded bg-rose-500/5 border border-rose-500/10">
-                          <div>Indek KDK: <span className="font-mono font-bold text-red-650">{dup.indek_kdk}</span></div>
+                          <div>Index KDK: <span className="font-mono font-bold text-red-650">{dup.indek_kdk}</span></div>
                           <div className="grid grid-cols-2 gap-2 text-[11px] mt-1">
                             <div>Nama di Excel: <span className="font-semibold text-slate-700 dark:text-slate-300">{dup.excelName}</span></div>
                             <div>Nama di Database: <span className="font-semibold text-red-500">{dup.dbName}</span></div>
@@ -1553,7 +1553,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                     )}
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold mb-1">Indek KDK</label>
+                    <label className="block text-xs font-semibold mb-1">Index KDK</label>
                     <input 
                       type="text" 
                       value={formData.indek_kdk || ''}
@@ -1572,7 +1572,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold mb-1">Indek GGF</label>
+                    <label className="block text-xs font-semibold mb-1">Index GGF</label>
                     <input 
                       type="text" 
                       value={formData.indek_ggf || ''}

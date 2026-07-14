@@ -152,7 +152,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           
           <button
             onClick={() => setViewMode('my_tickets')}
-            title={adminUser ? 'Tiket Saya' : 'Riwayat Tiket'}
+            title={adminUser ? 'Tiket Saya' : 'Riwayat Tiket Saya'}
             className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
               viewMode === 'my_tickets' 
                 ? 'bg-emerald-500/10 text-emerald-600' 
@@ -161,7 +161,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className="flex items-center gap-2.5">
               <CheckCircle2 className="w-4 h-4" />
-              {adminThemeLayout !== 'compact' && <span>{adminUser ? 'Tiket Saya' : 'Riwayat Tiket'}</span>}
+              {adminThemeLayout !== 'compact' && <span>{adminUser ? 'Tiket Saya' : 'Riwayat Tiket Saya'}</span>}
             </div>
           </button>
           

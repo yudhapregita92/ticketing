@@ -298,7 +298,7 @@ export const TicketDetailModal = React.memo(({
               <div className="space-y-1.5 sm:space-y-2">
                 <div className="flex items-center gap-2 text-slate-400">
                   <History className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  <span className="text-[8px] sm:text-[9px] font-bold capitalize tracking-wider">Riwayat Tiket</span>
+                  <span className="text-[8px] sm:text-[9px] font-bold capitalize tracking-wider">Riwayat Tiket Saya</span>
                 </div>
                 <div className={`rounded-2xl border p-2.5 sm:p-3.5 space-y-2.5 sm:space-y-3.5 max-h-[180px] sm:max-h-[250px] overflow-y-auto custom-scrollbar ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
                   {(!Array.isArray(ticketLogs) || ticketLogs.length === 0) ? (

@@ -423,13 +423,24 @@ export default function App() {
           if (ticket.assigned_to !== adminUser.username && ticket.assigned_to !== adminUser.full_name) return false;
         } else {
           // User view: tickets I submitted
-          if (!userIdentifier) return false;
-          const search = userIdentifier.toLowerCase();
-          if (
-            ticket.phone.toLowerCase() !== search && 
-            ticket.name.toLowerCase() !== search &&
-            !ticket.ticket_no.toLowerCase().includes(search)
-          ) return false;
+          if (currentUser) {
+            const userName = currentUser.full_name.toLowerCase();
+            const userPhone = currentUser.phone ? currentUser.phone.toLowerCase() : '';
+            if (
+              ticket.name.toLowerCase() !== userName &&
+              (userPhone === '' || ticket.phone.toLowerCase() !== userPhone)
+            ) {
+              return false;
+            }
+          } else {
+            if (!userIdentifier) return false;
+            const search = userIdentifier.toLowerCase();
+            if (
+              ticket.phone.toLowerCase() !== search && 
+              ticket.name.toLowerCase() !== search &&
+              !ticket.ticket_no.toLowerCase().includes(search)
+            ) return false;
+          }
         }
       }
 
@@ -1739,8 +1750,6 @@ export default function App() {
                 CurrentLogo={CurrentLogo}
                 setShowForm={setShowForm}
                 handleBulkAction={handleBulkAction}
-                userIdentifier={userIdentifier}
-                setUserIdentifier={setUserIdentifier}
               />
             )}
           </div>

@@ -131,26 +131,9 @@ router.get("/master-users", asyncHandler(async (req, res) => {
 }));
 
 router.post("/master-users", asyncHandler(async (req, res) => {
-  const { full_name, department, phone, employee_index, email, jenis_piranti, kode_piranti } = req.body;
+  const { full_name, department, phone, employee_index, email, jenis_piranti, kode_piranti, jabatan } = req.body;
   const normalizedPiranti = normalizeJenisPiranti(jenis_piranti);
-  db.prepare("INSERT INTO master_users (full_name, department, phone, employee_index, email, jenis_piranti, kode_piranti) VALUES (?, ?, ?, ?, ?, ?, ?)").run(
-    full_name ? String(full_name).trim() : '',
-    department ? String(department).trim() : '-',
-    phone ? String(phone).trim() : '-',
-    employee_index ? String(employee_index).trim() : '-',
-    email ? String(email).trim() : '-',
-    normalizedPiranti,
-    kode_piranti ? String(kode_piranti).trim() : '-'
-  );
-  emitUpdate();
-  res.json({ success: true });
- }));
- 
- router.put("/master-users/:id", asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const { full_name, department, phone, employee_index, email, jenis_piranti, kode_piranti } = req.body;
-  const normalizedPiranti = normalizeJenisPiranti(jenis_piranti);
-  db.prepare("UPDATE master_users SET full_name = ?, department = ?, phone = ?, employee_index = ?, email = ?, jenis_piranti = ?, kode_piranti = ? WHERE id = ?").run(
+  db.prepare("INSERT INTO master_users (full_name, department, phone, employee_index, email, jenis_piranti, kode_piranti, jabatan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run(
     full_name ? String(full_name).trim() : '',
     department ? String(department).trim() : '-',
     phone ? String(phone).trim() : '-',
@@ -158,6 +141,25 @@ router.post("/master-users", asyncHandler(async (req, res) => {
     email ? String(email).trim() : '-',
     normalizedPiranti,
     kode_piranti ? String(kode_piranti).trim() : '-',
+    jabatan ? String(jabatan).trim() : '-'
+  );
+  emitUpdate();
+  res.json({ success: true });
+ }));
+ 
+ router.put("/master-users/:id", asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { full_name, department, phone, employee_index, email, jenis_piranti, kode_piranti, jabatan } = req.body;
+  const normalizedPiranti = normalizeJenisPiranti(jenis_piranti);
+  db.prepare("UPDATE master_users SET full_name = ?, department = ?, phone = ?, employee_index = ?, email = ?, jenis_piranti = ?, kode_piranti = ?, jabatan = ? WHERE id = ?").run(
+    full_name ? String(full_name).trim() : '',
+    department ? String(department).trim() : '-',
+    phone ? String(phone).trim() : '-',
+    employee_index ? String(employee_index).trim() : '-',
+    email ? String(email).trim() : '-',
+    normalizedPiranti,
+    kode_piranti ? String(kode_piranti).trim() : '-',
+    jabatan ? String(jabatan).trim() : '-',
     id
   );
   emitUpdate();
@@ -180,7 +182,7 @@ router.post("/master-users", asyncHandler(async (req, res) => {
    const sheet = workbook.Sheets[sheetName];
    const data = xlsx.utils.sheet_to_json(sheet);
    
-   const insert = db.prepare("INSERT OR REPLACE INTO master_users (full_name, department, phone, employee_index, email, jenis_piranti, kode_piranti) VALUES (?, ?, ?, ?, ?, ?, ?)");
+   const insert = db.prepare("INSERT OR REPLACE INTO master_users (full_name, department, phone, employee_index, email, jenis_piranti, kode_piranti, jabatan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
    
    let count = 0;
    
@@ -195,13 +197,14 @@ router.post("/master-users", asyncHandler(async (req, res) => {
  
    db.transaction(() => {
      for (const row of data as any[]) {
-       const fullName = findValue(row, ['Nama', 'Nama Lengkap', 'full_name', 'name', 'Nama User']);
-       const department = findValue(row, ['Bagian', 'Departemen', 'department', 'dept', 'Unit', 'Bagian / Departemen']);
-       const phone = findValue(row, ['No HP', 'Telepon', 'phone', 'no_hp', 'No Telepon', 'Handphone']);
-       const employeeIndex = findValue(row, ['Indek', 'Indeks', 'Index', 'employee_index', 'NIK', 'Indek Karyawan']);
+       const fullName = findValue(row, ['Nama Lengkap', 'Nama', 'full_name', 'name', 'Nama User']);
+       const department = findValue(row, ['Bagian / Departemen', 'Bagian', 'Departemen', 'department', 'dept', 'Unit']);
+       const phone = findValue(row, ['No. Telepon', 'No Telepon', 'No HP', 'Telepon', 'phone', 'no_hp', 'Handphone']);
+       const employeeIndex = findValue(row, ['Index Karyawan', 'Index', 'Indek', 'Indeks', 'employee_index', 'NIK']);
        const email = findValue(row, ['Email', 'email', 'Alamat Email']);
        const jenisPirantiRaw = findValue(row, ['Jenis Piranti', 'jenis_piranti', 'Piranti', 'Device Type', 'Jenis Device', 'Device']);
        const kodePirantiRaw = findValue(row, ['Kode Piranti', 'kode_piranti', 'Device Code', 'Kode Device', 'Kode']);
+       const jabatanRaw = findValue(row, ['Jabatan', 'jabatan', 'Position', 'Role', 'Title', 'Pekerjaan']);
        
        const normalizedPiranti = normalizeJenisPiranti(jenisPirantiRaw);
        
@@ -213,7 +216,8 @@ router.post("/master-users", asyncHandler(async (req, res) => {
            employeeIndex ? String(employeeIndex).trim() : '-', 
            email ? String(email).trim() : '-', 
            normalizedPiranti,
-           kodePirantiRaw ? String(kodePirantiRaw).trim() : '-'
+           kodePirantiRaw ? String(kodePirantiRaw).trim() : '-',
+           jabatanRaw ? String(jabatanRaw).trim() : '-'
          );
          count++;
        }

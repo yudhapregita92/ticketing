@@ -49,8 +49,6 @@ interface TicketListProps {
   CurrentLogo: any;
   setShowForm: (show: boolean) => void;
   handleBulkAction: (status: string) => Promise<void>;
-  userIdentifier: string;
-  setUserIdentifier: (id: string) => void;
 }
 
 export const TicketList: React.FC<TicketListProps> = ({
@@ -89,72 +87,10 @@ export const TicketList: React.FC<TicketListProps> = ({
   primaryColor,
   CurrentLogo,
   setShowForm,
-  handleBulkAction,
-  userIdentifier,
-  setUserIdentifier
+  handleBulkAction
 }) => {
   return (
     <div className="lg:col-span-2 space-y-2 sm:space-y-3">
-      {/* User Portal Search - Only for non-admins in my_tickets mode */}
-      {viewMode === 'my_tickets' && !adminUser && (
-        <motion.div 
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`${themeClasses.card} rounded-3xl border p-4 sm:p-6 shadow-sm mb-4`}
-        >
-          <div className="flex items-center gap-3 mb-4">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${isDark ? 'bg-emerald-900/30 text-emerald-400 border-emerald-800' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
-              <TicketIcon className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className={`text-sm font-bold capitalize tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Portal Riwayat Tiket</h2>
-              <p className="text-[10px] text-slate-400 font-medium tracking-wide">Cari tiket Anda menggunakan No. HP atau Nama</p>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-2">
-            <div className="relative flex-1">
-              <input 
-                type="text"
-                placeholder="Masukkan No. HP atau Nama..."
-                value={userIdentifier}
-                onChange={(e) => {
-                  setUserIdentifier(e.target.value);
-                  localStorage.setItem('userIdentifier', e.target.value);
-                }}
-                className={`w-full px-4 py-3 rounded-2xl border text-sm font-bold transition-all focus:ring-2 focus:ring-emerald-500/20 outline-none ${
-                  isDark 
-                    ? 'bg-zinc-800 border-zinc-700 text-white placeholder-zinc-500' 
-                    : 'bg-zinc-50 border-zinc-200 text-slate-900 placeholder-slate-400'
-                }`}
-              />
-            </div>
-            {userIdentifier && (
-              <button 
-                onClick={() => {
-                  setUserIdentifier('');
-                  localStorage.removeItem('userIdentifier');
-                }}
-                className={`px-4 py-3 rounded-2xl text-xs font-bold transition-all ${
-                  isDark ? 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600' : 'bg-zinc-100 text-slate-600 hover:bg-zinc-200'
-                }`}
-              >
-                Bersihkan
-              </button>
-            )}
-          </div>
-
-          {!userIdentifier && (
-            <div className={`mt-4 p-4 rounded-2xl border border-dashed flex flex-col items-center justify-center text-center ${isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-              <Filter className="w-8 h-8 text-slate-300 mb-2" />
-              <p className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Silakan masukkan No. HP atau Nama yang Anda gunakan saat membuat tiket untuk melihat riwayat laporan Anda.
-              </p>
-            </div>
-          )}
-        </motion.div>
-      )}
-
       {/* Mobile Navigation Tabs */}
       <div className="lg:hidden flex flex-col gap-3 mb-4">
         {/* Interactive Stats Quick-Filter Grid */}

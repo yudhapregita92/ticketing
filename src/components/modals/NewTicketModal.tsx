@@ -70,9 +70,6 @@ export const NewTicketModal = React.memo(({
 }: NewTicketModalProps) => {
   const [showUserDropdown, setShowUserDropdown] = React.useState(false);
   const [deviceSelected, setDeviceSelected] = React.useState<string | null>(newTicket.device_type || null);
-  const [inputIndex, setInputIndex] = React.useState('');
-  const [correctIndex, setCorrectIndex] = React.useState('');
-  const [showIndex, setShowIndex] = React.useState(false);
   const [isScanning, setIsScanning] = React.useState(false);
   const [scanComplete, setScanComplete] = React.useState(false);
   const [cameraError, setCameraError] = React.useState(false);
@@ -84,20 +81,6 @@ export const NewTicketModal = React.memo(({
 
   const scanTimerRef = React.useRef<NodeJS.Timeout | null>(null);
   const closeTimerRef = React.useRef<NodeJS.Timeout | null>(null);
-
-  const [showIndexSuccess, setShowIndexSuccess] = React.useState(true);
-
-  React.useEffect(() => {
-    if (inputIndex && correctIndex && inputIndex === correctIndex) {
-      setShowIndexSuccess(true);
-      const timer = setTimeout(() => {
-        setShowIndexSuccess(false);
-      }, 3000);
-      return () => clearTimeout(timer);
-    } else {
-      setShowIndexSuccess(true);
-    }
-  }, [inputIndex, correctIndex]);
 
   const stopCamera = React.useCallback(() => {
     if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
@@ -322,19 +305,19 @@ export const NewTicketModal = React.memo(({
   }, [masterUsers, newTicket.name]);
 
   const isPcCodeMatched = React.useMemo(() => {
-    if (!matchedMasterUser || !newTicket.pc_code) return false;
-    const userCode = (matchedMasterUser.kode_piranti || '').trim().toLowerCase();
+    if (!newTicket.pc_code || !Array.isArray(masterUsers)) return false;
     const inputCode = (newTicket.pc_code || '').trim().toLowerCase();
-    if (!userCode || userCode === '-' || userCode === '(tidak ada)') return false;
-    
-    // Check direct match
-    if (userCode === inputCode) return true;
-    
-    // Check cleaned match (remove leading hyphens/spaces)
-    const cleanUser = userCode.replace(/^[- \t]+/g, '').trim();
     const cleanInput = inputCode.replace(/^[- \t]+/g, '').trim();
-    return cleanUser !== '' && cleanUser === cleanInput;
-  }, [matchedMasterUser, newTicket.pc_code]);
+    if (!cleanInput) return false;
+
+    return masterUsers.some(user => {
+      const userCode = (user.kode_piranti || '').trim().toLowerCase();
+      if (!userCode || userCode === '-' || userCode === '(tidak ada)') return false;
+      if (userCode === inputCode) return true;
+      const cleanUser = userCode.replace(/^[- \t]+/g, '').trim();
+      return cleanUser !== '' && cleanUser === cleanInput;
+    });
+  }, [masterUsers, newTicket.pc_code]);
 
   if (!showForm) return null;
 
@@ -354,9 +337,6 @@ export const NewTicketModal = React.memo(({
       latitude: null,
       longitude: null
     });
-    setInputIndex('');
-    setCorrectIndex('');
-    setShowIndex(false);
     setDeviceSelected(null);
     setShowForm(false);
   };
@@ -368,7 +348,6 @@ export const NewTicketModal = React.memo(({
       department: user.department,
       phone: user.phone
     });
-    setCorrectIndex(user.employee_index || '');
     setShowUserDropdown(false);
   };
 
@@ -380,12 +359,8 @@ export const NewTicketModal = React.memo(({
   const onFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) {
-      if (!correctIndex) {
+      if (!newTicket.name || !newTicket.department) {
         alert('Silakan cari dan pilih nama Anda dari daftar terlebih dahulu.');
-        return;
-      }
-      if (inputIndex !== correctIndex) {
-        alert('Indek Karyawan yang Anda masukkan salah. Mohon periksa kembali.');
         return;
       }
     }
@@ -393,9 +368,15 @@ export const NewTicketModal = React.memo(({
       alert('Silakan pilih tipe piranti yang Anda gunakan.');
       return;
     }
-    if (newTicket.device_type === 'pc' && !newTicket.pc_code?.trim()) {
-      alert('Kode Komputer wajib diisi jika menggunakan Komputer PC.');
-      return;
+    if (newTicket.device_type === 'pc') {
+      if (!newTicket.pc_code?.trim()) {
+        alert('Kode Komputer wajib diisi jika menggunakan Komputer PC.');
+        return;
+      }
+      if (!isPcCodeMatched) {
+        alert('Kode Komputer tidak valid atau tidak ditemukan di database.');
+        return;
+      }
     }
     handleSubmit(e);
   };
@@ -846,57 +827,46 @@ export const NewTicketModal = React.memo(({
             </div>
           )}
 
-          {!currentUser && (
-            <div className="space-y-0.5">
-              <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
-                <Ticket className="w-2 h-2" /> Indek Karyawan
-              </label>
-              <div className="relative">
-                <input 
-                  required
-                  type={showIndex ? "text" : "password"}
-                  placeholder="Masukkan Indek Karyawan Anda..."
-                  className={`w-full px-3 py-1.5 pr-10 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text} ${inputIndex && correctIndex && inputIndex === correctIndex ? 'border-emerald-500 ring-2 ring-emerald-500/20' : inputIndex && correctIndex && inputIndex !== correctIndex ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
-                  value={inputIndex}
-                  onChange={e => setInputIndex(e.target.value)}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowIndex(!showIndex)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-emerald-500 transition-colors"
-                >
-                  {showIndex ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-              <div className="min-h-[16px] mt-1 relative">
-                  {!correctIndex ? (
-                    <p className="text-[9px] font-bold text-rose-500 capitalize tracking-tight ml-0.5">
-                      * Pilih nama Anda dari daftar di atas terlebih dahulu
-                    </p>
-                  ) : !inputIndex ? (
-                    <p className="text-[9px] font-bold text-rose-500 capitalize tracking-tight ml-0.5">
-                      * Masukkan indek karyawan untuk verifikasi
-                    </p>
-                  ) : inputIndex === correctIndex ? (
-                    showIndexSuccess ? (
-                      <p className="text-[9px] font-bold text-emerald-500 capitalize tracking-tight ml-0.5 flex items-center gap-1">
-                        <CheckCircle2 className="w-2.5 h-2.5" /> Indek yang Anda ketik sudah benar
-                      </p>
-                    ) : null
-                  ) : (
-                    <p className="text-[9px] font-bold text-rose-500 capitalize tracking-tight ml-0.5 animate-pulse">
-                      ⚠ Indek Karyawan tidak sesuai!
-                    </p>
-                  )}
-              </div>
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <label className={`cursor-pointer flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 border-dashed transition-all ${newTicket.photo ? 'bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-500/10 dark:border-emerald-500/30' : isDark ? 'border-slate-700 bg-slate-800/40 text-slate-400 hover:text-emerald-400 hover:border-emerald-500/50' : 'border-slate-200 bg-slate-50/50 text-slate-500 hover:text-emerald-500 hover:border-emerald-200'}`}>
+              {newTicket.photo ? <CheckCircle2 className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
+              <span className="text-[10px] font-bold">{newTicket.photo ? 'Foto Terlampir' : 'Lampirkan Foto'}</span>
+              <input 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                onChange={handlePhotoChange}
+              />
+            </label>
+
+            <button 
+              type="button"
+              onClick={() => startCamera('photo')}
+              className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 border-dashed transition-all ${newTicket.photo ? 'bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-500/10 dark:border-blue-500/30' : isDark ? 'border-slate-700 bg-slate-800/40 text-slate-400 hover:text-blue-400 hover:border-blue-500/50' : 'border-slate-200 bg-slate-50/50 text-slate-500 hover:text-blue-500 hover:border-blue-200'}`}
+            >
+              <Camera className="w-4 h-4" />
+              <span className="text-[10px] font-bold">Live Foto</span>
+            </button>
+          </div>
+
+          {newTicket.photo && (
+            <div className="relative mt-2 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 h-24 max-w-[200px] mx-auto">
+              <img src={newTicket.photo} alt="Lampiran" className="w-full h-full object-cover" />
+              <button 
+                type="button"
+                onClick={() => setNewTicket({...newTicket, photo: null})}
+                className="absolute top-1 right-1 p-1 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
             </div>
           )}
 
           <div className="pt-0.5">
             <button 
               type="submit"
-              disabled={isSubmitting || (!currentUser && !inputIndex) || !newTicket.description?.trim()}
-              style={{ backgroundColor: ((currentUser || inputIndex) && newTicket.description?.trim()) ? primaryColor : '#94a3b8' }}
+              disabled={isSubmitting || (!currentUser && !newTicket.name) || !newTicket.description?.trim() || (newTicket.device_type === 'pc' && !isPcCodeMatched)}
+              style={{ backgroundColor: ((currentUser || newTicket.name) && newTicket.description?.trim() && (newTicket.device_type !== 'pc' || isPcCodeMatched)) ? primaryColor : '#94a3b8' }}
               className={`w-full py-2 sm:py-2.5 rounded-2xl text-white font-black capitalize tracking-widest text-[10px] sm:text-xs shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:cursor-not-allowed`}
             >
               {isSubmitting ? (
