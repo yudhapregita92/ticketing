@@ -1,5 +1,5 @@
-export const APP_VERSION = "1.8.1";
-export const BUILD_DATE = "2026-07-04";
+export const APP_VERSION = "1.8.2";
+export const BUILD_DATE = "2026-07-14";
 
 // Deteksi apakah berjalan di Staging atau Production
 export const getEnvironment = () => {
@@ -18,6 +18,13 @@ export interface VersionUpdate {
 }
 
 export const UPDATE_HISTORY: VersionUpdate[] = [
+  {
+    version: "1.8.2",
+    date: "2026-07-14",
+    changes: [
+      "Penyesuaian kolom template, impor, dan ekspor Excel untuk data Master User agar sesuai dengan formulir input (Nama Lengkap, Bagian / Departemen, No. Telepon, Index Karyawan, Jenis Piranti, Kode Piranti, Email, Jabatan)"
+    ]
+  },
   {
     version: "1.8.1",
     date: "2026-07-04",
