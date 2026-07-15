@@ -18,7 +18,10 @@ import {
   ShieldCheck,
   UserPlus,
   Printer,
-  LogOut
+  LogOut,
+  Database,
+  Users,
+  MonitorSmartphone
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -79,6 +82,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   userCanVoucher,
   adminThemeLayout
 }) => {
+  const [masterDataOpen, setMasterDataOpen] = React.useState(false);
+
   return (
     <div className="lg:col-span-1 space-y-3 lg:space-y-4">
       {/* Sidebar Menu - Desktop Only */}
@@ -230,7 +235,61 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
               
               {(adminUser.role === 'Super Admin' || adminUser.role === 'Staff IT Support') && (
-                <button
+                <>
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => setMasterDataOpen(!masterDataOpen)}
+                      title="Master Data"
+                      className={`w-full flex items-center justify-between ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
+                        (viewMode === 'master_user' || viewMode === 'master_perangkat' || masterDataOpen)
+                          ? 'bg-emerald-500/10 text-emerald-600' 
+                          : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Database className="w-4 h-4" />
+                        {adminThemeLayout !== 'compact' && <span>Master Data</span>}
+                      </div>
+                      {adminThemeLayout !== 'compact' && (
+                        masterDataOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                      )}
+                    </button>
+
+                    {(masterDataOpen || viewMode === 'master_user' || viewMode === 'master_perangkat') && (
+                      <div className={`space-y-1 ${adminThemeLayout !== 'compact' ? 'pl-9' : ''}`}>
+                        <button
+                          onClick={() => setViewMode('master_user')}
+                          title="Master Data (User)"
+                          className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
+                            viewMode === 'master_user' 
+                              ? 'bg-emerald-500/10 text-emerald-600' 
+                              : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Users className="w-3 h-3" />
+                            {adminThemeLayout !== 'compact' && <span>Master Data (User)</span>}
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => setViewMode('master_perangkat')}
+                          title="Perangkat"
+                          className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
+                            viewMode === 'master_perangkat' 
+                              ? 'bg-emerald-500/10 text-emerald-600' 
+                              : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <MonitorSmartphone className="w-3 h-3" />
+                            {adminThemeLayout !== 'compact' && <span>Perangkat</span>}
+                          </div>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
                   onClick={() => setViewMode('network')}
                   title="Monitoring Jaringan"
                   className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
@@ -244,6 +303,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     {adminThemeLayout !== 'compact' && <span>Monitoring Jaringan</span>}
                   </div>
                 </button>
+                </>
               )}
 
               {adminUser.role === 'Super Admin' && (

@@ -36,7 +36,10 @@ import {
   Activity, 
   FileText, 
   BookOpen, 
-  Settings2
+  Settings2,
+  Database,
+  Users,
+  MonitorSmartphone
 } from 'lucide-react';
 
 // Import modular components
@@ -68,6 +71,8 @@ import { MobileAppNav } from './components/MobileAppNav';
 import { TicketList } from './components/TicketList';
 import { TestingView } from './components/TestingView';
 import { VoucherManagement } from './components/VoucherManagement';
+import { MasterUserManagement } from './components/MasterUserManagement';
+import { MasterPerangkatPlaceholder } from './components/MasterPerangkatPlaceholder';
 
 // Types, Constants, and Utils
 import { ITicket, IUser, IDepartment, ICategory, IMasterUser, ISettings, ViewMode } from './types';
@@ -292,7 +297,7 @@ export default function App() {
     let view = p === '' ? (hasAdmin ? 'dashboard' : 'today') : p;
 
     // Admin only routes fallback
-    if (!hasAdmin && ['dashboard', 'assets', 'network', 'membership', 'evaluasi_project', 'voucher'].includes(view)) {
+    if (!hasAdmin && ['dashboard', 'assets', 'network', 'membership', 'evaluasi_project', 'voucher', 'master_user', 'master_perangkat'].includes(view)) {
       if (view === 'voucher' && userCanVoucher) {
         // Allowed
       } else {
@@ -300,7 +305,7 @@ export default function App() {
       }
     }
 
-    if (['today', 'all', 'my_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership', 'evaluasi_project', 'jurnal', 'voucher'].includes(view)) {
+    if (['today', 'all', 'my_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership', 'evaluasi_project', 'jurnal', 'voucher', 'master_user', 'master_perangkat'].includes(view)) {
       return view as ViewMode;
     }
     return hasAdmin ? 'dashboard' : 'today';
@@ -1559,17 +1564,41 @@ export default function App() {
                 </button>
 
                 {(adminUser.role === 'Super Admin' || adminUser.role === 'Staff IT Support') && (
-                  <button
-                    onClick={() => setViewMode('network')}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-                      viewMode === 'network'
-                        ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
-                        : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                    }`}
-                  >
-                    <Activity className="w-4 h-4" />
-                    <span>Jaringan</span>
-                  </button>
+                  <>
+                    <button
+                      onClick={() => setViewMode('master_user')}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                        viewMode === 'master_user'
+                          ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                          : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                    >
+                      <Users className="w-4 h-4" />
+                      <span>Master Data (User)</span>
+                    </button>
+                    <button
+                      onClick={() => setViewMode('master_perangkat')}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                        viewMode === 'master_perangkat'
+                          ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                          : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                    >
+                      <MonitorSmartphone className="w-4 h-4" />
+                      <span>Master Perangkat</span>
+                    </button>
+                    <button
+                      onClick={() => setViewMode('network')}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                        viewMode === 'network'
+                          ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                          : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                    >
+                      <Activity className="w-4 h-4" />
+                      <span>Jaringan</span>
+                    </button>
+                  </>
                 )}
 
                 {adminUser.role === 'Super Admin' && (
@@ -1644,6 +1673,17 @@ export default function App() {
                 primaryColor={primaryColor}
                 adminUser={adminUser}
               />
+            ) : viewMode === 'master_user' ? (
+              <MasterUserManagement 
+                isDark={isDark}
+                themeClasses={themeClasses}
+                masterUsers={masterUsers}
+                departments={departments}
+                handleManagementAction={handleManagementAction}
+                adminUser={adminUser}
+              />
+            ) : viewMode === 'master_perangkat' ? (
+              <MasterPerangkatPlaceholder isDark={isDark} />
             ) : viewMode === 'ba' ? (
               <BeritaAcara 
                 isDark={isDark}

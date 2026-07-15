@@ -90,7 +90,7 @@ export interface ISettings {
 
 export interface IAdminUser extends IUser {}
 export type IAppSettings = ISettings;
-export type ViewMode = 'today' | 'all' | 'my_tickets' | 'dashboard' | 'assets' | 'network' | 'ba' | 'panduan' | 'settings' | 'testing' | 'membership' | 'evaluasi_project' | 'jurnal' | 'voucher';
+export type ViewMode = 'today' | 'all' | 'my_tickets' | 'dashboard' | 'assets' | 'network' | 'ba' | 'panduan' | 'settings' | 'testing' | 'membership' | 'evaluasi_project' | 'jurnal' | 'voucher' | 'master_user' | 'master_perangkat';
 export interface IAsset {
   id: number;
   asset_id: string;
