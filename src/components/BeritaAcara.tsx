@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Printer, FileText, AlertCircle, Plus, Trash2, Edit2, History } from 'lucide-react';
+import { Printer, FileText, AlertCircle, Plus, Trash2, Edit2, History, Save } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
 import { IAdminUser } from '../types';
 import { api } from '../services/api';
 
@@ -98,7 +99,7 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
     }
   });
 
-  const handlePrint = async () => {
+  const handleSave = async () => {
     const newDoc = {
       id: currentId,
       docType: formData.docType,
@@ -112,8 +113,21 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
       date: formData.date,
     };
     
-    await saveMutation.mutateAsync(newDoc);
+    try {
+      await saveMutation.mutateAsync(newDoc);
+      toast.success('Dokumen berhasil disimpan ke daftar riwayat.');
+    } catch (error) {
+      toast.error('Gagal menyimpan dokumen.');
+    }
+  };
 
+  const handlePrint = () => {
+    if (window.self !== window.top) {
+      toast.error('Fitur cetak tidak didukung di mode pratinjau ini. Silakan buka aplikasi di tab baru (ikon panah di pojok kanan atas) untuk mencetak.', {
+        duration: 5000,
+        id: 'print-warning'
+      });
+    }
     setTimeout(() => {
       window.print();
     }, 100);
@@ -173,7 +187,7 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
             Buat dan cetak surat rekomendasi/berita acara
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleNew}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all ${
@@ -184,12 +198,21 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
             <span>Buat Baru</span>
           </button>
           <button
+            onClick={handleSave}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all ${
+              isDark ? 'bg-emerald-900/80 text-emerald-100 hover:bg-emerald-800' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border border-emerald-200'
+            }`}
+          >
+            <Save className="w-4 h-4" />
+            <span>Simpan</span>
+          </button>
+          <button
             onClick={handlePrint}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-90 transition-all"
             style={{ backgroundColor: primaryColor }}
           >
             <Printer className="w-4 h-4" />
-            <span>Cetak / Simpan PDF</span>
+            <span>Cetak PDF</span>
           </button>
         </div>
       </div>
