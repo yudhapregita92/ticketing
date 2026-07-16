@@ -358,11 +358,17 @@ export const NewTicketModal = React.memo(({
 
   const onFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) {
-      if (!newTicket.name || !newTicket.department) {
-        alert('Silakan cari dan pilih nama Anda dari daftar terlebih dahulu.');
-        return;
-      }
+    if (!newTicket.name || !newTicket.department) {
+      alert('Nama dan Departemen wajib diisi. Silakan cari dan pilih nama Anda dari daftar.');
+      return;
+    }
+    if (!newTicket.category) {
+      alert('Silakan pilih Kategori Masalah terlebih dahulu.');
+      return;
+    }
+    if (!newTicket.description?.trim()) {
+      alert('Silakan isi Detail Masalah terlebih dahulu.');
+      return;
     }
     if (!newTicket.device_type) {
       alert('Silakan pilih tipe piranti yang Anda gunakan.');
