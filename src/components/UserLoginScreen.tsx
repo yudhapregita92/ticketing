@@ -124,7 +124,7 @@ export const UserLoginScreen = React.memo(({
     }
 
     if (!indexCode) {
-      setError(`Silakan masukkan ${appSettings?.login_index_label || "index (KDK/GGF)"} Anda`);
+      setError(`Silakan masukkan ${appSettings?.login_index_label || "index (KDK)"} Anda`);
       return;
     }
 
@@ -142,7 +142,7 @@ export const UserLoginScreen = React.memo(({
   const loginTitle = isAdminMode ? "Portal Admin" : (appSettings?.login_title || "Masuk ke Aplikasi");
   const loginSubtitle = isAdminMode ? "Login untuk mengelola tiket" : (appSettings?.login_subtitle || "Silakan pilih nama dan masukkan index Anda");
   const nameLabel = appSettings?.login_name_label || "Nama Anda";
-  const indexLabel = appSettings?.login_index_label || "Index (KDK/GGF)";
+  const indexLabel = appSettings?.login_index_label || "Index (KDK)";
   const indexPlaceholder = appSettings?.login_index_placeholder || "Masukkan index Anda...";
 
   return (
@@ -381,7 +381,7 @@ export const UserLoginScreen = React.memo(({
                     className="overflow-hidden text-left"
                   >
                     <div className={`p-3 rounded-xl border text-[10px] leading-relaxed whitespace-pre-line font-medium ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}>
-                      {appSettings?.login_guide_content || 'Langkah-langkah Login:\n1. Pilih nama Anda pada pilihan "Nama Anda".\n2. Ketik Index KDK/GGF Anda dengan benar.\n3. Tekan tombol "Masuk" untuk masuk ke dashboard.\n\nJika nama Anda belum terdaftar, silakan hubungi tim Admin IT.'}
+                      {appSettings?.login_guide_content || 'Langkah-langkah Login:\n1. Pilih nama Anda pada pilihan "Nama Anda".\n2. Ketik Index KDK Anda dengan benar.\n3. Tekan tombol "Masuk" untuk masuk ke dashboard.\n\nJika nama Anda belum terdaftar, silakan hubungi tim Admin IT.'}
                     </div>
                   </motion.div>
                 )}

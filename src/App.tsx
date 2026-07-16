@@ -140,7 +140,7 @@ export default function App() {
       smtp_from: '',
       photo_cleanup_duration: '24',
       login_guide_enabled: true,
-      login_guide_content: 'Langkah-langkah Login:\n1. Pilih nama Anda pada pilihan "Nama Anda".\n2. Ketik Index KDK/GGF Anda dengan benar.\n3. Tekan tombol "Masuk" untuk masuk ke dashboard.\n\nJika nama Anda belum terdaftar, silakan hubungi tim Admin IT.',
+      login_guide_content: 'Langkah-langkah Login:\n1. Pilih nama Anda pada pilihan "Nama Anda".\n2. Ketik Index KDK Anda dengan benar.\n3. Tekan tombol "Masuk" untuk masuk ke dashboard.\n\nJika nama Anda belum terdaftar, silakan hubungi tim Admin IT.',
       sla_critical_hours: 5,
       sla_delayed_hours: 2
     };
@@ -1756,7 +1756,13 @@ export default function App() {
                 themeClasses={themeClasses}
               />
             ) : viewMode === 'panduan' ? (
-              <Panduan isDark={isDark} primaryColor={primaryColor} appSettings={appSettings} />
+              <Panduan 
+                isDark={isDark} 
+                primaryColor={primaryColor} 
+                appSettings={appSettings} 
+                setAppSettings={setAppSettings}
+                adminUser={adminUser}
+              />
             ) : (
               <TicketList 
                 adminUser={adminUser}

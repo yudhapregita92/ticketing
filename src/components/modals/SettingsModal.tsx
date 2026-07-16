@@ -1170,7 +1170,7 @@ export const SettingsModal = React.memo(({
                     <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Nama Kolom (Index)</label>
                     <input 
                       type="text"
-                      placeholder="Index (KDK/GGF)"
+                      placeholder="Index (KDK)"
                       className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                       value={appSettings.login_index_label || ''}
                       onChange={e => setAppSettings({...appSettings, login_index_label: e.target.value})}
