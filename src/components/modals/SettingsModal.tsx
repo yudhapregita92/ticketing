@@ -591,7 +591,13 @@ export const SettingsModal = React.memo(({
 
   const parsedPanduan = (() => {
     try {
-      return appSettings.panduan_guides ? JSON.parse(appSettings.panduan_guides) : [];
+      if (!appSettings.panduan_guides) return [];
+      if (Array.isArray(appSettings.panduan_guides)) return appSettings.panduan_guides;
+      if (typeof appSettings.panduan_guides === 'string') {
+        if (appSettings.panduan_guides === '[object Object]') return [];
+        return JSON.parse(appSettings.panduan_guides);
+      }
+      return [];
     } catch (e) {
       return [];
     }

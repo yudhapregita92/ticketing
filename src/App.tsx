@@ -879,8 +879,15 @@ export default function App() {
       // Update global settings
       const data = await api.updateSettings({
         ...appSettings,
-        notification_emails: JSON.stringify(appSettings.notification_emails),
-        telegram_chat_ids: JSON.stringify(appSettings.telegram_chat_ids)
+        notification_emails: Array.isArray(appSettings.notification_emails)
+          ? JSON.stringify(appSettings.notification_emails)
+          : appSettings.notification_emails,
+        telegram_chat_ids: Array.isArray(appSettings.telegram_chat_ids)
+          ? JSON.stringify(appSettings.telegram_chat_ids)
+          : appSettings.telegram_chat_ids,
+        panduan_guides: Array.isArray(appSettings.panduan_guides)
+          ? JSON.stringify(appSettings.panduan_guides)
+          : appSettings.panduan_guides
       });
 
       if (data) {
