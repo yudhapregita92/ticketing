@@ -24,7 +24,8 @@ import {
   Search,
   Printer,
   Key,
-  Sparkles
+  Sparkles,
+  Clock
 } from 'lucide-react';
 
 import * as xlsx from 'xlsx';
@@ -38,8 +39,8 @@ interface SettingsModalProps {
   inline?: boolean;
   isDark: boolean;
   themeClasses: any;
-  settingsTab: 'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan';
-  setSettingsTab: (tab: 'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan') => void;
+  settingsTab: 'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla';
+  setSettingsTab: (tab: 'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla') => void;
   appSettings: any;
   setAppSettings: (settings: any) => void;
   LOGO_OPTIONS: any[];
@@ -666,6 +667,13 @@ export const SettingsModal = React.memo(({
               <Settings2 className="w-4 h-4" /> Sistem
             </button>
             <button 
+              type="button"
+              onClick={() => setSettingsTab('sla')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'sla' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+            >
+              <Clock className="w-4 h-4" /> Waktu SLA
+            </button>
+            <button 
               onClick={() => setSettingsTab('panduan')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'panduan' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
@@ -1180,6 +1188,34 @@ export const SettingsModal = React.memo(({
                       onChange={e => setAppSettings({...appSettings, login_index_placeholder: e.target.value})}
                     />
                   </div>
+
+                  {/* Panduan Login Toggle */}
+                  <div className="pt-2 flex items-center">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input 
+                        type="checkbox"
+                        className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
+                        checked={appSettings.login_guide_enabled === undefined ? true : !!appSettings.login_guide_enabled}
+                        onChange={e => setAppSettings({...appSettings, login_guide_enabled: e.target.checked})}
+                      />
+                      <span className="text-[10px] font-black text-slate-400 capitalize tracking-widest">Tampilkan Panduan Login</span>
+                    </label>
+                  </div>
+
+                  {/* Isi Konten Panduan Login */}
+                  {(appSettings.login_guide_enabled === undefined || !!appSettings.login_guide_enabled) && (
+                    <div className="space-y-1.5 pt-2">
+                      <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Isi Konten Panduan Login</label>
+                      <textarea 
+                        rows={4}
+                        placeholder="Masukkan panduan cara login..."
+                        className={`w-full px-4 py-2.5 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                        value={appSettings.login_guide_content || ''}
+                        onChange={e => setAppSettings({...appSettings, login_guide_content: e.target.value})}
+                      />
+                      <span className="text-[9px] text-slate-400 font-medium leading-normal block">Panduan ini akan ditampilkan saat pengguna mengklik tombol "Panduan Login" di bawah tombol Masuk.</span>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1845,6 +1881,101 @@ export const SettingsModal = React.memo(({
                     {parsedPanduan.length === 0 && (
                       <p className="text-xs text-slate-400 italic text-center py-4">Belum ada panduan. Tekan tombol Tambah untuk membuat panduan.</p>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {settingsTab === 'sla' && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-xs font-black capitalize tracking-widest text-slate-400">Pengaturan Waktu SLA (Service Level Agreement)</h3>
+                    <p className="text-[10px] text-slate-500 mt-1">Sesuaikan batas waktu respons untuk tiket baru agar tim IT tetap responsif.</p>
+                  </div>
+
+                  <div className={`p-4 sm:p-6 rounded-2xl border ${themeClasses.border} ${themeClasses.bgSecondary} space-y-6`}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      
+                      {/* Delayed SLA Settings */}
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-amber-500" />
+                          Batas Waktu Delayed (Jam)
+                        </label>
+                        <input 
+                          type="number"
+                          min="0.1"
+                          step="0.1"
+                          className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bg} ${themeClasses.border} ${themeClasses.text}`}
+                          value={appSettings.sla_delayed_hours !== undefined ? appSettings.sla_delayed_hours : 2}
+                          onChange={e => {
+                            const val = parseFloat(e.target.value);
+                            setAppSettings({
+                              ...appSettings,
+                              sla_delayed_hours: isNaN(val) ? '' : val
+                            });
+                          }}
+                        />
+                        <p className="text-[10px] text-slate-500">
+                          Tiket baru yang belum ditangani lebih dari durasi ini akan diberi tanda kuning/Delayed. (Bawaan: 2 jam).
+                        </p>
+                      </div>
+
+                      {/* Critical SLA Settings */}
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                          Batas Waktu Critical (Jam)
+                        </label>
+                        <input 
+                          type="number"
+                          min="0.1"
+                          step="0.1"
+                          className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bg} ${themeClasses.border} ${themeClasses.text}`}
+                          value={appSettings.sla_critical_hours !== undefined ? appSettings.sla_critical_hours : 5}
+                          onChange={e => {
+                            const val = parseFloat(e.target.value);
+                            setAppSettings({
+                              ...appSettings,
+                              sla_critical_hours: isNaN(val) ? '' : val
+                            });
+                          }}
+                        />
+                        <p className="text-[10px] text-slate-500">
+                          Tiket baru yang belum ditangani lebih dari durasi ini akan diberi tanda merah berkedip/Critical. (Bawaan: 5 jam).
+                        </p>
+                      </div>
+
+                    </div>
+
+                    {/* Live Preview Section */}
+                    <div className={`p-4 rounded-xl border ${isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-slate-50 border-slate-100'} space-y-3`}>
+                      <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pratinjau Badge SLA pada Tiket:</h4>
+                      <div className="flex flex-wrap gap-4 items-center">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[9px] text-slate-500 font-bold">Status Normal (&lt; {appSettings.sla_delayed_hours || 2} jam):</span>
+                          <span className="text-[10px] text-slate-400 italic">Tidak ada badge SLA (Sesuai Target)</span>
+                        </div>
+                        
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[9px] text-slate-500 font-bold">Status Delayed (&gt; {appSettings.sla_delayed_hours || 2} jam):</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded capitalize bg-amber-500/10 border border-amber-500/20 text-amber-600 leading-none whitespace-nowrap">
+                              Delayed (&gt;{appSettings.sla_delayed_hours || 2}h)
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[9px] text-slate-500 font-bold">Status Critical (&gt; {appSettings.sla_critical_hours || 5} jam):</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded capitalize bg-rose-500 text-white leading-none whitespace-nowrap">
+                              Critical (&gt;{appSettings.sla_critical_hours || 5}h)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
               )}

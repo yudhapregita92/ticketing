@@ -86,6 +86,8 @@ export interface ISettings {
   telegram_chat_ids?: string;
   member_card_template?: string;
   card_layout?: string;
+  sla_critical_hours?: number;
+  sla_delayed_hours?: number;
 }
 
 export interface IAdminUser extends IUser {}

@@ -33,6 +33,7 @@ export const UserLoginScreen = React.memo(({
   const [searchName, setSearchName] = useState('');
   const [indexCode, setIndexCode] = useState('');
   const [error, setError] = useState('');
+  const [showGuide, setShowGuide] = useState(false);
   
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [clickCount, setClickCount] = useState(0);
@@ -359,6 +360,34 @@ export const UserLoginScreen = React.memo(({
               </>
             )}
           </button>
+
+          {!isAdminMode && (appSettings?.login_guide_enabled === undefined || !!appSettings?.login_guide_enabled) && (
+            <div className="text-center pt-1.5 space-y-2">
+              <button
+                type="button"
+                onClick={() => setShowGuide(!showGuide)}
+                className={`text-[10px] font-bold transition-all hover:underline outline-none focus:outline-none ${showGuide ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 hover:text-slate-600 dark:text-slate-500'}`}
+              >
+                {showGuide ? 'Sembunyikan Panduan Login' : 'Panduan Login'}
+              </button>
+
+              <AnimatePresence>
+                {showGuide && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden text-left"
+                  >
+                    <div className={`p-3 rounded-xl border text-[10px] leading-relaxed whitespace-pre-line font-medium ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}>
+                      {appSettings?.login_guide_content || 'Langkah-langkah Login:\n1. Pilih nama Anda pada pilihan "Nama Anda".\n2. Ketik Index KDK/GGF Anda dengan benar.\n3. Tekan tombol "Masuk" untuk masuk ke dashboard.\n\nJika nama Anda belum terdaftar, silakan hubungi tim Admin IT.'}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
         </form>
       </motion.div>
     </div>

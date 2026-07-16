@@ -1,24 +1,70 @@
 import { parseSafeDate } from './dateUtils';
 
-export const getSLAColor = (createdAt: string, status: string) => {
+export const getSLAColor = (createdAt: string, status: string, criticalHours?: number, delayedHours?: number) => {
   if (status !== 'New') return '';
   const created = parseSafeDate(createdAt).getTime();
   const now = new Date().getTime();
   const diffHours = (now - created) / (1000 * 60 * 60);
 
-  if (diffHours > 5) return 'bg-rose-500/10 border-rose-500/20 text-rose-600 animate-pulse';
-  if (diffHours > 2) return 'bg-amber-500/10 border-amber-500/20 text-amber-600';
+  let crit = criticalHours;
+  let del = delayedHours;
+
+  if (crit === undefined || del === undefined) {
+    try {
+      const saved = localStorage.getItem('appSettings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (crit === undefined && parsed.sla_critical_hours !== undefined) {
+          crit = parseFloat(parsed.sla_critical_hours);
+        }
+        if (del === undefined && parsed.sla_delayed_hours !== undefined) {
+          del = parseFloat(parsed.sla_delayed_hours);
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  if (crit === undefined || isNaN(crit)) crit = 5;
+  if (del === undefined || isNaN(del)) del = 2;
+
+  if (diffHours > crit) return 'bg-rose-500/10 border-rose-500/20 text-rose-600 animate-pulse';
+  if (diffHours > del) return 'bg-amber-500/10 border-amber-500/20 text-amber-600';
   return '';
 };
 
-export const getSLALabel = (createdAt: string, status: string) => {
+export const getSLALabel = (createdAt: string, status: string, criticalHours?: number, delayedHours?: number) => {
   if (status !== 'New') return null;
   const created = parseSafeDate(createdAt).getTime();
   const now = new Date().getTime();
   const diffHours = (now - created) / (1000 * 60 * 60);
 
-  if (diffHours > 5) return 'Critical (>5h)';
-  if (diffHours > 2) return 'Delayed (>2h)';
+  let crit = criticalHours;
+  let del = delayedHours;
+
+  if (crit === undefined || del === undefined) {
+    try {
+      const saved = localStorage.getItem('appSettings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (crit === undefined && parsed.sla_critical_hours !== undefined) {
+          crit = parseFloat(parsed.sla_critical_hours);
+        }
+        if (del === undefined && parsed.sla_delayed_hours !== undefined) {
+          del = parseFloat(parsed.sla_delayed_hours);
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  if (crit === undefined || isNaN(crit)) crit = 5;
+  if (del === undefined || isNaN(del)) del = 2;
+
+  if (diffHours > crit) return `Critical (>${crit}h)`;
+  if (diffHours > del) return `Delayed (>${del}h)`;
   return null;
 };
 

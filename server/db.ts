@@ -497,6 +497,8 @@ export function initDb() {
     initSettings.run('custom_logo', '');
     initSettings.run('custom_favicon', '');
     initSettings.run('photo_cleanup_duration', '24');
+    initSettings.run('login_guide_enabled', 'true');
+    initSettings.run('login_guide_content', 'Langkah-langkah Login:\n1. Pilih nama Anda pada pilihan "Nama Anda".\n2. Ketik Index KDK/GGF Anda dengan benar.\n3. Tekan tombol "Masuk" untuk masuk ke dashboard.\n\nJika nama Anda belum terdaftar, silakan hubungi tim Admin IT.');
     initSettings.run('app_version', 'v1.3.0');
 
     // Create or update default users

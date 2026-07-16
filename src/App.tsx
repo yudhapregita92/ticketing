@@ -138,7 +138,11 @@ export default function App() {
       smtp_user: '',
       smtp_pass: '',
       smtp_from: '',
-      photo_cleanup_duration: '24'
+      photo_cleanup_duration: '24',
+      login_guide_enabled: true,
+      login_guide_content: 'Langkah-langkah Login:\n1. Pilih nama Anda pada pilihan "Nama Anda".\n2. Ketik Index KDK/GGF Anda dengan benar.\n3. Tekan tombol "Masuk" untuk masuk ke dashboard.\n\nJika nama Anda belum terdaftar, silakan hubungi tim Admin IT.',
+      sla_critical_hours: 5,
+      sla_delayed_hours: 2
     };
   }); // Pengaturan nama & logo app
 
@@ -275,7 +279,7 @@ export default function App() {
   const [loginData, setLoginData] = useState({ username: '', password: '' });
   const [showSettings, setShowSettings] = useState(false); // Toggle modal pengaturan aplikasi
   const [showImageManager, setShowImageManager] = useState(false); // Toggle modal manajemen gambar
-  const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan'>('general');
+  const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla'>('general');
   const [showResetConfirm, setShowResetConfirm] = useState(false); // Toggle konfirmasi reset data
   const [showTakeoverConfirm, setShowTakeoverConfirm] = useState<{id: number, type: 'takeover' | 'reassign', targetUser?: string} | null>(null);
   const [showDistribution, setShowDistribution] = useState(false); // Toggle distribusi masalah
@@ -1390,6 +1394,7 @@ export default function App() {
               primaryColor={primaryColor}
               isDark={isDark}
               adminUser={adminUser}
+              currentUser={currentUser}
               setShowSettings={(show) => {
                 if (window.innerWidth >= 1024) {
                   setViewMode('settings');

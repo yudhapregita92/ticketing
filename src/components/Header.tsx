@@ -13,7 +13,8 @@ import {
   Moon,
   Clock,
   Wifi,
-  WifiOff
+  WifiOff,
+  User
 } from 'lucide-react';
 import { IAppSettings, IAdminUser, ITicket } from '../types';
 import { LOGO_OPTIONS } from '../constants';
@@ -60,6 +61,7 @@ const RealTimeClock: React.FC<{ isDark: boolean }> = ({ isDark }) => {
 interface HeaderProps {
   appSettings: IAppSettings;
   adminUser: IAdminUser | null;
+  currentUser: any;
   primaryColor: string;
   isDark: boolean;
   notificationPermission: NotificationPermission;
@@ -77,6 +79,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   appSettings,
   adminUser,
+  currentUser,
   primaryColor,
   isDark,
   notificationPermission,
@@ -113,7 +116,7 @@ export const Header: React.FC<HeaderProps> = ({
         ? (isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-zinc-100/80 border-zinc-200')
         : (isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200')
     }`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[4rem] py-2 flex items-center justify-between gap-2">
         <div className="flex items-center gap-3 min-w-0">
           <div 
             className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-all shrink-0"
@@ -235,16 +238,33 @@ export const Header: React.FC<HeaderProps> = ({
           )}
           </div>
           
-          <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={toggleTheme}
-            style={{ backgroundColor: primaryColor }}
-            className="text-white px-3 py-1.5 rounded-full text-[10px] sm:text-sm font-bold shadow-lg flex items-center gap-1.5 active:scale-95"
-          >
-            {isDark ? <Sun className="w-3 h-3 sm:w-4 sm:h-4" /> : <Moon className="w-3 h-3 sm:w-4 sm:h-4" />}
-            <span className="font-bold">Mode</span>
-          </motion.button>
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={toggleTheme}
+              style={{ backgroundColor: primaryColor }}
+              className="text-white px-3 py-1.5 rounded-full text-[10px] sm:text-sm font-bold shadow-lg flex items-center gap-1.5 active:scale-95"
+            >
+              {isDark ? <Sun className="w-3 h-3 sm:w-4 sm:h-4" /> : <Moon className="w-3 h-3 sm:w-4 sm:h-4" />}
+              <span className="font-bold">Mode</span>
+            </motion.button>
+
+            {(adminUser || currentUser) && (
+              <div className="flex items-center gap-1.5 mt-0.5 max-w-[120px] sm:max-w-[200px] truncate">
+                <span className={`text-[9px] sm:text-[10px] font-black truncate leading-none capitalize tracking-wide ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                  {adminUser ? adminUser.full_name : currentUser?.full_name}
+                </span>
+                <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 ${isDark ? 'bg-zinc-800 text-zinc-400' : 'bg-slate-100 text-slate-500'}`}>
+                  {adminUser ? (
+                    <ShieldCheck className="w-2.5 h-2.5 text-emerald-500" />
+                  ) : (
+                    <User className="w-2.5 h-2.5 text-slate-400 dark:text-zinc-500" />
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
