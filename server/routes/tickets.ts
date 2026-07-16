@@ -158,14 +158,19 @@ export default function(io: Server) {
   }));
 
   router.post("/reset", asyncHandler(async (req: any, res: any) => {
-    db.prepare("DELETE FROM tickets").run();
+    const { password } = req.body;
+    if (password !== 'root') {
+      throw new AppError("Password konfirmasi salah!", 403);
+    }
+    db.transaction(() => {
+      db.prepare("DELETE FROM ticket_logs").run();
+      db.prepare("DELETE FROM tickets").run();
+    })();
     res.json({ success: true });
   }));
 
   router.delete("/:id", asyncHandler(async (req: any, res: any) => {
-    const { id } = req.params;
-    db.prepare("DELETE FROM tickets WHERE id = ?").run(id);
-    res.json({ success: true });
+    throw new AppError("Tiket individual tidak dapat dihapus melalui fitur ini.", 403);
   }));
 
   return router;

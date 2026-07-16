@@ -147,7 +147,11 @@ export const api = {
   }).then(handleResponse),
 
   // Tickets Extra
-  resetTickets: () => fetch('/api/tickets/reset', { method: 'POST' }).then(handleResponse),
+  resetTickets: (password?: string) => fetch('/api/tickets/reset', { 
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password })
+  }).then(handleResponse),
   deleteTicket: (id: number) => fetch(`/api/tickets/${id}`, { method: 'DELETE' }).then(handleResponse),
   checkHealth: () => fetch('/api/health').then(handleResponse),
 

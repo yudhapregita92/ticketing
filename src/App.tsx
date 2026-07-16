@@ -798,24 +798,27 @@ export default function App() {
   /**
    * Menghapus semua data tiket (Hanya Admin)
    */
-  const handleReset = async () => {
+  const handleReset = async (password?: string) => {
+    if (!password) {
+      toast.error('Password konfirmasi wajib diisi.');
+      return;
+    }
     try {
-      const data = await api.resetTickets();
+      const data = await api.resetTickets(password);
       if (data) {
         queryClient.invalidateQueries({ queryKey: ['tickets'] });
         setShowResetConfirm(false);
         toast.success('Semua data berhasil direset.');
         hapticFeedback.heavy();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Reset error:', err);
-      toast.error('Gagal meriset data');
+      toast.error(err.message || 'Password konfirmasi salah!');
     }
   };
 
   const handleDeleteTicket = async (id: number) => {
-    if (!confirm('Hapus tiket ini secara permanen?')) return;
-    deleteTicketMutation.mutate(id);
+    toast.error('Tiket individual tidak dapat dihapus.');
   };
 
   const handleManagementAction = async (type: 'it' | 'dept' | 'cat' | 'master-user' | 'admin-user', action: 'add' | 'delete' | 'refresh', data?: any) => {
@@ -1999,11 +2002,13 @@ export default function App() {
             onClose={() => setShowResetConfirm(false)}
             onConfirm={handleReset}
             title="Reset All Data?"
-            message="This action will permanently delete all tickets in the queue. This cannot be undone."
+            message="This action will permanently delete all tickets in the queue. This cannot be undone. Enter password 'root' to confirm."
             confirmText="Yes, Reset"
             isDark={isDark}
             themeClasses={themeClasses}
             type="danger"
+            hasPasswordInput={true}
+            passwordPlaceholder="Password konfirmasi (root)..."
           />
         )}
 

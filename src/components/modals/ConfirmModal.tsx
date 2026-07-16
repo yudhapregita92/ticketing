@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   AlertTriangle, 
@@ -11,7 +11,7 @@ import {
 interface ConfirmModalProps {
   show: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (password?: string) => void;
   title: string;
   message: string;
   confirmText: string;
@@ -19,6 +19,8 @@ interface ConfirmModalProps {
   themeClasses: any;
   loading?: boolean;
   type?: 'danger' | 'warning' | 'success';
+  hasPasswordInput?: boolean;
+  passwordPlaceholder?: string;
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({
@@ -31,9 +33,17 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   isDark,
   themeClasses,
   loading = false,
-  type = 'danger'
+  type = 'danger',
+  hasPasswordInput = false,
+  passwordPlaceholder
 }) => {
+  const [password, setPassword] = useState('');
+
   if (!show) return null;
+
+  const handleConfirmClick = () => {
+    onConfirm(password);
+  };
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -63,12 +73,31 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             )}
           </div>
           <h2 className={`text-xl sm:text-2xl font-black tracking-tight mb-3 ${themeClasses.text}`}>{title}</h2>
-          <p className={`text-sm sm:text-base font-medium leading-relaxed mb-8 ${themeClasses.textMuted}`}>{message}</p>
+          <p className={`text-sm sm:text-base font-medium leading-relaxed mb-6 ${themeClasses.textMuted}`}>{message}</p>
           
+          {hasPasswordInput && (
+            <div className="mb-6 text-left">
+              <label className={`block text-xs font-black uppercase tracking-wider mb-2 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                Password Konfirmasi (root)
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={passwordPlaceholder || "Masukkan password..."}
+                className={`w-full px-4 py-3 rounded-xl border text-sm font-semibold outline-none focus:ring-2 focus:ring-rose-500 transition-all ${
+                  isDark 
+                    ? 'bg-zinc-900 border-zinc-800 text-white placeholder-zinc-600 focus:border-zinc-700' 
+                    : 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 focus:border-slate-300'
+                }`}
+              />
+            </div>
+          )}
+
           <div className="flex flex-col gap-3">
             <button 
-              disabled={loading}
-              onClick={onConfirm}
+              disabled={loading || (hasPasswordInput && !password.trim())}
+              onClick={handleConfirmClick}
               className={`w-full text-white font-black py-4 rounded-2xl text-sm sm:text-base shadow-xl transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 ${
                 type === 'danger' ? 'bg-rose-500 hover:bg-rose-600' : 
                 type === 'success' ? 'bg-emerald-600 hover:bg-emerald-700' :

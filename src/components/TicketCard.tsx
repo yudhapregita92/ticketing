@@ -182,20 +182,6 @@ export const TicketCard: React.FC<TicketCardProps> = ({
             </button>
           </div>
         )}
-        <div className="flex items-center gap-1">
-          {adminUser && (
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteTicket(ticket.id);
-              }}
-              className={`p-1.5 rounded-md transition-all ${isDark ? 'text-slate-400 hover:text-rose-400 hover:bg-rose-900/30' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'}`}
-              title="Delete Ticket"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          )}
-        </div>
       </div>
     </motion.div>
   );
