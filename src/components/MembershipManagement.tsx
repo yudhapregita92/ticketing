@@ -31,6 +31,256 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
   const [showQrModal, setShowQrModal] = useState(false);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
+  // Journal Manual CRUD States
+  const [showJournalFormModal, setShowJournalFormModal] = useState(false);
+  const [editingJournal, setEditingJournal] = useState<any | null>(null);
+  const [deleteJournalId, setDeleteJournalId] = useState<number | null>(null);
+  const [deleteJournalPassword, setDeleteJournalPassword] = useState('');
+  const [showDeleteJournalModal, setShowDeleteJournalModal] = useState(false);
+  const [journalForm, setJournalForm] = useState({
+    member_id: '',
+    nama: '',
+    kode_lokal: '',
+    indek_ggf: '',
+    bagian: '',
+    signature: '',
+    keterangan: ''
+  });
+  const [isSubmittingJournal, setIsSubmittingJournal] = useState(false);
+  const [journalSearchMemberQuery, setJournalSearchMemberQuery] = useState('');
+  const [selectedMemberForJournal, setSelectedMemberForJournal] = useState<IMembership | null>(null);
+  const [hasJournalSignature, setHasJournalSignature] = useState(false);
+  const [isDrawingJournal, setIsDrawingJournal] = useState(false);
+  const journalCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    if (showJournalFormModal) {
+      const canvas = journalCanvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.strokeStyle = isDark ? '#ffffff' : '#1e293b';
+          ctx.lineWidth = 3;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          
+          // Clear any leftovers
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          
+          // If editing and has signature, draw current signature or clear
+          if (editingJournal && editingJournal.signature) {
+            const img = new Image();
+            img.onload = () => {
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+            img.src = editingJournal.signature;
+          }
+        }
+        
+        const preventDefault = (e: Event) => {
+          if (e.target === canvas) {
+            e.preventDefault();
+          }
+        };
+        document.body.addEventListener('touchstart', preventDefault, { passive: false });
+        document.body.addEventListener('touchmove', preventDefault, { passive: false });
+        document.body.addEventListener('touchend', preventDefault, { passive: false });
+
+        return () => {
+          document.body.removeEventListener('touchstart', preventDefault);
+          document.body.removeEventListener('touchmove', preventDefault);
+          document.body.removeEventListener('touchend', preventDefault);
+        };
+      }
+    }
+  }, [showJournalFormModal, isDark, editingJournal]);
+
+  const handleAddJournalClick = () => {
+    setEditingJournal(null);
+    setJournalForm({
+      member_id: '',
+      nama: '',
+      kode_lokal: '',
+      indek_ggf: '',
+      bagian: '',
+      signature: '',
+      keterangan: ''
+    });
+    setJournalSearchMemberQuery('');
+    setSelectedMemberForJournal(null);
+    setHasJournalSignature(false);
+    setShowJournalFormModal(true);
+  };
+
+  const handleDeleteJournalClick = (id: number) => {
+    setDeleteJournalId(id);
+    setDeleteJournalPassword('');
+    setShowDeleteJournalModal(true);
+  };
+
+  const handleEditJournalClick = (journal: any) => {
+    setEditingJournal(journal);
+    setJournalForm({
+      member_id: journal.member_id ? String(journal.member_id) : '',
+      nama: journal.nama || '',
+      kode_lokal: journal.kode_lokal || '',
+      indek_ggf: journal.indek_ggf || '',
+      bagian: journal.bagian || '',
+      signature: journal.signature || '',
+      keterangan: journal.keterangan || ''
+    });
+    setJournalSearchMemberQuery('');
+    
+    // Find member if it exists
+    const mbr = memberships.find(m => m.id === journal.member_id);
+    setSelectedMemberForJournal(mbr || null);
+    
+    setHasJournalSignature(!!journal.signature);
+    setShowJournalFormModal(true);
+  };
+
+  const selectMemberForJournal = (member: IMembership) => {
+    setSelectedMemberForJournal(member);
+    setJournalForm(prev => ({
+      ...prev,
+      member_id: String(member.id),
+      nama: member.nama || '',
+      kode_lokal: member.kode_lokal || '',
+      indek_ggf: member.indek_ggf || '',
+      bagian: member.bagian || ''
+    }));
+    setJournalSearchMemberQuery('');
+  };
+
+  const clearSelectedMemberForJournal = () => {
+    setSelectedMemberForJournal(null);
+    setJournalForm(prev => ({
+      ...prev,
+      member_id: '',
+      nama: '',
+      kode_lokal: '',
+      indek_ggf: '',
+      bagian: ''
+    }));
+  };
+
+  // Drawing Canvas Handlers for Journal
+  const startJournalDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = journalCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    setIsDrawingJournal(true);
+    setHasJournalSignature(true);
+
+    const rect = canvas.getBoundingClientRect();
+    let clientX, clientY;
+
+    if ('touches' in e) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(clientX - rect.left, clientY - rect.top);
+  };
+
+  const drawJournal = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawingJournal) return;
+    const canvas = journalCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const rect = canvas.getBoundingClientRect();
+    let clientX, clientY;
+
+    if ('touches' in e) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    ctx.lineTo(clientX - rect.left, clientY - rect.top);
+    ctx.stroke();
+  };
+
+  const stopJournalDrawing = () => {
+    setIsDrawingJournal(false);
+  };
+
+  const clearJournalCanvas = () => {
+    const canvas = journalCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setHasJournalSignature(false);
+    setJournalForm(prev => ({ ...prev, signature: '' }));
+  };
+
+  const handleJournalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!journalForm.nama.trim()) {
+      toast.error('Nama Anggota wajib diisi');
+      return;
+    }
+
+    setIsSubmittingJournal(true);
+
+    let finalSignature = journalForm.signature;
+    
+    // Only capture from canvas if user drew on it
+    const canvas = journalCanvasRef.current;
+    if (canvas && hasJournalSignature && (!editingJournal || journalForm.signature === editingJournal.signature)) {
+      finalSignature = canvas.toDataURL('image/png');
+    }
+
+    try {
+      const payload = {
+        member_id: journalForm.member_id ? parseInt(journalForm.member_id, 10) : null,
+        nama: journalForm.nama.trim(),
+        kode_lokal: journalForm.kode_lokal.trim() || null,
+        indek_ggf: journalForm.indek_ggf.trim() || null,
+        bagian: journalForm.bagian.trim() || null,
+        signature: finalSignature || null,
+        keterangan: journalForm.keterangan.trim() || null
+      };
+
+      const url = editingJournal 
+        ? `/api/memberships/journals/${editingJournal.id}` 
+        : '/api/memberships/journals/submit';
+
+      const method = editingJournal ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        toast.success(editingJournal ? 'Jurnal berhasil diperbarui' : 'Jurnal berhasil ditambahkan');
+        setShowJournalFormModal(false);
+        fetchJournals();
+      } else {
+        const errData = await res.json();
+        toast.error(errData.error || 'Gagal menyimpan jurnal');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Terjadi kesalahan saat menyimpan jurnal');
+    } finally {
+      setIsSubmittingJournal(false);
+    }
+  };
+
   const handleCopyLink = (url: string, key: string) => {
     navigator.clipboard.writeText(url);
     setCopiedLink(key);
@@ -287,7 +537,6 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
   };
 
   const deleteJournal = async (id: number) => {
-    if (!window.confirm('Apakah Anda yakin ingin menghapus catatan jurnal ini?')) return;
     try {
       const res = await fetch(`/api/memberships/journals/${id}`, {
         method: 'DELETE'
@@ -1127,7 +1376,6 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
       </div>
         </>
       )}
-
       {activeTab === 'journals' && (
         <div className="space-y-4">
           <div className={`p-4 rounded-xl ${themeClasses.card} ${themeClasses.border} border shadow-sm`}>
@@ -1136,15 +1384,25 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                 <BookOpen className="w-5 h-5 text-indigo-500" />
                 Catatan Buku Jurnal Digital (Tanda Tangan Penerimaan Kartu)
               </h3>
-              <div className="relative w-full sm:w-64">
-                <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${themeClasses.textMuted}`} />
-                <input 
-                  type="text" 
-                  placeholder="Cari nama / bagian / kode..." 
-                  value={journalSearch}
-                  onChange={e => setJournalSearch(e.target.value)}
-                  className={`w-full pl-9 pr-4 py-2 rounded-lg text-sm transition-colors border ${themeClasses.input}`}
-                />
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={handleAddJournalClick}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Tambah Jurnal</span>
+                </button>
+                <div className="relative w-full sm:w-64">
+                  <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${themeClasses.textMuted}`} />
+                  <input 
+                    type="text" 
+                    placeholder="Cari nama / bagian / kode..." 
+                    value={journalSearch}
+                    onChange={e => setJournalSearch(e.target.value)}
+                    className={`w-full pl-9 pr-4 py-2 rounded-lg text-sm transition-colors border ${themeClasses.input}`}
+                  />
+                </div>
               </div>
             </div>
 
@@ -1215,17 +1473,28 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                           <td className="py-3 px-4 text-xs italic text-slate-500 dark:text-slate-400">
                             {journal.keterangan || '-'}
                           </td>
-                          <td className="py-3 px-4 text-right">
-                            <button
-                              onClick={() => deleteJournal(journal.id)}
-                              className="p-1.5 bg-rose-500/10 text-rose-600 rounded hover:bg-rose-500/20 transition-colors"
-                              title="Hapus Jurnal"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleEditJournalClick(journal)}
+                                className="p-1.5 bg-indigo-500/10 text-indigo-600 rounded hover:bg-indigo-500/20 transition-colors cursor-pointer"
+                                title="Edit Jurnal"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteJournalClick(journal.id)}
+                                className="p-1.5 bg-rose-500/10 text-rose-600 rounded hover:bg-rose-500/20 transition-colors cursor-pointer"
+                                title="Hapus Jurnal"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
-                  ))}
+                      ))}
                 </tbody>
               </table>
             </div>
@@ -1301,6 +1570,338 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                     </>
                   )}
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MANUAL JOURNAL FORM MODAL (ADD & EDIT) */}
+      <AnimatePresence>
+        {showJournalFormModal && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 overflow-y-auto">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+              onClick={() => setShowJournalFormModal(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className={`relative ${themeClasses.card} rounded-2xl shadow-2xl p-6 w-full max-w-lg border ${themeClasses.border} z-10 my-8`}
+            >
+              <button 
+                type="button"
+                onClick={() => setShowJournalFormModal(false)}
+                className="absolute top-4 right-4 p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-2.5 mb-4 border-b pb-3">
+                <BookOpen className="w-5 h-5 text-indigo-500" />
+                <h3 className="font-bold text-lg">
+                  {editingJournal ? 'Edit Catatan Buku Jurnal' : 'Tambah Catatan Jurnal Manual'}
+                </h3>
+              </div>
+
+              <form onSubmit={handleJournalSubmit} className="space-y-4">
+                {/* 1. MEMBER LOOKUP (ONLY WHEN ADDING NEW OR OPTIONALLY RE-LINKING) */}
+                {!editingJournal && (
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-sans">
+                      Cari Anggota Terdaftar (Opsional)
+                    </label>
+                    {selectedMemberForJournal ? (
+                      <div className="flex items-center justify-between p-2.5 rounded-xl border bg-emerald-500/5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-emerald-500" />
+                          <div className="text-xs">
+                            <p className="font-bold">{selectedMemberForJournal.nama}</p>
+                            <p className="text-[10px] opacity-80">
+                              Kode: {selectedMemberForJournal.kode_lokal || '-'} | Bagian: {selectedMemberForJournal.bagian || '-'}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={clearSelectedMemberForJournal}
+                          className="text-xs font-bold hover:underline text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 px-2 py-1 rounded cursor-pointer"
+                        >
+                          Batal / Ganti
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${themeClasses.textMuted}`} />
+                        <input
+                          type="text"
+                          placeholder="Cari berdasarkan Nama atau Kode Anggota..."
+                          value={journalSearchMemberQuery}
+                          onChange={e => setJournalSearchMemberQuery(e.target.value)}
+                          className={`w-full pl-9 pr-4 py-2 rounded-lg text-sm border transition-colors ${themeClasses.input}`}
+                        />
+                        {/* Member Search Results Dropdown */}
+                        {journalSearchMemberQuery.trim() !== '' && (
+                          <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto z-20 rounded-xl border shadow-xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800">
+                            {memberships
+                              .filter(m => 
+                                (m.nama && m.nama.toLowerCase().includes(journalSearchMemberQuery.toLowerCase())) ||
+                                (m.kode_lokal && m.kode_lokal.toLowerCase().includes(journalSearchMemberQuery.toLowerCase())) ||
+                                (m.indek_ggf && m.indek_ggf.toLowerCase().includes(journalSearchMemberQuery.toLowerCase()))
+                              )
+                              .slice(0, 5)
+                              .map(member => (
+                                <button
+                                  key={member.id}
+                                  type="button"
+                                  onClick={() => selectMemberForJournal(member)}
+                                  className="w-full text-left px-4 py-2.5 hover:bg-indigo-500/10 dark:hover:bg-indigo-500/5 text-sm transition-colors flex items-center justify-between cursor-pointer"
+                                >
+                                  <div>
+                                    <p className="font-bold text-slate-800 dark:text-slate-100">{member.nama}</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                      Kode: {member.kode_lokal || '-'} | Bagian: {member.bagian || '-'}
+                                    </p>
+                                  </div>
+                                  <span className="text-[10px] bg-slate-100 dark:bg-slate-850 py-1 px-2 rounded-md font-bold text-slate-500">Pilih</span>
+                                </button>
+                              ))}
+                            {memberships.filter(m => 
+                              (m.nama && m.nama.toLowerCase().includes(journalSearchMemberQuery.toLowerCase())) ||
+                              (m.kode_lokal && m.kode_lokal.toLowerCase().includes(journalSearchMemberQuery.toLowerCase())) ||
+                              (m.indek_ggf && m.indek_ggf.toLowerCase().includes(journalSearchMemberQuery.toLowerCase()))
+                            ).length === 0 && (
+                              <p className="text-xs p-3 text-center text-slate-500">Tidak ada anggota yang cocok</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 2. MANUAL INPUT FIELDS */}
+                <div className="space-y-3 pt-2">
+                  <div>
+                    <label className="block text-xs font-bold mb-1">Nama Penerima Kartu (Wajib)</label>
+                    <input
+                      type="text"
+                      required
+                      value={journalForm.nama}
+                      onChange={e => setJournalForm({ ...journalForm, nama: e.target.value })}
+                      className={`w-full px-3 py-2 rounded-lg text-sm border transition-colors ${themeClasses.input}`}
+                      placeholder="Masukkan nama lengkap anggota..."
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold mb-1">Kode Lokal / NIK</label>
+                      <input
+                        type="text"
+                        value={journalForm.kode_lokal}
+                        onChange={e => setJournalForm({ ...journalForm, kode_lokal: e.target.value })}
+                        className={`w-full px-3 py-2 rounded-lg text-sm border transition-colors ${themeClasses.input}`}
+                        placeholder="Contoh: 123456"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold mb-1">Index GGF</label>
+                      <input
+                        type="text"
+                        value={journalForm.indek_ggf}
+                        onChange={e => setJournalForm({ ...journalForm, indek_ggf: e.target.value })}
+                        className={`w-full px-3 py-2 rounded-lg text-sm border transition-colors ${themeClasses.input}`}
+                        placeholder="Contoh: GGF-01"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold mb-1">Bagian (Department)</label>
+                    <input
+                      type="text"
+                      value={journalForm.bagian}
+                      onChange={e => setJournalForm({ ...journalForm, bagian: e.target.value })}
+                      className={`w-full px-3 py-2 rounded-lg text-sm border transition-colors ${themeClasses.input}`}
+                      placeholder="Contoh: Logistik"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold mb-1">Keterangan Tambahan (Opsional)</label>
+                    <textarea
+                      value={journalForm.keterangan}
+                      onChange={e => setJournalForm({ ...journalForm, keterangan: e.target.value })}
+                      rows={2}
+                      className={`w-full px-3 py-2 rounded-lg text-sm border transition-colors ${themeClasses.input}`}
+                      placeholder="Contoh: Penerimaan kartu pengganti hilang..."
+                    />
+                  </div>
+                </div>
+
+                {/* 3. SIGNATURE PAD / CANVAS */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-sans">
+                      Tanda Tangan Digital (Opsional)
+                    </label>
+                    {hasJournalSignature && (
+                      <button
+                        type="button"
+                        onClick={clearJournalCanvas}
+                        className="text-[10px] text-rose-500 font-bold hover:underline bg-rose-500/10 py-1 px-2 rounded-md cursor-pointer"
+                      >
+                        Reset Tanda Tangan
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="relative border border-dashed border-slate-300 dark:border-slate-700 rounded-xl overflow-hidden bg-slate-950">
+                    <canvas
+                      ref={journalCanvasRef}
+                      width={448}
+                      height={180}
+                      className="w-full h-36 cursor-crosshair block"
+                      onMouseDown={startJournalDrawing}
+                      onMouseMove={drawJournal}
+                      onMouseUp={stopJournalDrawing}
+                      onMouseLeave={stopJournalDrawing}
+                      onTouchStart={startJournalDrawing}
+                      onTouchMove={drawJournal}
+                      onTouchEnd={stopJournalDrawing}
+                    />
+                    {!hasJournalSignature && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-slate-500/80 text-xs">
+                        Gambar tanda tangan di sini (Touch / Drag Mouse)
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 4. ACTIONS */}
+                <div className="pt-3 border-t flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowJournalFormModal(false)}
+                    className="px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-sm font-semibold transition-colors border cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingJournal}
+                    className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    {isSubmittingJournal ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Menyimpan...</span>
+                      </>
+                    ) : (
+                      <span>Simpan Jurnal</span>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL HAPUS CATATAN JURNAL INDIVIDU (PASSWORD-PROTECTED) */}
+      <AnimatePresence>
+        {showDeleteJournalModal && (
+          <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+              onClick={() => {
+                setShowDeleteJournalModal(false);
+                setDeleteJournalId(null);
+                setDeleteJournalPassword('');
+              }}
+            />
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className={`relative w-full max-w-md ${themeClasses.card} rounded-xl shadow-xl overflow-hidden z-10 border ${themeClasses.border}`}
+            >
+              <div className={`p-4 border-b ${themeClasses.border} flex items-center justify-between`}>
+                <h3 className="font-bold text-red-600 flex items-center gap-1.5">
+                  <Trash2 className="w-5 h-5" />
+                  Hapus Catatan Jurnal
+                </h3>
+                <button 
+                  onClick={() => {
+                    setShowDeleteJournalModal(false);
+                    setDeleteJournalId(null);
+                    setDeleteJournalPassword('');
+                  }}
+                  className={`p-1 rounded-full hover:${themeClasses.bgSecondary} transition-colors`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-4 space-y-4">
+                <p className={`text-xs ${themeClasses.textMuted} leading-relaxed`}>
+                  Apakah Anda yakin ingin menghapus catatan jurnal ini? Masukkan password <span className="font-bold text-red-500">root</span> untuk mengonfirmasi tindakan ini.
+                </p>
+
+                <div>
+                  <label className="block text-xs font-semibold mb-1.5 text-slate-500 dark:text-slate-400">
+                    Masukkan Password Konfirmasi
+                  </label>
+                  <input 
+                    type="password" 
+                    required
+                    placeholder="Masukkan password..."
+                    value={deleteJournalPassword}
+                    onChange={e => setDeleteJournalPassword(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-lg text-sm border ${themeClasses.input} focus:outline-none focus:ring-2 focus:ring-red-500/50`}
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowDeleteJournalModal(false);
+                      setDeleteJournalId(null);
+                      setDeleteJournalPassword('');
+                    }}
+                    className={`px-4 py-2 hover:${themeClasses.bgSecondary} rounded-lg text-sm font-semibold transition-colors border ${themeClasses.border}`}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (deleteJournalPassword !== 'root') {
+                        toast.error('Password salah!');
+                        return;
+                      }
+                      if (deleteJournalId !== null) {
+                        await deleteJournal(deleteJournalId);
+                        setShowDeleteJournalModal(false);
+                        setDeleteJournalId(null);
+                        setDeleteJournalPassword('');
+                      }
+                    }}
+                    className="px-5 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer font-sans"
+                  >
+                    Hapus
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>

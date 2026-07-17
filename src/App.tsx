@@ -287,6 +287,7 @@ export default function App() {
   const [addingType, setAddingType] = useState<'it' | 'dept' | 'cat' | 'master-user' | 'admin-user' | null>(null);
   const [newItemName, setNewItemName] = useState('');
   const [newItemAssignedTo, setNewItemAssignedTo] = useState('');
+  const [newItemResponseTime, setNewItemResponseTime] = useState<number>(0);
   const [newEmailInput, setNewEmailInput] = useState('');
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -821,7 +822,7 @@ export default function App() {
     toast.error('Tiket individual tidak dapat dihapus.');
   };
 
-  const handleManagementAction = async (type: 'it' | 'dept' | 'cat' | 'master-user' | 'admin-user', action: 'add' | 'delete' | 'refresh', data?: any) => {
+  const handleManagementAction = async (type: 'it' | 'dept' | 'cat' | 'master-user' | 'admin-user', action: 'add' | 'delete' | 'refresh' | 'update', data?: any) => {
     try {
       if (type === 'master-user' || type === 'admin-user') {
         queryClient.invalidateQueries({ queryKey: ['managementData'] });
@@ -843,13 +844,29 @@ export default function App() {
         let result;
         if (type === 'it') result = await api.addITPersonnel({ name: newItemName.trim() });
         else if (type === 'dept') result = await api.addDepartment({ name: newItemName.trim() });
-        else if (type === 'cat') result = await api.addCategory({ name: newItemName.trim(), assigned_to: newItemAssignedTo });
+        else if (type === 'cat') result = await api.addCategory({ name: newItemName.trim(), assigned_to: newItemAssignedTo, response_time: newItemResponseTime });
         
         if (result) {
           setNewItemName('');
           setNewItemAssignedTo('');
+          setNewItemResponseTime(0);
           setAddingType(null);
           toast.success(`${label} berhasil ditambahkan`);
+          hapticFeedback.light();
+        }
+      } else if (action === 'update') {
+        if (!data || !data.id || !data.name.trim()) return;
+        let result;
+        if (type === 'cat') {
+          result = await api.updateCategory(data.id, {
+            name: data.name.trim(),
+            assigned_to: data.assigned_to,
+            response_time: data.response_time
+          });
+        }
+        
+        if (result) {
+          toast.success(`${label} berhasil diperbarui`);
           hapticFeedback.light();
         }
       } else {
@@ -1753,6 +1770,8 @@ export default function App() {
                 setNewItemName={setNewItemName}
                 newItemAssignedTo={newItemAssignedTo}
                 setNewItemAssignedTo={setNewItemAssignedTo}
+                newItemResponseTime={newItemResponseTime}
+                setNewItemResponseTime={setNewItemResponseTime}
                 handleManagementAction={handleManagementAction}
                 masterUsers={masterUsers}
                 adminUsers={adminUsers}
@@ -1778,6 +1797,7 @@ export default function App() {
                 adminUser={adminUser}
                 isDark={isDark}
                 themeClasses={themeClasses}
+                categories={categories}
                 viewMode={viewMode as any}
                 setViewMode={setViewMode as any}
                 filterDept={filterDept}
@@ -1987,6 +2007,8 @@ export default function App() {
             setNewItemName={setNewItemName}
             newItemAssignedTo={newItemAssignedTo}
             setNewItemAssignedTo={setNewItemAssignedTo}
+            newItemResponseTime={newItemResponseTime}
+            setNewItemResponseTime={setNewItemResponseTime}
             handleManagementAction={handleManagementAction}
             masterUsers={masterUsers}
             adminUsers={adminUsers}

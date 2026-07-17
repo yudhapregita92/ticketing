@@ -90,16 +90,25 @@ router.get("/categories", asyncHandler(async (req, res) => {
 }));
 
 router.post("/categories", asyncHandler(async (req, res) => {
-  const { name, assigned_to } = req.body;
-  db.prepare("INSERT INTO categories (name, assigned_to) VALUES (?, ?)").run(name, assigned_to || null);
+  const { name, assigned_to, response_time } = req.body;
+  db.prepare("INSERT INTO categories (name, assigned_to, response_time) VALUES (?, ?, ?)").run(
+    name, 
+    assigned_to || null, 
+    response_time ? parseInt(String(response_time), 10) : 0
+  );
   emitUpdate();
   res.json({ success: true });
 }));
 
 router.put("/categories/:id", asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { name, assigned_to } = req.body;
-  db.prepare("UPDATE categories SET name = ?, assigned_to = ? WHERE id = ?").run(name, assigned_to || null, id);
+  const { name, assigned_to, response_time } = req.body;
+  db.prepare("UPDATE categories SET name = ?, assigned_to = ?, response_time = ? WHERE id = ?").run(
+    name, 
+    assigned_to || null, 
+    response_time ? parseInt(String(response_time), 10) : 0, 
+    id
+  );
   emitUpdate();
   res.json({ success: true });
 }));

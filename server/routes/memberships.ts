@@ -288,9 +288,6 @@ router.post("/journals/submit", (req: any, res: any) => {
   if (!nama) {
     return res.status(400).json({ error: "Nama wajib diisi" });
   }
-  if (!signature) {
-    return res.status(400).json({ error: "Tanda tangan wajib diisi" });
-  }
   try {
     const info = db.prepare(
       "INSERT INTO membership_journals (member_id, nama, kode_lokal, indek_ggf, bagian, barcode, signature, keterangan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
@@ -301,7 +298,7 @@ router.post("/journals/submit", (req: any, res: any) => {
       indek_ggf || null,
       bagian || null,
       barcode || null,
-      signature,
+      signature || null,
       keterangan || null
     );
     
@@ -314,6 +311,30 @@ router.post("/journals/submit", (req: any, res: any) => {
     }
     
     res.json({ success: true, id: info.lastInsertRowid });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put("/journals/:id", (req: any, res: any) => {
+  const { member_id, nama, kode_lokal, indek_ggf, bagian, signature, keterangan } = req.body;
+  if (!nama) {
+    return res.status(400).json({ error: "Nama wajib diisi" });
+  }
+  try {
+    db.prepare(
+      "UPDATE membership_journals SET member_id = ?, nama = ?, kode_lokal = ?, indek_ggf = ?, bagian = ?, signature = ?, keterangan = ? WHERE id = ?"
+    ).run(
+      member_id || null,
+      nama,
+      kode_lokal || null,
+      indek_ggf || null,
+      bagian || null,
+      signature || null,
+      keterangan || null,
+      req.params.id
+    );
+    res.json({ success: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

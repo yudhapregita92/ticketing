@@ -7,7 +7,7 @@ import {
   Trash2,
   Calendar
 } from 'lucide-react';
-import { ITicket, IAdminUser } from '../types';
+import { ITicket, IAdminUser, ICategory } from '../types';
 import { getSLAColor, getSLALabel } from '../utils/ticketUtils';
 import { HighlightText } from './Common';
 
@@ -26,6 +26,7 @@ interface TicketCardProps {
   getStatusColor: (status: string) => string;
   formatDate: (date: string) => string;
   searchQuery: string;
+  categories?: ICategory[];
 }
 
 export const TicketCard: React.FC<TicketCardProps> = ({
@@ -42,8 +43,29 @@ export const TicketCard: React.FC<TicketCardProps> = ({
   getStatusIcon,
   getStatusColor,
   formatDate,
-  searchQuery
+  searchQuery,
+  categories = []
 }) => {
+  const ticketCategory = categories?.find(c => c.name === ticket.category);
+  const customDelayed = ticketCategory?.response_time && ticketCategory.response_time > 0 ? ticketCategory.response_time : undefined;
+  
+  let customCritical: number | undefined = undefined;
+  if (customDelayed) {
+    let ratio = 2.5; // Default: 5h critical / 2h delayed
+    try {
+      const saved = localStorage.getItem('appSettings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const cHours = parseFloat(parsed.sla_critical_hours);
+        const dHours = parseFloat(parsed.sla_delayed_hours);
+        if (!isNaN(cHours) && !isNaN(dHours) && dHours > 0) {
+          ratio = cHours / dHours;
+        }
+      }
+    } catch (e) {}
+    customCritical = customDelayed * ratio;
+  }
+
   return (
     <motion.div
       layout
@@ -65,7 +87,7 @@ export const TicketCard: React.FC<TicketCardProps> = ({
       className={`${themeClasses.card} rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-sm hover:shadow-md transition-all group cursor-pointer relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-4 ${
         selectedTickets.includes(ticket.id) ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
       } ${
-        getSLAColor(ticket.created_at, ticket.status) || (isDark ? 'hover:border-emerald-900' : 'hover:border-emerald-100')
+        getSLAColor(ticket.created_at, ticket.status, customCritical, customDelayed) || (isDark ? 'hover:border-emerald-900' : 'hover:border-emerald-100')
       }`}
       onClick={() => handleSelectTicket(ticket)}
     >
@@ -116,8 +138,8 @@ export const TicketCard: React.FC<TicketCardProps> = ({
               {adminUser?.role === 'Super Admin' && ticket.assigned_to && (
                 <span className={`text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded capitalize leading-none ${isDark ? 'bg-zinc-800 text-zinc-300' : 'bg-slate-100 text-slate-600'}`}>@{ticket.assigned_to}</span>
               )}
-              {getSLALabel(ticket.created_at, ticket.status) && (
-                <span className="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded capitalize bg-rose-500 text-white leading-none whitespace-nowrap">{getSLALabel(ticket.created_at, ticket.status)}</span>
+              {getSLALabel(ticket.created_at, ticket.status, customCritical, customDelayed) && (
+                <span className="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded capitalize bg-rose-500 text-white leading-none whitespace-nowrap">{getSLALabel(ticket.created_at, ticket.status, customCritical, customDelayed)}</span>
               )}
             </div>
             <div className="flex items-center sm:items-end flex-wrap gap-1.5 sm:gap-2">

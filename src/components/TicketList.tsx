@@ -8,7 +8,7 @@ import {
   SlidersHorizontal,
   CheckCircle2
 } from 'lucide-react';
-import { ITicket, IAdminUser } from '../types';
+import { ITicket, IAdminUser, ICategory } from '../types';
 import { TicketCard } from './TicketCard';
 import { SkeletonTicket, RollingNumber } from './Common';
 
@@ -16,6 +16,7 @@ interface TicketListProps {
   adminUser: IAdminUser | null;
   isDark: boolean;
   themeClasses: any;
+  categories?: ICategory[];
   viewMode: 'today' | 'all' | 'my_tickets' | 'dashboard' | 'assets';
   setViewMode: (mode: any) => void;
   filterDept: string;
@@ -55,6 +56,7 @@ export const TicketList: React.FC<TicketListProps> = ({
   adminUser,
   isDark,
   themeClasses,
+  categories = [],
   viewMode,
   setViewMode,
   filterDept,
@@ -330,6 +332,7 @@ export const TicketList: React.FC<TicketListProps> = ({
                     getStatusColor={getStatusColor}
                     formatDate={formatDate}
                     searchQuery={searchQuery}
+                    categories={categories}
                   />
                 ))}
               </div>

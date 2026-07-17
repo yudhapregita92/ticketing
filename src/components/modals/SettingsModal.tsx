@@ -60,7 +60,9 @@ interface SettingsModalProps {
   setNewItemName: (name: string) => void;
   newItemAssignedTo: string;
   setNewItemAssignedTo: (user: string) => void;
-  handleManagementAction: (type: 'it' | 'dept' | 'cat' | 'master-user' | 'admin-user', action: 'add' | 'delete' | 'refresh', item?: any) => void;
+  newItemResponseTime?: number;
+  setNewItemResponseTime?: (time: number) => void;
+  handleManagementAction: (type: 'it' | 'dept' | 'cat' | 'master-user' | 'admin-user', action: 'add' | 'delete' | 'refresh' | 'update', item?: any) => void;
   masterUsers: any[];
   adminUsers: any[];
   handleUploadExcel: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -95,6 +97,8 @@ export const SettingsModal = React.memo(({
   setNewItemName,
   newItemAssignedTo,
   setNewItemAssignedTo,
+  newItemResponseTime = 0,
+  setNewItemResponseTime,
   handleManagementAction,
   masterUsers,
   adminUsers,
@@ -135,6 +139,11 @@ export const SettingsModal = React.memo(({
   const [editingAdminUser, setEditingAdminUser] = React.useState<any | null>(null);
   const [adminUserNewPassword, setAdminUserNewPassword] = React.useState('');
   const [myNewPassword, setMyNewPassword] = React.useState('');
+  
+  const [editingCategoryId, setEditingCategoryId] = React.useState<number | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = React.useState('');
+  const [editingCategoryResponseTime, setEditingCategoryResponseTime] = React.useState<number>(0);
+  const [editingCategoryAssignedTo, setEditingCategoryAssignedTo] = React.useState('');
 
   const handleUpdateMyPassword = async () => {
     if (!myNewPassword.trim()) {
@@ -1503,6 +1512,18 @@ export const SettingsModal = React.memo(({
                             />
                           </div>
                           <div className="flex gap-2 items-center">
+                            <input 
+                              type="number"
+                              min="0"
+                              value={newItemResponseTime === 0 ? '' : newItemResponseTime}
+                              onChange={e => setNewItemResponseTime && setNewItemResponseTime(e.target.value === '' ? 0 : parseInt(e.target.value, 10))}
+                              placeholder="SLA Waktu Respon (Jam)..."
+                              className={`flex-1 border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
+                              title="Target waktu respon (SLA) dalam satuan Jam. Kosongkan atau masukkan 0 untuk Tanpa SLA."
+                            />
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${themeClasses.textMuted}`}>JAM</span>
+                          </div>
+                          <div className="flex gap-2 items-center">
                             <select
                               value={newItemAssignedTo}
                               onChange={e => setNewItemAssignedTo(e.target.value)}
@@ -1526,19 +1547,104 @@ export const SettingsModal = React.memo(({
 
                       <div className="flex flex-wrap gap-2">
                         {Array.isArray(categories) && categories.map(cat => (
-                          <div key={cat.id} className={`flex flex-col gap-1 ${themeClasses.bgSecondary} px-3 py-2 rounded-lg border ${themeClasses.border} group min-w-[120px]`}>
-                            <div className="flex items-center justify-between">
-                              <span className={`text-xs font-bold ${themeClasses.text}`}>{cat.name}</span>
-                              <button type="button" onClick={() => handleManagementAction('cat', 'delete', cat)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Trash2 className="w-3 h-3" />
-                              </button>
+                          editingCategoryId === cat.id ? (
+                            <div key={cat.id} className={`flex flex-col gap-2 ${themeClasses.bgSecondary} px-3 py-2.5 rounded-lg border border-emerald-500 min-w-[180px] max-w-[240px]`}>
+                              <div className="flex flex-col gap-0.5">
+                                <label className={`text-[8px] font-black uppercase tracking-wider ${themeClasses.textMuted}`}>Nama Kategori</label>
+                                <input 
+                                  type="text"
+                                  value={editingCategoryName}
+                                  onChange={e => setEditingCategoryName(e.target.value)}
+                                  className={`w-full border rounded-lg px-2 py-1 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
+                                />
+                              </div>
+                              <div className="flex flex-col gap-0.5">
+                                <label className={`text-[8px] font-black uppercase tracking-wider ${themeClasses.textMuted}`}>SLA Waktu Respon (Jam)</label>
+                                <div className="flex items-center gap-1.5">
+                                  <input 
+                                    type="number"
+                                    min="0"
+                                    value={editingCategoryResponseTime === 0 ? '' : editingCategoryResponseTime}
+                                    onChange={e => setEditingCategoryResponseTime(e.target.value === '' ? 0 : parseInt(e.target.value, 10))}
+                                    className={`flex-1 border rounded-lg px-2 py-1 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
+                                  />
+                                  <span className={`text-[8px] font-black uppercase tracking-wider ${themeClasses.textMuted}`}>JAM</span>
+                                </div>
+                              </div>
+                              <div className="flex flex-col gap-0.5">
+                                <label className={`text-[8px] font-black uppercase tracking-wider ${themeClasses.textMuted}`}>PIC Kategori</label>
+                                <select
+                                  value={editingCategoryAssignedTo}
+                                  onChange={e => setEditingCategoryAssignedTo(e.target.value)}
+                                  className={`w-full border rounded-lg px-2 py-1 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
+                                >
+                                  <option value="">Pilih IT Penanggung Jawab...</option>
+                                  {adminUsers.map(user => (
+                                    <option key={user.id} value={user.username}>{user.full_name} ({user.username})</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="flex gap-2 justify-end pt-1">
+                                <button 
+                                  type="button" 
+                                  onClick={() => setEditingCategoryId(null)} 
+                                  className={`px-2 py-1 rounded text-[9px] font-bold ${isDark ? 'bg-zinc-800 text-zinc-400' : 'bg-slate-100 text-slate-500'} hover:opacity-80`}
+                                >
+                                  Batal
+                                </button>
+                                <button 
+                                  type="button" 
+                                  onClick={() => {
+                                    if (!editingCategoryName.trim()) return;
+                                    handleManagementAction('cat', 'update', {
+                                      id: cat.id,
+                                      name: editingCategoryName.trim(),
+                                      assigned_to: editingCategoryAssignedTo,
+                                      response_time: editingCategoryResponseTime
+                                    });
+                                    setEditingCategoryId(null);
+                                  }} 
+                                  className="bg-emerald-600 text-white px-2 py-1 rounded text-[9px] font-black uppercase tracking-wider hover:bg-emerald-500"
+                                >
+                                  Simpan
+                                </button>
+                              </div>
                             </div>
-                            {cat.assigned_to && (
-                              <span className="text-[9px] font-black text-emerald-500 capitalize tracking-tighter">
-                                PIC: {cat.assigned_to}
-                              </span>
-                            )}
-                          </div>
+                          ) : (
+                            <div key={cat.id} className={`flex flex-col gap-1 ${themeClasses.bgSecondary} px-3 py-2 rounded-lg border ${themeClasses.border} group min-w-[120px]`}>
+                              <div className="flex items-center justify-between gap-2">
+                                <span className={`text-xs font-bold ${themeClasses.text}`}>{cat.name}</span>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button 
+                                    type="button" 
+                                    onClick={() => {
+                                      setEditingCategoryId(cat.id);
+                                      setEditingCategoryName(cat.name);
+                                      setEditingCategoryResponseTime(cat.response_time || 0);
+                                      setEditingCategoryAssignedTo(cat.assigned_to || '');
+                                    }} 
+                                    className="text-blue-500 hover:text-blue-400"
+                                    title="Edit Kategori"
+                                  >
+                                    <Edit3 className="w-3 h-3" />
+                                  </button>
+                                  <button type="button" onClick={() => handleManagementAction('cat', 'delete', cat)} className="text-rose-500 hover:text-rose-400 transition-colors" title="Hapus Kategori">
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="flex flex-col gap-0.5">
+                                {cat.assigned_to && (
+                                  <span className="text-[9px] font-black text-emerald-500 capitalize tracking-tighter">
+                                    PIC: {cat.assigned_to}
+                                  </span>
+                                )}
+                                <span className={`text-[9px] font-bold ${themeClasses.textMuted} tracking-tight`}>
+                                  SLA: {cat.response_time && cat.response_time > 0 ? `${cat.response_time} Jam` : 'Tanpa SLA'}
+                                </span>
+                              </div>
+                            </div>
+                          )
                         ))}
                       </div>
                     </div>

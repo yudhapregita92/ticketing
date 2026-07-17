@@ -40,6 +40,8 @@ export interface IDepartment {
 export interface ICategory {
   id: number;
   name: string;
+  assigned_to?: string;
+  response_time?: number;
 }
 
 export interface IMasterUser {
