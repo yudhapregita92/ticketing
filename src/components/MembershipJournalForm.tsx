@@ -76,7 +76,7 @@ export const MembershipJournalForm: React.FC<MembershipJournalFormProps> = ({
     if (canvas) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.strokeStyle = isDark ? '#ffffff' : '#1e293b';
+        ctx.strokeStyle = '#000000';
         ctx.lineWidth = 3;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
@@ -510,12 +510,12 @@ export const MembershipJournalForm: React.FC<MembershipJournalFormProps> = ({
                   </button>
                 </div>
                 
-                <div className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-inner flex justify-center relative">
+                <div className="bg-slate-200 border border-slate-300 rounded-xl overflow-hidden shadow-inner flex justify-center relative">
                   <canvas
                     ref={canvasRef}
                     width={350}
                     height={160}
-                    className="cursor-crosshair w-full max-w-[350px] bg-slate-950 touch-none block"
+                    className="cursor-crosshair w-full max-w-[350px] bg-slate-200 touch-none block"
                     onMouseDown={startDrawing}
                     onMouseMove={draw}
                     onMouseUp={stopDrawing}

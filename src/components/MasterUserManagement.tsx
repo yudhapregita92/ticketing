@@ -52,6 +52,13 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
   const [masterUserSearch, setMasterUserSearch] = React.useState('');
   const [addingType, setAddingType] = React.useState<'master-user' | null>(null);
 
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 20;
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [masterUserSearch]);
+
   const filteredMasterUsers = React.useMemo(() => {
     if (!Array.isArray(masterUsers)) return [];
     const term = masterUserSearch.toLowerCase().trim();
@@ -64,6 +71,13 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
       (user.kode_piranti || '').toLowerCase().includes(term)
     );
   }, [masterUsers, masterUserSearch]);
+
+  const paginatedMasterUsers = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredMasterUsers.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredMasterUsers, currentPage]);
+
+  const totalPages = Math.ceil(filteredMasterUsers.length / itemsPerPage);
 
   const handleDownloadTemplate = () => {
     const templateData = [
@@ -675,7 +689,7 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
                   </td>
                 </tr>
               ) : (
-                filteredMasterUsers.map(user => (
+                paginatedMasterUsers.map(user => (
                   <tr key={user.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex flex-col">
@@ -783,6 +797,72 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className={`flex items-center justify-between p-4 border-t ${themeClasses.border}`}>
+            <span className={`text-xs ${themeClasses.textMuted}`}>
+              Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredMasterUsers.length)} dari {filteredMasterUsers.length} data
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border cursor-pointer ${
+                  currentPage === 1 
+                    ? `opacity-50 cursor-not-allowed ${themeClasses.bgSecondary} ${themeClasses.textMuted} ${themeClasses.border}` 
+                    : `bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50`
+                }`}
+              >
+                Sebelumnya
+              </button>
+
+              <div className="flex items-center gap-1 mx-2">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum = i + 1;
+                  if (totalPages > 5) {
+                    if (currentPage > 3) {
+                      pageNum = currentPage - 2 + i;
+                      if (pageNum > totalPages) {
+                        pageNum = totalPages - (4 - i);
+                      }
+                    }
+                  }
+                  if (pageNum > totalPages) return null;
+
+                  return (
+                    <button
+                      key={pageNum}
+                      type="button"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-7 h-7 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                        currentPage === pageNum
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : `hover:bg-slate-100 dark:hover:bg-slate-800 ${themeClasses.textMuted}`
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border cursor-pointer ${
+                  currentPage === totalPages 
+                    ? `opacity-50 cursor-not-allowed ${themeClasses.bgSecondary} ${themeClasses.textMuted} ${themeClasses.border}` 
+                    : `bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50`
+                }`}
+              >
+                Selanjutnya
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

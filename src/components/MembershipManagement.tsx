@@ -59,7 +59,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
       if (canvas) {
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          ctx.strokeStyle = isDark ? '#ffffff' : '#1e293b';
+          ctx.strokeStyle = '#000000';
           ctx.lineWidth = 3;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
@@ -1761,12 +1761,12 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                     )}
                   </div>
                   
-                  <div className="relative border border-dashed border-slate-300 dark:border-slate-700 rounded-xl overflow-hidden bg-slate-950">
+                  <div className="relative border border-dashed border-slate-300 rounded-xl overflow-hidden bg-slate-200">
                     <canvas
                       ref={journalCanvasRef}
                       width={448}
                       height={180}
-                      className="w-full h-36 cursor-crosshair block"
+                      className="w-full h-36 cursor-crosshair block bg-slate-200"
                       onMouseDown={startJournalDrawing}
                       onMouseMove={drawJournal}
                       onMouseUp={stopJournalDrawing}
@@ -1776,7 +1776,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                       onTouchEnd={stopJournalDrawing}
                     />
                     {!hasJournalSignature && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-slate-500/80 text-xs">
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-slate-600 text-xs">
                         Gambar tanda tangan di sini (Touch / Drag Mouse)
                       </div>
                     )}
