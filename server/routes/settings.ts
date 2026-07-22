@@ -2,6 +2,7 @@ import express from "express";
 import db from "../db.ts";
 import { asyncHandler } from "../utils/asyncHandler.ts";
 import { AppError } from "../utils/errors.ts";
+import { migrateMediaStorage } from "../utils/fileStorage.ts";
 
 const router = express.Router();
 
@@ -34,6 +35,13 @@ router.post("/api/settings", asyncHandler(async (req, res) => {
     update.run(key, typeof value === 'object' ? JSON.stringify(value) : (value !== null && value !== undefined ? String(value) : null));
   });
   res.json({ success: true });
+}));
+
+router.post("/api/settings/migrate-media", asyncHandler(async (req, res) => {
+  const { mode } = req.body; // 'local' or 'db'
+  const targetMode = mode === 'local' ? 'local' : 'db';
+  const result = migrateMediaStorage(targetMode);
+  res.json(result);
 }));
 
 router.get("/api/branding/logo", asyncHandler(async (req, res) => {

@@ -248,6 +248,13 @@ export const api = {
     body: JSON.stringify(data)
   }).then(handleResponse),
 
+  // Settings & Media Migration
+  migrateMedia: (mode: 'local' | 'db') => fetch('/api/settings/migrate-media', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode })
+  }).then(handleResponse),
+
   // Personal Password Change
   changePassword: (data: { username: string; newPassword: string }) => fetch('/api/change-password', {
     method: 'POST',

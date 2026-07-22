@@ -5,6 +5,7 @@ import { Server } from "socket.io";
 import { asyncHandler } from "../utils/asyncHandler.ts";
 import type { Ticket, User, TicketLog } from "../types.ts";
 import { AppError } from "../utils/errors.ts";
+import { saveMediaFile } from "../utils/fileStorage.ts";
 
 export default function(io: Server) {
   const router = express.Router();
@@ -109,9 +110,12 @@ export default function(io: Server) {
       assignedTo = catInfo.assigned_to;
     }
 
+    const savedPhoto = saveMediaFile(photo, { entityType: 'ticket_photo', identifier: ticketNo, name });
+    const savedFacePhoto = saveMediaFile(face_photo, { entityType: 'ticket_face_photo', identifier: ticketNo, name });
+
     const info = db.prepare(
       "INSERT INTO tickets (ticket_no, name, department, phone, category, description, photo, face_photo, created_at, ip_address, user_agent, latitude, longitude, assigned_to, status, priority, employee_index, device_type, pc_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-    ).run(ticketNo, name, department, finalPhone, category, description || "", photo || null, face_photo || null, utcNow.toISOString(), String(ip), String(userAgent), latitude || null, longitude || null, assignedTo, 'New', priority || 'Medium', employee_index || null, device_type || null, pc_code || null);
+    ).run(ticketNo, name, department, finalPhone, category, description || "", savedPhoto || null, savedFacePhoto || null, utcNow.toISOString(), String(ip), String(userAgent), latitude || null, longitude || null, assignedTo, 'New', priority || 'Medium', employee_index || null, device_type || null, pc_code || null);
     
     const newTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(info.lastInsertRowid) as Ticket;
     

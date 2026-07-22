@@ -2,6 +2,7 @@ import express from "express";
 import multer from "multer";
 import xlsx from "xlsx";
 import db from "../db.ts";
+import { saveMediaFile } from "../utils/fileStorage.ts";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -55,9 +56,11 @@ router.get("/:id/logs", (req, res) => {
 router.post("/", (req, res) => {
   const { kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, foto, nik_ktp, no_hp, photo_scale, photo_offset_x, photo_offset_y, keterangan_update } = req.body;
   try {
+    const savedFoto = saveMediaFile(foto, { entityType: 'member_photo', identifier: kode_lokal || indek_kdk || barcode || '', name: nama });
+
     const info = db.prepare(
       "INSERT INTO memberships (kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, foto, nik_ktp, no_hp, photo_scale, photo_offset_x, photo_offset_y) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-    ).run(kode_lokal || null, indek_kdk || null, indek_ggf || null, nama, bagian || null, barcode || null, foto || null, nik_ktp || null, no_hp || null, photo_scale !== undefined ? photo_scale : 1.0, photo_offset_x !== undefined ? photo_offset_x : 50.0, photo_offset_y !== undefined ? photo_offset_y : 50.0);
+    ).run(kode_lokal || null, indek_kdk || null, indek_ggf || null, nama, bagian || null, barcode || null, savedFoto || null, nik_ktp || null, no_hp || null, photo_scale !== undefined ? photo_scale : 1.0, photo_offset_x !== undefined ? photo_offset_x : 50.0, photo_offset_y !== undefined ? photo_offset_y : 50.0);
     
     const newId = info.lastInsertRowid;
     
@@ -76,9 +79,11 @@ router.put("/:id", (req, res) => {
   const { id } = req.params;
   const { kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, foto, nik_ktp, no_hp, photo_scale, photo_offset_x, photo_offset_y, keterangan_update } = req.body;
   try {
+    const savedFoto = saveMediaFile(foto, { entityType: 'member_photo', identifier: kode_lokal || indek_kdk || id, name: nama });
+
     db.prepare(
       "UPDATE memberships SET kode_lokal = ?, indek_kdk = ?, indek_ggf = ?, nama = ?, bagian = ?, barcode = ?, foto = ?, nik_ktp = ?, no_hp = ?, photo_scale = ?, photo_offset_x = ?, photo_offset_y = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
-    ).run(kode_lokal || null, indek_kdk || null, indek_ggf || null, nama, bagian || null, barcode || null, foto || null, nik_ktp || null, no_hp || null, photo_scale !== undefined ? photo_scale : 1.0, photo_offset_x !== undefined ? photo_offset_x : 50.0, photo_offset_y !== undefined ? photo_offset_y : 50.0, id);
+    ).run(kode_lokal || null, indek_kdk || null, indek_ggf || null, nama, bagian || null, barcode || null, savedFoto || null, nik_ktp || null, no_hp || null, photo_scale !== undefined ? photo_scale : 1.0, photo_offset_x !== undefined ? photo_offset_x : 50.0, photo_offset_y !== undefined ? photo_offset_y : 50.0, id);
     
     if (keterangan_update) {
       db.prepare("INSERT INTO membership_logs (membership_id, keterangan) VALUES (?, ?)").run(id, keterangan_update);
@@ -294,6 +299,8 @@ router.post("/journals/submit", (req: any, res: any) => {
     return res.status(400).json({ error: "Nama wajib diisi" });
   }
   try {
+    const savedSignature = saveMediaFile(signature, { entityType: 'journal_signature', identifier: kode_lokal || indek_ggf || member_id || '', name: nama });
+
     let lastInsertId: any = null;
     const processSubmit = db.transaction(() => {
       const info = db.prepare(
@@ -305,7 +312,7 @@ router.post("/journals/submit", (req: any, res: any) => {
         indek_ggf || null,
         bagian || null,
         barcode || null,
-        signature || null,
+        savedSignature || null,
         keterangan || null
       );
       lastInsertId = info.lastInsertRowid;
@@ -333,6 +340,8 @@ router.put("/journals/:id", (req: any, res: any) => {
     return res.status(400).json({ error: "Nama wajib diisi" });
   }
   try {
+    const savedSignature = saveMediaFile(signature, { entityType: 'journal_signature', identifier: kode_lokal || indek_ggf || member_id || '', name: nama });
+
     db.prepare(
       "UPDATE membership_journals SET member_id = ?, nama = ?, kode_lokal = ?, indek_ggf = ?, bagian = ?, signature = ?, keterangan = ? WHERE id = ?"
     ).run(
@@ -341,7 +350,7 @@ router.put("/journals/:id", (req: any, res: any) => {
       kode_lokal || null,
       indek_ggf || null,
       bagian || null,
-      signature || null,
+      savedSignature || null,
       keterangan || null,
       req.params.id
     );

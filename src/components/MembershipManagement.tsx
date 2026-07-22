@@ -854,6 +854,13 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
       const bHasPhoto = !!b.foto;
       if (aHasPhoto && !bHasPhoto) return -1;
       if (!aHasPhoto && bHasPhoto) return 1;
+      
+      if (aHasPhoto && bHasPhoto) {
+        const dateA = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+        const dateB = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+        return dateB - dateA;
+      }
+      
       return 0;
     });
   }, [memberships, search]);

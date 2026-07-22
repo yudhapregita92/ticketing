@@ -380,23 +380,25 @@ export default function App() {
   }, [viewMode]);
 
   React.useEffect(() => {
-    if (currentUser) {
+    const activeUser = currentUser || adminUser;
+    if (activeUser) {
       setFormData(prev => ({
         ...prev,
-        name: currentUser.full_name || '',
-        department: currentUser.department || '',
-        phone: currentUser.phone || ''
+        name: activeUser.full_name || '',
+        department: activeUser.department || activeUser.bagian || activeUser.role || '',
+        phone: activeUser.phone || ''
       }));
     }
-  }, [currentUser]);
+  }, [currentUser, adminUser]);
 
   const clearDraft = () => {
     safeRemoveItem('ticket_draft');
+    const activeUser = currentUser || adminUser;
     setFormData({
-      name: currentUser ? currentUser.full_name : '',
-      department: currentUser ? currentUser.department : '',
+      name: activeUser ? activeUser.full_name : '',
+      department: activeUser ? (activeUser.department || activeUser.bagian || activeUser.role || '') : '',
       category: '',
-      phone: currentUser ? currentUser.phone : '',
+      phone: activeUser ? activeUser.phone : '',
       priority: 'Medium',
       description: '',
       photo: '',
@@ -1323,6 +1325,12 @@ export default function App() {
 
   const isPublicJurnalRoute = location.pathname === '/jurnal';
 
+  const modalCurrentUser = React.useMemo(() => {
+    if (currentUser) return currentUser;
+    if (adminUser) return { ...adminUser, department: adminUser.role, employee_index: adminUser.username };
+    return null;
+  }, [currentUser, adminUser]);
+
   if (isPublicJurnalRoute) {
     return (
       <div className={`min-h-screen font-sans transition-colors duration-300 ${themeClasses.bg} ${themeClasses.selection}`} style={{ '--primary': primaryColor } as any}>
@@ -1921,7 +1929,7 @@ export default function App() {
             isSubmitting={submitting}
             primaryColor={primaryColor}
             masterUsers={masterUsers}
-            currentUser={currentUser}
+            currentUser={modalCurrentUser}
           />
         )}
 

@@ -6,6 +6,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { initDb } from "./server/db.ts";
 import { globalErrorHandler } from "./server/utils/errors.ts";
+import { getUploadsDirectory } from "./server/utils/fileStorage.ts";
 
 // Import routes
 import authRouter from "./server/routes/auth.ts";
@@ -45,6 +46,12 @@ async function startServer() {
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
   app.use(cors());
+
+  // Serve uploads directory statically
+  app.use('/uploads', (req, res, next) => {
+    const uploadDir = getUploadsDirectory();
+    express.static(uploadDir)(req, res, next);
+  });
 
   // Request logging middleware
   app.use((req, res, next) => {

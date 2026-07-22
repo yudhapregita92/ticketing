@@ -25,7 +25,9 @@ import {
   Printer,
   Key,
   Sparkles,
-  Clock
+  Clock,
+  HardDrive,
+  Folder
 } from 'lucide-react';
 
 import * as xlsx from 'xlsx';
@@ -144,6 +146,29 @@ export const SettingsModal = React.memo(({
   const [editingCategoryName, setEditingCategoryName] = React.useState('');
   const [editingCategoryResponseTime, setEditingCategoryResponseTime] = React.useState<number>(0);
   const [editingCategoryAssignedTo, setEditingCategoryAssignedTo] = React.useState('');
+
+  const [isMigrating, setIsMigrating] = React.useState(false);
+
+  const handleMigrateMedia = async (targetMode: 'local' | 'db') => {
+    const confirmText = targetMode === 'local' 
+      ? "Apakah Anda yakin ingin memindahkan seluruh foto & TTD eksisting dari DB ke Folder Disk Server?"
+      : "Apakah Anda yakin ingin mengkonversi seluruh foto & TTD dari Folder Disk ke DB Base64?";
+    if (!window.confirm(confirmText)) return;
+
+    setIsMigrating(true);
+    try {
+      const res = await api.migrateMedia(targetMode);
+      if (res.success) {
+        alert(res.message);
+      } else {
+        alert("Gagal migrasi: " + res.message);
+      }
+    } catch (err: any) {
+      alert("Terjadi kesalahan saat migrasi: " + err.message);
+    } finally {
+      setIsMigrating(false);
+    }
+  };
 
   const handleUpdateMyPassword = async () => {
     if (!myNewPassword.trim()) {
@@ -1376,10 +1401,10 @@ export const SettingsModal = React.memo(({
                   </div>
 
                   <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Otomatis Hapus Foto</label>
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Otomatis Hapus Foto Tiket</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label className={`text-[9px] font-bold ml-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Durasi Penyimpanan Foto</label>
+                        <label className={`text-[9px] font-bold ml-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Durasi Penyimpanan Foto Tiket</label>
                         <select 
                           className={`w-full px-4 py-2.5 rounded-xl border text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                           value={appSettings.photo_cleanup_duration || '24'}
@@ -1391,6 +1416,77 @@ export const SettingsModal = React.memo(({
                           <option value="168">1 Minggu (7 Hari)</option>
                         </select>
                         <p className="text-[9px] text-slate-400 italic ml-1">Foto tiket akan dihapus otomatis setelah durasi ini terlewati.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Opsi & Lokasi Penyimpanan Media (Foto & TTD) */}
+                  <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Penyimpanan Media & Foto (Database vs Disk Server)</label>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium ml-1 mt-0.5">Pilih lokasi penyimpanan foto member, tanda tangan digital, dan foto tiket.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Opsi Mode */}
+                      <div className="space-y-1.5">
+                        <label className={`text-[9px] font-bold ml-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Lokasi Storage Media</label>
+                        <select 
+                          className={`w-full px-4 py-2.5 rounded-xl border text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                          value={appSettings.file_storage_mode || 'db'}
+                          onChange={e => setAppSettings({...appSettings, file_storage_mode: e.target.value})}
+                        >
+                          <option value="db">Database SQLite (Base64 Inline)</option>
+                          <option value="local">Folder Disk Windows / Lokal Server</option>
+                        </select>
+                        <p className="text-[9px] text-slate-400 italic ml-1">
+                          {appSettings.file_storage_mode === 'local' 
+                            ? 'Media disimpan ke folder fisik di server Windows. Nama file otomatis disesuaikan dengan nama anggota/tiket.'
+                            : 'Media disimpan langsung di dalam database dalam format Base64.'}
+                        </p>
+                      </div>
+
+                      {/* Lokasi Folder Path */}
+                      {appSettings.file_storage_mode === 'local' && (
+                        <div className="space-y-1.5">
+                          <label className={`text-[9px] font-bold ml-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Path Folder Server Windows</label>
+                          <input 
+                            type="text"
+                            placeholder="uploads (atau contoh: C:\AppUploads)"
+                            className={`w-full px-4 py-2.5 rounded-xl border text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                            value={appSettings.file_storage_path || 'uploads'}
+                            onChange={e => setAppSettings({...appSettings, file_storage_path: e.target.value})}
+                          />
+                          <p className="text-[9px] text-slate-400 italic ml-1">Gunakan 'uploads' atau path absolut seperti C:/AppUploads</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Tombol Migrasi Data Eksisting */}
+                    <div className={`p-4 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                      <div>
+                        <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200">Migrasi Media Eksisting</h5>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Konversi foto & TTD yang sudah ada di database ke folder disk server atau sebaliknya secara otomatis.</p>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <button
+                          type="button"
+                          disabled={isMigrating}
+                          onClick={() => handleMigrateMedia('local')}
+                          className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-[10px] font-bold shadow-xs transition-all flex items-center gap-1.5"
+                        >
+                          {isMigrating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <HardDrive className="w-3.5 h-3.5" />}
+                          Migrasi ke Disk
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isMigrating}
+                          onClick={() => handleMigrateMedia('db')}
+                          className="px-3 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg text-[10px] font-bold shadow-xs transition-all flex items-center gap-1.5"
+                        >
+                          {isMigrating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />}
+                          Migrasi ke DB
+                        </button>
                       </div>
                     </div>
                   </div>
