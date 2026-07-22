@@ -93,6 +93,10 @@ export interface ISettings {
   card_layout?: string;
   sla_critical_hours?: number;
   sla_delayed_hours?: number;
+  yudha_auto_respond_enabled?: boolean | string;
+  yudha_auto_respond_categories?: string | string[];
+  yudha_auto_respond_delay?: number;
+  yudha_auto_respond_assignee?: string;
 }
 
 export interface IAdminUser extends IUser {}

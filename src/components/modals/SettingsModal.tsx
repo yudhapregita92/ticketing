@@ -27,7 +27,8 @@ import {
   Sparkles,
   Clock,
   HardDrive,
-  Folder
+  Folder,
+  Zap
 } from 'lucide-react';
 
 import * as xlsx from 'xlsx';
@@ -41,8 +42,8 @@ interface SettingsModalProps {
   inline?: boolean;
   isDark: boolean;
   themeClasses: any;
-  settingsTab: 'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla';
-  setSettingsTab: (tab: 'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla') => void;
+  settingsTab: 'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond';
+  setSettingsTab: (tab: 'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond') => void;
   appSettings: any;
   setAppSettings: (settings: any) => void;
   LOGO_OPTIONS: any[];
@@ -712,6 +713,13 @@ export const SettingsModal = React.memo(({
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'sla' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Clock className="w-4 h-4" /> Waktu SLA
+            </button>
+            <button 
+              type="button"
+              onClick={() => setSettingsTab('auto_respond')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'auto_respond' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+            >
+              <Zap className="w-4 h-4 text-purple-400" /> Auto Respond (Yudha)
             </button>
             <button 
               onClick={() => setSettingsTab('panduan')}
@@ -2224,6 +2232,218 @@ export const SettingsModal = React.memo(({
                       </div>
                     </div>
 
+                  </div>
+                </div>
+              )}
+
+              {settingsTab === 'auto_respond' && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+                    <div>
+                      <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-purple-500" /> Auto-Respond Tiket (Khusus Admin Yudha)
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Otomatis mengubah tiket berstatus "Baru" menjadi "Progres" dan menetapkannya ke Petugas IT
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Toggle Sakelar On/Off */}
+                  <div className={`p-5 rounded-2xl border ${
+                    (appSettings.yudha_auto_respond_enabled === true || appSettings.yudha_auto_respond_enabled === 'true')
+                      ? 'bg-purple-500/10 border-purple-500/30'
+                      : 'bg-slate-100 dark:bg-zinc-900 border-slate-200 dark:border-zinc-800'
+                  } transition-all`}>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-black uppercase tracking-wider ${
+                            (appSettings.yudha_auto_respond_enabled === true || appSettings.yudha_auto_respond_enabled === 'true')
+                              ? 'text-purple-600 dark:text-purple-400'
+                              : 'text-slate-500'
+                          }`}>
+                            Status Fitur Auto-Respond
+                          </span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            (appSettings.yudha_auto_respond_enabled === true || appSettings.yudha_auto_respond_enabled === 'true')
+                              ? 'bg-emerald-500 text-white'
+                              : 'bg-slate-300 dark:bg-zinc-700 text-slate-600 dark:text-slate-300'
+                          }`}>
+                            {(appSettings.yudha_auto_respond_enabled === true || appSettings.yudha_auto_respond_enabled === 'true') ? 'AKTIF' : 'NON-AKTIF'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Matikan sakelar ini jika Anda sedang tidak ada sinyal / offline agar tiket tidak tersambar otomatis.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentVal = appSettings.yudha_auto_respond_enabled === true || appSettings.yudha_auto_respond_enabled === 'true';
+                          setAppSettings({
+                            ...appSettings,
+                            yudha_auto_respond_enabled: !currentVal
+                          });
+                        }}
+                        className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                          (appSettings.yudha_auto_respond_enabled === true || appSettings.yudha_auto_respond_enabled === 'true')
+                            ? 'bg-purple-600'
+                            : 'bg-slate-300 dark:bg-zinc-700'
+                        }`}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                            (appSettings.yudha_auto_respond_enabled === true || appSettings.yudha_auto_respond_enabled === 'true')
+                              ? 'translate-x-5'
+                              : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Setting Jeda Waktu (5 min, 7 min, 10 min, Instant) */}
+                  <div className="space-y-3">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-purple-500" /> Jeda Waktu Auto-Respond Tiket:
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {[
+                        { label: 'Langsung (0 min)', val: 0 },
+                        { label: '5 Menit', val: 5 },
+                        { label: '7 Menit', val: 7 },
+                        { label: '10 Menit', val: 10 }
+                      ].map((opt) => {
+                        const currentDelay = Number(appSettings.yudha_auto_respond_delay ?? 5);
+                        const isSelected = currentDelay === opt.val;
+                        return (
+                          <button
+                            key={opt.val}
+                            type="button"
+                            onClick={() => {
+                              setAppSettings({
+                                ...appSettings,
+                                yudha_auto_respond_delay: opt.val
+                              });
+                            }}
+                            className={`px-3 py-3 rounded-xl border text-xs font-black transition-all flex flex-col items-center justify-center gap-1 ${
+                              isSelected
+                                ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-900/20'
+                                : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-600 dark:text-slate-300 hover:border-purple-400`
+                            }`}
+                          >
+                            <span>{opt.label}</span>
+                            {isSelected && <span className="text-[9px] opacity-80 uppercase tracking-widest">Terpilih</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Setting Nama Assignee */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Nama Petugas IT Penerima Tiket:
+                    </label>
+                    <input
+                      type="text"
+                      value={appSettings.yudha_auto_respond_assignee || 'yudha'}
+                      onChange={(e) => setAppSettings({ ...appSettings, yudha_auto_respond_assignee: e.target.value })}
+                      placeholder="Contoh: yudha"
+                      className={`w-full px-4 py-2.5 rounded-xl border text-xs font-semibold ${themeClasses.bgSecondary} ${themeClasses.border} focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                    />
+                    <p className="text-[10px] text-slate-400">
+                      Tiket yang terkena auto respond akan otomatis di-assign ke nama ini.
+                    </p>
+                  </div>
+
+                  {/* Setting Kategori Tiket */}
+                  <div className="space-y-3">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                      <span>Kategori Tiket Ditembak (Target Categories):</span>
+                      <span className="text-[10px] font-normal text-slate-400">Pilih kategori mana yang di-auto-respond</span>
+                    </label>
+
+                    <div className="flex flex-wrap gap-2">
+                      {(() => {
+                        let selectedCats: string[] = [];
+                        if (Array.isArray(appSettings.yudha_auto_respond_categories)) {
+                          selectedCats = appSettings.yudha_auto_respond_categories;
+                        } else if (typeof appSettings.yudha_auto_respond_categories === 'string' && appSettings.yudha_auto_respond_categories.trim()) {
+                          try { selectedCats = JSON.parse(appSettings.yudha_auto_respond_categories); } catch { selectedCats = appSettings.yudha_auto_respond_categories.split(',').map(s=>s.trim()); }
+                        }
+                        
+                        const isAll = selectedCats.length === 0 || selectedCats.includes('ALL');
+
+                        const toggleCat = (catName: string) => {
+                          let nextCats: string[] = [...selectedCats];
+                          if (catName === 'ALL') {
+                            nextCats = ['ALL'];
+                          } else {
+                            nextCats = nextCats.filter(c => c !== 'ALL');
+                            if (nextCats.includes(catName)) {
+                              nextCats = nextCats.filter(c => c !== catName);
+                            } else {
+                              nextCats.push(catName);
+                            }
+                            if (nextCats.length === 0) nextCats = ['ALL'];
+                          }
+                          setAppSettings({
+                            ...appSettings,
+                            yudha_auto_respond_categories: nextCats
+                          });
+                        };
+
+                        return (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => toggleCat('ALL')}
+                              className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
+                                isAll
+                                  ? 'bg-purple-600 text-white border-purple-600'
+                                  : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-zinc-700'
+                              }`}
+                            >
+                              Semua Kategori (ALL)
+                            </button>
+                            {Array.isArray(categories) && categories.map((cat: any) => {
+                              const catName = typeof cat === 'string' ? cat : cat.name;
+                              const isChecked = !isAll && selectedCats.includes(catName);
+                              return (
+                                <button
+                                  key={cat.id || catName}
+                                  type="button"
+                                  onClick={() => toggleCat(catName)}
+                                  className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
+                                    isChecked
+                                      ? 'bg-purple-600 text-white border-purple-600'
+                                      : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-zinc-700'
+                                  }`}
+                                >
+                                  {catName}
+                                </button>
+                              );
+                            })}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Banner Informasi */}
+                  <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-700 dark:text-purple-300 space-y-1">
+                    <p className="font-bold flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5" /> Cara Kerja Auto-Respond Yudha:
+                    </p>
+                    <ul className="list-disc list-inside text-[11px] space-y-1 text-slate-600 dark:text-slate-300">
+                      <li>Setiap ada tiket baru masuk pada kategori pilihan, server memantau umur tiket.</li>
+                      <li>Setelah mencapai jeda {appSettings.yudha_auto_respond_delay ?? 5} menit, status tiket otomatis berubah menjadi <strong className="text-purple-600 dark:text-purple-400 font-mono">Progres</strong> dan di-assign ke <strong className="font-mono">{appSettings.yudha_auto_respond_assignee || 'yudha'}</strong>.</li>
+                      <li>Jika jeda di-set "Langsung (0 min)", respon dilakukan instan saat tiket dibuat.</li>
+                      <li>Waktu respon (<code className="font-mono">responded_at</code>) terisi otomatis secara rinci.</li>
+                    </ul>
                   </div>
                 </div>
               )}

@@ -280,7 +280,7 @@ export default function App() {
   const [loginData, setLoginData] = useState({ username: '', password: '' });
   const [showSettings, setShowSettings] = useState(false); // Toggle modal pengaturan aplikasi
   const [showImageManager, setShowImageManager] = useState(false); // Toggle modal manajemen gambar
-  const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla'>('general');
+  const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond'>('general');
   const [showResetConfirm, setShowResetConfirm] = useState(false); // Toggle konfirmasi reset data
   const [showTakeoverConfirm, setShowTakeoverConfirm] = useState<{id: number, type: 'takeover' | 'reassign', targetUser?: string} | null>(null);
   const [showDistribution, setShowDistribution] = useState(false); // Toggle distribusi masalah
@@ -910,7 +910,10 @@ export default function App() {
           : appSettings.telegram_chat_ids,
         panduan_guides: Array.isArray(appSettings.panduan_guides)
           ? JSON.stringify(appSettings.panduan_guides)
-          : appSettings.panduan_guides
+          : appSettings.panduan_guides,
+        yudha_auto_respond_categories: Array.isArray(appSettings.yudha_auto_respond_categories)
+          ? JSON.stringify(appSettings.yudha_auto_respond_categories)
+          : appSettings.yudha_auto_respond_categories
       });
 
       if (data) {

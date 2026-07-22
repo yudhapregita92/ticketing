@@ -151,7 +151,15 @@ export default function(io: Server) {
 
     res.status(201).json(newTicket);
     io.emit("ticket_created", newTicket);
+
+    // Trigger auto-respond check immediately
+    processAutoRespond(io);
   }));
+
+  // Background auto-respond interval every 10 seconds
+  setInterval(() => {
+    processAutoRespond(io);
+  }, 10000);
 
   router.patch("/:id", asyncHandler(async (req: any, res: any) => {
     await handleTicketUpdate(req, res, io);
@@ -253,4 +261,66 @@ async function handleTicketUpdate(req: any, res: any, io: Server) {
 
   res.json({ success: true });
   io.emit("ticket_updated", { id, status: newStatus, assigned_to: newAssignedTo, priority: newPriority });
+}
+
+export function processAutoRespond(io: Server) {
+  try {
+    const settingsRows = db.prepare("SELECT key, value FROM settings WHERE key LIKE 'yudha_auto_respond_%'").all() as { key: string, value: string }[];
+    const settingsMap: Record<string, any> = {};
+    settingsRows.forEach(r => {
+      try { settingsMap[r.key] = JSON.parse(r.value); } catch { settingsMap[r.key] = r.value; }
+    });
+
+    const isEnabled = String(settingsMap.yudha_auto_respond_enabled) === 'true';
+    if (!isEnabled) return;
+
+    let targetCategories: string[] = [];
+    if (Array.isArray(settingsMap.yudha_auto_respond_categories)) {
+      targetCategories = settingsMap.yudha_auto_respond_categories;
+    } else if (typeof settingsMap.yudha_auto_respond_categories === 'string' && settingsMap.yudha_auto_respond_categories.trim()) {
+      try {
+        targetCategories = JSON.parse(settingsMap.yudha_auto_respond_categories);
+      } catch {
+        targetCategories = settingsMap.yudha_auto_respond_categories.split(',').map(s => s.trim());
+      }
+    }
+
+    const delayMins = parseInt(settingsMap.yudha_auto_respond_delay ?? '5', 10) || 0;
+    const assignee = settingsMap.yudha_auto_respond_assignee || 'yudha';
+
+    // Query tickets with status 'New' or 'Baru'
+    const newTickets = db.prepare("SELECT * FROM tickets WHERE status IN ('New', 'Baru')").all() as Ticket[];
+    if (!newTickets || newTickets.length === 0) return;
+
+    const now = new Date();
+
+    for (const ticket of newTickets) {
+      // Check category match
+      const isAll = targetCategories.length === 0 || targetCategories.includes('ALL');
+      const categoryMatches = isAll || targetCategories.includes(ticket.category);
+      if (!categoryMatches) continue;
+
+      // Calculate ticket age in minutes
+      const rawDate = ticket.created_at || '';
+      const createdAt = new Date(rawDate.includes('T') ? rawDate : rawDate.replace(' ', 'T'));
+      const ageMins = (now.getTime() - createdAt.getTime()) / (1000 * 60);
+
+      if (ageMins >= delayMins) {
+        // Auto respond this ticket to 'In Progress'
+        const respondedAt = now.toISOString();
+        db.prepare("UPDATE tickets SET status = 'In Progress', assigned_to = ?, responded_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+          .run(assignee, respondedAt, ticket.id);
+
+        // Add ticket log
+        db.prepare("INSERT INTO ticket_logs (ticket_id, action, note, performed_by) VALUES (?, ?, ?, ?)")
+          .run(ticket.id, 'Auto Respond', `Sistem otomatis merespon tiket ke status Progres (${delayMins} menit auto-respond)`, `System (${assignee})`);
+
+        const updatedTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(ticket.id) as Ticket;
+        console.log(`[AUTO-RESPOND] Ticket #${updatedTicket.ticket_no || updatedTicket.id} auto-responded for ${assignee} (age: ${Math.round(ageMins)}m)`);
+        io.emit("ticket_updated", updatedTicket);
+      }
+    }
+  } catch (err) {
+    console.error('Error in processAutoRespond:', err);
+  }
 }

@@ -37,8 +37,25 @@ const calculateDurationMins = (startStr?: string | null, endStr?: string | null)
   if (!startStr || !endStr) return null;
   const start = new Date(startStr.includes('T') ? startStr : startStr.replace(' ', 'T')).getTime();
   const end = new Date(endStr.includes('T') ? endStr : endStr.replace(' ', 'T')).getTime();
-  if (isNaN(start) || isNaN(end) || end < start) return null;
+  if (isNaN(start) || isNaN(end)) return null;
+  if (end < start) return 0;
   return Math.round((end - start) / (1000 * 60));
+};
+
+// Option C: Helper to get effective start time for Resolution SLA (active work time)
+const getWorkStartTime = (t: ITicket, respondedTime?: string | null): string | null => {
+  if (t.estimated_start_at) {
+    return t.estimated_start_at;
+  }
+  return respondedTime || t.created_at;
+};
+
+// Option C: Helper to get effective start time for Total Resolution Time
+const getTotalStartTime = (t: ITicket): string => {
+  if (t.estimated_start_at) {
+    return t.estimated_start_at;
+  }
+  return t.created_at;
 };
 
 // Utility to format duration in minutes to human readable string (Indonesian)
@@ -228,6 +245,8 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
 
       const respondedTime = t.responded_at || (t.status !== 'New' && t.status !== 'Baru' ? t.updated_at : null);
       const resolvedTime = t.resolved_at || (isCompleted ? t.updated_at : null);
+      const workStart = getWorkStartTime(t, respondedTime);
+      const totalStart = getTotalStartTime(t);
 
       // Response SLA: created_at -> respondedTime
       const respTime = calculateDurationMins(t.created_at, respondedTime);
@@ -236,15 +255,15 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
         countResponse++;
       }
 
-      // Resolution SLA: respondedTime -> resolvedTime
-      const resTime = calculateDurationMins(respondedTime || t.created_at, resolvedTime);
+      // Resolution SLA: workStart -> resolvedTime (Option C: uses scheduled start if present)
+      const resTime = calculateDurationMins(workStart, resolvedTime);
       if (resTime !== null && isCompleted) {
         totalResolutionMins += resTime;
         countResolution++;
       }
 
-      // Total Resolution Time: created_at -> resolvedTime
-      const fullTime = calculateDurationMins(t.created_at, resolvedTime);
+      // Total Resolution Time: totalStart -> resolvedTime (Option C: uses scheduled start if present)
+      const fullTime = calculateDurationMins(totalStart, resolvedTime);
       if (fullTime !== null && isCompleted) {
         totalFullMins += fullTime;
         countFull++;
@@ -260,7 +279,8 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
       const isCompleted = t.status === 'Completed' || t.status === 'Resolved' || t.status === 'Selesai';
       if (!isCompleted) return false;
       const resolvedTime = t.resolved_at || t.updated_at;
-      const fullTime = calculateDurationMins(t.created_at, resolvedTime);
+      const totalStart = getTotalStartTime(t);
+      const fullTime = calculateDurationMins(totalStart, resolvedTime);
       return fullTime !== null && fullTime <= 1440; // 24 hours target
     }).length;
 
@@ -320,14 +340,16 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
 
       const respondedTime = t.responded_at || (t.status !== 'New' && t.status !== 'Baru' ? t.updated_at : null);
       const resolvedTime = t.resolved_at || (isCompleted ? t.updated_at : null);
+      const workStart = getWorkStartTime(t, respondedTime);
+      const totalStart = getTotalStartTime(t);
 
       const resp = calculateDurationMins(t.created_at, respondedTime);
       if (resp !== null) st.respMins.push(resp);
 
-      const res = calculateDurationMins(respondedTime || t.created_at, resolvedTime);
+      const res = calculateDurationMins(workStart, resolvedTime);
       if (res !== null && isCompleted) st.resMins.push(res);
 
-      const full = calculateDurationMins(t.created_at, resolvedTime);
+      const full = calculateDurationMins(totalStart, resolvedTime);
       if (full !== null && isCompleted) st.fullMins.push(full);
     });
 
@@ -354,10 +376,12 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
       const isCompleted = t.status === 'Completed' || t.status === 'Resolved' || t.status === 'Selesai';
       const respondedTime = t.responded_at || (t.status !== 'New' && t.status !== 'Baru' ? t.updated_at : null);
       const resolvedTime = t.resolved_at || (isCompleted ? t.updated_at : null);
+      const workStart = getWorkStartTime(t, respondedTime);
+      const totalStart = getTotalStartTime(t);
 
       const respMins = calculateDurationMins(t.created_at, respondedTime);
-      const resMins = isCompleted ? calculateDurationMins(respondedTime || t.created_at, resolvedTime) : null;
-      const fullMins = isCompleted ? calculateDurationMins(t.created_at, resolvedTime) : null;
+      const resMins = isCompleted ? calculateDurationMins(workStart, resolvedTime) : null;
+      const fullMins = isCompleted ? calculateDurationMins(totalStart, resolvedTime) : null;
 
       return [
         `"${t.ticket_no || t.id}"`,
@@ -780,10 +804,12 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
                 const isCompleted = ticket.status === 'Completed' || ticket.status === 'Resolved' || ticket.status === 'Selesai';
                 const respondedTime = ticket.responded_at || (ticket.status !== 'New' && ticket.status !== 'Baru' ? ticket.updated_at : null);
                 const resolvedTime = ticket.resolved_at || (isCompleted ? ticket.updated_at : null);
+                const workStart = getWorkStartTime(ticket, respondedTime);
+                const totalStart = getTotalStartTime(ticket);
 
                 const respMins = calculateDurationMins(ticket.created_at, respondedTime);
-                const resMins = isCompleted ? calculateDurationMins(respondedTime || ticket.created_at, resolvedTime) : null;
-                const fullMins = isCompleted ? calculateDurationMins(ticket.created_at, resolvedTime) : null;
+                const resMins = isCompleted ? calculateDurationMins(workStart, resolvedTime) : null;
+                const fullMins = isCompleted ? calculateDurationMins(totalStart, resolvedTime) : null;
 
                 return (
                   <tr 
@@ -793,6 +819,11 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
                   >
                     <td className="py-3 px-3 font-mono font-bold text-emerald-600 dark:text-emerald-400">
                       #{ticket.ticket_no || ticket.id}
+                      {ticket.estimated_start_at && (
+                        <span className="block text-[9px] font-semibold text-purple-600 dark:text-purple-400 mt-0.5">
+                          🌙 Luar Jam Kerja
+                        </span>
+                      )}
                     </td>
 
                     <td className="py-3 px-3">
@@ -830,12 +861,18 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
                       {resolvedTime && (
                         <p className="text-[9px] font-mono text-slate-400 block">{formatDateFormatted(resolvedTime)}</p>
                       )}
+                      {ticket.estimated_start_at && (
+                        <p className="text-[9px] font-semibold text-purple-500 block">Mulai: {formatDateFormatted(ticket.estimated_start_at)}</p>
+                      )}
                     </td>
 
                     <td className="py-3 px-3 text-center">
                       <span className="font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-xl border border-emerald-500/20">
                         {formatDurationHuman(fullMins)}
                       </span>
+                      {ticket.estimated_start_at && (
+                        <p className="text-[9px] font-semibold text-purple-500 block mt-0.5">Mulai: {formatDateFormatted(ticket.estimated_start_at)}</p>
+                      )}
                     </td>
 
                     <td className="py-3 px-3 text-right">

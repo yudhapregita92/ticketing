@@ -1,7 +1,56 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, User, Lock, LogIn, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, User, Lock, LogIn, ChevronDown, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+const ATTEMPTS_KEY = 'user_login_attempts_data';
+
+interface UserAttemptData {
+  count: number;
+  lockedUntil: number | null; // epoch timestamp in ms
+}
+
+const getAttemptData = (userId: number): UserAttemptData => {
+  try {
+    const raw = localStorage.getItem(ATTEMPTS_KEY);
+    if (!raw) return { count: 0, lockedUntil: null };
+    const parsed = JSON.parse(raw);
+    return parsed[userId] || { count: 0, lockedUntil: null };
+  } catch {
+    return { count: 0, lockedUntil: null };
+  }
+};
+
+const saveAttemptData = (userId: number, data: UserAttemptData) => {
+  try {
+    const raw = localStorage.getItem(ATTEMPTS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    parsed[userId] = data;
+    localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(parsed));
+  } catch (err) {
+    console.error('Failed to save attempt data', err);
+  }
+};
+
+const clearAttemptData = (userId: number) => {
+  try {
+    const raw = localStorage.getItem(ATTEMPTS_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    delete parsed[userId];
+    localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(parsed));
+  } catch (err) {
+    console.error('Failed to clear attempt data', err);
+  }
+};
+
+const formatLockoutTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  const padSecs = secs < 10 ? `0${secs}` : `${secs}`;
+  const padMins = mins < 10 ? `0${mins}` : `${mins}`;
+  return `${padMins}:${padSecs} (${mins} menit ${secs} detik)`;
+};
 
 interface UserLoginScreenProps {
   isDark: boolean;
@@ -34,6 +83,7 @@ export const UserLoginScreen = React.memo(({
   const [indexCode, setIndexCode] = useState('');
   const [error, setError] = useState('');
   const [showGuide, setShowGuide] = useState(false);
+  const [lockoutTimeLeft, setLockoutTimeLeft] = useState<number>(0); // remaining seconds
   
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [clickCount, setClickCount] = useState(0);
@@ -47,8 +97,39 @@ export const UserLoginScreen = React.memo(({
     if (selectedUser) {
       setEggOffset({ x: 0, y: 0 });
       setEggCount(0);
+
+      const data = getAttemptData(selectedUser.id);
+      if (data.lockedUntil && Date.now() < data.lockedUntil) {
+        const secs = Math.ceil((data.lockedUntil - Date.now()) / 1000);
+        setLockoutTimeLeft(secs);
+      } else {
+        if (data.lockedUntil && Date.now() >= data.lockedUntil) {
+          clearAttemptData(selectedUser.id);
+        }
+        setLockoutTimeLeft(0);
+      }
+    } else {
+      setLockoutTimeLeft(0);
     }
   }, [selectedUser]);
+
+  React.useEffect(() => {
+    if (lockoutTimeLeft <= 0) return;
+
+    const timer = setInterval(() => {
+      setLockoutTimeLeft((prev) => {
+        if (prev <= 1) {
+          if (selectedUser) {
+            clearAttemptData(selectedUser.id);
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [lockoutTimeLeft, selectedUser]);
 
   const triggerEggMove = () => {
     if (selectedUser?.enable_funny_egg === 1) {
@@ -123,6 +204,15 @@ export const UserLoginScreen = React.memo(({
       return;
     }
 
+    // Check if user is currently locked out
+    const userAttempts = getAttemptData(selectedUser.id);
+    if (userAttempts.lockedUntil && Date.now() < userAttempts.lockedUntil) {
+      const secondsLeft = Math.ceil((userAttempts.lockedUntil - Date.now()) / 1000);
+      setLockoutTimeLeft(secondsLeft);
+      setError(`Akses terkunci sementara karena 5x salah password/index. Coba lagi dalam: ${formatLockoutTime(secondsLeft)}`);
+      return;
+    }
+
     if (!indexCode) {
       setError(`Silakan masukkan ${appSettings?.login_index_label || "index (KDK)"} Anda`);
       return;
@@ -130,11 +220,25 @@ export const UserLoginScreen = React.memo(({
 
     // Verify index
     if (selectedUser.employee_index !== indexCode) {
-      setError(`${appSettings?.login_index_label || "Index"} yang Anda masukkan salah`);
+      const newCount = (userAttempts.count || 0) + 1;
+      if (newCount >= 5) {
+        const lockUntil = Date.now() + 3 * 60 * 1000; // 3 minutes
+        saveAttemptData(selectedUser.id, { count: 0, lockedUntil: lockUntil });
+        const secondsLeft = 180;
+        setLockoutTimeLeft(secondsLeft);
+        setError(`Gagal 5 kali! Akses terkunci selama 3 menit.`);
+        toast.error(`Gagal 5 kali! Akses Anda dikunci selama 3 menit.`);
+      } else {
+        saveAttemptData(selectedUser.id, { count: newCount, lockedUntil: null });
+        const remaining = 5 - newCount;
+        setError(`${appSettings?.login_index_label || "Index"} yang Anda masukkan salah. (Percobaan tersisa: ${remaining}x)`);
+      }
       return;
     }
 
-    // Success
+    // Success login: clear lockout data
+    clearAttemptData(selectedUser.id);
+    setLockoutTimeLeft(0);
     toast.success(`Selamat datang, ${selectedUser.full_name}!`);
     onLogin(selectedUser);
   };
@@ -318,44 +422,74 @@ export const UserLoginScreen = React.memo(({
                   <label className={`block text-[10px] font-bold uppercase tracking-wider mb-1 ${themeClasses.textMuted}`}>
                     {indexLabel}
                   </label>
-                  <div className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border transition-all focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 ${themeClasses.input}`}>
-                    <Lock className={`w-4 h-4 shrink-0 ${themeClasses.textMuted}`} />
+                  <div className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border transition-all ${
+                    lockoutTimeLeft > 0 
+                      ? 'bg-rose-500/10 border-rose-500/30 cursor-not-allowed opacity-75' 
+                      : 'focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 ' + themeClasses.input
+                  }`}>
+                    <Lock className={`w-4 h-4 shrink-0 ${lockoutTimeLeft > 0 ? 'text-rose-500' : themeClasses.textMuted}`} />
                     <input 
                       type="password"
-                      placeholder={indexPlaceholder}
+                      disabled={lockoutTimeLeft > 0}
+                      placeholder={lockoutTimeLeft > 0 ? 'Terkunci (salah 5x)...' : indexPlaceholder}
                       value={indexCode}
                       onChange={(e) => setIndexCode(e.target.value)}
-                      className="w-full bg-transparent border-none outline-none p-0 m-0 focus:ring-0 text-xs text-inherit"
+                      className="w-full bg-transparent border-none outline-none p-0 m-0 focus:ring-0 text-xs text-inherit disabled:cursor-not-allowed"
                     />
                   </div>
                 </motion.div>
+
+                {!isAdminMode && lockoutTimeLeft > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-center space-y-1.5"
+                  >
+                    <div className="flex items-center justify-center gap-1.5 font-bold text-xs">
+                      <Clock className="w-4 h-4 text-rose-500 animate-spin shrink-0" />
+                      <span>Akses Terkunci Sementara (3 Menit)</span>
+                    </div>
+                    <p className="text-[11px] font-mono font-black text-rose-600 dark:text-rose-300">
+                      Coba lagi dalam: {formatLockoutTime(lockoutTimeLeft)}
+                    </p>
+                  </motion.div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
 
-          {error && (
+          {error && lockoutTimeLeft <= 0 && (
             <motion.div 
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
-              className="p-2 rounded-md bg-rose-500/10 text-rose-600 text-xs font-medium border border-rose-500/20 text-center"
+              className="p-2 rounded-md bg-rose-500/10 text-rose-600 text-xs font-medium border border-rose-500/20 text-center flex items-center justify-center gap-1.5"
             >
-              {error}
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              <span>{error}</span>
             </motion.div>
           )}
 
           <button 
             type="submit"
+            disabled={!isAdminMode && lockoutTimeLeft > 0}
             style={
               isAdminMode 
                 ? { backgroundColor: primaryColor } 
-                : (appSettings?.login_button_color ? { backgroundColor: appSettings.login_button_color } : {})
+                : (!isAdminMode && lockoutTimeLeft > 0)
+                  ? { backgroundColor: '#e11d48' }
+                  : (appSettings?.login_button_color ? { backgroundColor: appSettings.login_button_color } : {})
             }
-            className={`w-full py-2.5 ${!isAdminMode && !appSettings?.login_button_color ? 'bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/10' : ''} text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] ${isAdminMode ? 'shadow-md shadow-emerald-900/10' : ''}`}
+            className={`w-full py-2.5 ${!isAdminMode && lockoutTimeLeft <= 0 && !appSettings?.login_button_color ? 'bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/10' : ''} text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] ${isAdminMode ? 'shadow-md shadow-emerald-900/10' : ''} ${!isAdminMode && lockoutTimeLeft > 0 ? 'opacity-80 cursor-not-allowed' : ''}`}
           >
             {isAdminMode ? (
               <>
                 <ShieldCheck className="w-4 h-4" />
                 Masuk Sekarang
+              </>
+            ) : lockoutTimeLeft > 0 ? (
+              <>
+                <Clock className="w-4 h-4 animate-spin" />
+                Terkunci ({formatLockoutTime(lockoutTimeLeft).split(' ')[0]})
               </>
             ) : (
               <>
