@@ -39,7 +39,8 @@ import {
   Settings2,
   Database,
   Users,
-  MonitorSmartphone
+  MonitorSmartphone,
+  Timer
 } from 'lucide-react';
 
 // Import modular components
@@ -73,6 +74,7 @@ import { TestingView } from './components/TestingView';
 import { VoucherManagement } from './components/VoucherManagement';
 import { MasterUserManagement } from './components/MasterUserManagement';
 import { MasterPerangkatPlaceholder } from './components/MasterPerangkatPlaceholder';
+import { ReportSLA } from './components/ReportSLA';
 
 // Types, Constants, and Utils
 import { ITicket, IUser, IDepartment, ICategory, IMasterUser, ISettings, ViewMode } from './types';
@@ -233,17 +235,16 @@ export default function App() {
   useEffect(() => {
     if (ticketDetails && selectedTicket) {
       setSelectedTicket(prev => {
-        if (prev && prev.id === selectedTicket.id) {
-          return { 
-            ...prev, 
-            photo: ticketDetails.photo,
-            face_photo: ticketDetails.face_photo
-          };
-        }
-        return prev;
+        if (!prev) return null;
+        return { 
+          ...prev,
+          ...(ticketDetails as any),
+          photo: (ticketDetails as any).photo || prev.photo,
+          face_photo: (ticketDetails as any).face_photo || prev.face_photo
+        };
       });
-      if (Array.isArray(ticketDetails.logs)) {
-        setTicketLogs(ticketDetails.logs);
+      if (Array.isArray((ticketDetails as any).logs)) {
+        setTicketLogs((ticketDetails as any).logs);
       }
     }
   }, [ticketDetails]);
@@ -302,7 +303,7 @@ export default function App() {
     let view = p === '' ? (hasAdmin ? 'dashboard' : 'today') : p;
 
     // Admin only routes fallback
-    if (!hasAdmin && ['dashboard', 'assets', 'network', 'membership', 'evaluasi_project', 'voucher', 'master_user', 'master_perangkat'].includes(view)) {
+    if (!hasAdmin && ['dashboard', 'assets', 'network', 'membership', 'evaluasi_project', 'voucher', 'master_user', 'master_perangkat', 'report_sla'].includes(view)) {
       if (view === 'voucher' && userCanVoucher) {
         // Allowed
       } else {
@@ -310,7 +311,7 @@ export default function App() {
       }
     }
 
-    if (['today', 'all', 'my_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership', 'evaluasi_project', 'jurnal', 'voucher', 'master_user', 'master_perangkat'].includes(view)) {
+    if (['today', 'all', 'my_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership', 'evaluasi_project', 'jurnal', 'voucher', 'master_user', 'master_perangkat', 'report_sla'].includes(view)) {
       return view as ViewMode;
     }
     return hasAdmin ? 'dashboard' : 'today';
@@ -979,12 +980,32 @@ export default function App() {
   /**
    * Membuka konfirmasi update tiket (Hanya Admin)
    */
-  const handleUpdateClick = (id: number, status: string, assigned_to: string | null, admin_reply: string | null, internal_notes: string | null, priority?: string) => {
+  const handleUpdateClick = (
+    id: number, 
+    status: string, 
+    assigned_to: string | null, 
+    admin_reply: string | null, 
+    internal_notes: string | null, 
+    priority?: string,
+    estimated_duration?: string | null,
+    estimated_start_at?: string | null,
+    estimated_target_at?: string | null
+  ) => {
     if (!assigned_to) {
       toast.error('Silakan pilih IT yang menangani terlebih dahulu.');
       return;
     }
-    setPendingUpdate({ id, status, assigned_to, admin_reply, internal_notes, priority } as any);
+    setPendingUpdate({ 
+      id, 
+      status, 
+      assigned_to, 
+      admin_reply, 
+      internal_notes, 
+      priority,
+      estimated_duration,
+      estimated_start_at,
+      estimated_target_at
+    } as any);
   };
 
   /**
@@ -1000,6 +1021,9 @@ export default function App() {
         admin_reply: pendingUpdate.admin_reply,
         internal_notes: pendingUpdate.internal_notes,
         priority: (pendingUpdate as any).priority,
+        estimated_duration: (pendingUpdate as any).estimated_duration,
+        estimated_start_at: (pendingUpdate as any).estimated_start_at,
+        estimated_target_at: (pendingUpdate as any).estimated_target_at,
         performed_by: adminUser.username
       }
     }, {
@@ -1603,6 +1627,18 @@ export default function App() {
                   <span>Evaluasi</span>
                 </button>
 
+                <button
+                  onClick={() => setViewMode('report_sla')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    viewMode === 'report_sla'
+                      ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <Timer className="w-4 h-4" />
+                  <span>Report SLA</span>
+                </button>
+
                 {(adminUser.role === 'Super Admin' || adminUser.role === 'Staff IT Support') && (
                   <>
                     <button
@@ -1751,6 +1787,15 @@ export default function App() {
                 isDark={isDark}
                 themeClasses={themeClasses}
                 primaryColor={primaryColor}
+              />
+            ) : viewMode === 'report_sla' ? (
+              <ReportSLA 
+                tickets={tickets}
+                isDark={isDark}
+                themeClasses={themeClasses}
+                adminUser={adminUser}
+                masterUsers={masterUsers}
+                onSelectTicket={(ticket) => setSelectedTicket(ticket)}
               />
             ) : viewMode === 'settings' ? (
               <SettingsModal 

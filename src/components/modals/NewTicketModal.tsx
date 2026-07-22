@@ -106,13 +106,26 @@ export const NewTicketModal = React.memo(({
       setScanComplete(false);
       setIsScanning(true);
 
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: target === 'face_photo' ? 'user' : 'environment',
-          width: { ideal: 640 },
-          height: { ideal: 480 }
-        } 
-      });
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: target === 'face_photo' ? 'user' : 'environment',
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+          } 
+        });
+      } catch (err1) {
+        console.warn("First camera constraint failed, trying simple video constraint...", err1);
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: 'user' } 
+          });
+        } catch (err2) {
+          console.warn("Second camera constraint failed, trying fallback video: true...", err2);
+          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        }
+      }
       
       streamRef.current = stream;
       if (videoRef.current) {

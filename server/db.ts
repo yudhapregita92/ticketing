@@ -394,6 +394,15 @@ export function initDb() {
       if (!columns.find(c => c.name === 'pc_code')) {
         db.prepare("ALTER TABLE tickets ADD COLUMN pc_code TEXT").run();
       }
+      if (!columns.find(c => c.name === 'estimated_duration')) {
+        db.prepare("ALTER TABLE tickets ADD COLUMN estimated_duration TEXT").run();
+      }
+      if (!columns.find(c => c.name === 'estimated_start_at')) {
+        db.prepare("ALTER TABLE tickets ADD COLUMN estimated_start_at TEXT").run();
+      }
+      if (!columns.find(c => c.name === 'estimated_target_at')) {
+        db.prepare("ALTER TABLE tickets ADD COLUMN estimated_target_at TEXT").run();
+      }
     }
     
     if (table === 'users') {

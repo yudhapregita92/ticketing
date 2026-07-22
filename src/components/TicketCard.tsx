@@ -5,7 +5,8 @@ import {
   Building2, 
   Eye,
   Trash2,
-  Calendar
+  Calendar,
+  Clock
 } from 'lucide-react';
 import { ITicket, IAdminUser, ICategory } from '../types';
 import { getSLAColor, getSLALabel } from '../utils/ticketUtils';
@@ -141,6 +142,12 @@ export const TicketCard: React.FC<TicketCardProps> = ({
               {getSLALabel(ticket.created_at, ticket.status, customCritical, customDelayed) && (
                 <span className="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded capitalize bg-rose-500 text-white leading-none whitespace-nowrap">{getSLALabel(ticket.created_at, ticket.status, customCritical, customDelayed)}</span>
               )}
+              {(ticket.estimated_duration || ticket.estimated_target_at) && (
+                <span className="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded capitalize bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 leading-none whitespace-nowrap flex items-center gap-0.5">
+                  <Clock className="w-2.5 h-2.5" />
+                  Est: {ticket.estimated_duration || 'Jadwal Khusus'}
+                </span>
+              )}
             </div>
             <div className="flex items-center sm:items-end flex-wrap gap-1.5 sm:gap-2">
               <span className="flex items-center gap-0.5 sm:gap-1 text-[9px] sm:text-xs text-slate-400 dark:text-zinc-500 font-medium whitespace-nowrap">
@@ -157,6 +164,18 @@ export const TicketCard: React.FC<TicketCardProps> = ({
           <h3 className={`text-xs sm:text-sm font-bold truncate group-hover:text-emerald-500 transition-colors mb-1 sm:mb-1.5 ${themeClasses.text}`}>
             <HighlightText text={`${ticket.category} Request`} highlight={searchQuery} isDark={isDark} />
           </h3>
+          
+          {(ticket.estimated_duration || ticket.estimated_target_at) && (
+            <div className="flex flex-wrap items-center gap-1.5 text-[10px] sm:text-xs font-semibold text-emerald-700 dark:text-emerald-300 mb-1.5 bg-emerald-500/10 dark:bg-emerald-950/40 px-2.5 py-1 rounded-xl border border-emerald-500/20 dark:border-emerald-800/60 w-fit">
+              <Clock className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <span>Estimasi: <strong className="font-extrabold text-emerald-600 dark:text-emerald-400">{ticket.estimated_duration || 'Jadwal Khusus'}</strong></span>
+              {ticket.estimated_target_at && (
+                <span className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                  • Target: {formatDate(ticket.estimated_target_at)}
+                </span>
+              )}
+            </div>
+          )}
           
           <div className="flex items-center justify-between gap-1 mt-1 sm:mt-2">
             <div className={`flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-0.5 text-[10px] sm:text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>

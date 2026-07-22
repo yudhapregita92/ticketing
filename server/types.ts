@@ -33,6 +33,9 @@ export interface Ticket {
   latitude?: number;
   longitude?: number;
   internal_notes?: string;
+  estimated_duration?: string;
+  estimated_start_at?: string;
+  estimated_target_at?: string;
 }
 
 export interface TicketLog {

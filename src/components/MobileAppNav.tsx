@@ -161,6 +161,17 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
                   >
                     Evaluasi Project
                   </button>
+
+                  <button 
+                    onClick={() => handleMenuClick('report_sla')}
+                    className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                      viewMode === 'report_sla' 
+                        ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
+                        : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    Report SLA
+                  </button>
                   
                   {(adminUser.role === 'Super Admin' || adminUser.role === 'Staff IT Support') && (
                     <>

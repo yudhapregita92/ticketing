@@ -182,7 +182,7 @@ export default function(io: Server) {
 
 async function handleTicketUpdate(req: any, res: any, io: Server) {
   const { id } = req.params;
-  const { status, assigned_to, admin_reply, internal_notes, takeover_by, reassign_to, performed_by, note, priority } = req.body;
+  const { status, assigned_to, admin_reply, internal_notes, takeover_by, reassign_to, performed_by, note, priority, estimated_duration, estimated_start_at, estimated_target_at } = req.body;
   
   const currentTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(id) as Ticket | undefined;
   if (!currentTicket) throw new AppError("Ticket not found", 404);
@@ -194,6 +194,9 @@ async function handleTicketUpdate(req: any, res: any, io: Server) {
   let newPriority = priority !== undefined ? priority : currentTicket.priority;
   let newAdminReply = admin_reply !== undefined ? admin_reply : currentTicket.admin_reply;
   let newInternalNotes = internal_notes !== undefined ? internal_notes : currentTicket.internal_notes;
+  let newEstDuration = estimated_duration !== undefined ? estimated_duration : currentTicket.estimated_duration;
+  let newEstStart = estimated_start_at !== undefined ? estimated_start_at : currentTicket.estimated_start_at;
+  let newEstTarget = estimated_target_at !== undefined ? estimated_target_at : currentTicket.estimated_target_at;
 
   const logs: any[] = [];
 
@@ -221,6 +224,10 @@ async function handleTicketUpdate(req: any, res: any, io: Server) {
     logs.push({ action: 'Admin Reply', note: admin_reply || '(Empty Reply)', performed_by: performed_by || 'System' });
   }
 
+  if (estimated_duration !== undefined && estimated_duration !== currentTicket.estimated_duration) {
+    logs.push({ action: 'Estimasi Pengerjaan', note: `Estimasi waktu: ${estimated_duration || 'Dihapus'}`, performed_by: performed_by || 'System' });
+  }
+
   if (!respondedAt && (admin_reply !== undefined || (newStatus !== 'New' && newStatus !== currentTicket.status))) {
     respondedAt = new Date().toISOString();
   }
@@ -231,8 +238,8 @@ async function handleTicketUpdate(req: any, res: any, io: Server) {
     resolvedAt = null;
   }
 
-  db.prepare("UPDATE tickets SET status = ?, assigned_to = ?, admin_reply = ?, internal_notes = ?, priority = ?, responded_at = ?, resolved_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
-    .run(newStatus, newAssignedTo, newAdminReply, newInternalNotes, newPriority, respondedAt, resolvedAt, id);
+  db.prepare("UPDATE tickets SET status = ?, assigned_to = ?, admin_reply = ?, internal_notes = ?, priority = ?, responded_at = ?, resolved_at = ?, estimated_duration = ?, estimated_start_at = ?, estimated_target_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+    .run(newStatus, newAssignedTo, newAdminReply, newInternalNotes, newPriority, respondedAt, resolvedAt, newEstDuration, newEstStart, newEstTarget, id);
   
   const insertLog = db.prepare("INSERT INTO ticket_logs (ticket_id, action, note, performed_by) VALUES (?, ?, ?, ?)");
   logs.forEach(log => {

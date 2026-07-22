@@ -356,7 +356,13 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
         video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: 'user' }
       };
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (err1) {
+        console.warn("First camera constraint failed in MembershipManagement, trying fallback video: true", err1);
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      }
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
