@@ -175,6 +175,8 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
     setHasJournalSignature(true);
 
     const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
     let clientX, clientY;
 
     if ('touches' in e) {
@@ -186,7 +188,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
     }
 
     ctx.beginPath();
-    ctx.moveTo(clientX - rect.left, clientY - rect.top);
+    ctx.moveTo((clientX - rect.left) * scaleX, (clientY - rect.top) * scaleY);
   };
 
   const drawJournal = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
@@ -197,6 +199,8 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
     if (!ctx) return;
 
     const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
     let clientX, clientY;
 
     if ('touches' in e) {
@@ -207,7 +211,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
       clientY = e.clientY;
     }
 
-    ctx.lineTo(clientX - rect.left, clientY - rect.top);
+    ctx.lineTo((clientX - rect.left) * scaleX, (clientY - rect.top) * scaleY);
     ctx.stroke();
   };
 

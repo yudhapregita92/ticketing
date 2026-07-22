@@ -111,6 +111,8 @@ export const MembershipJournalForm: React.FC<MembershipJournalFormProps> = ({
     setHasSigned(true);
 
     const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
     let clientX, clientY;
 
     if ('touches' in e) {
@@ -122,7 +124,7 @@ export const MembershipJournalForm: React.FC<MembershipJournalFormProps> = ({
     }
 
     ctx.beginPath();
-    ctx.moveTo(clientX - rect.left, clientY - rect.top);
+    ctx.moveTo((clientX - rect.left) * scaleX, (clientY - rect.top) * scaleY);
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
@@ -133,6 +135,8 @@ export const MembershipJournalForm: React.FC<MembershipJournalFormProps> = ({
     if (!ctx) return;
 
     const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
     let clientX, clientY;
 
     if ('touches' in e) {
@@ -143,7 +147,7 @@ export const MembershipJournalForm: React.FC<MembershipJournalFormProps> = ({
       clientY = e.clientY;
     }
 
-    ctx.lineTo(clientX - rect.left, clientY - rect.top);
+    ctx.lineTo((clientX - rect.left) * scaleX, (clientY - rect.top) * scaleY);
     ctx.stroke();
   };
 
