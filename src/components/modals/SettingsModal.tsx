@@ -1204,6 +1204,46 @@ export const SettingsModal = React.memo(({
                     />
                   </div>
 
+                  {/* Edit Warna Tombol Masuk */}
+                  <div className="space-y-1.5 pt-2">
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Warna Latar Tombol Masuk (Hex)</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={appSettings.login_button_color || '#4f46e5'}
+                        onChange={e => setAppSettings({...appSettings, login_button_color: e.target.value})}
+                        className="w-10 h-10 rounded cursor-pointer border-0 p-0"
+                      />
+                      <input 
+                        type="text"
+                        placeholder="#4f46e5"
+                        className={`flex-1 px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                        value={appSettings.login_button_color || ''}
+                        onChange={e => setAppSettings({...appSettings, login_button_color: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Edit Warna Teks Tombol Masuk */}
+                  <div className="space-y-1.5 pt-2">
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Warna Teks Tombol Masuk (Hex)</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={appSettings.login_button_text_color || '#ffffff'}
+                        onChange={e => setAppSettings({...appSettings, login_button_text_color: e.target.value})}
+                        className="w-10 h-10 rounded cursor-pointer border-0 p-0"
+                      />
+                      <input 
+                        type="text"
+                        placeholder="#ffffff"
+                        className={`flex-1 px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                        value={appSettings.login_button_text_color || ''}
+                        onChange={e => setAppSettings({...appSettings, login_button_text_color: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
                   {/* Panduan Login Toggle */}
                   <div className="pt-2 flex items-center">
                     <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -1427,7 +1467,7 @@ export const SettingsModal = React.memo(({
                               <span className={`text-xs font-bold ${themeClasses.text}`}>{it.name}</span>
                               {it.role && <span className={`text-[9px] ${themeClasses.textMuted}`}>{it.role}</span>}
                             </div>
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                            <div className="flex items-center gap-1.5 opacity-80 hover:opacity-100 transition-opacity ml-2">
                               <button type="button" onClick={() => handleEditItPersonnel(it)} className="text-blue-500 hover:text-blue-400">
                                 <Edit3 className="w-3 h-3" />
                               </button>
@@ -1478,7 +1518,7 @@ export const SettingsModal = React.memo(({
                         {Array.isArray(departments) && departments.map(dept => (
                           <div key={dept.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
                             <span className={`text-xs font-bold ${themeClasses.text}`}>{dept.name}</span>
-                            <button type="button" onClick={() => handleManagementAction('dept', 'delete', dept)} className="text-rose-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button type="button" onClick={() => handleManagementAction('dept', 'delete', dept)} className="text-rose-500 hover:text-rose-400 opacity-80 hover:opacity-100 transition-opacity ml-2">
                               <Trash2 className="w-3 h-3" />
                             </button>
                           </div>
@@ -1614,7 +1654,7 @@ export const SettingsModal = React.memo(({
                             <div key={cat.id} className={`flex flex-col gap-1 ${themeClasses.bgSecondary} px-3 py-2 rounded-lg border ${themeClasses.border} group min-w-[120px]`}>
                               <div className="flex items-center justify-between gap-2">
                                 <span className={`text-xs font-bold ${themeClasses.text}`}>{cat.name}</span>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex items-center gap-1.5 opacity-80 hover:opacity-100 transition-opacity">
                                   <button 
                                     type="button" 
                                     onClick={() => {

@@ -345,8 +345,12 @@ export const UserLoginScreen = React.memo(({
 
           <button 
             type="submit"
-            style={isAdminMode ? { backgroundColor: primaryColor } : {}}
-            className={`w-full py-2.5 ${!isAdminMode ? 'bg-indigo-600 hover:bg-indigo-700' : ''} text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] ${!isAdminMode ? 'shadow-md shadow-indigo-600/10' : 'shadow-md shadow-emerald-900/10'}`}
+            style={
+              isAdminMode 
+                ? { backgroundColor: primaryColor } 
+                : (appSettings?.login_button_color ? { backgroundColor: appSettings.login_button_color } : {})
+            }
+            className={`w-full py-2.5 ${!isAdminMode && !appSettings?.login_button_color ? 'bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/10' : ''} text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] ${isAdminMode ? 'shadow-md shadow-emerald-900/10' : ''}`}
           >
             {isAdminMode ? (
               <>
