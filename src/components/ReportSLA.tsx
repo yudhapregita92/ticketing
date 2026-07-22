@@ -174,9 +174,13 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
 
       // Status Filter
       if (selectedStatus !== 'ALL') {
-        if (selectedStatus === 'Resolved' && t.status !== 'Resolved' && t.status !== 'Selesai') return false;
-        if (selectedStatus === 'In Progress' && t.status !== 'In Progress' && t.status !== 'Progres' && t.status !== 'Assigned') return false;
-        if (selectedStatus === 'New' && t.status !== 'New' && t.status !== 'Baru') return false;
+        if (selectedStatus === 'Resolved' || selectedStatus === 'Completed' || selectedStatus === 'Selesai') {
+          if (t.status !== 'Completed' && t.status !== 'Resolved' && t.status !== 'Selesai') return false;
+        } else if (selectedStatus === 'In Progress' || selectedStatus === 'Progres') {
+          if (t.status !== 'In Progress' && t.status !== 'Progres' && t.status !== 'Assigned') return false;
+        } else if (selectedStatus === 'New' || selectedStatus === 'Baru') {
+          if (t.status !== 'New' && t.status !== 'Baru') return false;
+        }
       }
 
       // Search Query
@@ -213,29 +217,35 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
     let totalInProgress = 0;
 
     filteredTickets.forEach(t => {
-      if (t.status === 'Resolved' || t.status === 'Selesai') {
+      const isCompleted = t.status === 'Completed' || t.status === 'Resolved' || t.status === 'Selesai';
+      const isProgress = t.status === 'In Progress' || t.status === 'Progres' || t.status === 'Assigned';
+
+      if (isCompleted) {
         totalResolved++;
-      } else if (t.status === 'In Progress' || t.status === 'Progres' || t.status === 'Assigned') {
+      } else if (isProgress) {
         totalInProgress++;
       }
 
-      // Response SLA: created_at -> responded_at
-      const respTime = calculateDurationMins(t.created_at, t.responded_at || (t.status !== 'New' ? t.updated_at : null));
+      const respondedTime = t.responded_at || (t.status !== 'New' && t.status !== 'Baru' ? t.updated_at : null);
+      const resolvedTime = t.resolved_at || (isCompleted ? t.updated_at : null);
+
+      // Response SLA: created_at -> respondedTime
+      const respTime = calculateDurationMins(t.created_at, respondedTime);
       if (respTime !== null) {
         totalResponseMins += respTime;
         countResponse++;
       }
 
-      // Resolution SLA: responded_at -> resolved_at
-      const resTime = calculateDurationMins(t.responded_at || t.created_at, t.resolved_at);
-      if (resTime !== null && (t.status === 'Resolved' || t.status === 'Selesai')) {
+      // Resolution SLA: respondedTime -> resolvedTime
+      const resTime = calculateDurationMins(respondedTime || t.created_at, resolvedTime);
+      if (resTime !== null && isCompleted) {
         totalResolutionMins += resTime;
         countResolution++;
       }
 
-      // Total Resolution Time: created_at -> resolved_at
-      const fullTime = calculateDurationMins(t.created_at, t.resolved_at);
-      if (fullTime !== null && (t.status === 'Resolved' || t.status === 'Selesai')) {
+      // Total Resolution Time: created_at -> resolvedTime
+      const fullTime = calculateDurationMins(t.created_at, resolvedTime);
+      if (fullTime !== null && isCompleted) {
         totalFullMins += fullTime;
         countFull++;
       }
@@ -247,8 +257,10 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
 
     // Compliance Rate (Target: Total Resolution Time <= 24 hours / 1440 mins)
     const compliantCount = filteredTickets.filter(t => {
-      if (t.status !== 'Resolved' && t.status !== 'Selesai') return false;
-      const fullTime = calculateDurationMins(t.created_at, t.resolved_at);
+      const isCompleted = t.status === 'Completed' || t.status === 'Resolved' || t.status === 'Selesai';
+      if (!isCompleted) return false;
+      const resolvedTime = t.resolved_at || t.updated_at;
+      const fullTime = calculateDurationMins(t.created_at, resolvedTime);
       return fullTime !== null && fullTime <= 1440; // 24 hours target
     }).length;
 
@@ -297,20 +309,26 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
       const st = statsMap[itName];
       st.total++;
 
-      if (t.status === 'Resolved' || t.status === 'Selesai') {
+      const isCompleted = t.status === 'Completed' || t.status === 'Resolved' || t.status === 'Selesai';
+      const isProgress = t.status === 'In Progress' || t.status === 'Progres' || t.status === 'Assigned';
+
+      if (isCompleted) {
         st.resolved++;
-      } else if (t.status === 'In Progress' || t.status === 'Progres' || t.status === 'Assigned') {
+      } else if (isProgress) {
         st.inProgress++;
       }
 
-      const resp = calculateDurationMins(t.created_at, t.responded_at || (t.status !== 'New' ? t.updated_at : null));
+      const respondedTime = t.responded_at || (t.status !== 'New' && t.status !== 'Baru' ? t.updated_at : null);
+      const resolvedTime = t.resolved_at || (isCompleted ? t.updated_at : null);
+
+      const resp = calculateDurationMins(t.created_at, respondedTime);
       if (resp !== null) st.respMins.push(resp);
 
-      const res = calculateDurationMins(t.responded_at || t.created_at, t.resolved_at);
-      if (res !== null && (t.status === 'Resolved' || t.status === 'Selesai')) st.resMins.push(res);
+      const res = calculateDurationMins(respondedTime || t.created_at, resolvedTime);
+      if (res !== null && isCompleted) st.resMins.push(res);
 
-      const full = calculateDurationMins(t.created_at, t.resolved_at);
-      if (full !== null && (t.status === 'Resolved' || t.status === 'Selesai')) st.fullMins.push(full);
+      const full = calculateDurationMins(t.created_at, resolvedTime);
+      if (full !== null && isCompleted) st.fullMins.push(full);
     });
 
     return Object.values(statsMap).map(st => {
@@ -333,9 +351,13 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
   const handleExportCSV = () => {
     const headers = ['No Tiket', 'Pemohon', 'Departemen', 'Kategori', 'Prioritas', 'Petugas IT', 'Status', 'Tgl Dibuat', 'Tgl Respon', 'Tgl Selesai', 'Response SLA (Mnt)', 'Resolution SLA (Mnt)', 'Total Resolution Time (Mnt)'];
     const rows = filteredTickets.map(t => {
-      const respMins = calculateDurationMins(t.created_at, t.responded_at || (t.status !== 'New' ? t.updated_at : null));
-      const resMins = calculateDurationMins(t.responded_at || t.created_at, t.resolved_at);
-      const fullMins = calculateDurationMins(t.created_at, t.resolved_at);
+      const isCompleted = t.status === 'Completed' || t.status === 'Resolved' || t.status === 'Selesai';
+      const respondedTime = t.responded_at || (t.status !== 'New' && t.status !== 'Baru' ? t.updated_at : null);
+      const resolvedTime = t.resolved_at || (isCompleted ? t.updated_at : null);
+
+      const respMins = calculateDurationMins(t.created_at, respondedTime);
+      const resMins = isCompleted ? calculateDurationMins(respondedTime || t.created_at, resolvedTime) : null;
+      const fullMins = isCompleted ? calculateDurationMins(t.created_at, resolvedTime) : null;
 
       return [
         `"${t.ticket_no || t.id}"`,
@@ -346,8 +368,8 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
         `"${t.assigned_to || 'Unassigned'}"`,
         `"${t.status}"`,
         `"${formatDateFormatted(t.created_at)}"`,
-        `"${formatDateFormatted(t.responded_at)}"`,
-        `"${formatDateFormatted(t.resolved_at)}"`,
+        `"${formatDateFormatted(respondedTime)}"`,
+        `"${formatDateFormatted(resolvedTime)}"`,
         respMins !== null ? respMins : '',
         resMins !== null ? resMins : '',
         fullMins !== null ? fullMins : ''
@@ -755,9 +777,13 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
             </thead>
             <tbody className="divide-y dark:divide-slate-800/60 text-xs">
               {filteredTickets.map(ticket => {
-                const respMins = calculateDurationMins(ticket.created_at, ticket.responded_at || (ticket.status !== 'New' ? ticket.updated_at : null));
-                const resMins = calculateDurationMins(ticket.responded_at || ticket.created_at, ticket.resolved_at);
-                const fullMins = calculateDurationMins(ticket.created_at, ticket.resolved_at);
+                const isCompleted = ticket.status === 'Completed' || ticket.status === 'Resolved' || ticket.status === 'Selesai';
+                const respondedTime = ticket.responded_at || (ticket.status !== 'New' && ticket.status !== 'Baru' ? ticket.updated_at : null);
+                const resolvedTime = ticket.resolved_at || (isCompleted ? ticket.updated_at : null);
+
+                const respMins = calculateDurationMins(ticket.created_at, respondedTime);
+                const resMins = isCompleted ? calculateDurationMins(respondedTime || ticket.created_at, resolvedTime) : null;
+                const fullMins = isCompleted ? calculateDurationMins(ticket.created_at, resolvedTime) : null;
 
                 return (
                   <tr 
@@ -792,8 +818,8 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
                       <span className="font-extrabold text-blue-600 dark:text-blue-400">
                         {formatDurationHuman(respMins)}
                       </span>
-                      {ticket.responded_at && (
-                        <p className="text-[9px] font-mono text-slate-400 block">{formatDateFormatted(ticket.responded_at)}</p>
+                      {respondedTime && (
+                        <p className="text-[9px] font-mono text-slate-400 block">{formatDateFormatted(respondedTime)}</p>
                       )}
                     </td>
 
@@ -801,8 +827,8 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
                       <span className="font-extrabold text-indigo-600 dark:text-indigo-400">
                         {formatDurationHuman(resMins)}
                       </span>
-                      {ticket.resolved_at && (
-                        <p className="text-[9px] font-mono text-slate-400 block">{formatDateFormatted(ticket.resolved_at)}</p>
+                      {resolvedTime && (
+                        <p className="text-[9px] font-mono text-slate-400 block">{formatDateFormatted(resolvedTime)}</p>
                       )}
                     </td>
 
@@ -814,13 +840,13 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
 
                     <td className="py-3 px-3 text-right">
                       <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                        ticket.status === 'Resolved' || ticket.status === 'Selesai'
+                        isCompleted
                           ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                          : ticket.status === 'In Progress' || ticket.status === 'Progres'
+                          : ticket.status === 'In Progress' || ticket.status === 'Progres' || ticket.status === 'Assigned'
                           ? 'bg-blue-500/10 text-blue-600 border border-blue-500/20'
                           : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
                       }`}>
-                        {ticket.status}
+                        {ticket.status === 'Completed' ? 'Selesai' : ticket.status}
                       </span>
                     </td>
                   </tr>
