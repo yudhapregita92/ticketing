@@ -224,48 +224,53 @@ router.post("/upload", upload.single('file'), (req, res) => {
     }
 
     // Run actual insertions/updates
-    for (const pRow of parsedRows) {
-      const { kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, nik_ktp, no_hp } = pRow;
-      
-      let existing: any = null;
-      if (barcode) {
-        existing = db.prepare("SELECT * FROM memberships WHERE barcode = ?").get(barcode);
-      }
-      if (!existing && kode_lokal) {
-        existing = db.prepare("SELECT * FROM memberships WHERE kode_lokal = ?").get(kode_lokal);
-      }
-      if (!existing && nik_ktp) {
-        existing = db.prepare("SELECT * FROM memberships WHERE nik_ktp = ?").get(nik_ktp);
-      }
-      
-      if (existing) {
-        // Preserve existing photo and layout/offset details
-        const fotoToSave = existing.foto;
-        const scaleToSave = existing.photo_scale !== null && existing.photo_scale !== undefined ? existing.photo_scale : 1.0;
-        const offsetXToSave = existing.photo_offset_x !== null && existing.photo_offset_x !== undefined ? existing.photo_offset_x : 50.0;
-        const offsetYToSave = existing.photo_offset_y !== null && existing.photo_offset_y !== undefined ? existing.photo_offset_y : 50.0;
+    count = 0;
+    const processRows = db.transaction((rows: any[]) => {
+      for (const pRow of rows) {
+        const { kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, nik_ktp, no_hp } = pRow;
         
-        update.run(
-          kode_lokal || existing.kode_lokal,
-          indek_kdk || existing.indek_kdk,
-          indek_ggf || existing.indek_ggf,
-          nama,
-          bagian || existing.bagian,
-          barcode || existing.barcode,
-          fotoToSave,
-          nik_ktp || existing.nik_ktp,
-          no_hp || existing.no_hp,
-          scaleToSave,
-          offsetXToSave,
-          offsetYToSave,
-          existing.id
-        );
-        count++;
-      } else {
-        insert.run(kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, null, nik_ktp, no_hp, 1.0, 50.0, 50.0);
-        count++;
+        let existing: any = null;
+        if (barcode) {
+          existing = db.prepare("SELECT * FROM memberships WHERE barcode = ?").get(barcode);
+        }
+        if (!existing && kode_lokal) {
+          existing = db.prepare("SELECT * FROM memberships WHERE kode_lokal = ?").get(kode_lokal);
+        }
+        if (!existing && nik_ktp) {
+          existing = db.prepare("SELECT * FROM memberships WHERE nik_ktp = ?").get(nik_ktp);
+        }
+        
+        if (existing) {
+          // Preserve existing photo and layout/offset details
+          const fotoToSave = existing.foto;
+          const scaleToSave = existing.photo_scale !== null && existing.photo_scale !== undefined ? existing.photo_scale : 1.0;
+          const offsetXToSave = existing.photo_offset_x !== null && existing.photo_offset_x !== undefined ? existing.photo_offset_x : 50.0;
+          const offsetYToSave = existing.photo_offset_y !== null && existing.photo_offset_y !== undefined ? existing.photo_offset_y : 50.0;
+          
+          update.run(
+            kode_lokal || existing.kode_lokal,
+            indek_kdk || existing.indek_kdk,
+            indek_ggf || existing.indek_ggf,
+            nama,
+            bagian || existing.bagian,
+            barcode || existing.barcode,
+            fotoToSave,
+            nik_ktp || existing.nik_ktp,
+            no_hp || existing.no_hp,
+            scaleToSave,
+            offsetXToSave,
+            offsetYToSave,
+            existing.id
+          );
+          count++;
+        } else {
+          insert.run(kode_lokal, indek_kdk, indek_ggf, nama, bagian, barcode, null, nik_ktp, no_hp, 1.0, 50.0, 50.0);
+          count++;
+        }
       }
-    }
+    });
+    
+    processRows(parsedRows);
     
     res.json({ success: true, count });
   } catch (err: any) {
@@ -289,28 +294,34 @@ router.post("/journals/submit", (req: any, res: any) => {
     return res.status(400).json({ error: "Nama wajib diisi" });
   }
   try {
-    const info = db.prepare(
-      "INSERT INTO membership_journals (member_id, nama, kode_lokal, indek_ggf, bagian, barcode, signature, keterangan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-    ).run(
-      member_id || null,
-      nama,
-      kode_lokal || null,
-      indek_ggf || null,
-      bagian || null,
-      barcode || null,
-      signature || null,
-      keterangan || null
-    );
-    
-    // Also record this as a log in membership_logs if member_id exists
-    if (member_id) {
-      db.prepare("INSERT INTO membership_logs (membership_id, keterangan) VALUES (?, ?)").run(
-        member_id,
-        "Mengisi buku jurnal cetak kartu & melakukan tanda tangan digital."
+    let lastInsertId: any = null;
+    const processSubmit = db.transaction(() => {
+      const info = db.prepare(
+        "INSERT INTO membership_journals (member_id, nama, kode_lokal, indek_ggf, bagian, barcode, signature, keterangan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+      ).run(
+        member_id || null,
+        nama,
+        kode_lokal || null,
+        indek_ggf || null,
+        bagian || null,
+        barcode || null,
+        signature || null,
+        keterangan || null
       );
-    }
+      lastInsertId = info.lastInsertRowid;
+      
+      // Also record this as a log in membership_logs if member_id exists
+      if (member_id) {
+        db.prepare("INSERT INTO membership_logs (membership_id, keterangan) VALUES (?, ?)").run(
+          member_id,
+          "Mengisi buku jurnal cetak kartu & melakukan tanda tangan digital."
+        );
+      }
+    });
+
+    processSubmit();
     
-    res.json({ success: true, id: info.lastInsertRowid });
+    res.json({ success: true, id: lastInsertId });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

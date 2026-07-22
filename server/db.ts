@@ -1,9 +1,10 @@
 import Database from "better-sqlite3";
 import bcrypt from "bcryptjs";
 
-const db = new Database("tickets.db");
+const db = new Database("tickets.db", { timeout: 15000 });
 db.pragma("journal_mode = WAL");
 db.pragma("synchronous = NORMAL");
+db.pragma("busy_timeout = 15000");
 
 // Initialize database tables
 export function initDb() {
