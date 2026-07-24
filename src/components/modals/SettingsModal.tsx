@@ -42,8 +42,8 @@ interface SettingsModalProps {
   inline?: boolean;
   isDark: boolean;
   themeClasses: any;
-  settingsTab: 'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond';
-  setSettingsTab: (tab: 'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond') => void;
+  settingsTab: 'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup';
+  setSettingsTab: (tab: 'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup') => void;
   appSettings: any;
   setAppSettings: (settings: any) => void;
   LOGO_OPTIONS: any[];
@@ -720,6 +720,13 @@ export const SettingsModal = React.memo(({
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'auto_respond' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Zap className="w-4 h-4 text-purple-400" /> Auto Respond (Yudha)
+            </button>
+            <button 
+              type="button"
+              onClick={() => setSettingsTab('ticket_popup')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'ticket_popup' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+            >
+              <MessageCircle className="w-4 h-4" /> Pop-up Tiket
             </button>
             <button 
               onClick={() => setSettingsTab('panduan')}
@@ -2232,6 +2239,102 @@ export const SettingsModal = React.memo(({
                       </div>
                     </div>
 
+                  </div>
+                </div>
+              )}
+
+              {settingsTab === 'ticket_popup' && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+                    <div>
+                      <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <MessageCircle className="w-4 h-4 text-emerald-500" /> Pengaturan Pop-up Tiket
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Ubah teks yang muncul pada saat pengguna menekan tombol "Buat Tiket Baru"
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Judul Pop-up</label>
+                      <input 
+                        type="text"
+                        value={appSettings.ticket_popup_title || ''}
+                        onChange={(e) => setAppSettings({...appSettings, ticket_popup_title: e.target.value})}
+                        placeholder="Contoh: Buat Tiket Baru"
+                        className={`w-full px-4 py-2.5 rounded-xl border text-xs font-semibold ${themeClasses.bgSecondary} ${themeClasses.border} focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Sub-judul Pop-up</label>
+                      <input 
+                        type="text"
+                        value={appSettings.ticket_popup_subtitle || ''}
+                        onChange={(e) => setAppSettings({...appSettings, ticket_popup_subtitle: e.target.value})}
+                        placeholder="Contoh: Layanan Bantuan IT"
+                        className={`w-full px-4 py-2.5 rounded-xl border text-xs font-semibold ${themeClasses.bgSecondary} ${themeClasses.border} focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Teks Pertanyaan (Prompt)</label>
+                      <input 
+                        type="text"
+                        value={appSettings.ticket_popup_prompt || ''}
+                        onChange={(e) => setAppSettings({...appSettings, ticket_popup_prompt: e.target.value})}
+                        placeholder="Contoh: Pilih tipe piranti yang Anda gunakan saat ini:"
+                        className={`w-full px-4 py-2.5 rounded-xl border text-xs font-semibold ${themeClasses.bgSecondary} ${themeClasses.border} focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-4">
+                    <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300">Opsi 1: Smartphone / Laptop</h4>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Judul Opsi 1</label>
+                      <input 
+                        type="text"
+                        value={appSettings.ticket_popup_opt1_title || ''}
+                        onChange={(e) => setAppSettings({...appSettings, ticket_popup_opt1_title: e.target.value})}
+                        placeholder="Contoh: Smartphone / Tab / Laptop"
+                        className={`w-full px-4 py-2.5 rounded-xl border text-xs font-semibold ${themeClasses.bgSecondary} ${themeClasses.border} focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Deskripsi Opsi 1</label>
+                      <textarea 
+                        value={appSettings.ticket_popup_opt1_desc || ''}
+                        onChange={(e) => setAppSettings({...appSettings, ticket_popup_opt1_desc: e.target.value})}
+                        placeholder="Contoh: Memiliki kamera bawaan. Wajib melakukan Scan Wajah (Selfie) untuk membuat tiket."
+                        rows={2}
+                        className={`w-full px-4 py-2.5 rounded-xl border text-xs font-semibold ${themeClasses.bgSecondary} ${themeClasses.border} focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none`}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-4">
+                    <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300">Opsi 2: PC Desktop</h4>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Judul Opsi 2</label>
+                      <input 
+                        type="text"
+                        value={appSettings.ticket_popup_opt2_title || ''}
+                        onChange={(e) => setAppSettings({...appSettings, ticket_popup_opt2_title: e.target.value})}
+                        placeholder="Contoh: Komputer PC (Desktop)"
+                        className={`w-full px-4 py-2.5 rounded-xl border text-xs font-semibold ${themeClasses.bgSecondary} ${themeClasses.border} focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Deskripsi Opsi 2</label>
+                      <textarea 
+                        value={appSettings.ticket_popup_opt2_desc || ''}
+                        onChange={(e) => setAppSettings({...appSettings, ticket_popup_opt2_desc: e.target.value})}
+                        placeholder="Contoh: Komputer meja tanpa kamera bawaan. Wajib menginput Kode Nomor PC di monitor Anda."
+                        rows={2}
+                        className={`w-full px-4 py-2.5 rounded-xl border text-xs font-semibold ${themeClasses.bgSecondary} ${themeClasses.border} focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none`}
+                      />
+                    </div>
                   </div>
                 </div>
               )}

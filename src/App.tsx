@@ -280,7 +280,7 @@ export default function App() {
   const [loginData, setLoginData] = useState({ username: '', password: '' });
   const [showSettings, setShowSettings] = useState(false); // Toggle modal pengaturan aplikasi
   const [showImageManager, setShowImageManager] = useState(false); // Toggle modal manajemen gambar
-  const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond'>('general');
+  const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup'>('general');
   const [showResetConfirm, setShowResetConfirm] = useState(false); // Toggle konfirmasi reset data
   const [showTakeoverConfirm, setShowTakeoverConfirm] = useState<{id: number, type: 'takeover' | 'reassign', targetUser?: string} | null>(null);
   const [showDistribution, setShowDistribution] = useState(false); // Toggle distribusi masalah
@@ -1978,6 +1978,7 @@ export default function App() {
             primaryColor={primaryColor}
             masterUsers={masterUsers}
             currentUser={modalCurrentUser}
+            appSettings={appSettings}
           />
         )}
 

@@ -50,6 +50,7 @@ interface NewTicketModalProps {
   primaryColor: string;
   masterUsers: {id: number, full_name: string, department: string, phone: string, employee_index?: string, jenis_piranti?: string, kode_piranti?: string}[];
   currentUser?: any;
+  appSettings?: any;
 }
 
 export const NewTicketModal = React.memo(({
@@ -66,7 +67,8 @@ export const NewTicketModal = React.memo(({
   isSubmitting,
   primaryColor,
   masterUsers,
-  currentUser
+  currentUser,
+  appSettings
 }: NewTicketModalProps) => {
   const [showUserDropdown, setShowUserDropdown] = React.useState(false);
   const [deviceSelected, setDeviceSelected] = React.useState<string | null>(newTicket.device_type || null);
@@ -611,8 +613,8 @@ export const NewTicketModal = React.memo(({
                 <Ticket className="w-3.5 h-3.5" />
               </div>
               <div>
-                <h2 className={`text-sm font-black tracking-tight ${themeClasses.text}`}>Buat Tiket Baru</h2>
-                <p className={`text-[8px] font-bold capitalize tracking-widest ${themeClasses.textMuted}`}>Layanan Bantuan IT</p>
+                <h2 className={`text-sm font-black tracking-tight ${themeClasses.text}`}>{appSettings?.ticket_popup_title || 'Buat Tiket Baru'}</h2>
+                <p className={`text-[8px] font-bold capitalize tracking-widest ${themeClasses.textMuted}`}>{appSettings?.ticket_popup_subtitle || 'Layanan Bantuan IT'}</p>
               </div>
             </div>
             <button 
@@ -627,7 +629,7 @@ export const NewTicketModal = React.memo(({
         {deviceSelected === null ? (
           <div className="p-4 sm:p-6 overflow-y-auto space-y-4 max-h-[70vh]">
             <h3 className={`text-xs sm:text-sm font-black text-center ${themeClasses.text} tracking-tight`}>
-              Pilih tipe piranti yang Anda gunakan saat ini:
+              {appSettings?.ticket_popup_prompt || 'Pilih tipe piranti yang Anda gunakan saat ini:'}
             </h3>
 
             <div className="grid grid-cols-1 gap-3 w-full max-w-sm mx-auto">
@@ -646,9 +648,9 @@ export const NewTicketModal = React.memo(({
                   <Smartphone className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className={`text-xs font-black ${themeClasses.text} mb-0.5`}>Smartphone / Tab / Laptop</h4>
+                  <h4 className={`text-xs font-black ${themeClasses.text} mb-0.5`}>{appSettings?.ticket_popup_opt1_title || 'Smartphone / Tab / Laptop'}</h4>
                   <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 leading-tight">
-                    Memiliki kamera bawaan. Wajib melakukan Scan Wajah (Selfie) untuk membuat tiket.
+                    {appSettings?.ticket_popup_opt1_desc || 'Memiliki kamera bawaan. Wajib melakukan Scan Wajah (Selfie) untuk membuat tiket.'}
                   </p>
                 </div>
               </button>
@@ -666,9 +668,9 @@ export const NewTicketModal = React.memo(({
                   <Monitor className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className={`text-xs font-black ${themeClasses.text} mb-0.5`}>Komputer PC (Desktop)</h4>
+                  <h4 className={`text-xs font-black ${themeClasses.text} mb-0.5`}>{appSettings?.ticket_popup_opt2_title || 'Komputer PC (Desktop)'}</h4>
                   <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 leading-tight">
-                    Komputer meja tanpa kamera bawaan. Wajib menginput Kode Nomor PC di monitor Anda.
+                    {appSettings?.ticket_popup_opt2_desc || 'Komputer meja tanpa kamera bawaan. Wajib menginput Kode Nomor PC di monitor Anda.'}
                   </p>
                 </div>
               </button>

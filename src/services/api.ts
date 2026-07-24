@@ -2,13 +2,37 @@ import { ITicket, IUser, IDepartment, ICategory, IMasterUser, ISettings } from '
 
 const handleResponse = async (res: Response) => {
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`API error ${res.status}: ${text}`);
+    let text = await res.text();
+    let safeMessage = text;
+
+    // Check if response contains HTML or script patterns
+    const htmlPattern = /<[a-z][\s\S]*>/i;
+    const scriptPattern = /function\s*\(|=>|[{}]/i;
+    
+    if (htmlPattern.test(text) || (text.length > 150 && scriptPattern.test(text))) {
+      safeMessage = 'Terjadi kesalahan pada sistem. Silakan coba lagi atau hubungi administrator.';
+      console.error('API Error Details (Hidden from UI):', text);
+    } else {
+      // Try to parse JSON error message if possible
+      try {
+        const parsed = JSON.parse(text);
+        safeMessage = parsed.message || parsed.error || safeMessage;
+      } catch (e) {
+        // Not JSON, use the safe string
+        if (safeMessage.length > 150) {
+          safeMessage = safeMessage.substring(0, 150) + '...';
+        }
+      }
+    }
+
+    throw new Error(safeMessage);
   }
+  
   const contentType = res.headers.get("content-type");
   if (!contentType || !contentType.includes("application/json")) {
-    throw new Error("API returned non-JSON response");
+    throw new Error("API mengembalikan format yang tidak valid (Bukan JSON).");
   }
+  
   return res.json();
 };
 
@@ -229,12 +253,25 @@ export const api = {
       body: formData
     }).then(async res => {
       if (!res.ok) {
-        const text = await res.text();
+        let text = await res.text();
+        let safeMessage = text;
+
+        // Check for HTML or script patterns
+        const htmlPattern = /<[a-z][\s\S]*>/i;
+        const scriptPattern = /function\s*\(|=>|[{}]/i;
+        
+        if (htmlPattern.test(text) || (text.length > 150 && scriptPattern.test(text))) {
+          safeMessage = 'Terjadi kesalahan pada sistem. Silakan coba lagi atau hubungi administrator.';
+          console.error('API Error Details (Hidden from UI):', text);
+        } else if (safeMessage.length > 150) {
+          safeMessage = safeMessage.substring(0, 150) + '...';
+        }
+
         try {
           const parsed = JSON.parse(text);
           return { success: false, ...parsed };
         } catch (e) {
-          throw new Error(`API error ${res.status}: ${text}`);
+          throw new Error(safeMessage);
         }
       }
       return res.json().then(data => ({ success: true, ...data }));
