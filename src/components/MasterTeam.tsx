@@ -218,24 +218,70 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
   };
 
   useEffect(() => {
+    // Load from SQLite database on mount
+    const fetchFromDb = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.it_team_members_v2 && Array.isArray(data.it_team_members_v2) && data.it_team_members_v2.length > 0) {
+            setTeamMembers(data.it_team_members_v2);
+          }
+          if (data.it_team_header_title) setHeaderTitle(data.it_team_header_title);
+          if (data.it_team_header_desc) setHeaderDesc(data.it_team_header_desc);
+          if (data.it_team_level2_label) setLevel2Label(data.it_team_level2_label);
+          if (data.it_team_unit_ops_title) setUnitOpsTitle(data.it_team_unit_ops_title);
+          if (data.it_team_unit_inovasi_title) setUnitInovasiTitle(data.it_team_unit_inovasi_title);
+        }
+      } catch (e) {
+        console.error('Failed to load IT team data from SQLite DB', e);
+      }
+    };
+    fetchFromDb();
+  }, []);
+
+  const saveToDbAndLocalStorage = async (updatedTeam?: ITeamMember[], updatedTitle?: string, updatedDesc?: string, updatedL2?: string, updatedOps?: string, updatedInovasi?: string) => {
+    const teamToSave = updatedTeam !== undefined ? updatedTeam : teamMembers;
+    const titleToSave = updatedTitle !== undefined ? updatedTitle : headerTitle;
+    const descToSave = updatedDesc !== undefined ? updatedDesc : headerDesc;
+    const l2ToSave = updatedL2 !== undefined ? updatedL2 : level2Label;
+    const opsToSave = updatedOps !== undefined ? updatedOps : unitOpsTitle;
+    const inovasiToSave = updatedInovasi !== undefined ? updatedInovasi : unitInovasiTitle;
+
+    // 1. Save to LocalStorage
     try {
-      localStorage.setItem('it_team_members_v2', JSON.stringify(teamMembers));
+      localStorage.setItem('it_team_members_v2', JSON.stringify(teamToSave));
+      localStorage.setItem('it_team_header_title', titleToSave);
+      localStorage.setItem('it_team_header_desc', descToSave);
+      localStorage.setItem('it_team_level2_label', l2ToSave);
+      localStorage.setItem('it_team_unit_ops_title', opsToSave);
+      localStorage.setItem('it_team_unit_inovasi_title', inovasiToSave);
     } catch (e) {
-      console.error(e);
+      console.error('LocalStorage save error:', e);
     }
-  }, [teamMembers]);
+
+    // 2. Save to SQLite database
+    try {
+      await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          it_team_members_v2: teamToSave,
+          it_team_header_title: titleToSave,
+          it_team_header_desc: descToSave,
+          it_team_level2_label: l2ToSave,
+          it_team_unit_ops_title: opsToSave,
+          it_team_unit_inovasi_title: inovasiToSave,
+        }),
+      });
+    } catch (e) {
+      console.error('SQLite DB save error:', e);
+    }
+  };
 
   useEffect(() => {
-    try {
-      localStorage.setItem('it_team_header_title', headerTitle);
-      localStorage.setItem('it_team_header_desc', headerDesc);
-      localStorage.setItem('it_team_level2_label', level2Label);
-      localStorage.setItem('it_team_unit_ops_title', unitOpsTitle);
-      localStorage.setItem('it_team_unit_inovasi_title', unitInovasiTitle);
-    } catch (e) {
-      console.error(e);
-    }
-  }, [headerTitle, headerDesc, level2Label, unitOpsTitle, unitInovasiTitle]);
+    saveToDbAndLocalStorage();
+  }, [teamMembers, headerTitle, headerDesc, level2Label, unitOpsTitle, unitInovasiTitle]);
 
   // Categorize Members for Hierarchy
   const subDeptHead = teamMembers.find(m => m.role === 'Sub Dept Head');
@@ -414,7 +460,7 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                 <span className="text-xs font-semibold text-slate-400">• Struktur Organisasi</span>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/10 text-teal-600 border border-teal-500/20 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  Tersimpan Permanen (Browser LocalStorage)
+                  Tersimpan Permanen (Database SQLite Server)
                 </span>
               </div>
 
