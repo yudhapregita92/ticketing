@@ -32,7 +32,11 @@ import {
   X,
   Check,
   Zap,
-  ArrowDown
+  ArrowDown,
+  Download,
+  Upload,
+  Save,
+  HardDrive
 } from 'lucide-react';
 
 export interface ITeamMember {
@@ -185,7 +189,18 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
   const [headerDesc, setHeaderDesc] = useState(() => {
     return localStorage.getItem('it_team_header_desc') || 'Struktur hirarki Sub Dept Head, Section Head, Digitalization Specialist, dan 2 Pelaksana IT beserta rincian jobdesk operasional.';
   });
+  const [level2Label, setLevel2Label] = useState(() => {
+    return localStorage.getItem('it_team_level2_label') || 'Level 2 & Level 3: Unit Operasional Support (Section Head & Pelaksana) & Unit Inovasi (Digitalization Specialist)';
+  });
+  const [unitOpsTitle, setUnitOpsTitle] = useState(() => {
+    return localStorage.getItem('it_team_unit_ops_title') || 'Unit Operasional Helpdesk & Support';
+  });
+  const [unitInovasiTitle, setUnitInovasiTitle] = useState(() => {
+    return localStorage.getItem('it_team_unit_inovasi_title') || 'Unit Inovasi, Otomatisasi & Digitalisasi';
+  });
+
   const [isEditingHeader, setIsEditingHeader] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<'topology' | 'jobdesk' | 'manage'>('topology');
   const [searchQuery, setSearchQuery] = useState('');
@@ -194,6 +209,13 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
   // Modal State for Edit/Add
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Partial<ITeamMember> | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => {
+      setToastMsg(null);
+    }, 3500);
+  };
 
   useEffect(() => {
     try {
@@ -207,10 +229,13 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
     try {
       localStorage.setItem('it_team_header_title', headerTitle);
       localStorage.setItem('it_team_header_desc', headerDesc);
+      localStorage.setItem('it_team_level2_label', level2Label);
+      localStorage.setItem('it_team_unit_ops_title', unitOpsTitle);
+      localStorage.setItem('it_team_unit_inovasi_title', unitInovasiTitle);
     } catch (e) {
       console.error(e);
     }
-  }, [headerTitle, headerDesc]);
+  }, [headerTitle, headerDesc, level2Label, unitOpsTitle, unitInovasiTitle]);
 
   // Categorize Members for Hierarchy
   const subDeptHead = teamMembers.find(m => m.role === 'Sub Dept Head');
@@ -234,6 +259,7 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
 
     if (editingMember.id) {
       setTeamMembers(prev => prev.map(m => m.id === editingMember.id ? (editingMember as ITeamMember) : m));
+      showToast('Data anggota tim berhasil diperbarui & disimpan permanen!');
     } else {
       const newMember: ITeamMember = {
         id: `team-${Date.now()}`,
@@ -251,6 +277,7 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
         notes: editingMember.notes || ''
       };
       setTeamMembers(prev => [...prev, newMember]);
+      showToast('Anggota tim baru berhasil ditambahkan & disimpan permanen!');
     }
 
     setIsModalOpen(false);
@@ -260,15 +287,91 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
   const handleDeleteMember = (id: string) => {
     if (confirm('Apakah Anda yakin ingin menghapus anggota tim ini?')) {
       setTeamMembers(prev => prev.filter(m => m.id !== id));
+      showToast('Anggota tim berhasil dihapus!');
     }
   };
 
   const handleResetDefault = () => {
     if (confirm('Kembalikan susunan tim IT Support & Digitalisasi ke pengaturan awal (Default)?')) {
       setTeamMembers(DEFAULT_TEAM);
-      setHeaderTitle('Tim & Topologi IT Support');
-      setHeaderDesc('Struktur hirarki Sub Dept Head, Section Head, Digitalization Specialist, dan 2 Pelaksana IT beserta rincian jobdesk operasional.');
+      const defaultTitle = 'Tim & Topologi IT Support';
+      const defaultDesc = 'Struktur hirarki Sub Dept Head, Section Head, Digitalization Specialist, dan 2 Pelaksana IT beserta rincian jobdesk operasional.';
+      const defaultL2 = 'Level 2 & Level 3: Unit Operasional Support (Section Head & Pelaksana) & Unit Inovasi (Digitalization Specialist)';
+      const defaultOps = 'Unit Operasional Helpdesk & Support';
+      const defaultInovasi = 'Unit Inovasi, Otomatisasi & Digitalisasi';
+
+      setHeaderTitle(defaultTitle);
+      setHeaderDesc(defaultDesc);
+      setLevel2Label(defaultL2);
+      setUnitOpsTitle(defaultOps);
+      setUnitInovasiTitle(defaultInovasi);
+
+      localStorage.setItem('it_team_members_v2', JSON.stringify(DEFAULT_TEAM));
+      localStorage.setItem('it_team_header_title', defaultTitle);
+      localStorage.setItem('it_team_header_desc', defaultDesc);
+      localStorage.setItem('it_team_level2_label', defaultL2);
+      localStorage.setItem('it_team_unit_ops_title', defaultOps);
+      localStorage.setItem('it_team_unit_inovasi_title', defaultInovasi);
+
+      showToast('Pengaturan tim & topologi telah dikembalikan ke default!');
     }
+  };
+
+  const handleExportBackup = () => {
+    const backupData = {
+      version: '2.0',
+      timestamp: new Date().toISOString(),
+      headerTitle,
+      headerDesc,
+      level2Label,
+      unitOpsTitle,
+      unitInovasiTitle,
+      teamMembers
+    };
+
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_topologi_it_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('File backup JSON topologi IT berhasil diunduh!');
+  };
+
+  const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const content = event.target?.result as string;
+        const parsed = JSON.parse(content);
+
+        if (Array.isArray(parsed.teamMembers)) {
+          setTeamMembers(parsed.teamMembers);
+          if (parsed.headerTitle) setHeaderTitle(parsed.headerTitle);
+          if (parsed.headerDesc) setHeaderDesc(parsed.headerDesc);
+          if (parsed.level2Label) setLevel2Label(parsed.level2Label);
+          if (parsed.unitOpsTitle) setUnitOpsTitle(parsed.unitOpsTitle);
+          if (parsed.unitInovasiTitle) setUnitInovasiTitle(parsed.unitInovasiTitle);
+
+          showToast('Data topologi berhasil diimpor & disimpan permanen!');
+        } else if (Array.isArray(parsed)) {
+          setTeamMembers(parsed);
+          showToast('Data anggota tim berhasil diimpor & disimpan permanen!');
+        } else {
+          alert('Format file JSON backup tidak valid.');
+        }
+      } catch (err) {
+        alert('Gagal membaca file JSON backup: ' + err);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const handlePrintTopology = () => {
@@ -286,6 +389,14 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
 
   return (
     <div className="space-y-6 animate-fadeIn pb-12">
+      {/* Toast Notification Banner */}
+      {toastMsg && (
+        <div className="fixed top-5 right-5 z-50 px-4 py-3 rounded-2xl bg-emerald-600 text-white shadow-2xl flex items-center gap-2 text-xs font-black animate-bounce">
+          <CheckCircle2 className="w-5 h-5 text-emerald-200" />
+          <span>{toastMsg}</span>
+        </div>
+      )}
+
       {/* --- HEADER TITLE BANNER (EDITABLE) --- */}
       <div className={`p-6 rounded-3xl border shadow-xl relative overflow-hidden ${themeClasses.bgCard}`}>
         <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 rounded-full opacity-10 bg-gradient-to-br from-emerald-500 to-cyan-500 blur-2xl pointer-events-none" />
@@ -296,11 +407,15 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
               <Users className="w-7 h-7" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
                   Data Master
                 </span>
                 <span className="text-xs font-semibold text-slate-400">• Struktur Organisasi</span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/10 text-teal-600 border border-teal-500/20 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  Tersimpan Permanen (Browser LocalStorage)
+                </span>
               </div>
 
               {isEditingHeader ? (
@@ -318,7 +433,10 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                     className={`w-full px-3 py-1.5 rounded-xl text-xs border outline-none ${themeClasses.inputBg}`}
                   />
                   <button
-                    onClick={() => setIsEditingHeader(false)}
+                    onClick={() => {
+                      setIsEditingHeader(false);
+                      showToast('Judul & deskripsi berhasil disimpan permanen!');
+                    }}
                     className="px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500 text-white flex items-center gap-1 shadow-sm"
                   >
                     <Check className="w-3.5 h-3.5" /> Simpan Judul
@@ -348,19 +466,41 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
 
           <div className="flex items-center gap-2 self-start md:self-auto flex-wrap shrink-0">
             <button
-              onClick={handlePrintTopology}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}
+              onClick={handleExportBackup}
+              title="Unduh backup data topologi & tim ke file JSON"
+              className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}
             >
-              <Printer className="w-4 h-4 text-emerald-500" />
-              <span>Cetak Topologi</span>
+              <Download className="w-4 h-4 text-emerald-500" />
+              <span>Backup JSON</span>
             </button>
+
+            <label className={`px-3 py-2 rounded-xl text-xs font-bold border cursor-pointer transition-all flex items-center gap-1.5 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}>
+              <Upload className="w-4 h-4 text-cyan-500" />
+              <span>Impor JSON</span>
+              <input 
+                type="file" 
+                accept=".json" 
+                onChange={handleImportBackup} 
+                className="hidden" 
+              />
+            </label>
+
+            <button
+              onClick={handlePrintTopology}
+              className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}
+            >
+              <Printer className="w-4 h-4 text-slate-400" />
+              <span>Cetak</span>
+            </button>
+
             <button
               onClick={handleResetDefault}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}
+              className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}
             >
-              <RefreshCw className="w-4 h-4 text-cyan-500" />
-              <span>Reset Default</span>
+              <RefreshCw className="w-4 h-4 text-amber-500" />
+              <span>Reset</span>
             </button>
+
             <button
               onClick={() => {
                 setEditingMember({
@@ -374,7 +514,7 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                 setIsModalOpen(true);
               }}
               style={{ backgroundColor: primaryColor }}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-lg transition-all hover:brightness-110 active:scale-95 flex items-center gap-2"
+              className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-lg transition-all hover:brightness-110 active:scale-95 flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
               <span>Tambah Anggota</span>
@@ -515,7 +655,7 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
             <div className="mb-10">
               <div className="text-center mb-6">
                 <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-teal-500/10 text-teal-600 border border-teal-500/20">
-                  Level 2 & Level 3: Unit Operasional Support (Section Head & Pelaksana) & Unit Inovasi (Digitalization Specialist)
+                  {level2Label}
                 </span>
               </div>
 
@@ -525,7 +665,7 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                 <div className="lg:col-span-7 space-y-4 p-5 rounded-3xl border border-emerald-500/30 bg-emerald-500/5 relative">
                   <div className="absolute -top-3 left-4 px-3 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-md flex items-center gap-1">
                     <ShieldCheck className="w-3 h-3" />
-                    <span>Unit Operasional Helpdesk & Support</span>
+                    <span>{unitOpsTitle}</span>
                   </div>
 
                   {/* LEVEL 2A: SECTION HEAD */}
@@ -678,7 +818,7 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                 <div className="lg:col-span-5 space-y-4 p-5 rounded-3xl border border-cyan-500/30 bg-cyan-500/5 relative">
                   <div className="absolute -top-3 left-4 px-3 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-cyan-600 text-white shadow-md flex items-center gap-1">
                     <Zap className="w-3 h-3" />
-                    <span>Unit Inovasi & Digitalisasi (Staf Ahli)</span>
+                    <span>{unitInovasiTitle}</span>
                   </div>
 
                   {digitalizationSpec ? (
