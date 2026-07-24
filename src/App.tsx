@@ -75,6 +75,7 @@ import { VoucherManagement } from './components/VoucherManagement';
 import { MasterUserManagement } from './components/MasterUserManagement';
 import { MasterPerangkatPlaceholder } from './components/MasterPerangkatPlaceholder';
 import { ReportSLA } from './components/ReportSLA';
+import { ReportPerangkat } from './components/ReportPerangkat';
 
 // Types, Constants, and Utils
 import { ITicket, IUser, IDepartment, ICategory, IMasterUser, ISettings, ViewMode } from './types';
@@ -220,8 +221,9 @@ export default function App() {
     name: '',
     department: '',
     category: '',
+    jenis_masalah: '',
     phone: '',
-    priority: 'Medium' as 'Low' | 'Medium' | 'High' | 'Urgent',
+    priority: '' as '' | 'Low' | 'Medium' | 'High' | 'Urgent',
     description: '',
     photo: '',
     face_photo: '',
@@ -289,6 +291,7 @@ export default function App() {
   const [newItemName, setNewItemName] = useState('');
   const [newItemAssignedTo, setNewItemAssignedTo] = useState('');
   const [newItemResponseTime, setNewItemResponseTime] = useState<number>(0);
+  const [newItemJenisMasalah, setNewItemJenisMasalah] = useState('Hardware');
   const [newEmailInput, setNewEmailInput] = useState('');
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -303,7 +306,7 @@ export default function App() {
     let view = p === '' ? (hasAdmin ? 'dashboard' : 'today') : p;
 
     // Admin only routes fallback
-    if (!hasAdmin && ['dashboard', 'assets', 'network', 'membership', 'evaluasi_project', 'voucher', 'master_user', 'master_perangkat', 'report_sla'].includes(view)) {
+    if (!hasAdmin && ['dashboard', 'assets', 'network', 'membership', 'evaluasi_project', 'voucher', 'master_user', 'master_perangkat', 'report_sla', 'report_perangkat'].includes(view)) {
       if (view === 'voucher' && userCanVoucher) {
         // Allowed
       } else {
@@ -311,7 +314,7 @@ export default function App() {
       }
     }
 
-    if (['today', 'all', 'my_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership', 'evaluasi_project', 'jurnal', 'voucher', 'master_user', 'master_perangkat', 'report_sla'].includes(view)) {
+    if (['today', 'all', 'my_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership', 'evaluasi_project', 'jurnal', 'voucher', 'master_user', 'master_perangkat', 'report_sla', 'report_perangkat'].includes(view)) {
       return view as ViewMode;
     }
     return hasAdmin ? 'dashboard' : 'today';
@@ -399,6 +402,7 @@ export default function App() {
       name: activeUser ? activeUser.full_name : '',
       department: activeUser ? (activeUser.department || activeUser.bagian || activeUser.role || '') : '',
       category: '',
+      jenis_masalah: '',
       phone: activeUser ? activeUser.phone : '',
       priority: 'Medium',
       description: '',
@@ -847,12 +851,13 @@ export default function App() {
         let result;
         if (type === 'it') result = await api.addITPersonnel({ name: newItemName.trim() });
         else if (type === 'dept') result = await api.addDepartment({ name: newItemName.trim() });
-        else if (type === 'cat') result = await api.addCategory({ name: newItemName.trim(), assigned_to: newItemAssignedTo, response_time: newItemResponseTime });
+        else if (type === 'cat') result = await api.addCategory({ name: newItemName.trim(), assigned_to: newItemAssignedTo, response_time: newItemResponseTime, jenis_masalah: newItemJenisMasalah });
         
         if (result) {
           setNewItemName('');
           setNewItemAssignedTo('');
           setNewItemResponseTime(0);
+          setNewItemJenisMasalah('Hardware');
           setAddingType(null);
           toast.success(`${label} berhasil ditambahkan`);
           hapticFeedback.light();
@@ -864,7 +869,8 @@ export default function App() {
           result = await api.updateCategory(data.id, {
             name: data.name.trim(),
             assigned_to: data.assigned_to,
-            response_time: data.response_time
+            response_time: data.response_time,
+            jenis_masalah: data.jenis_masalah
           });
         }
         
@@ -1641,6 +1647,17 @@ export default function App() {
                   <Timer className="w-4 h-4" />
                   <span>Report SLA</span>
                 </button>
+                <button
+                  onClick={() => setViewMode('report_perangkat')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    viewMode === 'report_perangkat'
+                      ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <Activity className="w-4 h-4" />
+                  <span>Report Perangkat</span>
+                </button>
 
                 {(adminUser.role === 'Super Admin' || adminUser.role === 'Staff IT Support') && (
                   <>
@@ -1800,6 +1817,15 @@ export default function App() {
                 masterUsers={masterUsers}
                 onSelectTicket={(ticket) => setSelectedTicket(ticket)}
               />
+            ) : viewMode === 'report_perangkat' ? (
+              <ReportPerangkat 
+                tickets={tickets}
+                isDark={isDark}
+                themeClasses={themeClasses}
+                adminUser={adminUser}
+                masterUsers={masterUsers}
+                categories={categories}
+              />
             ) : viewMode === 'settings' ? (
               <SettingsModal 
                 inline={true}
@@ -1828,6 +1854,8 @@ export default function App() {
                 setNewItemAssignedTo={setNewItemAssignedTo}
                 newItemResponseTime={newItemResponseTime}
                 setNewItemResponseTime={setNewItemResponseTime}
+                newItemJenisMasalah={newItemJenisMasalah}
+                setNewItemJenisMasalah={setNewItemJenisMasalah}
                 handleManagementAction={handleManagementAction}
                 masterUsers={masterUsers}
                 adminUsers={adminUsers}
@@ -1972,6 +2000,7 @@ export default function App() {
             setNewTicket={setFormData}
             DEPARTMENTS={Array.isArray(departments) ? departments.map(d => d.name) : []}
             CATEGORIES={Array.isArray(categories) ? categories.map(c => c.name) : []}
+            rawCategories={categories}
             handlePhotoChange={handlePhotoUpload}
             handleSubmit={handleSubmit}
             isSubmitting={submitting}
@@ -2066,6 +2095,8 @@ export default function App() {
             setNewItemAssignedTo={setNewItemAssignedTo}
             newItemResponseTime={newItemResponseTime}
             setNewItemResponseTime={setNewItemResponseTime}
+            newItemJenisMasalah={newItemJenisMasalah}
+            setNewItemJenisMasalah={setNewItemJenisMasalah}
             handleManagementAction={handleManagementAction}
             masterUsers={masterUsers}
             adminUsers={adminUsers}

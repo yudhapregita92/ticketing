@@ -90,11 +90,12 @@ router.get("/categories", asyncHandler(async (req, res) => {
 }));
 
 router.post("/categories", asyncHandler(async (req, res) => {
-  const { name, assigned_to, response_time } = req.body;
-  db.prepare("INSERT INTO categories (name, assigned_to, response_time) VALUES (?, ?, ?)").run(
+  const { name, assigned_to, response_time, jenis_masalah } = req.body;
+  db.prepare("INSERT INTO categories (name, assigned_to, response_time, jenis_masalah) VALUES (?, ?, ?, ?)").run(
     name, 
     assigned_to || null, 
-    response_time ? parseInt(String(response_time), 10) : 0
+    response_time ? parseInt(String(response_time), 10) : 0,
+    jenis_masalah || 'Hardware'
   );
   emitUpdate();
   res.json({ success: true });
@@ -102,11 +103,12 @@ router.post("/categories", asyncHandler(async (req, res) => {
 
 router.put("/categories/:id", asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { name, assigned_to, response_time } = req.body;
-  db.prepare("UPDATE categories SET name = ?, assigned_to = ?, response_time = ? WHERE id = ?").run(
+  const { name, assigned_to, response_time, jenis_masalah } = req.body;
+  db.prepare("UPDATE categories SET name = ?, assigned_to = ?, response_time = ?, jenis_masalah = ? WHERE id = ?").run(
     name, 
     assigned_to || null, 
     response_time ? parseInt(String(response_time), 10) : 0, 
+    jenis_masalah || 'Hardware',
     id
   );
   emitUpdate();

@@ -23,6 +23,7 @@ export interface ITicket {
   face_photo?: string | null;
   device_type?: string | null;
   pc_code?: string | null;
+  jenis_masalah?: string | null;
   estimated_duration?: string | null;
   estimated_start_at?: string | null;
   estimated_target_at?: string | null;
@@ -45,6 +46,7 @@ export interface ICategory {
   name: string;
   assigned_to?: string;
   response_time?: number;
+  jenis_masalah?: string;
 }
 
 export interface IMasterUser {
@@ -101,7 +103,7 @@ export interface ISettings {
 
 export interface IAdminUser extends IUser {}
 export type IAppSettings = ISettings;
-export type ViewMode = 'today' | 'all' | 'my_tickets' | 'dashboard' | 'assets' | 'network' | 'ba' | 'panduan' | 'settings' | 'testing' | 'membership' | 'evaluasi_project' | 'jurnal' | 'voucher' | 'master_user' | 'master_perangkat' | 'report_sla';
+export type ViewMode = 'today' | 'all' | 'my_tickets' | 'dashboard' | 'assets' | 'network' | 'ba' | 'panduan' | 'settings' | 'testing' | 'membership' | 'evaluasi_project' | 'jurnal' | 'voucher' | 'master_user' | 'master_perangkat' | 'report_sla' | 'report_perangkat';
 export interface IAsset {
   id: number;
   asset_id: string;

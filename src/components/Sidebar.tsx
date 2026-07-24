@@ -84,6 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   adminThemeLayout
 }) => {
   const [masterDataOpen, setMasterDataOpen] = React.useState(false);
+  const [reportOpen, setReportOpen] = React.useState(false);
 
   return (
     <div className="lg:col-span-1 space-y-3 lg:space-y-4">
@@ -235,20 +236,58 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               </button>
 
-              <button
-                onClick={() => setViewMode('report_sla')}
-                title="Report SLA"
-                className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                  viewMode === 'report_sla' 
-                    ? 'bg-emerald-500/10 text-emerald-600' 
-                    : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Timer className="w-4 h-4" />
-                  {adminThemeLayout !== 'compact' && <span>Report SLA</span>}
-                </div>
-              </button>
+              <div className="space-y-1">
+                <button
+                  onClick={() => setReportOpen(!reportOpen)}
+                  title="Report"
+                  className={`w-full flex items-center justify-between ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
+                    (viewMode === 'report_sla' || viewMode === 'report_perangkat' || reportOpen)
+                      ? 'bg-emerald-500/10 text-emerald-600' 
+                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Timer className="w-4 h-4" />
+                    {adminThemeLayout !== 'compact' && <span>Report</span>}
+                  </div>
+                  {adminThemeLayout !== 'compact' && (
+                    reportOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                  )}
+                </button>
+
+                {(reportOpen || viewMode === 'report_sla' || viewMode === 'report_perangkat') && (
+                  <div className={`space-y-1 ${adminThemeLayout !== 'compact' ? 'pl-9' : ''}`}>
+                    <button
+                      onClick={() => setViewMode('report_sla')}
+                      title="Report SLA"
+                      className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
+                        viewMode === 'report_sla' 
+                          ? 'bg-emerald-500/10 text-emerald-600' 
+                          : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Timer className="w-3 h-3" />
+                        {adminThemeLayout !== 'compact' && <span>Report SLA</span>}
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => setViewMode('report_perangkat')}
+                      title="Report Perangkat"
+                      className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
+                        viewMode === 'report_perangkat' 
+                          ? 'bg-emerald-500/10 text-emerald-600' 
+                          : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Activity className="w-3 h-3" />
+                        {adminThemeLayout !== 'compact' && <span>Perangkat</span>}
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
               
               {(adminUser.role === 'Super Admin' || adminUser.role === 'Staff IT Support') && (
                 <>

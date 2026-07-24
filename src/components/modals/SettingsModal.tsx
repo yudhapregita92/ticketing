@@ -65,6 +65,8 @@ interface SettingsModalProps {
   setNewItemAssignedTo: (user: string) => void;
   newItemResponseTime?: number;
   setNewItemResponseTime?: (time: number) => void;
+  newItemJenisMasalah?: string;
+  setNewItemJenisMasalah?: (jenis: string) => void;
   handleManagementAction: (type: 'it' | 'dept' | 'cat' | 'master-user' | 'admin-user', action: 'add' | 'delete' | 'refresh' | 'update', item?: any) => void;
   masterUsers: any[];
   adminUsers: any[];
@@ -102,6 +104,8 @@ export const SettingsModal = React.memo(({
   setNewItemAssignedTo,
   newItemResponseTime = 0,
   setNewItemResponseTime,
+  newItemJenisMasalah = 'Hardware',
+  setNewItemJenisMasalah,
   handleManagementAction,
   masterUsers,
   adminUsers,
@@ -147,6 +151,7 @@ export const SettingsModal = React.memo(({
   const [editingCategoryName, setEditingCategoryName] = React.useState('');
   const [editingCategoryResponseTime, setEditingCategoryResponseTime] = React.useState<number>(0);
   const [editingCategoryAssignedTo, setEditingCategoryAssignedTo] = React.useState('');
+  const [editingCategoryJenisMasalah, setEditingCategoryJenisMasalah] = React.useState('Hardware');
 
   const [isMigrating, setIsMigrating] = React.useState(false);
 
@@ -1663,6 +1668,14 @@ export const SettingsModal = React.memo(({
                             />
                           </div>
                           <div className="flex gap-2 items-center">
+                            <select
+                              value={newItemJenisMasalah}
+                              onChange={e => setNewItemJenisMasalah && setNewItemJenisMasalah(e.target.value)}
+                              className={`w-32 border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
+                            >
+                              <option value="Hardware">Hardware</option>
+                              <option value="Aplikasi">Aplikasi</option>
+                            </select>
                             <input 
                               type="number"
                               min="0"
@@ -1723,6 +1736,17 @@ export const SettingsModal = React.memo(({
                                 </div>
                               </div>
                               <div className="flex flex-col gap-0.5">
+                                <label className={`text-[8px] font-black uppercase tracking-wider ${themeClasses.textMuted}`}>Jenis Masalah</label>
+                                <select
+                                  value={editingCategoryJenisMasalah}
+                                  onChange={e => setEditingCategoryJenisMasalah(e.target.value)}
+                                  className={`w-full border rounded-lg px-2 py-1 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
+                                >
+                                  <option value="Hardware">Hardware</option>
+                                  <option value="Aplikasi">Aplikasi</option>
+                                </select>
+                              </div>
+                              <div className="flex flex-col gap-0.5">
                                 <label className={`text-[8px] font-black uppercase tracking-wider ${themeClasses.textMuted}`}>PIC Kategori</label>
                                 <select
                                   value={editingCategoryAssignedTo}
@@ -1751,7 +1775,8 @@ export const SettingsModal = React.memo(({
                                       id: cat.id,
                                       name: editingCategoryName.trim(),
                                       assigned_to: editingCategoryAssignedTo,
-                                      response_time: editingCategoryResponseTime
+                                      response_time: editingCategoryResponseTime,
+                                      jenis_masalah: editingCategoryJenisMasalah
                                     });
                                     setEditingCategoryId(null);
                                   }} 
@@ -1773,6 +1798,7 @@ export const SettingsModal = React.memo(({
                                       setEditingCategoryName(cat.name);
                                       setEditingCategoryResponseTime(cat.response_time || 0);
                                       setEditingCategoryAssignedTo(cat.assigned_to || '');
+                                      setEditingCategoryJenisMasalah(cat.jenis_masalah || 'Hardware');
                                     }} 
                                     className="text-blue-500 hover:text-blue-400"
                                     title="Edit Kategori"
@@ -1788,6 +1814,11 @@ export const SettingsModal = React.memo(({
                                 {cat.assigned_to && (
                                   <span className="text-[9px] font-black text-emerald-500 capitalize tracking-tighter">
                                     PIC: {cat.assigned_to}
+                                  </span>
+                                )}
+                                {cat.jenis_masalah && (
+                                  <span className="text-[9px] font-black text-purple-500 capitalize tracking-tighter">
+                                    {cat.jenis_masalah}
                                   </span>
                                 )}
                                 <span className={`text-[9px] font-bold ${themeClasses.textMuted} tracking-tight`}>

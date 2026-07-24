@@ -66,7 +66,8 @@ export function initDb() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT UNIQUE NOT NULL,
       assigned_to TEXT,
-      response_time INTEGER DEFAULT 0
+      response_time INTEGER DEFAULT 0,
+      jenis_masalah TEXT DEFAULT 'Hardware'
     );
 
     CREATE TABLE IF NOT EXISTS ticket_logs (
@@ -552,6 +553,14 @@ export function initDb() {
     try {
       db.prepare("ALTER TABLE categories ADD COLUMN response_time INTEGER DEFAULT 0").run();
       console.log("Migration: Added response_time column to categories table.");
+    } catch (colErr) {
+      // Column already exists, ignore
+    }
+
+    // Add column jenis_masalah to categories table if not exists (migration)
+    try {
+      db.prepare("ALTER TABLE categories ADD COLUMN jenis_masalah TEXT DEFAULT 'Hardware'").run();
+      console.log("Migration: Added jenis_masalah column to categories table.");
     } catch (colErr) {
       // Column already exists, ignore
     }

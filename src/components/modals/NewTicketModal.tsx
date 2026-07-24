@@ -18,7 +18,8 @@ import {
   CheckCircle2,
   Upload,
   Smartphone,
-  Monitor
+  Monitor,
+  Box
 } from 'lucide-react';
 import { PRIORITIES } from '../../types';
 
@@ -32,6 +33,7 @@ interface NewTicketModalProps {
     department: string;
     phone: string;
     category: string;
+    jenis_masalah?: string;
     priority: string;
     description: string;
     photo: string | null;
@@ -44,6 +46,7 @@ interface NewTicketModalProps {
   setNewTicket: (ticket: any) => void;
   DEPARTMENTS: string[];
   CATEGORIES: string[];
+  rawCategories?: any[];
   handlePhotoChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSubmit: (e: React.FormEvent) => void;
   isSubmitting: boolean;
@@ -62,6 +65,7 @@ export const NewTicketModal = React.memo(({
   setNewTicket,
   DEPARTMENTS,
   CATEGORIES,
+  rawCategories,
   handlePhotoChange,
   handleSubmit,
   isSubmitting,
@@ -334,6 +338,14 @@ export const NewTicketModal = React.memo(({
     });
   }, [masterUsers, newTicket.pc_code]);
 
+  const filteredCategories = React.useMemo(() => {
+    if (!newTicket.jenis_masalah) return [];
+    if (Array.isArray(rawCategories)) {
+      return rawCategories.filter(c => c.jenis_masalah === newTicket.jenis_masalah).map(c => c.name);
+    }
+    return CATEGORIES;
+  }, [newTicket.jenis_masalah, rawCategories, CATEGORIES]);
+
   if (!showForm) return null;
 
   const handleClose = () => {
@@ -377,21 +389,29 @@ export const NewTicketModal = React.memo(({
       alert('Nama dan Departemen wajib diisi. Silakan cari dan pilih nama Anda dari daftar.');
       return;
     }
+    if (!newTicket.jenis_masalah) {
+      alert('Silakan pilih Jenis Masalah terlebih dahulu.');
+      return;
+    }
     if (!newTicket.category) {
       alert('Silakan pilih Kategori Masalah terlebih dahulu.');
       return;
     }
-    if (!newTicket.description?.trim()) {
-      alert('Silakan isi Detail Masalah terlebih dahulu.');
+    if (!newTicket.priority) {
+      alert('Silakan pilih Prioritas terlebih dahulu.');
+      return;
+    }
+    if (newTicket.jenis_masalah === 'Aplikasi' && !newTicket.description?.trim()) {
+      alert('Detail Masalah wajib diisi jika jenis masalah adalah Aplikasi.');
       return;
     }
     if (!newTicket.device_type) {
       alert('Silakan pilih tipe piranti yang Anda gunakan.');
       return;
     }
-    if (newTicket.device_type === 'pc') {
+    if (newTicket.jenis_masalah === 'Hardware') {
       if (!newTicket.pc_code?.trim()) {
-        alert('Kode Komputer wajib diisi jika menggunakan Komputer PC.');
+        alert('Kode Komputer wajib diisi jika jenis masalah adalah Hardware.');
         return;
       }
       if (!isPcCodeMatched) {
@@ -765,49 +785,66 @@ export const NewTicketModal = React.memo(({
           </div>
           )}
 
-          {deviceSelected === 'pc' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div className="space-y-0.5">
               <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
-                <Monitor className="w-2.5 h-2.5 text-blue-500" /> Kode Komputer (Berlabel di Monitor) <span className="text-rose-500 font-bold">* Wajib</span>
+                <Box className="w-2 h-2" /> Jenis Masalah
               </label>
-              <div className="relative flex items-center">
-                <input 
-                  required
-                  type="text"
-                  placeholder="Contoh: PC-05, PC-LAB-01, dll..."
-                  className={`w-full px-3 py-1.5 pr-16 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
-                  value={newTicket.pc_code || ''}
-                  onChange={e => setNewTicket({...newTicket, pc_code: e.target.value})}
-                />
-                {isPcCodeMatched && (
-                  <div className="absolute right-2 text-emerald-500 flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-lg border border-emerald-500/20">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-500 fill-emerald-500/10" />
-                    <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 tracking-wider">Cocok</span>
-                  </div>
-                )}
-              </div>
-               <p className="text-[9px] font-bold text-amber-500 dark:text-amber-400 capitalize tracking-wide ml-0.5">
-                * Masukkan nomor PC yang tertera pada stiker label di casing/layar monitor Anda.
-              </p>
+              <select 
+                required
+                className={`w-full px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                value={newTicket.jenis_masalah}
+                onChange={e => setNewTicket({...newTicket, jenis_masalah: e.target.value, category: ''})}
+              >
+                <option value="">Pilih Jenis Masalah...</option>
+                <option value="Aplikasi">Aplikasi</option>
+                <option value="Hardware">Hardware</option>
+              </select>
             </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div className="space-y-0.5">
               <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
                 <Layers className="w-2 h-2" /> Kategori Masalah
               </label>
               <select 
                 required
-                className={`w-full px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                disabled={!newTicket.jenis_masalah}
+                className={`w-full px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                 value={newTicket.category}
                 onChange={e => setNewTicket({...newTicket, category: e.target.value})}
               >
-                <option value="">Pilih Kategori...</option>
-                {Array.isArray(CATEGORIES) && CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                <option value="">{newTicket.jenis_masalah ? 'Pilih Kategori...' : 'Pilih Jenis Masalah Dulu'}</option>
+                {filteredCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
               </select>
             </div>
-            <div className="space-y-0.5">
+
+            {newTicket.jenis_masalah === 'Hardware' && (
+              <div className="space-y-0.5 sm:col-span-2">
+                <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
+                  <Monitor className="w-2.5 h-2.5 text-blue-500" /> Kode Komputer (Berlabel di Monitor) <span className="text-rose-500 font-bold">* Wajib</span>
+                </label>
+                <div className="relative flex items-center">
+                  <input 
+                    required
+                    type="text"
+                    placeholder="Contoh: PC-05, PC-LAB-01, dll..."
+                    className={`w-full px-3 py-1.5 pr-16 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                    value={newTicket.pc_code || ''}
+                    onChange={e => setNewTicket({...newTicket, pc_code: e.target.value})}
+                  />
+                  {isPcCodeMatched && (
+                    <div className="absolute right-2 text-emerald-500 flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-lg border border-emerald-500/20">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-500 fill-emerald-500/10" />
+                      <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 tracking-wider">Cocok</span>
+                    </div>
+                  )}
+                </div>
+                 <p className="text-[9px] font-bold text-amber-500 dark:text-amber-400 capitalize tracking-wide ml-0.5">
+                  * Masukkan nomor PC yang tertera pada stiker label di casing/layar monitor Anda.
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-0.5 sm:col-span-2">
               <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
                 <AlertTriangle className="w-2 h-2" /> Prioritas
               </label>
@@ -817,6 +854,7 @@ export const NewTicketModal = React.memo(({
                 value={newTicket.priority}
                 onChange={e => setNewTicket({...newTicket, priority: e.target.value})}
               >
+                <option value="">Pilih Prioritas...</option>
                 {PRIORITIES.map(p => (
                   <option key={p.id} value={p.id}>{p.label}</option>
                 ))}
@@ -826,10 +864,10 @@ export const NewTicketModal = React.memo(({
 
           <div className="space-y-0.5">
             <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
-              <MessageSquare className="w-2 h-2" /> Detail Masalah
+              <MessageSquare className="w-2 h-2" /> Detail Masalah {newTicket.jenis_masalah === 'Aplikasi' && <span className="text-rose-500 font-bold">* Wajib</span>}
             </label>
             <textarea 
-              required
+              required={newTicket.jenis_masalah === 'Aplikasi'}
               rows={2}
               placeholder="Jelaskan kendala Anda secara detail..."
               className={`w-full px-3 py-1.5 rounded-2xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all resize-none ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
@@ -886,8 +924,8 @@ export const NewTicketModal = React.memo(({
           <div className="pt-0.5">
             <button 
               type="submit"
-              disabled={isSubmitting || (!currentUser && !newTicket.name) || !newTicket.description?.trim() || (newTicket.device_type === 'pc' && !isPcCodeMatched)}
-              style={{ backgroundColor: ((currentUser || newTicket.name) && newTicket.description?.trim() && (newTicket.device_type !== 'pc' || isPcCodeMatched)) ? primaryColor : '#94a3b8' }}
+              disabled={isSubmitting || (!currentUser && !newTicket.name) || !newTicket.priority || (newTicket.jenis_masalah === 'Aplikasi' && !newTicket.description?.trim()) || (newTicket.jenis_masalah === 'Hardware' && !isPcCodeMatched)}
+              style={{ backgroundColor: ((currentUser || newTicket.name) && newTicket.priority && (newTicket.jenis_masalah !== 'Aplikasi' || newTicket.description?.trim()) && (newTicket.jenis_masalah !== 'Hardware' || isPcCodeMatched)) ? primaryColor : '#94a3b8' }}
               className={`w-full py-2 sm:py-2.5 rounded-2xl text-white font-black capitalize tracking-widest text-[10px] sm:text-xs shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:cursor-not-allowed`}
             >
               {isSubmitting ? (
