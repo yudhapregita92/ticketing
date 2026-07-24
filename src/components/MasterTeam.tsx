@@ -620,7 +620,7 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                 Sub Departemen IT & Digitalisasi
               </h2>
               <p className={`text-xs font-medium mt-1 ${themeClasses.textMuted}`}>
-                Hirarki komando: Sub Dept Head memimpin Section Head (2 Pelaksana IT) & Digitalization Specialist.
+                Struktur hirarki: Sub Dept Head memimpin Section Head (2 Pelaksana IT) & Digitalization Specialist.
               </p>
             </div>
 
@@ -926,7 +926,7 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                       <Sparkles className="w-3.5 h-3.5 text-cyan-500" /> Posisi Staf Spesialis Direct
                     </span>
                     <p className={`text-[10px] leading-relaxed ${themeClasses.textMuted}`}>
-                      Digitalization Specialist berkedudukan langsung di bawah Sub Dept Head khusus untuk menangani otomatisasi proses bisnis, integrasi sistem, dan transformasi digital tanpa membawahi tim Helpdesk.
+                      Digitalization Specialist berkedudukan langsung di bawah Sub Dept Head khusus untuk menangani otomatisasi proses bisnis, integrasi sistem, dan transformasi digital.
                     </p>
                   </div>
                 </div>

@@ -377,5 +377,61 @@ router.post("/master-users", asyncHandler(async (req, res) => {
     res.json({ success: true });
   }));
 
+  // Voucher Store (Key-Value persistence for Templates, Records, Settings)
+  router.get("/voucher-store", asyncHandler(async (req: any, res: any) => {
+    const rows = db.prepare("SELECT * FROM voucher_store").all();
+    const store: Record<string, string> = {};
+    for (const r of rows as any[]) {
+      store[r.key] = r.value;
+    }
+    res.json(store);
+  }));
+
+  router.get("/voucher-store/:key", asyncHandler(async (req: any, res: any) => {
+    const { key } = req.params;
+    const row = db.prepare("SELECT * FROM voucher_store WHERE key = ?").get(key) as any;
+    if (row) {
+      res.json({ key: row.key, value: row.value });
+    } else {
+      res.status(404).json({ message: "Key not found" });
+    }
+  }));
+
+  router.post("/voucher-store", asyncHandler(async (req: any, res: any) => {
+    const { key, value } = req.body;
+    if (!key) {
+      return res.status(400).json({ message: "Key is required" });
+    }
+    const valStr = typeof value === 'object' ? JSON.stringify(value) : String(value);
+    db.prepare(`
+      INSERT INTO voucher_store (key, value, updated_at) 
+      VALUES (?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+    `).run(key, valStr);
+    emitUpdate();
+    res.json({ success: true });
+  }));
+
+  router.post("/voucher-store/batch", asyncHandler(async (req: any, res: any) => {
+    const { items } = req.body;
+    if (Array.isArray(items)) {
+      const stmt = db.prepare(`
+        INSERT INTO voucher_store (key, value, updated_at) 
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+      `);
+      db.transaction(() => {
+        for (const item of items) {
+          if (item.key) {
+            const valStr = typeof item.value === 'object' ? JSON.stringify(item.value) : String(item.value);
+            stmt.run(item.key, valStr);
+          }
+        }
+      })();
+      emitUpdate();
+    }
+    res.json({ success: true });
+  }));
+
   return router;
 }

@@ -295,13 +295,15 @@ export const VoucherManagement: React.FC<{
   currentUser,
   loggedInMasterUser
 }) => {
+  // Flag to know if server voucher store has loaded
+  const [isStoreLoaded, setIsStoreLoaded] = useState(false);
+
   // State for templates
   const [templates, setTemplates] = useState<IVoucherTemplate[]>(() => {
     const saved = localStorage.getItem('voucher_templates');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Force showQr to false on load to hide the barcode as requested
         return parsed.map((t: any) => ({ ...t, showQr: false }));
       } catch (e) {
         return DEFAULT_TEMPLATES;
@@ -320,7 +322,9 @@ export const VoucherManagement: React.FC<{
   // State for records / serial numbers
   const [records, setRecords] = useState<IVoucherRecord[]>(() => {
     const saved = localStorage.getItem(`voucher_records_${activeTemplateId}`);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
     
     // Generate default sample records if none exist
     const samples: IVoucherRecord[] = [
@@ -330,39 +334,6 @@ export const VoucherManagement: React.FC<{
     ];
     return samples;
   });
-
-  // Save templates
-  useEffect(() => {
-    localStorage.setItem('voucher_templates', JSON.stringify(templates));
-  }, [templates]);
-
-  // Load records on template change
-  useEffect(() => {
-    const saved = localStorage.getItem(`voucher_records_${activeTemplateId}`);
-    if (saved) {
-      setRecords(JSON.parse(saved));
-    } else {
-      // Default sample records
-      const prefixNum = activeTemplateId === '2' ? '500100' : '2011248';
-      const startNum = parseInt(prefixNum) || 2011248;
-      const samples: IVoucherRecord[] = Array.from({ length: 5 }, (_, i) => ({
-        id: `r_${Date.now()}_${i}`,
-        serialNumber: (startNum + i).toString(),
-        recipientName: i === 0 ? 'Budi Santoso' : i === 1 ? 'Siti Rahma' : i === 2 ? 'Yusuf Habibi' : i === 3 ? 'Megawati' : 'Prabowo',
-        department: i % 2 === 0 ? 'Plantation III' : 'Finance HQ',
-        status: 'Belum Dicetak'
-      }));
-      setRecords(samples);
-      localStorage.setItem(`voucher_records_${activeTemplateId}`, JSON.stringify(samples));
-    }
-  }, [activeTemplateId]);
-
-  // Save records when updated
-  useEffect(() => {
-    if (activeTemplateId) {
-      localStorage.setItem(`voucher_records_${activeTemplateId}`, JSON.stringify(records));
-    }
-  }, [records, activeTemplateId]);
 
   // Global automatic numbering states
   const [globalVoucherEnabled, setGlobalVoucherEnabled] = useState<boolean>(() => {
@@ -381,21 +352,147 @@ export const VoucherManagement: React.FC<{
     return saved ? parseInt(saved, 10) : 7;
   });
 
+  // Initial load from SQLite database via API
+  useEffect(() => {
+    let isMounted = true;
+    api.getVoucherStore().then(store => {
+      if (!isMounted) return;
+
+      // 1. Templates
+      if (store['voucher_templates']) {
+        try {
+          const parsed = JSON.parse(store['voucher_templates']);
+          setTemplates(parsed.map((t: any) => ({ ...t, showQr: false })));
+        } catch (e) {}
+      } else {
+        api.saveVoucherStoreItem('voucher_templates', templates);
+      }
+
+      // 2. Global Settings
+      if (store['global_voucher_enabled'] !== undefined) {
+        setGlobalVoucherEnabled(store['global_voucher_enabled'] === 'true');
+      }
+      if (store['global_voucher_prefix'] !== undefined) {
+        setGlobalVoucherPrefix(store['global_voucher_prefix']);
+      }
+      if (store['global_voucher_next_number'] !== undefined) {
+        setGlobalVoucherNextNumber(parseInt(store['global_voucher_next_number'], 10) || 2011251);
+      }
+      if (store['global_voucher_padding'] !== undefined) {
+        setGlobalVoucherPadding(parseInt(store['global_voucher_padding'], 10) || 7);
+      }
+
+      // 3. Print Layout & Logos
+      if (store['print_layout']) setPrintLayout(store['print_layout'] as any);
+      if (store['custom_print_width_cm']) setCustomPrintWidthCm(Number(store['custom_print_width_cm']));
+      if (store['custom_print_height_cm']) setCustomPrintHeightCm(Number(store['custom_print_height_cm']));
+      if (store['voucher_logo_left']) setLogoLeft(store['voucher_logo_left']);
+      if (store['voucher_logo_right']) setLogoRight(store['voucher_logo_right']);
+
+      // 4. Records
+      const activeRecKey = `voucher_records_${activeTemplateId}`;
+      if (store[activeRecKey]) {
+        try {
+          setRecords(JSON.parse(store[activeRecKey]));
+        } catch (e) {}
+      } else {
+        api.saveVoucherStoreItem(activeRecKey, records);
+      }
+
+      setIsStoreLoaded(true);
+    }).catch(err => {
+      console.warn('Backend voucher store sync warning:', err);
+      setIsStoreLoaded(true);
+    });
+
+    return () => { isMounted = false; };
+  }, []);
+
+  // Save templates
+  useEffect(() => {
+    localStorage.setItem('voucher_templates', JSON.stringify(templates));
+    if (isStoreLoaded) {
+      api.saveVoucherStoreItem('voucher_templates', templates);
+    }
+  }, [templates, isStoreLoaded]);
+
+  // Load records on template change
+  useEffect(() => {
+    if (!activeTemplateId) return;
+    const recKey = `voucher_records_${activeTemplateId}`;
+
+    if (isStoreLoaded) {
+      api.getVoucherStore().then(store => {
+        if (store[recKey]) {
+          try {
+            setRecords(JSON.parse(store[recKey]));
+            return;
+          } catch (e) {}
+        }
+        
+        const savedLocal = localStorage.getItem(recKey);
+        if (savedLocal) {
+          try {
+            const parsed = JSON.parse(savedLocal);
+            setRecords(parsed);
+            api.saveVoucherStoreItem(recKey, parsed);
+            return;
+          } catch(e) {}
+        }
+
+        // Default sample records
+        const prefixNum = activeTemplateId === '2' ? '500100' : '2011248';
+        const startNum = parseInt(prefixNum) || 2011248;
+        const samples: IVoucherRecord[] = Array.from({ length: 5 }, (_, i) => ({
+          id: `r_${Date.now()}_${i}`,
+          serialNumber: (startNum + i).toString(),
+          recipientName: i === 0 ? 'Budi Santoso' : i === 1 ? 'Siti Rahma' : i === 2 ? 'Yusuf Habibi' : i === 3 ? 'Megawati' : 'Prabowo',
+          department: i % 2 === 0 ? 'Plantation III' : 'Finance HQ',
+          status: 'Belum Dicetak'
+        }));
+        setRecords(samples);
+        localStorage.setItem(recKey, JSON.stringify(samples));
+        api.saveVoucherStoreItem(recKey, samples);
+      });
+    } else {
+      const saved = localStorage.getItem(recKey);
+      if (saved) {
+        try { setRecords(JSON.parse(saved)); } catch (e) {}
+      }
+    }
+  }, [activeTemplateId, isStoreLoaded]);
+
+  // Save records when updated
+  useEffect(() => {
+    if (activeTemplateId) {
+      const recKey = `voucher_records_${activeTemplateId}`;
+      localStorage.setItem(recKey, JSON.stringify(records));
+      if (isStoreLoaded) {
+        api.saveVoucherStoreItem(recKey, records);
+      }
+    }
+  }, [records, activeTemplateId, isStoreLoaded]);
+
+  // Save global settings
   useEffect(() => {
     localStorage.setItem('global_voucher_enabled', String(globalVoucherEnabled));
-  }, [globalVoucherEnabled]);
+    if (isStoreLoaded) api.saveVoucherStoreItem('global_voucher_enabled', String(globalVoucherEnabled));
+  }, [globalVoucherEnabled, isStoreLoaded]);
 
   useEffect(() => {
     localStorage.setItem('global_voucher_prefix', globalVoucherPrefix);
-  }, [globalVoucherPrefix]);
+    if (isStoreLoaded) api.saveVoucherStoreItem('global_voucher_prefix', globalVoucherPrefix);
+  }, [globalVoucherPrefix, isStoreLoaded]);
 
   useEffect(() => {
     localStorage.setItem('global_voucher_next_number', String(globalVoucherNextNumber));
-  }, [globalVoucherNextNumber]);
+    if (isStoreLoaded) api.saveVoucherStoreItem('global_voucher_next_number', String(globalVoucherNextNumber));
+  }, [globalVoucherNextNumber, isStoreLoaded]);
 
   useEffect(() => {
     localStorage.setItem('global_voucher_padding', String(globalVoucherPadding));
-  }, [globalVoucherPadding]);
+    if (isStoreLoaded) api.saveVoucherStoreItem('global_voucher_padding', String(globalVoucherPadding));
+  }, [globalVoucherPadding, isStoreLoaded]);
 
   // Tabs: 'content' | 'design' | 'recipients' | 'print' | 'requests'
   const [activeTab, setActiveTab] = useState<'content' | 'design' | 'recipients' | 'print' | 'requests'>(
@@ -571,6 +668,22 @@ export const VoucherManagement: React.FC<{
       localStorage.setItem('global_voucher_next_number', String(globalVoucherNextNumber));
       localStorage.setItem('global_voucher_padding', String(globalVoucherPadding));
 
+      // Save to SQLite database via backend API
+      const batchItems = [
+        { key: 'voucher_templates', value: templates },
+        { key: `voucher_records_${activeTemplateId}`, value: records },
+        { key: 'print_layout', value: printLayout },
+        { key: 'custom_print_width_cm', value: customPrintWidthCm },
+        { key: 'custom_print_height_cm', value: customPrintHeightCm },
+        { key: 'global_voucher_enabled', value: String(globalVoucherEnabled) },
+        { key: 'global_voucher_prefix', value: globalVoucherPrefix },
+        { key: 'global_voucher_next_number', value: String(globalVoucherNextNumber) },
+        { key: 'global_voucher_padding', value: String(globalVoucherPadding) },
+        { key: 'voucher_logo_left', value: logoLeft },
+        { key: 'voucher_logo_right', value: logoRight }
+      ];
+      await api.saveVoucherStoreBatch(batchItems);
+
       // 5. Backend sync if requested
       if (activeRequestId) {
         const designJson = JSON.stringify(activeTemplate);
@@ -578,7 +691,7 @@ export const VoucherManagement: React.FC<{
         fetchRequests();
         toast.success('Desain Pengajuan & Template berhasil disimpan!');
       } else {
-        toast.success('Semua perubahan data voucher berhasil disimpan!');
+        toast.success('Semua perubahan data voucher berhasil disimpan ke Server!');
       }
     } catch (err: any) {
       toast.error('Gagal menyimpan perubahan: ' + err.message);

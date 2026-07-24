@@ -375,4 +375,16 @@ export const api = {
   deleteVoucherRequest: (id: number) => fetch(`/api/voucher-requests/${id}`, {
     method: 'DELETE'
   }).then(handleResponse),
+
+  getVoucherStore: (): Promise<Record<string, string>> => fetch('/api/voucher-store').then(handleResponse),
+  saveVoucherStoreItem: (key: string, value: any): Promise<any> => fetch('/api/voucher-store', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key, value })
+  }).then(handleResponse),
+  saveVoucherStoreBatch: (items: { key: string; value: any }[]): Promise<any> => fetch('/api/voucher-store/batch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items })
+  }).then(handleResponse),
 };
