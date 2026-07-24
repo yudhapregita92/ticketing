@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-hot-toast';
 import { 
   X, 
   Ticket, 
@@ -18,7 +19,10 @@ import {
   Eye,
   Trash2,
   Scan,
-  Clock
+  Clock,
+  CheckCircle2,
+  RotateCcw,
+  Send
 } from 'lucide-react';
 
 import { ITicket, PRIORITIES } from '../../types';
@@ -52,6 +56,7 @@ interface TicketDetailModalProps {
   ) => void;
   handleIntervention: (id: number, type: 'takeover' | 'reassign') => void;
   primaryColor: string;
+  onRefreshTickets?: () => void;
 }
 
 export const TicketDetailModal = React.memo(({
@@ -72,9 +77,85 @@ export const TicketDetailModal = React.memo(({
   setModalPriority,
   handleUpdateClick,
   handleIntervention,
-  primaryColor
+  primaryColor,
+  onRefreshTickets
 }: TicketDetailModalProps) => {
   if (!selectedTicket) return null;
+
+  const [isSubmittingAction, setIsSubmittingAction] = useState(false);
+  const [showReopenForm, setShowReopenForm] = useState(false);
+  const [reopenReason, setReopenReason] = useState('');
+
+  const handleConfirmClose = async () => {
+    if (!selectedTicket) return;
+    setIsSubmittingAction(true);
+    try {
+      const res = await fetch(`/api/tickets/${selectedTicket.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'Closed',
+          performed_by: selectedTicket.name || 'Pengguna (User)',
+          note: 'Pengguna mengonfirmasi penanganan tiket tuntas dan menutup tiket.'
+        })
+      });
+      if (res.ok) {
+        toast.success('Terima kasih! Tiket resmi ditutup (Closed).');
+        setSelectedTicket({
+          ...selectedTicket,
+          status: 'Closed'
+        });
+        if (onRefreshTickets) onRefreshTickets();
+      } else {
+        toast.error('Gagal memperbarui status tiket.');
+      }
+    } catch (err) {
+      console.error('Confirm close error:', err);
+      toast.error('Terjadi kesalahan koneksi.');
+    } finally {
+      setIsSubmittingAction(false);
+    }
+  };
+
+  const handleUserReopen = async () => {
+    if (!selectedTicket || !reopenReason.trim()) return;
+    setIsSubmittingAction(true);
+    try {
+      const existingReply = selectedTicket.admin_reply || '';
+      const newReply = existingReply 
+        ? `${existingReply}\n\n[Re-Open Pengguna]: ${reopenReason.trim()}`
+        : `[Re-Open Pengguna]: ${reopenReason.trim()}`;
+
+      const res = await fetch(`/api/tickets/${selectedTicket.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'Re-opened',
+          admin_reply: newReply,
+          performed_by: selectedTicket.name || 'Pengguna (User)',
+          note: `Re-Open oleh Pengguna: ${reopenReason.trim()}`
+        })
+      });
+      if (res.ok) {
+        toast.success('Permohonan Re-Open berhasil dikirim ke tim IT!');
+        setSelectedTicket({
+          ...selectedTicket,
+          status: 'Re-opened',
+          admin_reply: newReply
+        });
+        setShowReopenForm(false);
+        setReopenReason('');
+        if (onRefreshTickets) onRefreshTickets();
+      } else {
+        toast.error('Gagal mengajukan re-open tiket.');
+      }
+    } catch (err) {
+      console.error('Re-open error:', err);
+      toast.error('Terjadi kesalahan koneksi.');
+    } finally {
+      setIsSubmittingAction(false);
+    }
+  };
 
   const priorityInfo = PRIORITIES.find((p: any) => p.id === (selectedTicket.priority || 'Medium')) || PRIORITIES[1];
 
@@ -285,6 +366,141 @@ export const TicketDetailModal = React.memo(({
                       )}
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Konfirmasi Penanganan Tiket (User) / Re-Open Section */}
+              {(selectedTicket.status === 'Completed' || selectedTicket.status === 'Done' || selectedTicket.status === 'Solved' || selectedTicket.status === 'Selesai') && (
+                <div className="p-4 sm:p-5 rounded-3xl border-2 border-emerald-500/50 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-slate-900/40 space-y-3.5 shadow-xl">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                      <span className="text-xs sm:text-sm font-black uppercase tracking-wider">
+                        Konfirmasi Penanganan Tiket (User)
+                      </span>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 animate-pulse">
+                      Menunggu Konfirmasi Anda
+                    </span>
+                  </div>
+
+                  <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 font-medium leading-relaxed">
+                    Tim IT telah mengubah status ke <strong className="text-emerald-600 dark:text-emerald-400">Selesai / Done</strong>. Silakan periksa hasil pekerjaan IT dan konfirmasikan apakah masalah Anda sudah benar-benar tuntas.
+                  </p>
+
+                  {selectedTicket.admin_reply && (
+                    <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-emerald-200 dark:border-emerald-800 space-y-1">
+                      <p className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">Solusi / Catatan dari IT:</p>
+                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 italic">"{selectedTicket.admin_reply}"</p>
+                    </div>
+                  )}
+
+                  {!showReopenForm ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                      <button
+                        type="button"
+                        disabled={isSubmittingAction}
+                        onClick={handleConfirmClose}
+                        className="px-4 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-black flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                      >
+                        <CheckCircle2 className="w-4.5 h-4.5" />
+                        <span>Ya, Masalah Tuntas (Close Tiket)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={isSubmittingAction}
+                        onClick={() => setShowReopenForm(true)}
+                        className="px-4 py-3 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white text-xs sm:text-sm font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-600/30 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                      >
+                        <RotateCcw className="w-4.5 h-4.5" />
+                        <span>Belum Tuntas (Ajukan Re-Open)</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-3.5 rounded-2xl bg-slate-900/95 border border-amber-500/50 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                          <RotateCcw className="w-4 h-4 text-amber-400" />
+                          Jelaskan Alasan Re-Open Tiket
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowReopenForm(false)}
+                          className="text-xs font-bold text-slate-400 hover:text-white"
+                        >
+                          Batal
+                        </button>
+                      </div>
+
+                      <textarea
+                        rows={3}
+                        value={reopenReason}
+                        onChange={e => setReopenReason(e.target.value)}
+                        placeholder="Detailkan masalah yang belum selesai atau masih terkendala..."
+                        className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs outline-none focus:border-amber-500 font-medium placeholder:text-slate-500"
+                      />
+
+                      <button
+                        type="button"
+                        disabled={isSubmittingAction || !reopenReason.trim()}
+                        onClick={handleUserReopen}
+                        className="w-full py-2.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Kirim Pengajuan Re-Open ke Tim IT</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Banner Tiket Status Closed */}
+              {selectedTicket.status === 'Closed' && (
+                <div className="p-4 rounded-2xl border border-slate-700 bg-slate-800/80 space-y-2">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <span className="text-xs font-black uppercase text-emerald-400 tracking-wider flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Tiket Resmi Ditutup (Closed)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowReopenForm(prev => !prev)}
+                      className="text-xs font-bold text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" /> Re-Open Tiket Ini
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-300 font-medium">Pengguna telah mengonfirmasi bahwa penanganan kendala selesai dan tuntas.</p>
+
+                  {showReopenForm && (
+                    <div className="p-3 rounded-xl bg-slate-900 border border-amber-500/40 space-y-2 mt-2">
+                      <textarea
+                        rows={2}
+                        value={reopenReason}
+                        onChange={e => setReopenReason(e.target.value)}
+                        placeholder="Tuliskan alasan re-open tiket ini..."
+                        className="w-full p-2 rounded-lg bg-slate-800 text-white text-xs border border-slate-700 outline-none focus:border-amber-500"
+                      />
+                      <button
+                        type="button"
+                        disabled={isSubmittingAction || !reopenReason.trim()}
+                        onClick={handleUserReopen}
+                        className="w-full py-2 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-500 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        Kirim Re-Open Tiket
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Banner Tiket Status Re-opened */}
+              {selectedTicket.status === 'Re-opened' && (
+                <div className="p-4 rounded-2xl border border-amber-500/50 bg-amber-500/10 space-y-1">
+                  <span className="text-xs font-black uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
+                    <RotateCcw className="w-4 h-4 text-amber-400" /> Tiket Dalam Status Re-Open
+                  </span>
+                  <p className="text-xs text-amber-200 font-medium">Tiket diajukan kembali oleh pengguna dan sedang menunggu tindak lanjut ulang dari Tim IT.</p>
                 </div>
               )}
 

@@ -92,6 +92,8 @@ export const getStatusColor = (status: string) => {
     case 'New': return 'bg-indigo-500 text-white';
     case 'In Progress': return 'bg-blue-500 text-white';
     case 'Completed': return 'bg-emerald-600 text-white';
+    case 'Closed': return 'bg-slate-700 text-white';
+    case 'Re-opened': return 'bg-amber-600 text-white';
     case 'Cancelled': return 'bg-rose-500 text-white';
     default: return 'bg-slate-500 text-white';
   }

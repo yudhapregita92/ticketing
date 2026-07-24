@@ -1095,6 +1095,8 @@ export default function App() {
       case 'New': return 'bg-indigo-500 text-white border-indigo-600';
       case 'In Progress': return 'bg-blue-500 text-white border-blue-600';
       case 'Completed': return 'bg-emerald-600 text-white border-emerald-700';
+      case 'Closed': return 'bg-slate-700 text-white border-slate-600';
+      case 'Re-opened': return 'bg-amber-600 text-white border-amber-700';
       case 'Cancelled': return 'bg-rose-500 text-white border-rose-600';
       default: return 'bg-slate-500 text-white border-slate-600';
     }
@@ -1108,6 +1110,8 @@ export default function App() {
       case 'New': return <Clock className="w-4 h-4" />;
       case 'In Progress': return <RefreshCcw className="w-4 h-4 animate-spin-slow" />;
       case 'Completed': return <CheckCircle2 className="w-4 h-4" />;
+      case 'Closed': return <CheckCircle2 className="w-4 h-4 text-slate-300" />;
+      case 'Re-opened': return <RefreshCcw className="w-4 h-4 text-amber-300" />;
       case 'Cancelled': return <AlertCircle className="w-4 h-4" />;
       default: return null;
     }
@@ -2000,6 +2004,7 @@ export default function App() {
             getStatusColor={getStatusColor}
             STATUSES={STATUSES}
             primaryColor={primaryColor}
+            onRefreshTickets={() => queryClient.invalidateQueries({ queryKey: ['tickets'] })}
           />
         )}
 

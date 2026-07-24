@@ -96,7 +96,7 @@ export const TicketList: React.FC<TicketListProps> = ({
       {/* Mobile Navigation Tabs */}
       <div className="lg:hidden flex flex-col gap-3 mb-4">
         {/* Interactive Stats Quick-Filter Grid */}
-        <div className="grid grid-cols-4 gap-1.5 w-full">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 w-full">
           {[
             { 
               id: '', 
@@ -122,8 +122,22 @@ export const TicketList: React.FC<TicketListProps> = ({
             { 
               id: 'Completed', 
               label: 'Selesai', 
-              count: tickets.filter(t => t.status === 'Completed').length,
+              count: tickets.filter(t => t.status === 'Completed' || t.status === 'Done' || t.status === 'Solved' || t.status === 'Selesai').length,
               activeClass: isDark ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400 ring-1 ring-emerald-500/30' : 'bg-emerald-50 border-emerald-200 text-emerald-600 ring-1 ring-emerald-500/20',
+              idleClass: isDark ? 'bg-zinc-900/30 border-zinc-850/60 text-zinc-400 hover:bg-zinc-850/40' : 'bg-slate-50/50 border-slate-100 text-slate-500 hover:bg-slate-100/50'
+            },
+            { 
+              id: 'Closed', 
+              label: 'Closed', 
+              count: tickets.filter(t => t.status === 'Closed').length,
+              activeClass: isDark ? 'bg-slate-500/20 border-slate-500/40 text-slate-300 ring-1 ring-slate-500/30' : 'bg-slate-100 border-slate-300 text-slate-700 ring-1 ring-slate-500/20',
+              idleClass: isDark ? 'bg-zinc-900/30 border-zinc-850/60 text-zinc-400 hover:bg-zinc-850/40' : 'bg-slate-50/50 border-slate-100 text-slate-500 hover:bg-slate-100/50'
+            },
+            { 
+              id: 'Re-opened', 
+              label: 'Re-Open', 
+              count: tickets.filter(t => t.status === 'Re-opened').length,
+              activeClass: isDark ? 'bg-amber-500/10 border-amber-500/40 text-amber-400 ring-1 ring-amber-500/30' : 'bg-amber-50 border-amber-200 text-amber-600 ring-1 ring-amber-500/20',
               idleClass: isDark ? 'bg-zinc-900/30 border-zinc-850/60 text-zinc-400 hover:bg-zinc-850/40' : 'bg-slate-50/50 border-slate-100 text-slate-500 hover:bg-slate-100/50'
             }
           ].map((item) => {

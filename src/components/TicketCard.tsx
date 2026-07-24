@@ -156,6 +156,8 @@ export const TicketCard: React.FC<TicketCardProps> = ({
               <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[8px] sm:text-[10px] font-bold capitalize tracking-wide sm:tracking-wider border text-center min-w-[50px] sm:min-w-[70px] inline-block ${getStatusColor(ticket.status)}`}>
                 {ticket.status === 'In Progress' ? 'Progres' : 
                  ticket.status === 'Completed' ? 'Selesai' : 
+                 ticket.status === 'Closed' ? 'Closed' : 
+                 ticket.status === 'Re-opened' ? 'Re-Open' : 
                  ticket.status === 'Cancelled' ? 'Batal' : 
                  ticket.status === 'New' ? 'Baru' : ticket.status}
               </span>
