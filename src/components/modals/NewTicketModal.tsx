@@ -142,7 +142,7 @@ export const NewTicketModal = React.memo(({
       // We no longer auto-detect. Wait for user to click capture.
 
     } catch (err: any) {
-      console.error("Error accessing camera:", err);
+      console.warn("Camera access failed/not found:", err?.message || err);
       setCameraError(true);
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
         setPermissionDenied(true);
@@ -401,8 +401,8 @@ export const NewTicketModal = React.memo(({
       alert('Silakan pilih Prioritas terlebih dahulu.');
       return;
     }
-    if (newTicket.jenis_masalah === 'Aplikasi' && !newTicket.description?.trim()) {
-      alert('Detail Masalah wajib diisi jika jenis masalah adalah Aplikasi.');
+    if (!newTicket.description?.trim()) {
+      alert('Detail Masalah wajib diisi.');
       return;
     }
     if (!newTicket.device_type) {
@@ -741,7 +741,7 @@ export const NewTicketModal = React.memo(({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div className="space-y-0.5 relative" ref={dropdownRef}>
               <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
-                <User className="w-2 h-2" /> Nama Lengkap
+                <User className="w-2 h-2" /> Nama Lengkap <span className="text-rose-500 font-bold">* Wajib</span>
               </label>
               <input 
                 required
@@ -771,7 +771,7 @@ export const NewTicketModal = React.memo(({
             </div>
             <div className="space-y-0.5">
               <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
-                <Building2 className="w-2 h-2" /> Bagian / Unit
+                <Building2 className="w-2 h-2" /> Bagian / Unit <span className="text-rose-500 font-bold">* Wajib</span>
               </label>
               <input 
                 required
@@ -788,7 +788,7 @@ export const NewTicketModal = React.memo(({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div className="space-y-0.5">
               <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
-                <Box className="w-2 h-2" /> Jenis Masalah
+                <Box className="w-2 h-2" /> Jenis Masalah <span className="text-rose-500 font-bold">* Wajib</span>
               </label>
               <select 
                 required
@@ -803,7 +803,7 @@ export const NewTicketModal = React.memo(({
             </div>
             <div className="space-y-0.5">
               <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
-                <Layers className="w-2 h-2" /> Kategori Masalah
+                <Layers className="w-2 h-2" /> Kategori Masalah <span className="text-rose-500 font-bold">* Wajib</span>
               </label>
               <select 
                 required
@@ -846,7 +846,7 @@ export const NewTicketModal = React.memo(({
 
             <div className="space-y-0.5 sm:col-span-2">
               <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
-                <AlertTriangle className="w-2 h-2" /> Prioritas
+                <AlertTriangle className="w-2 h-2" /> Prioritas <span className="text-rose-500 font-bold">* Wajib</span>
               </label>
               <select 
                 required
@@ -864,10 +864,10 @@ export const NewTicketModal = React.memo(({
 
           <div className="space-y-0.5">
             <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
-              <MessageSquare className="w-2 h-2" /> Detail Masalah {newTicket.jenis_masalah === 'Aplikasi' && <span className="text-rose-500 font-bold">* Wajib</span>}
+              <MessageSquare className="w-2 h-2" /> Detail Masalah <span className="text-rose-500 font-bold">* Wajib</span>
             </label>
             <textarea 
-              required={newTicket.jenis_masalah === 'Aplikasi'}
+              required
               rows={2}
               placeholder="Jelaskan kendala Anda secara detail..."
               className={`w-full px-3 py-1.5 rounded-2xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all resize-none ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
@@ -924,8 +924,27 @@ export const NewTicketModal = React.memo(({
           <div className="pt-0.5">
             <button 
               type="submit"
-              disabled={isSubmitting || (!currentUser && !newTicket.name) || !newTicket.priority || (newTicket.jenis_masalah === 'Aplikasi' && !newTicket.description?.trim()) || (newTicket.jenis_masalah === 'Hardware' && !isPcCodeMatched)}
-              style={{ backgroundColor: ((currentUser || newTicket.name) && newTicket.priority && (newTicket.jenis_masalah !== 'Aplikasi' || newTicket.description?.trim()) && (newTicket.jenis_masalah !== 'Hardware' || isPcCodeMatched)) ? primaryColor : '#94a3b8' }}
+              disabled={
+                isSubmitting || 
+                (!currentUser && (!newTicket.name || !newTicket.department)) || 
+                !newTicket.jenis_masalah || 
+                !newTicket.category || 
+                !newTicket.priority || 
+                !newTicket.description?.trim() || 
+                !newTicket.device_type || 
+                (newTicket.jenis_masalah === 'Hardware' && (!newTicket.pc_code?.trim() || !isPcCodeMatched))
+              }
+              style={{ 
+                backgroundColor: (
+                  (currentUser || (newTicket.name && newTicket.department)) && 
+                  newTicket.jenis_masalah && 
+                  newTicket.category && 
+                  newTicket.priority && 
+                  newTicket.description?.trim() && 
+                  newTicket.device_type && 
+                  (newTicket.jenis_masalah !== 'Hardware' || (newTicket.pc_code?.trim() && isPcCodeMatched))
+                ) ? primaryColor : '#94a3b8' 
+              }}
               className={`w-full py-2 sm:py-2.5 rounded-2xl text-white font-black capitalize tracking-widest text-[10px] sm:text-xs shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:cursor-not-allowed`}
             >
               {isSubmitting ? (

@@ -264,7 +264,7 @@ export const ReportPerangkat: React.FC<ReportPerangkatProps> = ({
             <tbody className="divide-y border-t" style={{ borderColor: isDark ? '#1e293b' : '#e2e8f0' }}>
               {deviceStats.length > 0 ? (
                 deviceStats.map((stat, idx) => {
-                  const topCat = Object.entries(stat.categories).sort((a: any, b: any) => b[1] - a[1])[0];
+                  const topCat = (Object.entries(stat.categories) as [string, number][]).sort((a, b) => b[1] - a[1])[0];
                   return (
                     <tr key={stat.id} className={`transition-colors ${isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}>
                       <td className="p-4">

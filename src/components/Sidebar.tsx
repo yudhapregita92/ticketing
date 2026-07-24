@@ -296,7 +296,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       onClick={() => setMasterDataOpen(!masterDataOpen)}
                       title="Master Data"
                       className={`w-full flex items-center justify-between ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                        (viewMode === 'master_user' || viewMode === 'master_perangkat' || masterDataOpen)
+                        (viewMode === 'master_user' || viewMode === 'master_perangkat' || viewMode === 'master_team' || masterDataOpen)
                           ? 'bg-emerald-500/10 text-emerald-600' 
                           : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                       }`}
@@ -310,7 +310,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       )}
                     </button>
 
-                    {(masterDataOpen || viewMode === 'master_user' || viewMode === 'master_perangkat') && (
+                    {(masterDataOpen || viewMode === 'master_user' || viewMode === 'master_perangkat' || viewMode === 'master_team') && (
                       <div className={`space-y-1 ${adminThemeLayout !== 'compact' ? 'pl-9' : ''}`}>
                         <button
                           onClick={() => setViewMode('master_user')}
@@ -338,6 +338,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           <div className="flex items-center gap-2.5">
                             <MonitorSmartphone className="w-3 h-3" />
                             {adminThemeLayout !== 'compact' && <span>Perangkat</span>}
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => setViewMode('master_team')}
+                          title="Tim IT Support & Topologi"
+                          className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
+                            viewMode === 'master_team' 
+                              ? 'bg-emerald-500/10 text-emerald-600' 
+                              : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <ShieldCheck className="w-3 h-3" />
+                            {adminThemeLayout !== 'compact' && <span>Tim IT & Topologi</span>}
                           </div>
                         </button>
                       </div>

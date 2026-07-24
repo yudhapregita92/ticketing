@@ -377,8 +377,8 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
         setSelectedDeviceId(videoDevices[0].deviceId);
       }
     } catch (err: any) {
-      console.error('Camera access error:', err);
-      toast.error('Gagal mengakses kamera: ' + (err.message || err.name || 'Pastikan izin kamera diberikan'));
+      console.warn('Camera access failed/not found:', err?.message || err);
+      toast.error('Kamera tidak ditemukan atau akses ditolak. Anda tetap dapat mengunggah file foto secara manual.');
     }
   };
 

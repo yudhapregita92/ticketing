@@ -74,6 +74,7 @@ import { TestingView } from './components/TestingView';
 import { VoucherManagement } from './components/VoucherManagement';
 import { MasterUserManagement } from './components/MasterUserManagement';
 import { MasterPerangkatPlaceholder } from './components/MasterPerangkatPlaceholder';
+import { MasterTeam } from './components/MasterTeam';
 import { ReportSLA } from './components/ReportSLA';
 import { ReportPerangkat } from './components/ReportPerangkat';
 
@@ -306,7 +307,7 @@ export default function App() {
     let view = p === '' ? (hasAdmin ? 'dashboard' : 'today') : p;
 
     // Admin only routes fallback
-    if (!hasAdmin && ['dashboard', 'assets', 'network', 'membership', 'evaluasi_project', 'voucher', 'master_user', 'master_perangkat', 'report_sla', 'report_perangkat'].includes(view)) {
+    if (!hasAdmin && ['dashboard', 'assets', 'network', 'membership', 'evaluasi_project', 'voucher', 'master_user', 'master_perangkat', 'master_team', 'report_sla', 'report_perangkat'].includes(view)) {
       if (view === 'voucher' && userCanVoucher) {
         // Allowed
       } else {
@@ -314,7 +315,7 @@ export default function App() {
       }
     }
 
-    if (['today', 'all', 'my_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership', 'evaluasi_project', 'jurnal', 'voucher', 'master_user', 'master_perangkat', 'report_sla', 'report_perangkat'].includes(view)) {
+    if (['today', 'all', 'my_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership', 'evaluasi_project', 'jurnal', 'voucher', 'master_user', 'master_perangkat', 'master_team', 'report_sla', 'report_perangkat'].includes(view)) {
       return view as ViewMode;
     }
     return hasAdmin ? 'dashboard' : 'today';
@@ -1684,6 +1685,17 @@ export default function App() {
                       <span>Master Perangkat</span>
                     </button>
                     <button
+                      onClick={() => setViewMode('master_team')}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                        viewMode === 'master_team'
+                          ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                          : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>Tim IT & Topologi</span>
+                    </button>
+                    <button
                       onClick={() => setViewMode('network')}
                       className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                         viewMode === 'network'
@@ -1780,6 +1792,8 @@ export default function App() {
               />
             ) : viewMode === 'master_perangkat' ? (
               <MasterPerangkatPlaceholder isDark={isDark} />
+            ) : viewMode === 'master_team' ? (
+              <MasterTeam isDark={isDark} primaryColor={primaryColor} />
             ) : viewMode === 'ba' ? (
               <BeritaAcara 
                 isDark={isDark}
