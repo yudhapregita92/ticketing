@@ -483,23 +483,23 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
       )}
 
       {/* --- HEADER TITLE BANNER (EDITABLE) --- */}
-      <div className={`p-6 rounded-3xl border shadow-xl relative overflow-hidden ${themeClasses.bgCard}`}>
+      <div className={`p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl border shadow-xl relative overflow-hidden ${themeClasses.bgCard}`}>
         <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 rounded-full opacity-10 bg-gradient-to-br from-emerald-500 to-cyan-500 blur-2xl pointer-events-none" />
         
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-          <div className="flex items-start gap-3.5 flex-1">
-            <div className="p-3.5 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20 shrink-0 mt-1">
-              <Users className="w-7 h-7" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5 sm:gap-4 relative z-10">
+          <div className="flex items-start gap-2.5 sm:gap-3.5 flex-1 min-w-0">
+            <div className="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20 shrink-0 mt-0.5">
+              <Users className="w-5 h-5 sm:w-7 sm:h-7" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+              <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
+                <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
                   Data Master
                 </span>
-                <span className="text-xs font-semibold text-slate-400">• Struktur Organisasi</span>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/10 text-teal-600 border border-teal-500/20 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  Tersimpan Permanen (Database SQLite Server)
+                <span className="hidden sm:inline text-xs font-semibold text-slate-400">• Struktur Organisasi</span>
+                <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold bg-teal-500/10 text-teal-600 border border-teal-500/20 flex items-center gap-1 shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Database SQLite
                 </span>
               </div>
 
@@ -509,7 +509,7 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                     type="text" 
                     value={headerTitle}
                     onChange={e => setHeaderTitle(e.target.value)}
-                    className={`w-full px-3 py-1.5 rounded-xl font-black text-lg border outline-none ${themeClasses.inputBg}`}
+                    className={`w-full px-3 py-1.5 rounded-xl font-black text-sm sm:text-lg border outline-none ${themeClasses.inputBg}`}
                   />
                   <textarea 
                     rows={2}
@@ -530,18 +530,18 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
               ) : (
                 <div>
                   <div className="flex items-center gap-2">
-                    <h1 className={`text-xl sm:text-2xl font-black tracking-tight ${themeClasses.heading}`}>
+                    <h1 className={`text-base sm:text-2xl font-black tracking-tight leading-snug ${themeClasses.heading}`}>
                       {headerTitle}
                     </h1>
                     <button 
                       onClick={() => setIsEditingHeader(true)}
-                      className="p-1 rounded-lg text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/10 transition-all"
+                      className="p-1 rounded-lg text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/10 transition-all shrink-0"
                       title="Edit Judul & Deskripsi"
                     >
-                      <Edit className="w-4 h-4" />
+                      <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
                   </div>
-                  <p className={`text-xs sm:text-sm font-medium ${themeClasses.textMuted}`}>
+                  <p className={`text-[11px] sm:text-sm font-medium mt-0.5 sm:mt-1 leading-relaxed ${themeClasses.textMuted}`}>
                     {headerDesc}
                   </p>
                 </div>
@@ -549,19 +549,19 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start md:self-auto flex-wrap shrink-0">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5 sm:gap-2 w-full md:w-auto shrink-0">
             <button
               onClick={handleExportBackup}
               title="Unduh backup data topologi & tim ke file JSON"
-              className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}
+              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all flex items-center justify-center gap-1.5 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}
             >
-              <Download className="w-4 h-4 text-emerald-500" />
-              <span>Backup JSON</span>
+              <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 shrink-0" />
+              <span className="truncate">Backup JSON</span>
             </button>
 
-            <label className={`px-3 py-2 rounded-xl text-xs font-bold border cursor-pointer transition-all flex items-center gap-1.5 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}>
-              <Upload className="w-4 h-4 text-cyan-500" />
-              <span>Impor JSON</span>
+            <label className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold border cursor-pointer transition-all flex items-center justify-center gap-1.5 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}>
+              <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-500 shrink-0" />
+              <span className="truncate">Impor JSON</span>
               <input 
                 type="file" 
                 accept=".json" 
@@ -572,18 +572,18 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
 
             <button
               onClick={handlePrintTopology}
-              className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}
+              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all flex items-center justify-center gap-1.5 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}
             >
-              <Printer className="w-4 h-4 text-slate-400" />
-              <span>Cetak</span>
+              <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 shrink-0" />
+              <span className="truncate">Cetak</span>
             </button>
 
             <button
               onClick={handleResetDefault}
-              className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}
+              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all flex items-center justify-center gap-1.5 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}
             >
-              <RefreshCw className="w-4 h-4 text-amber-500" />
-              <span>Reset</span>
+              <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0" />
+              <span className="truncate">Reset</span>
             </button>
 
             <button
@@ -599,49 +599,49 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                 setIsModalOpen(true);
               }}
               style={{ backgroundColor: primaryColor }}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-lg transition-all hover:brightness-110 active:scale-95 flex items-center gap-1.5"
+              className="col-span-2 sm:col-span-1 w-full sm:w-auto px-3.5 py-2 rounded-xl text-xs font-bold text-white shadow-lg transition-all hover:brightness-110 active:scale-95 flex items-center justify-center gap-1.5"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 shrink-0" />
               <span>Tambah Anggota</span>
             </button>
           </div>
         </div>
 
         {/* NAVIGATION TABS */}
-        <div className="flex items-center gap-2 mt-6 pt-4 border-t border-slate-200/20 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-1.5 sm:gap-2 mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-slate-200/20 overflow-x-auto no-scrollbar scrollbar-none pb-0.5">
           <button
             onClick={() => setActiveTab('topology')}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-[11px] sm:text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
               activeTab === 'topology'
                 ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
                 : `${themeClasses.bgSecondary} ${themeClasses.textMuted} hover:text-emerald-500`
             }`}
           >
-            <Award className="w-4 h-4" />
+            <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
             <span>Topologi Organisasi</span>
           </button>
 
           <button
             onClick={() => setActiveTab('jobdesk')}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-[11px] sm:text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
               activeTab === 'jobdesk'
                 ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
                 : `${themeClasses.bgSecondary} ${themeClasses.textMuted} hover:text-emerald-500`
             }`}
           >
-            <FileText className="w-4 h-4" />
+            <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
             <span>Rincian Jobdesk</span>
           </button>
 
           <button
             onClick={() => setActiveTab('manage')}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-[11px] sm:text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
               activeTab === 'manage'
                 ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
                 : `${themeClasses.bgSecondary} ${themeClasses.textMuted} hover:text-emerald-500`
             }`}
           >
-            <SlidersHorizontal className="w-4 h-4" />
+            <SlidersHorizontal className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
             <span>Kelola Anggota ({teamMembers.length})</span>
           </button>
         </div>
@@ -649,72 +649,80 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
 
       {/* --- TAB CONTENT 1: TOPOLOGY VISUAL HIERARCHY --- */}
       {activeTab === 'topology' && (
-        <div className="space-y-8">
-          <div className={`p-6 sm:p-8 rounded-3xl border shadow-lg relative ${themeClasses.bgCard}`}>
-            <div className="text-center max-w-xl mx-auto mb-8">
-              <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+        <div className="space-y-6 sm:space-y-8">
+          <div className={`p-3.5 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl border shadow-lg relative ${themeClasses.bgCard}`}>
+            <div className="text-center max-w-xl mx-auto mb-6 sm:mb-8 px-2">
+              <span className="px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 inline-block">
                 Bagan Topologi Hirarki Bertingkat
               </span>
-              <h2 className={`text-lg sm:text-xl font-black mt-2 ${themeClasses.heading}`}>
+              <h2 className={`text-base sm:text-xl font-black mt-2 leading-tight ${themeClasses.heading}`}>
                 Sub Departemen IT & Digitalisasi
               </h2>
-              <p className={`text-xs font-medium mt-1 ${themeClasses.textMuted}`}>
+              <p className={`text-[11px] sm:text-xs font-medium mt-1 leading-relaxed ${themeClasses.textMuted}`}>
                 Struktur hirarki: Sub Dept Head memimpin Section Head (2 Pelaksana IT) & Digitalization Specialist.
               </p>
             </div>
 
             {/* LEVEL 1: SUB DEPT HEAD */}
             {subDeptHead ? (
-              <div className="flex flex-col items-center relative z-10 mb-8">
+              <div className="flex flex-col items-center relative z-10 mb-6 sm:mb-8">
                 <div className="w-full max-w-lg transform transition-all hover:scale-[1.01]">
-                  <div className={`p-5 rounded-3xl border-2 border-indigo-500/60 shadow-2xl relative bg-gradient-to-br ${
+                  <div className={`p-4 sm:p-5 rounded-2xl sm:rounded-3xl border-2 border-indigo-500/60 shadow-2xl relative bg-gradient-to-br ${
                     isDark ? 'from-slate-800 to-indigo-950/40' : 'from-indigo-50/70 to-white'
                   }`}>
-                    <div className="absolute -top-3.5 left-1/2 transform -translate-x-1/2 px-3.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-indigo-600 text-white shadow-lg flex items-center gap-1">
-                      <CrownIcon className="w-3.5 h-3.5" />
-                      <span>Level 1: Sub Dept Head (Pimpinan Utama)</span>
+                    {/* Badge Pill Header - Clean on Mobile */}
+                    <div className="absolute -top-3.5 left-1/2 transform -translate-x-1/2 px-3 py-0.5 sm:px-3.5 rounded-full text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-wider bg-indigo-600 text-white shadow-lg flex items-center justify-center gap-1 whitespace-nowrap max-w-[92%] sm:max-w-none">
+                      <CrownIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                      <span className="truncate">Level 1: Sub Dept Head (Pimpinan Utama)</span>
                     </div>
 
-                    <div className="flex items-start gap-4 mt-2">
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-3.5 sm:gap-4 mt-3 sm:mt-2">
                       <img 
                         src={subDeptHead.avatar} 
                         alt={subDeptHead.name} 
-                        className="w-16 h-16 rounded-2xl object-cover border-2 border-indigo-500 shadow-md"
+                        className="w-16 h-16 sm:w-16 sm:h-16 rounded-2xl object-cover border-2 border-indigo-500 shadow-md shrink-0"
                       />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1">
-                          <h3 className={`text-sm sm:text-base font-black truncate ${themeClasses.heading}`}>
+                      <div className="flex-1 min-w-0 w-full">
+                        <div className="flex flex-wrap items-center justify-center sm:justify-between gap-1.5">
+                          <h3 className={`text-sm sm:text-base font-black truncate max-w-full ${themeClasses.heading}`}>
                             {subDeptHead.name}
                           </h3>
                           <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-indigo-500/20 text-indigo-500 border border-indigo-500/30 whitespace-nowrap">
                             {subDeptHead.status}
                           </span>
                         </div>
-                        <p className="text-xs font-bold text-indigo-500">{subDeptHead.subRoleTitle}</p>
-                        <p className={`text-[10px] font-mono mt-0.5 ${themeClasses.textMuted}`}>{subDeptHead.nip}</p>
+                        <p className="text-xs font-bold text-indigo-500 mt-0.5">{subDeptHead.subRoleTitle}</p>
+                        <p className={`text-[10px] font-mono ${themeClasses.textMuted}`}>{subDeptHead.nip}</p>
 
-                        <div className="flex items-center gap-3 mt-2 text-[10px] text-slate-400 border-t border-slate-200/10 pt-2">
-                          <span className="flex items-center gap-1"><Mail className="w-3 h-3 text-indigo-400" /> {subDeptHead.email}</span>
-                          <span className="flex items-center gap-1"><Phone className="w-3 h-3 text-emerald-500" /> {subDeptHead.phone}</span>
+                        {/* Contact Info Row - Wrapped Stacked on Mobile to prevent side-clipping */}
+                        <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1 sm:gap-3.5 mt-2.5 text-[10px] text-slate-400 border-t border-slate-200/10 pt-2">
+                          <span className="flex items-center gap-1.5 min-w-0 max-w-full truncate">
+                            <Mail className="w-3 h-3 text-indigo-400 shrink-0" /> 
+                            <span className="truncate">{subDeptHead.email}</span>
+                          </span>
+                          <span className="flex items-center gap-1.5 shrink-0">
+                            <Phone className="w-3 h-3 text-emerald-500 shrink-0" /> 
+                            <span>{subDeptHead.phone}</span>
+                          </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="mt-3 pt-2.5 border-t border-slate-200/20 flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-semibold text-slate-400">{subDeptHead.shift}</span>
-                      <div className="flex items-center gap-1.5">
+                    <div className="mt-3 pt-2.5 border-t border-slate-200/20 flex flex-col sm:flex-row items-center justify-between gap-2">
+                      <span className="text-[10px] font-semibold text-slate-400 text-center sm:text-left">{subDeptHead.shift}</span>
+                      <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
                         <button
                           onClick={() => {
                             setEditingMember(subDeptHead);
                             setIsModalOpen(true);
                           }}
-                          className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-indigo-500/10 hover:bg-indigo-500 text-indigo-600 hover:text-white transition-all flex items-center gap-1"
+                          className="flex-1 sm:flex-none px-3 py-1.5 rounded-xl text-[10px] font-bold bg-indigo-500/10 hover:bg-indigo-500 text-indigo-600 hover:text-white transition-all flex items-center justify-center gap-1"
                         >
                           <Edit className="w-3 h-3" /> Edit Data
                         </button>
                         <button
                           onClick={() => setSelectedMember(subDeptHead)}
-                          className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-indigo-600 text-white hover:brightness-110 transition-all flex items-center gap-1"
+                          className="flex-1 sm:flex-none px-3 py-1.5 rounded-xl text-[10px] font-bold bg-indigo-600 text-white hover:brightness-110 transition-all flex items-center justify-center gap-1 shadow-sm"
                         >
                           <FileText className="w-3 h-3" /> Jobdesk
                         </button>
@@ -724,8 +732,8 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                 </div>
 
                 {/* CONNECTING LINE DOWN TO LEVEL 2 */}
-                <div className="w-1 h-12 bg-gradient-to-b from-indigo-500 via-teal-500 to-emerald-500 relative my-1">
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 px-2.5 py-0.5 rounded-md text-[9px] font-black bg-indigo-600 text-white shadow-md whitespace-nowrap flex items-center gap-1">
+                <div className="w-1 h-10 sm:h-12 bg-gradient-to-b from-indigo-500 via-teal-500 to-emerald-500 relative my-1">
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 px-2.5 py-0.5 rounded-md text-[8px] sm:text-[9px] font-black bg-indigo-600 text-white shadow-md whitespace-nowrap flex items-center gap-1">
                     <ArrowDown className="w-3 h-3" /> Supervisi Langsung
                   </div>
                 </div>
@@ -737,67 +745,78 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
             )}
 
             {/* LEVEL 2 & LEVEL 3: STRUCTURED BRANCHING */}
-            <div className="mb-10">
-              <div className="text-center mb-6">
-                <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-teal-500/10 text-teal-600 border border-teal-500/20">
+            <div className="mb-6 sm:mb-10">
+              <div className="text-center mb-6 px-2">
+                <span className="px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider bg-teal-500/10 text-teal-600 border border-teal-500/20 inline-block max-w-full truncate">
                   {level2Label}
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-6xl mx-auto items-start">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 max-w-6xl mx-auto items-start">
                 
                 {/* BRANCH A: SECTION HEAD & HIS DIRECT SUBORDINATES (2 PELAKSANA IT) - TAKES 7 COLS */}
-                <div className="lg:col-span-7 space-y-4 p-5 rounded-3xl border border-emerald-500/30 bg-emerald-500/5 relative">
-                  <div className="absolute -top-3 left-4 px-3 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-md flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3" />
-                    <span>{unitOpsTitle}</span>
+                <div className="lg:col-span-7 space-y-4 p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-emerald-500/30 bg-emerald-500/5 relative">
+                  <div className="absolute -top-3 left-3 sm:left-4 px-2.5 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-md flex items-center gap-1 max-w-[90%] truncate">
+                    <ShieldCheck className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{unitOpsTitle}</span>
                   </div>
 
                   {/* LEVEL 2A: SECTION HEAD */}
                   {sectionHead ? (
-                    <div className={`p-5 rounded-2xl border-2 border-emerald-500 shadow-xl relative mt-2 ${themeClasses.bgSecondary}`}>
-                      <div className="flex items-start gap-3.5">
+                    <div className={`p-3.5 sm:p-5 rounded-2xl border-2 border-emerald-500 shadow-xl relative mt-3 sm:mt-2 ${themeClasses.bgSecondary}`}>
+                      <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-3.5">
                         <img 
                           src={sectionHead.avatar} 
                           alt={sectionHead.name} 
-                          className="w-14 h-14 rounded-xl object-cover border-2 border-emerald-500 shadow-md"
+                          className="w-14 h-14 rounded-xl object-cover border-2 border-emerald-500 shadow-md shrink-0"
                         />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1">
-                            <h4 className={`text-xs sm:text-sm font-black truncate ${themeClasses.heading}`}>
+                        <div className="flex-1 min-w-0 w-full">
+                          <div className="flex flex-wrap items-center justify-center sm:justify-between gap-1">
+                            <h4 className={`text-xs sm:text-sm font-black truncate max-w-full ${themeClasses.heading}`}>
                               {sectionHead.name}
                             </h4>
                             <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-emerald-500/20 text-emerald-500">
                               {sectionHead.status}
                             </span>
                           </div>
-                          <p className="text-xs font-bold text-emerald-500">{sectionHead.subRoleTitle}</p>
+                          <p className="text-xs font-bold text-emerald-500 mt-0.5">{sectionHead.subRoleTitle}</p>
                           <p className={`text-[10px] font-mono ${themeClasses.textMuted}`}>{sectionHead.nip}</p>
+
+                          <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1 sm:gap-3 mt-2 text-[10px] text-slate-400 border-t border-slate-200/10 pt-1.5">
+                            <span className="flex items-center gap-1 max-w-full truncate">
+                              <Mail className="w-3 h-3 text-emerald-400 shrink-0" /> 
+                              <span className="truncate">{sectionHead.email}</span>
+                            </span>
+                            <span className="flex items-center gap-1 shrink-0">
+                              <Phone className="w-3 h-3 text-emerald-500 shrink-0" /> 
+                              <span>{sectionHead.phone}</span>
+                            </span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="mt-3 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[10px]">
+                      <div className="mt-3 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-center sm:text-left">
                         <span className="font-bold text-emerald-600 block mb-0.5">Tugas Utama:</span>
                         <p className={themeClasses.heading}>Mengoordinasikan & Memimpin 2 Pelaksana IT Support di bawah ini</p>
                       </div>
 
-                      <div className="mt-3 pt-2.5 border-t border-slate-200/10 flex items-center justify-between">
+                      <div className="mt-3 pt-2.5 border-t border-slate-200/10 flex flex-col sm:flex-row items-center justify-between gap-2">
                         <span className="text-[10px] font-semibold text-slate-400">{sectionHead.shift}</span>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
                           <button
                             onClick={() => {
                               setEditingMember(sectionHead);
                               setIsModalOpen(true);
                             }}
-                            className="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all"
+                            className="flex-1 sm:flex-none px-3 py-1.5 rounded-xl text-[10px] font-bold bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center gap-1"
                           >
-                            Edit
+                            <Edit className="w-3 h-3" /> Edit
                           </button>
                           <button
                             onClick={() => setSelectedMember(sectionHead)}
-                            className="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-500 text-white hover:brightness-110 transition-all"
+                            className="flex-1 sm:flex-none px-3 py-1.5 rounded-xl text-[10px] font-bold bg-emerald-500 text-white hover:brightness-110 transition-all flex items-center justify-center gap-1 shadow-sm"
                           >
-                            Jobdesk
+                            <FileText className="w-3 h-3" /> Jobdesk
                           </button>
                         </div>
                       </div>
@@ -810,19 +829,19 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
 
                   {/* DIRECT SUBORDINATE CONNECTOR LINE */}
                   <div className="flex flex-col items-center my-1">
-                    <div className="w-1 h-6 bg-emerald-500" />
-                    <span className="px-3 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-teal-600 text-white shadow-sm flex items-center gap-1">
-                      <ArrowDown className="w-3 h-3" /> Bawahan Langsung Section Head (Level 3)
+                    <div className="w-1 h-5 bg-emerald-500" />
+                    <span className="px-2.5 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider bg-teal-600 text-white shadow-sm flex items-center justify-center gap-1 text-center max-w-[95%]">
+                      <ArrowDown className="w-3 h-3 shrink-0" /> Bawahan Langsung Section Head (Level 3)
                     </span>
                     <div className="w-1 h-4 bg-teal-500" />
                   </div>
 
                   {/* LEVEL 3: 2 PELAKSANA IT CARDS (NESTED DIRECTLY UNDER SECTION HEAD) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     {pelaksanaList.map((pelaksana, idx) => (
                       <div 
                         key={pelaksana.id}
-                        className={`p-4 rounded-2xl border-2 border-teal-500/40 transition-all hover:shadow-xl relative ${themeClasses.bgSecondary}`}
+                        className={`p-3.5 sm:p-4 rounded-2xl border-2 border-teal-500/40 transition-all hover:shadow-xl relative ${themeClasses.bgSecondary}`}
                       >
                         <div className="flex items-center justify-between gap-1 mb-2">
                           <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-teal-500/10 text-teal-600 border border-teal-500/20">
@@ -839,7 +858,7 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                           <img 
                             src={pelaksana.avatar} 
                             alt={pelaksana.name} 
-                            className="w-12 h-12 rounded-xl object-cover border-2 border-teal-500/40 shadow-sm"
+                            className="w-12 h-12 rounded-xl object-cover border-2 border-teal-500/40 shadow-sm shrink-0"
                           />
                           <div className="flex-1 min-w-0">
                             <h4 className={`text-xs font-black truncate ${themeClasses.heading}`}>
@@ -851,13 +870,13 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                         </div>
 
                         <div className="mt-2.5 space-y-1 text-[10px]">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between gap-1">
                             <span className={themeClasses.textMuted}>Email:</span>
-                            <span className={`font-semibold truncate max-w-[120px] ${themeClasses.heading}`}>{pelaksana.email}</span>
+                            <span className={`font-semibold truncate max-w-[140px] sm:max-w-[160px] ${themeClasses.heading}`}>{pelaksana.email}</span>
                           </div>
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between gap-1">
                             <span className={themeClasses.textMuted}>Shift:</span>
-                            <span className={`font-semibold ${themeClasses.heading}`}>{pelaksana.shift}</span>
+                            <span className={`font-semibold truncate ${themeClasses.heading}`}>{pelaksana.shift}</span>
                           </div>
                         </div>
 
@@ -875,7 +894,7 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                           </div>
                         </div>
 
-                        <div className="mt-3 pt-2 border-t border-slate-200/10 flex items-center justify-between">
+                        <div className="mt-3 pt-2 border-t border-slate-200/10 flex items-center justify-between gap-2">
                           <button
                             onClick={() => {
                               setEditingMember(pelaksana);
@@ -900,56 +919,67 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                 </div>
 
                 {/* BRANCH B: DIGITALIZATION SPECIALIST (TAKES 5 COLS) */}
-                <div className="lg:col-span-5 space-y-4 p-5 rounded-3xl border border-cyan-500/30 bg-cyan-500/5 relative">
-                  <div className="absolute -top-3 left-4 px-3 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-cyan-600 text-white shadow-md flex items-center gap-1">
-                    <Zap className="w-3 h-3" />
-                    <span>{unitInovasiTitle}</span>
+                <div className="lg:col-span-5 space-y-4 p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-cyan-500/30 bg-cyan-500/5 relative">
+                  <div className="absolute -top-3 left-3 sm:left-4 px-2.5 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider bg-cyan-600 text-white shadow-md flex items-center gap-1 max-w-[90%] truncate">
+                    <Zap className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{unitInovasiTitle}</span>
                   </div>
 
                   {digitalizationSpec ? (
-                    <div className={`p-5 rounded-2xl border-2 border-cyan-500 shadow-xl relative mt-2 ${themeClasses.bgSecondary}`}>
-                      <div className="flex items-start gap-3.5">
+                    <div className={`p-3.5 sm:p-5 rounded-2xl border-2 border-cyan-500 shadow-xl relative mt-3 sm:mt-2 ${themeClasses.bgSecondary}`}>
+                      <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-3.5">
                         <img 
                           src={digitalizationSpec.avatar} 
                           alt={digitalizationSpec.name} 
-                          className="w-14 h-14 rounded-xl object-cover border-2 border-cyan-500 shadow-md"
+                          className="w-14 h-14 rounded-xl object-cover border-2 border-cyan-500 shadow-md shrink-0"
                         />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1">
-                            <h4 className={`text-xs sm:text-sm font-black truncate ${themeClasses.heading}`}>
+                        <div className="flex-1 min-w-0 w-full">
+                          <div className="flex flex-wrap items-center justify-center sm:justify-between gap-1">
+                            <h4 className={`text-xs sm:text-sm font-black truncate max-w-full ${themeClasses.heading}`}>
                               {digitalizationSpec.name}
                             </h4>
                             <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-cyan-500/20 text-cyan-500">
                               {digitalizationSpec.status}
                             </span>
                           </div>
-                          <p className="text-xs font-bold text-cyan-500">{digitalizationSpec.subRoleTitle}</p>
+                          <p className="text-xs font-bold text-cyan-500 mt-0.5">{digitalizationSpec.subRoleTitle}</p>
                           <p className={`text-[10px] font-mono ${themeClasses.textMuted}`}>{digitalizationSpec.nip}</p>
+
+                          <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1 sm:gap-3 mt-2 text-[10px] text-slate-400 border-t border-slate-200/10 pt-1.5">
+                            <span className="flex items-center gap-1 max-w-full truncate">
+                              <Mail className="w-3 h-3 text-cyan-400 shrink-0" /> 
+                              <span className="truncate">{digitalizationSpec.email}</span>
+                            </span>
+                            <span className="flex items-center gap-1 shrink-0">
+                              <Phone className="w-3 h-3 text-emerald-500 shrink-0" /> 
+                              <span>{digitalizationSpec.phone}</span>
+                            </span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="mt-3 p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-[10px]">
+                      <div className="mt-3 p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-[10px] text-center sm:text-left">
                         <span className="font-bold text-cyan-600 block mb-0.5">Fokus Tugas:</span>
                         <p className={themeClasses.heading}>Otomatisasi Alur Kerja, Digital Workflow & Analitik Data</p>
                       </div>
 
-                      <div className="mt-3 pt-2.5 border-t border-slate-200/10 flex items-center justify-between">
+                      <div className="mt-3 pt-2.5 border-t border-slate-200/10 flex flex-col sm:flex-row items-center justify-between gap-2">
                         <span className="text-[10px] font-semibold text-slate-400">{digitalizationSpec.shift}</span>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
                           <button
                             onClick={() => {
                               setEditingMember(digitalizationSpec);
                               setIsModalOpen(true);
                             }}
-                            className="px-2 py-1 rounded-lg text-[10px] font-bold bg-cyan-500/10 text-cyan-600 hover:bg-cyan-500 hover:text-white transition-all"
+                            className="flex-1 sm:flex-none px-3 py-1.5 rounded-xl text-[10px] font-bold bg-cyan-500/10 text-cyan-600 hover:bg-cyan-500 hover:text-white transition-all flex items-center justify-center gap-1"
                           >
-                            Edit
+                            <Edit className="w-3 h-3" /> Edit
                           </button>
                           <button
                             onClick={() => setSelectedMember(digitalizationSpec)}
-                            className="px-2 py-1 rounded-lg text-[10px] font-bold bg-cyan-500 text-white hover:brightness-110 transition-all"
+                            className="flex-1 sm:flex-none px-3 py-1.5 rounded-xl text-[10px] font-bold bg-cyan-500 text-white hover:brightness-110 transition-all flex items-center justify-center gap-1 shadow-sm"
                           >
-                            Jobdesk
+                            <FileText className="w-3 h-3" /> Jobdesk
                           </button>
                         </div>
                       </div>
@@ -960,9 +990,9 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                     </div>
                   )}
 
-                  <div className={`p-4 rounded-2xl border text-xs ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                  <div className={`p-3.5 sm:p-4 rounded-2xl border text-xs ${themeClasses.bgSecondary} ${themeClasses.border}`}>
                     <span className="font-bold text-cyan-600 flex items-center gap-1 mb-1">
-                      <Sparkles className="w-3.5 h-3.5 text-cyan-500" /> Posisi Staf Spesialis Direct
+                      <Sparkles className="w-3.5 h-3.5 text-cyan-500 shrink-0" /> Posisi Staf Spesialis Direct
                     </span>
                     <p className={`text-[10px] leading-relaxed ${themeClasses.textMuted}`}>
                       Digitalization Specialist berkedudukan langsung di bawah Sub Dept Head khusus untuk menangani otomatisasi proses bisnis, integrasi sistem, dan transformasi digital.
@@ -979,11 +1009,11 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
       {/* --- TAB CONTENT 2: RINCIAN JOBDESK & KPI --- */}
       {activeTab === 'jobdesk' && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {teamMembers.map((member) => (
               <div 
                 key={member.id}
-                className={`p-6 rounded-3xl border shadow-lg flex flex-col justify-between ${themeClasses.bgCard}`}
+                className={`p-4 sm:p-6 rounded-2xl sm:rounded-3xl border shadow-lg flex flex-col justify-between ${themeClasses.bgCard}`}
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-3">
@@ -1001,13 +1031,13 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                     <span className="text-[10px] font-mono text-slate-400">{member.nip}</span>
                   </div>
 
-                  <h3 className={`text-base font-black ${themeClasses.heading}`}>
+                  <h3 className={`text-sm sm:text-base font-black ${themeClasses.heading}`}>
                     {member.name}
                   </h3>
                   <p className="text-xs font-bold text-emerald-500 mb-4">{member.subRoleTitle}</p>
 
                   <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-2 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Uraian Tugas & Jobdesk Wajib:
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> Uraian Tugas & Jobdesk Wajib:
                   </p>
 
                   <ul className="space-y-2 text-xs">
@@ -1024,7 +1054,7 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
 
                 <div className="mt-6 pt-4 border-t border-slate-200/10 flex items-center justify-between text-[10px] text-slate-400">
                   <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-cyan-500" /> {member.shift}
+                    <Clock className="w-3 h-3 text-cyan-500 shrink-0" /> {member.shift}
                   </span>
                   <button
                     onClick={() => {
@@ -1044,7 +1074,7 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
 
       {/* --- TAB CONTENT 3: KELOLA ANGGOTA TIM --- */}
       {activeTab === 'manage' && (
-        <div className={`p-6 rounded-3xl border shadow-lg ${themeClasses.bgCard}`}>
+        <div className={`p-4 sm:p-6 rounded-2xl sm:rounded-3xl border shadow-lg ${themeClasses.bgCard}`}>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div className="relative flex-1 max-w-md">
               <Search className="w-4 h-4 absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400" />
@@ -1062,8 +1092,8 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto -mx-2 sm:mx-0">
+            <table className="w-full text-left text-xs min-w-[600px]">
               <thead>
                 <tr className={`border-b text-[10px] font-black uppercase tracking-wider ${themeClasses.border} ${themeClasses.textMuted}`}>
                   <th className="py-3 px-4">Anggota</th>
