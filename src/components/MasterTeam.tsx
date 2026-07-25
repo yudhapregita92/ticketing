@@ -217,6 +217,8 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
     }, 3500);
   };
 
+  const [isDbLoaded, setIsDbLoaded] = useState(false);
+
   useEffect(() => {
     // Load from SQLite database on mount
     const fetchFromDb = async () => {
@@ -224,17 +226,52 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
         const res = await fetch('/api/settings');
         if (res.ok) {
           const data = await res.json();
+          let loadedMembers = teamMembers;
+          let loadedTitle = headerTitle;
+          let loadedDesc = headerDesc;
+          let loadedL2 = level2Label;
+          let loadedOps = unitOpsTitle;
+          let loadedInovasi = unitInovasiTitle;
+
           if (data.it_team_members_v2 && Array.isArray(data.it_team_members_v2) && data.it_team_members_v2.length > 0) {
-            setTeamMembers(data.it_team_members_v2);
+            loadedMembers = data.it_team_members_v2;
+            setTeamMembers(loadedMembers);
           }
-          if (data.it_team_header_title) setHeaderTitle(data.it_team_header_title);
-          if (data.it_team_header_desc) setHeaderDesc(data.it_team_header_desc);
-          if (data.it_team_level2_label) setLevel2Label(data.it_team_level2_label);
-          if (data.it_team_unit_ops_title) setUnitOpsTitle(data.it_team_unit_ops_title);
-          if (data.it_team_unit_inovasi_title) setUnitInovasiTitle(data.it_team_unit_inovasi_title);
+          if (data.it_team_header_title) {
+            loadedTitle = data.it_team_header_title;
+            setHeaderTitle(loadedTitle);
+          }
+          if (data.it_team_header_desc) {
+            loadedDesc = data.it_team_header_desc;
+            setHeaderDesc(loadedDesc);
+          }
+          if (data.it_team_level2_label) {
+            loadedL2 = data.it_team_level2_label;
+            setLevel2Label(loadedL2);
+          }
+          if (data.it_team_unit_ops_title) {
+            loadedOps = data.it_team_unit_ops_title;
+            setUnitOpsTitle(loadedOps);
+          }
+          if (data.it_team_unit_inovasi_title) {
+            loadedInovasi = data.it_team_unit_inovasi_title;
+            setUnitInovasiTitle(loadedInovasi);
+          }
+
+          // Sync localStorage with latest DB values
+          try {
+            localStorage.setItem('it_team_members_v2', JSON.stringify(loadedMembers));
+            localStorage.setItem('it_team_header_title', loadedTitle);
+            localStorage.setItem('it_team_header_desc', loadedDesc);
+            localStorage.setItem('it_team_level2_label', loadedL2);
+            localStorage.setItem('it_team_unit_ops_title', loadedOps);
+            localStorage.setItem('it_team_unit_inovasi_title', loadedInovasi);
+          } catch (e) {}
         }
       } catch (e) {
         console.error('Failed to load IT team data from SQLite DB', e);
+      } finally {
+        setIsDbLoaded(true);
       }
     };
     fetchFromDb();
@@ -280,8 +317,10 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
   };
 
   useEffect(() => {
-    saveToDbAndLocalStorage();
-  }, [teamMembers, headerTitle, headerDesc, level2Label, unitOpsTitle, unitInovasiTitle]);
+    if (isDbLoaded) {
+      saveToDbAndLocalStorage();
+    }
+  }, [isDbLoaded, teamMembers, headerTitle, headerDesc, level2Label, unitOpsTitle, unitInovasiTitle]);
 
   // Categorize Members for Hierarchy
   const subDeptHead = teamMembers.find(m => m.role === 'Sub Dept Head');
