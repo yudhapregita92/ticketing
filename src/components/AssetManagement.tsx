@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Package, Search, Plus, Filter, Edit2, Trash2, 
   Monitor, Smartphone, Printer, Server, Laptop, X, Save,
-  User, Building2, Download, Upload, FileSpreadsheet
+  User, Building2, Download, Upload, FileSpreadsheet,
+  ChevronLeft, ChevronRight, Users, Layers
 } from 'lucide-react';
 import * as xlsx from 'xlsx';
 import toast from 'react-hot-toast';
@@ -28,6 +29,14 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
   const [deleteAllPassword, setDeleteAllPassword] = useState('');
   const [isDeletingAll, setIsDeletingAll] = useState(false);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterCategory]);
   
   // Form State
   const [formData, setFormData] = useState({
@@ -41,6 +50,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
     department: '',
     usage_status: 'karyawan',
     assigned_to: '',
+    user_index: '',
     status: 'Active',
     condition: 'Good',
     notes: ''
@@ -98,6 +108,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
       department: '',
       usage_status: 'karyawan',
       assigned_to: '',
+      user_index: '',
       status: 'Active',
       condition: 'Good',
       notes: ''
@@ -129,6 +140,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
       department: asset.department || '',
       usage_status: asset.usage_status || 'karyawan',
       assigned_to: asset.assigned_to || '',
+      user_index: asset.user_index || '',
       status: asset.status || 'Active',
       condition: asset.condition || 'Good',
       notes: asset.notes || ''
@@ -167,6 +179,16 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
     return matchesSearch && matchesCategory;
   });
 
+  // Stats summary calculations
+  const totalAssetsCount = assets.length;
+  const totalCategoriesCount = assetCategories.length > 0 ? assetCategories.length : new Set(assets.map(a => a.category).filter(Boolean)).size;
+  const totalUsersCount = new Set(assets.map(a => a.assigned_to).filter(Boolean)).size;
+  const totalDepartmentsCount = new Set(assets.map(a => a.department).filter(Boolean)).size;
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredAssets.length / itemsPerPage) || 1;
+  const paginatedAssets = filteredAssets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   // Extract unique departments from master users
   const masterDepartments = Array.from(new Set(masterUsers.map(u => u.department).filter(Boolean))).sort();
 
@@ -182,6 +204,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
         'Departemen': 'IT Support',
         'Status Penggunaan': 'karyawan',
         'Penanggung Jawab / User': 'Budi Santoso',
+        'Index': '1001',
         'Status Aset': 'Active',
         'Kondisi': 'Good',
         'Tanggal Pembelian': '2024-01-15',
@@ -197,6 +220,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
         'Departemen': 'CE Business',
         'Status Penggunaan': 'shared department',
         'Penanggung Jawab / User': 'Guntur',
+        'Index': '1002',
         'Status Aset': 'Active',
         'Kondisi': 'Good',
         'Tanggal Pembelian': '2023-11-20',
@@ -226,6 +250,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
       'Departemen': asset.department || '-',
       'Status Penggunaan': asset.usage_status || 'karyawan',
       'Penanggung Jawab / User': asset.assigned_to || '-',
+      'Index': asset.user_index || '-',
       'Status Aset': asset.status || 'Active',
       'Kondisi': asset.condition || 'Good',
       'Tanggal Pembelian': asset.purchase_date || '-',
@@ -259,6 +284,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
           const category = row['Kategori'] || row['category'];
           if (!asset_id || !name || !category) continue;
 
+          const userIndexValue = row['Index'] || row['Index / NIK'] || row['user_index'] || row['employee_index'] || '';
+
           const assetPayload = {
             asset_id: String(asset_id),
             name: String(name),
@@ -270,6 +297,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
             department: row['Departemen'] || row['department'] || '',
             usage_status: row['Status Penggunaan'] || row['usage_status'] || 'karyawan',
             assigned_to: row['Penanggung Jawab / User'] || row['assigned_to'] || '',
+            user_index: String(userIndexValue),
             status: row['Status Aset'] || row['status'] || 'Active',
             condition: row['Kondisi'] || row['condition'] || 'Good',
             purchase_date: row['Tanggal Pembelian'] || row['purchase_date'] || '',
@@ -327,6 +355,49 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
         onChange={handleImportExcel} 
         className="hidden" 
       />
+
+      {/* Card Informasi Stats Overview */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className={`p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Aset</p>
+            <h3 className="text-2xl font-black mt-1 text-emerald-600 dark:text-emerald-400">{totalAssetsCount}</h3>
+          </div>
+          <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-500">
+            <Package className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className={`p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Jumlah Kategori</p>
+            <h3 className="text-2xl font-black mt-1 text-blue-600 dark:text-blue-400">{totalCategoriesCount}</h3>
+          </div>
+          <div className="p-3 rounded-2xl bg-blue-500/10 text-blue-500">
+            <Layers className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className={`p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Pengguna</p>
+            <h3 className="text-2xl font-black mt-1 text-violet-600 dark:text-violet-400">{totalUsersCount}</h3>
+          </div>
+          <div className="p-3 rounded-2xl bg-violet-500/10 text-violet-500">
+            <Users className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className={`p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Departemen</p>
+            <h3 className="text-2xl font-black mt-1 text-amber-600 dark:text-amber-400">{totalDepartmentsCount}</h3>
+          </div>
+          <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500">
+            <Building2 className="w-6 h-6" />
+          </div>
+        </div>
+      </div>
 
       {/* Header Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -452,7 +523,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
                 </tr>
               </thead>
               <tbody className={`divide-y ${isDark ? 'divide-slate-800' : 'divide-slate-100'}`}>
-                {filteredAssets.map((asset) => (
+                {paginatedAssets.map((asset) => (
                   <tr 
                     key={asset.id} 
                     className={`transition-colors ${isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}
@@ -480,6 +551,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
                           {asset.assigned_to || '-'}
                         </span>
                         <span className="text-[10px] text-slate-400">
+                          {asset.user_index ? `Index: ${asset.user_index} • ` : ''}
                           {asset.usage_status === 'shared department' ? 'Shared Dept' : 'Karyawan'}
                         </span>
                       </div>
@@ -522,6 +594,53 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
               </tbody>
             </table>
           </div>
+
+          {/* Footer Pagination */}
+          {filteredAssets.length > 0 && (
+            <div className={`px-4 py-3 border-t flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-medium ${
+              isDark ? 'border-slate-800 bg-slate-900/50 text-slate-400' : 'border-slate-100 bg-slate-50/50 text-slate-600'
+            }`}>
+              <div>
+                Menampilkan <span className="font-bold text-slate-700 dark:text-slate-200">{filteredAssets.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}</span> - <span className="font-bold text-slate-700 dark:text-slate-200">{Math.min(currentPage * itemsPerPage, filteredAssets.length)}</span> dari <span className="font-bold text-slate-700 dark:text-slate-200">{filteredAssets.length}</span> aset
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 font-bold text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                    isDark 
+                      ? 'border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200' 
+                      : 'border-slate-200 bg-white hover:bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Sebelumnya</span>
+                </button>
+
+                <div className={`px-3 py-1.5 rounded-xl border text-xs font-bold ${
+                  isDark ? 'border-slate-700 bg-slate-800 text-slate-200' : 'border-slate-200 bg-white text-slate-700'
+                }`}>
+                  Halaman {currentPage} dari {totalPages}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                  disabled={currentPage >= totalPages}
+                  className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 font-bold text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                    isDark 
+                      ? 'border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200' 
+                      : 'border-slate-200 bg-white hover:bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  <span>Selanjutnya</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -673,7 +792,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
                           setFormData(prev => ({
                             ...prev,
                             assigned_to: userName,
-                            department: selectedUser && selectedUser.department ? selectedUser.department : (userName ? prev.department : '')
+                            department: selectedUser && selectedUser.department ? selectedUser.department : (userName ? prev.department : ''),
+                            user_index: selectedUser && selectedUser.employee_index ? selectedUser.employee_index : (userName ? prev.user_index : '')
                           }));
                         }}
                         className={`w-full pl-10 pr-4 py-2.5 rounded-xl text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
@@ -686,6 +806,30 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
                         ))}
                       </select>
                     </div>
+                  </div>
+
+                  {/* Index / NIK */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">Index / NIK</label>
+                      {Boolean(formData.assigned_to) && (
+                        <span className="text-[9px] font-bold text-amber-500 uppercase tracking-wider flex items-center gap-1">
+                          🔒 Terkunci (Sesuai User)
+                        </span>
+                      )}
+                    </div>
+                    <input 
+                      type="text" 
+                      readOnly={Boolean(formData.assigned_to)}
+                      placeholder="e.g. 1001"
+                      value={formData.user_index}
+                      onChange={(e) => setFormData({...formData, user_index: e.target.value})}
+                      className={`w-full px-4 py-2.5 rounded-xl text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                        formData.assigned_to ? 'opacity-70 cursor-not-allowed bg-slate-200/50 dark:bg-slate-800/50' : ''
+                      } ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
+                      }`}
+                    />
                   </div>
 
                   {/* Departemen */}

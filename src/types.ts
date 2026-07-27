@@ -126,6 +126,7 @@ export interface IAsset {
   specs?: string;
   serial_number?: string;
   usage_status?: string;
+  user_index?: string;
 }
 export interface IMembershipLog {
   id: number;

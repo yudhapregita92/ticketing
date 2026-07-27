@@ -13,7 +13,7 @@ router.get("/", asyncHandler(async (req, res) => {
 router.post("/", asyncHandler(async (req, res) => {
   const { 
     asset_id, name, category, status, assigned_to, department, purchase_date, condition, notes,
-    device_code, brand, specs, serial_number, usage_status 
+    device_code, brand, specs, serial_number, usage_status, user_index 
   } = req.body;
 
   if (!asset_id || !name || !category) {
@@ -23,12 +23,13 @@ router.post("/", asyncHandler(async (req, res) => {
   const info = db.prepare(
     `INSERT INTO assets (
       asset_id, name, category, status, assigned_to, department, purchase_date, condition, notes,
-      device_code, brand, specs, serial_number, usage_status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      device_code, brand, specs, serial_number, usage_status, user_index
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     asset_id, name, category, status || 'Active', assigned_to || null, department || null, 
     purchase_date || null, condition || null, notes || null,
-    device_code || null, brand || null, specs || null, serial_number || null, usage_status || null
+    device_code || null, brand || null, specs || null, serial_number || null, usage_status || null,
+    user_index || null
   );
   
   const newAsset = db.prepare("SELECT * FROM assets WHERE id = ?").get(info.lastInsertRowid);
@@ -39,19 +40,19 @@ router.put("/:id", asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { 
     asset_id, name, category, status, assigned_to, department, purchase_date, condition, notes,
-    device_code, brand, specs, serial_number, usage_status 
+    device_code, brand, specs, serial_number, usage_status, user_index 
   } = req.body;
 
   db.prepare(
     `UPDATE assets SET 
       asset_id = ?, name = ?, category = ?, status = ?, assigned_to = ?, department = ?, 
       purchase_date = ?, condition = ?, notes = ?, updated_at = CURRENT_TIMESTAMP,
-      device_code = ?, brand = ?, specs = ?, serial_number = ?, usage_status = ?
+      device_code = ?, brand = ?, specs = ?, serial_number = ?, usage_status = ?, user_index = ?
     WHERE id = ?`
   ).run(
     asset_id, name, category, status, assigned_to, department, 
     purchase_date, condition, notes,
-    device_code, brand, specs, serial_number, usage_status,
+    device_code, brand, specs, serial_number, usage_status, user_index || null,
     id
   );
   res.json({ success: true });

@@ -107,6 +107,7 @@ export function initDb() {
       specs TEXT,
       serial_number TEXT,
       usage_status TEXT,
+      user_index TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -394,6 +395,9 @@ export function initDb() {
       }
       if (!columns.find(c => c.name === 'usage_status')) {
         db.prepare("ALTER TABLE assets ADD COLUMN usage_status TEXT").run();
+      }
+      if (!columns.find(c => c.name === 'user_index')) {
+        db.prepare("ALTER TABLE assets ADD COLUMN user_index TEXT").run();
       }
     }
 
