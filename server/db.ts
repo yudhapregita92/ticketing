@@ -102,8 +102,20 @@ export function initDb() {
       purchase_date DATE,
       condition TEXT DEFAULT 'Good',
       notes TEXT,
+      device_code TEXT,
+      brand TEXT,
+      specs TEXT,
+      serial_number TEXT,
+      usage_status TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS asset_categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL,
+      kode_kategori TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS network_devices (
@@ -295,6 +307,28 @@ export function initDb() {
     console.error("Error seeding eval_projects:", err);
   }
 
+  // Seed asset categories if empty
+  try {
+    const catCount = db.prepare("SELECT COUNT(*) as count FROM asset_categories").get() as any;
+    if (catCount && catCount.count === 0) {
+      const insertCat = db.prepare("INSERT INTO asset_categories (name, kode_kategori) VALUES (?, ?)");
+      const defaultCats = [
+        { name: "Komputer", kode_kategori: "PC" },
+        { name: "Laptop", kode_kategori: "LPT" },
+        { name: "Printer", kode_kategori: "PRN" },
+        { name: "Smartphone", kode_kategori: "HP" },
+        { name: "Server", kode_kategori: "SRV" },
+        { name: "Jaringan", kode_kategori: "NET" },
+        { name: "Lainnya", kode_kategori: "ETC" },
+      ];
+      for (const c of defaultCats) {
+        insertCat.run(c.name, c.kode_kategori);
+      }
+    }
+  } catch (err) {
+    console.error("Error seeding asset_categories:", err);
+  }
+
   // Add missing columns if they don't exist
   const tables = ['tickets', 'users', 'categories', 'master_users', 'ticket_logs', 'memberships', 'membership_logs', 'assets', 'voucher_requests', 'eval_m365_usage'];
   for (const table of tables) {
@@ -336,10 +370,30 @@ export function initDb() {
             purchase_date DATE,
             condition TEXT DEFAULT 'Good',
             notes TEXT,
+            device_code TEXT,
+            brand TEXT,
+            specs TEXT,
+            serial_number TEXT,
+            usage_status TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
           )
         `).run();
+      }
+      if (!columns.find(c => c.name === 'device_code')) {
+        db.prepare("ALTER TABLE assets ADD COLUMN device_code TEXT").run();
+      }
+      if (!columns.find(c => c.name === 'brand')) {
+        db.prepare("ALTER TABLE assets ADD COLUMN brand TEXT").run();
+      }
+      if (!columns.find(c => c.name === 'specs')) {
+        db.prepare("ALTER TABLE assets ADD COLUMN specs TEXT").run();
+      }
+      if (!columns.find(c => c.name === 'serial_number')) {
+        db.prepare("ALTER TABLE assets ADD COLUMN serial_number TEXT").run();
+      }
+      if (!columns.find(c => c.name === 'usage_status')) {
+        db.prepare("ALTER TABLE assets ADD COLUMN usage_status TEXT").run();
       }
     }
 
