@@ -45,6 +45,11 @@ export interface ICategory {
   id: number;
   name: string;
   assigned_to?: string;
+  device_code?: string;
+  brand?: string;
+  specs?: string;
+  serial_number?: string;
+  usage_status?: string;
   response_time?: number;
   jenis_masalah?: string;
 }
@@ -116,6 +121,11 @@ export interface IAsset {
   status: string;
   notes?: string;
   assigned_to?: string;
+  device_code?: string;
+  brand?: string;
+  specs?: string;
+  serial_number?: string;
+  usage_status?: string;
 }
 export interface IMembershipLog {
   id: number;

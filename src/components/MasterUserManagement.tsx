@@ -51,6 +51,7 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
   const [editingMasterUser, setEditingMasterUser] = React.useState<any | null>(null);
   const [masterUserSearch, setMasterUserSearch] = React.useState('');
   const [addingType, setAddingType] = React.useState<'master-user' | null>(null);
+  const [assetCategories, setAssetCategories] = React.useState<any[]>([]);
 
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 20;
@@ -58,6 +59,10 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
   React.useEffect(() => {
     setCurrentPage(1);
   }, [masterUserSearch]);
+
+  React.useEffect(() => {
+    api.getAssetCategories().then(data => setAssetCategories(data)).catch(err => console.error('Error fetching asset categories:', err));
+  }, []);
 
   const filteredMasterUsers = React.useMemo(() => {
     if (!Array.isArray(masterUsers)) return [];
@@ -567,28 +572,30 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
                       value={masterUserDept}
                       onChange={e => setMasterUserDept(e.target.value)}
                     >
-                      <option value="">Pilih Bagian...</option>
-                      {Array.isArray(departments) && departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+                      <option value="">(Tidak Ada)</option>
+                      {departments.map(d => (
+                        <option key={d.id} value={d.name}>{d.name}</option>
+                      ))}
                     </select>
                   </div>
                   <div>
                     <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">No. Telepon (Opsional)</label>
                     <input 
-                      type="text"
-                      placeholder="No. HP"
+                      type="tel"
+                      placeholder="Contoh: 0812..."
                       className={`w-full px-3 py-2.5 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                       value={masterUserPhone}
                       onChange={e => setMasterUserPhone(e.target.value)}
                     />
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Index Karyawan (Opsional)</label>
                     <input 
                       type="text"
-                      placeholder="Index Karyawan"
+                      placeholder="Contoh: 14022"
                       className={`w-full px-3 py-2.5 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                       value={masterUserIndex}
                       onChange={e => setMasterUserIndex(e.target.value)}
@@ -602,9 +609,9 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
                       onChange={e => setMasterUserJenisPiranti(e.target.value)}
                     >
                       <option value="(Tidak Ada)">(Tidak Ada)</option>
-                      <option value="Komputer">Komputer</option>
-                      <option value="Laptop">Laptop</option>
-                      <option value="TAB">TAB</option>
+                      {assetCategories.map(cat => (
+                        <option key={cat.id} value={cat.name}>{cat.name}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -634,13 +641,21 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
                 <div className="space-y-4">
                   <div>
                     <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Jabatan (Opsional)</label>
-                    <input 
-                      type="text"
-                      placeholder="Masukkan jabatan"
+                    <select 
                       className={`w-full px-3 py-2.5 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                       value={masterUserJabatan}
                       onChange={e => setMasterUserJabatan(e.target.value)}
-                    />
+                    >
+                      <option value="">(Tidak Ada)</option>
+                      <option value="KDKHead">KDKHead</option>
+                      <option value="Sub Dept Head">Sub Dept Head</option>
+                      <option value="Section Head">Section Head</option>
+                      <option value="Staff">Staff</option>
+                      <option value="Pelaksana">Pelaksana</option>
+                      {masterUserJabatan && !['KDKHead', 'Sub Dept Head', 'Section Head', 'Staff', 'Pelaksana'].includes(masterUserJabatan) && (
+                        <option value={masterUserJabatan}>{masterUserJabatan}</option>
+                      )}
+                    </select>
                   </div>
                 </div>
                 

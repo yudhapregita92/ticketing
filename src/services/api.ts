@@ -180,6 +180,9 @@ export const api = {
   checkHealth: () => fetch('/api/health').then(handleResponse),
 
   // Assets
+  getAssetCategories: (): Promise<any[]> => fetch("/api/assets/categories").then(handleResponse),
+  addAssetCategory: (data: any) => fetch("/api/assets/categories", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(handleResponse),
+  deleteAssetCategory: (id: number) => fetch(`/api/assets/categories/${id}`, { method: "DELETE" }).then(handleResponse),
   getAssets: (): Promise<any[]> => fetch('/api/assets').then(handleResponse),
   addAsset: (data: any) => fetch('/api/assets', {
     method: 'POST',
@@ -193,6 +196,11 @@ export const api = {
   }).then(handleResponse),
   deleteAsset: (id: number) => fetch(`/api/assets/${id}`, {
     method: 'DELETE'
+  }).then(handleResponse),
+  deleteAllAssets: (password: string) => fetch('/api/assets/delete-all', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password })
   }).then(handleResponse),
 
   // Settings

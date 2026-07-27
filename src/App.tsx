@@ -73,7 +73,7 @@ import { TicketList } from './components/TicketList';
 import { TestingView } from './components/TestingView';
 import { VoucherManagement } from './components/VoucherManagement';
 import { MasterUserManagement } from './components/MasterUserManagement';
-import { MasterPerangkatPlaceholder } from './components/MasterPerangkatPlaceholder';
+import { MasterPerangkat } from './components/MasterPerangkat';
 import { MasterTeam } from './components/MasterTeam';
 import { ReportSLA } from './components/ReportSLA';
 import { ReportPerangkat } from './components/ReportPerangkat';
@@ -1795,7 +1795,7 @@ export default function App() {
                 adminUser={adminUser}
               />
             ) : viewMode === 'master_perangkat' ? (
-              <MasterPerangkatPlaceholder isDark={isDark} />
+              <MasterPerangkat isDark={isDark} primaryColor={primaryColor} />
             ) : viewMode === 'master_team' ? (
               <MasterTeam isDark={isDark} primaryColor={primaryColor} />
             ) : viewMode === 'ba' ? (

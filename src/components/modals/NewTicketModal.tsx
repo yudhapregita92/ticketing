@@ -22,6 +22,7 @@ import {
   Box
 } from 'lucide-react';
 import { PRIORITIES } from '../../types';
+import { api } from "../../services/api";
 
 interface NewTicketModalProps {
   showForm: boolean;
@@ -75,6 +76,10 @@ export const NewTicketModal = React.memo(({
   appSettings
 }: NewTicketModalProps) => {
   const [showUserDropdown, setShowUserDropdown] = React.useState(false);
+  const [masterAssets, setMasterAssets] = React.useState<any[]>([]);
+  React.useEffect(() => {
+    api.getAssets().then(data => setMasterAssets(data)).catch(err => console.error(err));
+  }, []);
   const [deviceSelected, setDeviceSelected] = React.useState<string | null>(newTicket.device_type || null);
   const [isScanning, setIsScanning] = React.useState(false);
   const [scanComplete, setScanComplete] = React.useState(false);
@@ -324,19 +329,19 @@ export const NewTicketModal = React.memo(({
   }, [masterUsers, newTicket.name]);
 
   const isPcCodeMatched = React.useMemo(() => {
-    if (!newTicket.pc_code || !Array.isArray(masterUsers)) return false;
+    if (!newTicket.pc_code || !Array.isArray(masterAssets)) return false;
     const inputCode = (newTicket.pc_code || '').trim().toLowerCase();
     const cleanInput = inputCode.replace(/^[- \t]+/g, '').trim();
     if (!cleanInput) return false;
 
-    return masterUsers.some(user => {
-      const userCode = (user.kode_piranti || '').trim().toLowerCase();
-      if (!userCode || userCode === '-' || userCode === '(tidak ada)') return false;
-      if (userCode === inputCode) return true;
-      const cleanUser = userCode.replace(/^[- \t]+/g, '').trim();
-      return cleanUser !== '' && cleanUser === cleanInput;
+    return masterAssets.some(asset => {
+      const assetCode = (asset.device_code || asset.asset_id || '').trim().toLowerCase();
+      if (!assetCode || assetCode === '-' || assetCode === '(tidak ada)') return false;
+      if (assetCode === inputCode) return true;
+      const cleanAsset = assetCode.replace(/^[- \t]+/g, '').trim();
+      return cleanAsset === cleanInput || cleanAsset.includes(cleanInput) || cleanInput.includes(cleanAsset);
     });
-  }, [masterUsers, newTicket.pc_code]);
+  }, [masterAssets, newTicket.pc_code]);
 
   const filteredCategories = React.useMemo(() => {
     if (!newTicket.jenis_masalah) return [];
