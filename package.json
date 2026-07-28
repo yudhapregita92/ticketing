@@ -25,6 +25,7 @@
     "esbuild": "^0.28.1",
     "express": "^4.22.2",
     "framer-motion": "^12.35.2",
+    "html5-qrcode": "^2.3.8",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "multer": "^2.1.1",

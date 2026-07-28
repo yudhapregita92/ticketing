@@ -1,5 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
+import { Html5Qrcode } from 'html5-qrcode';
 import { 
   X, 
   Ticket, 
@@ -19,7 +21,8 @@ import {
   Upload,
   Smartphone,
   Monitor,
-  Box
+  Box,
+  QrCode
 } from 'lucide-react';
 import { PRIORITIES } from '../../types';
 import { api } from "../../services/api";
@@ -329,19 +332,118 @@ export const NewTicketModal = React.memo(({
   }, [masterUsers, newTicket.name]);
 
   const isPcCodeMatched = React.useMemo(() => {
-    if (!newTicket.pc_code || !Array.isArray(masterAssets)) return false;
+    if (!newTicket.pc_code) return false;
     const inputCode = (newTicket.pc_code || '').trim().toLowerCase();
     const cleanInput = inputCode.replace(/^[- \t]+/g, '').trim();
     if (!cleanInput) return false;
 
-    return masterAssets.some(asset => {
-      const assetCode = (asset.device_code || asset.asset_id || '').trim().toLowerCase();
-      if (!assetCode || assetCode === '-' || assetCode === '(tidak ada)') return false;
-      if (assetCode === inputCode) return true;
-      const cleanAsset = assetCode.replace(/^[- \t]+/g, '').trim();
-      return cleanAsset === cleanInput || cleanAsset.includes(cleanInput) || cleanInput.includes(cleanAsset);
-    });
-  }, [masterAssets, newTicket.pc_code]);
+    // Check against masterAssets
+    if (Array.isArray(masterAssets) && masterAssets.length > 0) {
+      const matchAsset = masterAssets.some(asset => {
+        const devCode = (asset.device_code || '').trim().toLowerCase();
+        const assetId = (asset.asset_id || '').trim().toLowerCase();
+        const cleanDev = devCode.replace(/^[- \t]+/g, '').trim();
+        const cleanAssetId = assetId.replace(/^[- \t]+/g, '').trim();
+        if (devCode && devCode !== '-' && (devCode === inputCode || cleanDev === cleanInput)) return true;
+        if (assetId && assetId !== '-' && (assetId === inputCode || cleanAssetId === cleanInput)) return true;
+        return false;
+      });
+      if (matchAsset) return true;
+    }
+
+    // Check against masterUsers' kode_piranti
+    if (Array.isArray(masterUsers) && masterUsers.length > 0) {
+      const matchUser = masterUsers.some(u => {
+        const uCode = (u.kode_piranti || '').trim().toLowerCase();
+        const cleanUCode = uCode.replace(/^[- \t]+/g, '').trim();
+        return uCode && uCode !== '-' && (uCode === inputCode || cleanUCode === cleanInput);
+      });
+      if (matchUser) return true;
+    }
+
+    return false;
+  }, [masterAssets, masterUsers, newTicket.pc_code]);
+
+  // QR Code Scanner State & Logic
+  const [showQrScannerModal, setShowQrScannerModal] = React.useState(false);
+  const qrScannerRef = React.useRef<Html5Qrcode | null>(null);
+
+  const startQrScanner = React.useCallback(() => {
+    setShowQrScannerModal(true);
+  }, []);
+
+  const stopQrScanner = React.useCallback(async () => {
+    if (qrScannerRef.current) {
+      try {
+        if (qrScannerRef.current.isScanning) {
+          await qrScannerRef.current.stop();
+        }
+        await qrScannerRef.current.clear();
+      } catch (e) {
+        console.warn("Error stopping QR scanner:", e);
+      }
+      qrScannerRef.current = null;
+    }
+    setShowQrScannerModal(false);
+  }, []);
+
+  React.useEffect(() => {
+    if (!showQrScannerModal) return;
+
+    let isMounted = true;
+    const elementId = "qr-reader-element";
+
+    const initScanner = async () => {
+      try {
+        await new Promise(res => setTimeout(res, 350));
+        if (!document.getElementById(elementId) || !isMounted) return;
+
+        const scanner = new Html5Qrcode(elementId);
+        qrScannerRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 220, height: 220 } },
+          (decodedText) => {
+            if (!isMounted) return;
+            let scannedCode = decodedText.trim();
+            try {
+              if (scannedCode.startsWith("http://") || scannedCode.startsWith("https://")) {
+                const url = new URL(scannedCode);
+                const assetParam = url.searchParams.get("asset") || url.searchParams.get("device") || url.searchParams.get("code");
+                if (assetParam) {
+                  scannedCode = assetParam.trim();
+                }
+              }
+            } catch (err) {
+              // Ignore
+            }
+
+            setNewTicket((prev: any) => ({ ...prev, pc_code: scannedCode }));
+            toast.success(`QR Code terdeteksi: ${scannedCode}`);
+            scanner.stop().then(() => scanner.clear()).catch(console.warn);
+            qrScannerRef.current = null;
+            setShowQrScannerModal(false);
+          },
+          () => {} // silent scan frame callback
+        );
+      } catch (err: any) {
+        console.error("Failed to start QR scanner:", err);
+        toast.error("Tidak dapat membuka kamera untuk scan QR. Pastikan izin kamera aktif.");
+        setShowQrScannerModal(false);
+      }
+    };
+
+    initScanner();
+
+    return () => {
+      isMounted = false;
+      if (qrScannerRef.current) {
+        qrScannerRef.current.stop().then(() => qrScannerRef.current?.clear()).catch(console.warn);
+        qrScannerRef.current = null;
+      }
+    };
+  }, [showQrScannerModal, setNewTicket]);
 
   const filteredCategories = React.useMemo(() => {
     if (!newTicket.jenis_masalah) return [];
@@ -827,24 +929,35 @@ export const NewTicketModal = React.memo(({
                 <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
                   <Monitor className="w-2.5 h-2.5 text-blue-500" /> Kode Perangkat <span className="text-rose-500 font-bold">* Wajib</span>
                 </label>
-                <div className="relative flex items-center">
-                  <input 
-                    required
-                    type="text"
-                    placeholder="Contoh: PC-05, PC-LAB-01, dll..."
-                    className={`w-full px-3 py-1.5 pr-16 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
-                    value={newTicket.pc_code || ''}
-                    onChange={e => setNewTicket({...newTicket, pc_code: e.target.value})}
-                  />
-                  {isPcCodeMatched && (
-                    <div className="absolute right-2 text-emerald-500 flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-lg border border-emerald-500/20">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-500 fill-emerald-500/10" />
-                      <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 tracking-wider">Cocok</span>
-                    </div>
-                  )}
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1 flex items-center">
+                    <input 
+                      required
+                      type="text"
+                      placeholder="Contoh: PC-05, PC-LAB-01, dll..."
+                      className={`w-full px-3 py-1.5 ${isPcCodeMatched ? 'pr-20' : 'pr-3'} rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                      value={newTicket.pc_code || ''}
+                      onChange={e => setNewTicket({...newTicket, pc_code: e.target.value})}
+                    />
+                    {isPcCodeMatched && (
+                      <div className="absolute right-2 text-emerald-500 flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-lg border border-emerald-500/20">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500 fill-emerald-500/10" />
+                        <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 tracking-wider">Cocok</span>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={startQrScanner}
+                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center gap-1.5 shrink-0"
+                    title="Scan QR Code stiker perangkat"
+                  >
+                    <QrCode className="w-3.5 h-3.5" />
+                    <span>Scan QR</span>
+                  </button>
                 </div>
                  <p className="text-[9px] font-bold text-amber-500 dark:text-amber-400 capitalize tracking-wide ml-0.5">
-                  * Masukkan nomor perangkat yang tertera pada stiker label perangkat Anda.
+                  * Masukkan kode perangkat lengkap yang tertera pada stiker label atau tekan Scan QR.
                 </p>
               </div>
             )}
@@ -964,6 +1077,52 @@ export const NewTicketModal = React.memo(({
         </form>
       )}
       </motion.div>
+
+      {/* QR Code Scanner Overlay Modal */}
+      <AnimatePresence>
+        {showQrScannerModal && (
+          <div className="fixed inset-0 z-[1000] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className={`w-full max-w-sm rounded-3xl p-5 border shadow-2xl flex flex-col items-center text-center ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800'}`}
+            >
+              <div className="flex items-center justify-between w-full mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+                    <QrCode className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-sm font-bold tracking-tight">Scan QR Label Perangkat</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={stopQrScanner}
+                  className="p-1 rounded-full text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <p className="text-[11px] text-slate-400 mb-4">
+                Arahkan kamera ke stiker QR Code pada perangkat/komputer Anda untuk verifikasi otomatis.
+              </p>
+
+              <div className="relative w-full max-w-[260px] aspect-square rounded-2xl overflow-hidden border-2 border-indigo-500 bg-black shadow-inner flex items-center justify-center">
+                <div id="qr-reader-element" className="w-full h-full" />
+              </div>
+
+              <button
+                type="button"
+                onClick={stopQrScanner}
+                className="mt-5 w-full py-2.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 text-xs font-bold rounded-xl transition-all"
+              >
+                Batal / Tutup Scanner
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 });
