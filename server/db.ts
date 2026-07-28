@@ -1,7 +1,27 @@
 import Database from "better-sqlite3";
 import bcrypt from "bcryptjs";
+import path from "path";
+import fs from "fs";
 
-const db = new Database("tickets.db", { timeout: 15000 });
+let dbPath = "tickets.db";
+
+// Jika berjalan di Windows, gunakan C:\ticketing-data
+if (process.platform === 'win32') {
+  const winDbDir = "C:\\ticketing-data";
+  if (!fs.existsSync(winDbDir)) {
+    try {
+      fs.mkdirSync(winDbDir, { recursive: true });
+    } catch (e) {
+      console.warn("Gagal membuat direktori C:\\ticketing-data, menggunakan tickets.db lokal.", e);
+    }
+  }
+  if (fs.existsSync(winDbDir)) {
+    dbPath = path.join(winDbDir, "tickets.db");
+  }
+}
+
+console.log(`[DB] Menggunakan database di path: ${dbPath}`);
+const db = new Database(dbPath, { timeout: 15000 });
 db.pragma("journal_mode = WAL");
 db.pragma("synchronous = NORMAL");
 db.pragma("busy_timeout = 15000");
@@ -358,28 +378,11 @@ export function initDb() {
 
     if (table === 'assets') {
       if (columns.find(c => c.name === 'asset_tag')) {
-        db.prepare("DROP TABLE assets").run();
-        db.prepare(`
-          CREATE TABLE assets (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            asset_id TEXT UNIQUE NOT NULL,
-            name TEXT NOT NULL,
-            category TEXT NOT NULL,
-            status TEXT DEFAULT 'Active',
-            assigned_to TEXT,
-            department TEXT,
-            purchase_date DATE,
-            condition TEXT DEFAULT 'Good',
-            notes TEXT,
-            device_code TEXT,
-            brand TEXT,
-            specs TEXT,
-            serial_number TEXT,
-            usage_status TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-          )
-        `).run();
+        try {
+          db.prepare("ALTER TABLE assets RENAME COLUMN asset_tag TO asset_id").run();
+        } catch (e) {
+          console.error("Migration rename error:", e);
+        }
       }
       if (!columns.find(c => c.name === 'device_code')) {
         db.prepare("ALTER TABLE assets ADD COLUMN device_code TEXT").run();
