@@ -207,6 +207,20 @@ export const api = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ password })
   }).then(handleResponse),
+  getBorrowedAssets: (): Promise<any[]> => fetch('/api/assets/borrowed').then(handleResponse),
+  addBorrowedAsset: (data: any) => fetch('/api/assets/borrowed', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(handleResponse),
+  returnBorrowedAsset: (id: number, return_date?: string, received_by?: string) => fetch(`/api/assets/borrowed/${id}/return`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ return_date, received_by })
+  }).then(handleResponse),
+  deleteBorrowedAsset: (id: number) => fetch(`/api/assets/borrowed/${id}`, {
+    method: 'DELETE'
+  }).then(handleResponse),
 
   // Settings
   getSettings: (): Promise<ISettings> => fetch('/api/settings').then(handleResponse),

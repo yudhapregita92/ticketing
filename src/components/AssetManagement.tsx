@@ -1,20 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Package, Search, Plus, Filter, Edit2, Trash2, 
   Monitor, Smartphone, Printer, Server, Laptop, X, Save,
   User, Building2, Download, Upload, FileSpreadsheet,
-  ChevronLeft, ChevronRight, Users, Layers, Eye
+  ChevronLeft, ChevronRight, Users, Layers, Eye, CheckCircle2, PieChart,
+  ClipboardList, RotateCcw, PenTool, Calendar, Check, AlertCircle, FileSignature
 } from 'lucide-react';
 import * as xlsx from 'xlsx';
 import toast from 'react-hot-toast';
-import { IAsset } from '../types';
+import { IAsset, IBorrowedAsset } from '../types';
 import { api } from '../services/api';
 
 interface AssetManagementProps {
   isDark: boolean;
   themeClasses: any;
   primaryColor: string;
+  activeSubTab?: 'all' | 'Capex' | 'Opex' | 'borrowed';
+  setActiveSubTab?: (tab: 'all' | 'Capex' | 'Opex' | 'borrowed') => void;
 }
 
 export const getCategoryCodePrefix = (categoryName: string) => {
@@ -63,15 +66,38 @@ export const generateNextDeviceCode = (categoryName: string, currentAssets: IAss
   return `${prefix}${paddedSeq}`;
 };
 
-export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeClasses, primaryColor }) => {
+export const AssetManagement: React.FC<AssetManagementProps> = ({ 
+  isDark, 
+  themeClasses, 
+  primaryColor,
+  activeSubTab: externalSubTab,
+  setActiveSubTab: setExternalSubTab
+}) => {
   const [assets, setAssets] = useState<IAsset[]>([]);
+  const [borrowedAssets, setBorrowedAssets] = useState<IBorrowedAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterDepartment, setFilterDepartment] = useState('');
   const [filterUsageStatus, setFilterUsageStatus] = useState('');
   const [filterAssetStatus, setFilterAssetStatus] = useState('');
+  const [internalSubTab, setInternalSubTab] = useState<'all' | 'Capex' | 'Opex' | 'borrowed'>('all');
+  
+  const activeSubTab = externalSubTab !== undefined ? externalSubTab : internalSubTab;
+  const setActiveSubTab = (tab: 'all' | 'Capex' | 'Opex' | 'borrowed') => {
+    setInternalSubTab(tab);
+    if (setExternalSubTab) setExternalSubTab(tab);
+  };
   const [showModal, setShowModal] = useState(false);
+  const [showBorrowModal, setShowBorrowModal] = useState(false);
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnItem, setReturnItem] = useState<IBorrowedAsset | null>(null);
+  const [returnDate, setReturnDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [receivedBy, setReceivedBy] = useState<string>('yudha');
+  const [deviceSearchQuery, setDeviceSearchQuery] = useState('');
+  const [isDeviceDropdownOpen, setIsDeviceDropdownOpen] = useState(false);
+  const [onlyITDepartment, setOnlyITDepartment] = useState(true);
+  const [showSignaturePreview, setShowSignaturePreview] = useState<string | null>(null);
   const [editingAsset, setEditingAsset] = useState<IAsset | null>(null);
   const [isViewMode, setIsViewMode] = useState(false);
   const [masterUsers, setMasterUsers] = useState<any[]>([]);
@@ -86,7 +112,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filterCategory, filterDepartment, filterUsageStatus, filterAssetStatus]);
+  }, [searchQuery, filterCategory, filterDepartment, filterUsageStatus, filterAssetStatus, activeSubTab]);
   
   // Form State
   const [formData, setFormData] = useState({
@@ -103,8 +129,76 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
     user_index: '',
     status: 'Active',
     condition: 'Good',
-    notes: ''
+    notes: '',
+    budget_type: 'Capex'
   });
+
+  // Borrow Form State
+  const [borrowFormData, setBorrowFormData] = useState({
+    asset_id: null as number | null,
+    device_name: '',
+    device_code: '',
+    budget_type: 'Capex',
+    borrower_name: '',
+    borrower_department: '',
+    borrow_date: new Date().toISOString().split('T')[0],
+    expected_return_date: '',
+    notes: '',
+    signature: ''
+  });
+
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    setIsDrawing(true);
+    const rect = canvas.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    ctx.beginPath();
+    ctx.moveTo(clientX - rect.left, clientY - rect.top);
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#0284c7';
+    ctx.lineTo(clientX - rect.left, clientY - rect.top);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    if (!isDrawing) return;
+    setIsDrawing(false);
+    const canvas = canvasRef.current;
+    if (canvas) {
+      setBorrowFormData(prev => ({ ...prev, signature: canvas.toDataURL() }));
+    }
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+    setBorrowFormData(prev => ({ ...prev, signature: '' }));
+  };
 
   useEffect(() => {
     fetchData();
@@ -113,18 +207,94 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [assetsData, users, categories] = await Promise.all([
+      const [assetsData, users, categories, borrowedData] = await Promise.all([
         api.getAssets(),
         api.getMasterUsers(),
-        api.getAssetCategories()
+        api.getAssetCategories(),
+        api.getBorrowedAssets()
       ]);
       setAssets(assetsData);
       setMasterUsers(users);
       setAssetCategories(categories);
+      setBorrowedAssets(borrowedData || []);
     } catch (err) {
       console.error('Error fetching data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveBorrow = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!borrowFormData.device_name?.trim()) {
+      toast.error('Nama Perangkat wajib diisi atau dipilih!');
+      return;
+    }
+    if (!borrowFormData.borrower_name?.trim()) {
+      toast.error('Nama Peminjam wajib diisi!');
+      return;
+    }
+    if (!borrowFormData.borrow_date) {
+      toast.error('Tanggal Pinjam wajib diisi!');
+      return;
+    }
+
+    try {
+      await api.addBorrowedAsset(borrowFormData);
+      toast.success('Data peminjaman perangkat berhasil disimpan!');
+      setShowBorrowModal(false);
+      setBorrowFormData({
+        asset_id: null,
+        device_name: '',
+        device_code: '',
+        budget_type: 'Capex',
+        borrower_name: '',
+        borrower_department: '',
+        borrow_date: new Date().toISOString().split('T')[0],
+        expected_return_date: '',
+        notes: '',
+        signature: ''
+      });
+      fetchData();
+    } catch (err: any) {
+      toast.error(err?.message || 'Gagal menyimpan data peminjaman');
+    }
+  };
+
+  const handleOpenReturnModal = (item: IBorrowedAsset) => {
+    setReturnItem(item);
+    setReturnDate(new Date().toISOString().split('T')[0]);
+    setReceivedBy('yudha');
+    setShowReturnModal(true);
+  };
+
+  const handleConfirmReturn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!returnItem) return;
+    if (!receivedBy.trim()) {
+      toast.error('Penerima barang wajib diisi!');
+      return;
+    }
+
+    try {
+      await api.returnBorrowedAsset(returnItem.id, returnDate, receivedBy.trim());
+      toast.success(`Perangkat berhasil dikembalikan (Diterima oleh ${receivedBy.trim()})`);
+      setShowReturnModal(false);
+      setReturnItem(null);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err?.message || 'Gagal memproses pengembalian perangkat');
+    }
+  };
+
+  const handleDeleteBorrow = async (id: number) => {
+    if (!window.confirm('Apakah Anda yakin ingin menghapus catatan peminjaman ini?')) return;
+    try {
+      await api.deleteBorrowedAsset(id);
+      toast.success('Catatan peminjaman berhasil dihapus');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err?.message || 'Gagal menghapus data');
     }
   };
 
@@ -187,7 +357,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
       user_index: '',
       status: 'Active',
       condition: 'Good',
-      notes: ''
+      notes: '',
+      budget_type: activeSubTab !== 'all' ? activeSubTab : 'Capex'
     });
   };
 
@@ -219,7 +390,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
       user_index: asset.user_index || '',
       status: asset.status || 'Active',
       condition: asset.condition || 'Good',
-      notes: asset.notes || ''
+      notes: asset.notes || '',
+      budget_type: asset.budget_type || 'Capex'
     });
     setIsViewMode(view);
     setShowModal(true);
@@ -249,11 +421,32 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
   };
 
   const filteredAssets = assets.filter(asset => {
-    const matchesSearch = asset.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          asset.asset_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (asset.device_code && asset.device_code.toLowerCase().includes(searchQuery.toLowerCase()));
+    const q = searchQuery.trim().toLowerCase();
+    const matchesSearch = !q || [
+      asset.asset_id,
+      asset.name,
+      asset.device_code,
+      asset.category,
+      asset.brand,
+      asset.specs,
+      asset.serial_number,
+      asset.department,
+      asset.usage_status,
+      asset.assigned_to,
+      asset.user_index,
+      asset.status,
+      asset.condition,
+      asset.notes,
+      asset.budget_type
+    ].some(field => field && String(field).toLowerCase().includes(q));
+
     const matchesCategory = filterCategory ? asset.category === filterCategory : true;
-    return matchesSearch && matchesCategory;
+    const matchesDepartment = filterDepartment ? asset.department === filterDepartment : true;
+    const matchesUsageStatus = filterUsageStatus ? (asset.usage_status || '').toLowerCase() === filterUsageStatus.toLowerCase() : true;
+    const matchesAssetStatus = filterAssetStatus ? (asset.status || '').toLowerCase() === filterAssetStatus.toLowerCase() : true;
+    const matchesSubTab = activeSubTab === 'all' ? true : (asset.budget_type || 'Capex') === activeSubTab;
+
+    return matchesSearch && matchesCategory && matchesDepartment && matchesUsageStatus && matchesAssetStatus && matchesSubTab;
   });
 
   // Stats summary calculations
@@ -283,6 +476,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
         'Status Penggunaan': 'karyawan',
         'Penanggung Jawab / User': 'Budi Santoso',
         'Index': '1001',
+        'Tipe Anggaran': 'Capex',
         'Status Aset': 'Active',
         'Kondisi': 'Good',
         'Tanggal Pembelian': '2024-01-15',
@@ -300,6 +494,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
         'Status Penggunaan': 'shared department',
         'Penanggung Jawab / User': 'Guntur',
         'Index': '1002',
+        'Tipe Anggaran': 'Capex',
         'Status Aset': 'Active',
         'Kondisi': 'Good',
         'Tanggal Pembelian': '2023-11-20',
@@ -317,10 +512,11 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
         'Status Penggunaan': 'shared department',
         'Penanggung Jawab / User': 'Finance Dept',
         'Index': '1003',
+        'Tipe Anggaran': 'Opex',
         'Status Aset': 'Active',
         'Kondisi': 'Good',
         'Tanggal Pembelian': '2024-02-10',
-        'Catatan': 'Printer bersama kantor'
+        'Catatan': 'Printer sewa operasional'
       }
     ];
 
@@ -513,6 +709,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
       'Status Penggunaan': asset.usage_status || 'karyawan',
       'Penanggung Jawab / User': asset.assigned_to || '-',
       'Index': asset.user_index || '-',
+      'Tipe Anggaran': asset.budget_type || 'Capex',
       'Status Aset': asset.status || 'Active',
       'Kondisi': asset.condition || 'Good',
       'Tanggal Pembelian': asset.purchase_date || '-',
@@ -561,6 +758,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
           }
 
           const userIndexValue = row['Index'] || row['Index / NIK'] || row['user_index'] || row['employee_index'] || '';
+          const rawBudgetType = row['Tipe Anggaran'] || row['Budget Type'] || row['Tipe'] || row['budget_type'] || 'Capex';
+          const cleanBudgetType = String(rawBudgetType).toLowerCase().includes('opex') ? 'Opex' : 'Capex';
 
           const assetPayload = {
             device_code: String(device_code),
@@ -574,6 +773,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
             usage_status: row['Status Penggunaan'] || row['usage_status'] || 'karyawan',
             assigned_to: row['Penanggung Jawab / User'] || row['assigned_to'] || '',
             user_index: String(userIndexValue),
+            budget_type: cleanBudgetType,
             status: row['Status Aset'] || row['status'] || 'Active',
             condition: row['Kondisi'] || row['condition'] || 'Good',
             purchase_date: row['Tanggal Pembelian'] || row['purchase_date'] || '',
@@ -638,214 +838,947 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
         className="hidden" 
       />
 
-      {/* Card Informasi Stats Overview */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-        <div className={`p-3 sm:p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <div>
-            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400">Total Aset</p>
-            <h3 className="text-xl sm:text-2xl font-black mt-0.5 sm:mt-1 text-emerald-600 dark:text-emerald-400">{totalAssetsCount}</h3>
+      {/* Top Header & Submenu Navigation */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            {activeSubTab !== 'all' && (
+              <button
+                type="button"
+                onClick={() => setActiveSubTab('all')}
+                className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-all flex items-center gap-1 text-xs font-bold"
+                title="Kembali ke Dashboard Overview"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Dashboard</span>
+              </button>
+            )}
+            <h2 className={`text-xl sm:text-2xl font-black ${themeClasses.heading}`}>
+              {activeSubTab === 'all' && 'Dashboard Overview Manajemen Aset'}
+              {activeSubTab === 'Capex' && 'Manajemen Aset Capex (Belanja Modal)'}
+              {activeSubTab === 'Opex' && 'Manajemen Aset Opex (Belanja Operasional)'}
+              {activeSubTab === 'borrowed' && 'Perangkat Dipinjam (IT Device Loans)'}
+            </h2>
+            <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+              activeSubTab === 'all' 
+                ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' 
+                : activeSubTab === 'Capex' 
+                  ? 'bg-blue-500/10 text-blue-600 border border-blue-500/20' 
+                  : activeSubTab === 'Opex'
+                    ? 'bg-purple-500/10 text-purple-600 border border-purple-500/20'
+                    : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+            }`}>
+              {activeSubTab === 'all' ? 'Dashboard Summary' : activeSubTab === 'borrowed' ? 'Peminjaman IT' : activeSubTab}
+            </span>
           </div>
-          <div className="p-2 sm:p-3 rounded-2xl bg-emerald-500/10 text-emerald-500">
-            <Package className="w-5 h-5 sm:w-6 sm:h-6" />
-          </div>
+          <p className={`text-xs sm:text-sm mt-1 ${themeClasses.textMuted}`}>
+            {activeSubTab === 'all' && 'Ringkasan sebaran statistik, kategori, & alokasi anggaran aset perusahaan'}
+            {activeSubTab === 'Capex' && 'Kelola daftar inventaris aset modal (pembelian permanen/investasi perusahaan)'}
+            {activeSubTab === 'Opex' && 'Kelola daftar inventaris aset operasional (sewa/layanan/berkala)'}
+            {activeSubTab === 'borrowed' && 'Pendataan dan riwayat peminjaman perangkat IT oleh karyawan dengan tanda tangan digital'}
+          </p>
         </div>
 
-        <div className={`p-3 sm:p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <div>
-            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400">Kategori</p>
-            <h3 className="text-xl sm:text-2xl font-black mt-0.5 sm:mt-1 text-blue-600 dark:text-blue-400">{totalCategoriesCount}</h3>
-          </div>
-          <div className="p-2 sm:p-3 rounded-2xl bg-blue-500/10 text-blue-500">
-            <Layers className="w-5 h-5 sm:w-6 sm:h-6" />
-          </div>
-        </div>
+        {/* Submenu Navigation Capex, Opex & Borrowed (Hanya tampil di Dashboard Overview) */}
+        {activeSubTab === 'all' && (
+          <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 w-full md:w-fit overflow-x-auto flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveSubTab('all')}
+              className="px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap bg-emerald-600 text-white shadow-md"
+            >
+              <Package className="w-4 h-4" />
+              <span>Dashboard Overview</span>
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-700 text-white">
+                {assets.length}
+              </span>
+            </button>
 
-        <div className={`p-3 sm:p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <div>
-            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400">Pengguna</p>
-            <h3 className="text-xl sm:text-2xl font-black mt-0.5 sm:mt-1 text-violet-600 dark:text-violet-400">{totalUsersCount}</h3>
-          </div>
-          <div className="p-2 sm:p-3 rounded-2xl bg-violet-500/10 text-violet-500">
-            <Users className="w-5 h-5 sm:w-6 sm:h-6" />
-          </div>
-        </div>
+            <button
+              type="button"
+              onClick={() => setActiveSubTab('Capex')}
+              className="px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
+            >
+              <Building2 className="w-4 h-4" />
+              <span>Aset Capex</span>
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                {assets.filter(a => (a.budget_type || 'Capex') === 'Capex').length}
+              </span>
+            </button>
 
-        <div className={`p-3 sm:p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <div>
-            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400">Departemen</p>
-            <h3 className="text-xl sm:text-2xl font-black mt-0.5 sm:mt-1 text-amber-600 dark:text-amber-400">{totalDepartmentsCount}</h3>
+            <button
+              type="button"
+              onClick={() => setActiveSubTab('Opex')}
+              className="px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
+            >
+              <Layers className="w-4 h-4" />
+              <span>Aset Opex</span>
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                {assets.filter(a => a.budget_type === 'Opex').length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveSubTab('borrowed')}
+              className="px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
+            >
+              <ClipboardList className="w-4 h-4" />
+              <span>Perangkat Dipinjam</span>
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-500 text-white">
+                {borrowedAssets.filter(b => b.status === 'Dipinjam').length}
+              </span>
+            </button>
           </div>
-          <div className="p-2 sm:p-3 rounded-2xl bg-amber-500/10 text-amber-500">
-            <Building2 className="w-5 h-5 sm:w-6 sm:h-6" />
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Header Actions & Filter Toolbar */}
-      <div className="flex flex-col gap-3">
-        {/* Search and Category Filter */}
-        <div className="flex flex-col gap-2.5">
-          <div className="relative w-full">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="Cari aset (Kode, Nama, Pengguna)..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium border focus:ring-2 focus:outline-none transition-all ${
-                isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
-              }`}
-            />
+      {/* DASHBOARD OVERVIEW VIEW (activeSubTab === 'all') */}
+      {activeSubTab === 'all' ? (
+        <div className="space-y-6">
+          {/* Card Informasi Stats Overview Dashboard */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+            <div className={`p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Keseluruhan Aset</p>
+                <h3 className="text-2xl sm:text-3xl font-black mt-1 text-emerald-600 dark:text-emerald-400">{totalAssetsCount}</h3>
+                <p className="text-[10px] font-bold text-slate-400 mt-1">
+                  Capex: {assets.filter(a => (a.budget_type || 'Capex') === 'Capex').length} | Opex: {assets.filter(a => a.budget_type === 'Opex').length}
+                </p>
+              </div>
+              <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-500">
+                <Package className="w-6 h-6" />
+              </div>
+            </div>
+
+            <div className={`p-4 rounded-2xl border shadow-sm flex flex-col justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Aset Capex</p>
+                  <h3 className="text-2xl sm:text-3xl font-black mt-1 text-blue-600 dark:text-blue-400">
+                    {assets.filter(a => (a.budget_type || 'Capex') === 'Capex').length}
+                  </h3>
+                </div>
+                <div className="p-3 rounded-2xl bg-blue-500/10 text-blue-500">
+                  <Building2 className="w-6 h-6" />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveSubTab('Capex')}
+                className="mt-3 text-left text-xs font-black text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1 group"
+              >
+                <span>Halaman Aset Capex</span>
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
+              </button>
+            </div>
+
+            <div className={`p-4 rounded-2xl border shadow-sm flex flex-col justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Aset Opex</p>
+                  <h3 className="text-2xl sm:text-3xl font-black mt-1 text-purple-600 dark:text-purple-400">
+                    {assets.filter(a => a.budget_type === 'Opex').length}
+                  </h3>
+                </div>
+                <div className="p-3 rounded-2xl bg-purple-500/10 text-purple-500">
+                  <Layers className="w-6 h-6" />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveSubTab('Opex')}
+                className="mt-3 text-left text-xs font-black text-purple-600 hover:text-purple-700 dark:text-purple-400 flex items-center gap-1 group"
+              >
+                <span>Halaman Aset Opex</span>
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
+              </button>
+            </div>
+
+            <div className={`p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Kategori & Dept</p>
+                <h3 className="text-2xl sm:text-3xl font-black mt-1 text-amber-600 dark:text-amber-400">{totalCategoriesCount}</h3>
+                <p className="text-[10px] font-bold text-slate-400 mt-1">{totalDepartmentsCount} Departemen Terdaftar</p>
+              </div>
+              <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500">
+                <Users className="w-6 h-6" />
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative flex-1 min-w-[140px]">
-              <Filter className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-              <select
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                className={`w-full pl-9 pr-7 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
-                  isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
-                }`}
-              >
-                <option value="">Semua Kategori</option>
-                {assetCategories.map(c => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
-                ))}
-              </select>
+          {/* Grid Cards Analisis Dashboard */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Card 1: Distribusi Anggaran Capex vs Opex */}
+            <div className={`p-5 rounded-3xl border shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white">Sebaran Anggaran Aset</h3>
+                  <p className="text-xs text-slate-400 font-medium">Perbandingan unit Capex (Modal) dan Opex (Operasional)</p>
+                </div>
+                <span className="p-2 rounded-xl bg-blue-500/10 text-blue-500">
+                  <Building2 className="w-5 h-5" />
+                </span>
+              </div>
+
+              {/* Progress bar */}
+              {(() => {
+                const capexCount = assets.filter(a => (a.budget_type || 'Capex') === 'Capex').length;
+                const opexCount = assets.filter(a => a.budget_type === 'Opex').length;
+                const total = totalAssetsCount || 1;
+                const capexPct = Math.round((capexCount / total) * 100);
+                const opexPct = Math.round((opexCount / total) * 100);
+
+                return (
+                  <div className="space-y-4">
+                    <div className="w-full h-4 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden flex">
+                      <div style={{ width: `${capexPct}%` }} className="bg-blue-600 h-full transition-all" title={`Capex: ${capexPct}%`} />
+                      <div style={{ width: `${opexPct}%` }} className="bg-purple-600 h-full transition-all" title={`Opex: ${opexPct}%`} />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setActiveSubTab('Capex')}
+                        className="p-3 rounded-2xl bg-blue-500/5 border border-blue-500/20 text-left hover:bg-blue-500/10 transition-all group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400">Capex</span>
+                          <span className="text-xs font-black text-blue-600 dark:text-blue-400">{capexPct}%</span>
+                        </div>
+                        <div className="text-lg font-black mt-1 text-slate-800 dark:text-white">{capexCount} <span className="text-xs font-normal text-slate-400">Unit</span></div>
+                        <div className="text-[10px] font-bold text-blue-600 dark:text-blue-400 mt-2 flex items-center gap-1">
+                          <span>Buka Halaman Capex</span>
+                          <span className="group-hover:translate-x-1 transition-transform">→</span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setActiveSubTab('Opex')}
+                        className="p-3 rounded-2xl bg-purple-500/5 border border-purple-500/20 text-left hover:bg-purple-500/10 transition-all group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase text-purple-600 dark:text-purple-400">Opex</span>
+                          <span className="text-xs font-black text-purple-600 dark:text-purple-400">{opexPct}%</span>
+                        </div>
+                        <div className="text-lg font-black mt-1 text-slate-800 dark:text-white">{opexCount} <span className="text-xs font-normal text-slate-400">Unit</span></div>
+                        <div className="text-[10px] font-bold text-purple-600 dark:text-purple-400 mt-2 flex items-center gap-1">
+                          <span>Buka Halaman Opex</span>
+                          <span className="group-hover:translate-x-1 transition-transform">→</span>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
-            
-            <div className="relative flex-1 min-w-[140px]">
-              <Filter className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-              <select
-                value={filterDepartment}
-                onChange={(e) => setFilterDepartment(e.target.value)}
-                className={`w-full pl-9 pr-7 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
-                  isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
-                }`}
-              >
-                <option value="">Semua Departemen</option>
-                {Array.from(new Set(assets.map(a => a.department).filter(Boolean))).sort().map(d => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
+
+            {/* Card 2: Ringkasan Kondisi & Status Aset */}
+            <div className={`p-5 rounded-3xl border shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white">Status Operational Aset</h3>
+                  <p className="text-xs text-slate-400 font-medium">Kondisi siap pakai vs perbaikan/pensiun</p>
+                </div>
+                <span className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500">
+                  <CheckCircle2 className="w-5 h-5" />
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2.5">
+                <div className="p-3 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 text-center">
+                  <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400">Aktif</span>
+                  <div className="text-xl font-black mt-1 text-emerald-600 dark:text-emerald-400">
+                    {assets.filter(a => a.status === 'Active').length}
+                  </div>
+                  <span className="text-[9px] font-bold text-slate-400">Siap Digunakan</span>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-amber-500/5 border border-amber-500/20 text-center">
+                  <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400">Diperbaiki</span>
+                  <div className="text-xl font-black mt-1 text-amber-600 dark:text-amber-400">
+                    {assets.filter(a => a.status === 'In Repair').length}
+                  </div>
+                  <span className="text-[9px] font-bold text-slate-400">Proses Perbaikan</span>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-slate-500/5 border border-slate-500/20 text-center">
+                  <span className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">Pensiun/Rusak</span>
+                  <div className="text-xl font-black mt-1 text-slate-600 dark:text-slate-300">
+                    {assets.filter(a => a.status === 'Retired' || a.status === 'Broken' || a.status === 'Lost').length}
+                  </div>
+                  <span className="text-[9px] font-bold text-slate-400">Non-Aktif</span>
+                </div>
+              </div>
             </div>
-            
-            <div className="relative flex-1 min-w-[140px]">
-              <Filter className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-              <select
-                value={filterUsageStatus}
-                onChange={(e) => setFilterUsageStatus(e.target.value)}
-                className={`w-full pl-9 pr-7 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
-                  isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
-                }`}
-              >
-                <option value="">Semua Status Pengguna</option>
-                <option value="karyawan">Karyawan</option>
-                <option value="shared department">Shared Dept</option>
-              </select>
+          </div>
+
+          {/* Pratinjau Tabel Aset Terbaru */}
+          <div className={`p-5 rounded-3xl border shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-base font-black text-slate-800 dark:text-white">Aset Terbaru Didata</h3>
+                <p className="text-xs text-slate-400">Menampilkan 5 data inventaris aset yang baru didaftarkan</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab('Capex')}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-all"
+                >
+                  Lihat Semua Capex →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab('Opex')}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 transition-all"
+                >
+                  Lihat Semua Opex →
+                </button>
+              </div>
             </div>
-            
-            <div className="relative flex-1 min-w-[140px]">
-              <Filter className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-              <select
-                value={filterAssetStatus}
-                onChange={(e) => setFilterAssetStatus(e.target.value)}
-                className={`w-full pl-9 pr-7 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
-                  isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
-                }`}
-              >
-                <option value="">Semua Status Aset</option>
-                <option value="Active">Aktif</option>
-                <option value="Broken">Rusak</option>
-                <option value="Lost">Hilang</option>
-              </select>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-100 dark:border-slate-800">
+                    <th className="py-2.5 px-3 font-black text-slate-400 uppercase text-[9px]">Perangkat / Aset</th>
+                    <th className="py-2.5 px-3 font-black text-slate-400 uppercase text-[9px]">Kode Aset</th>
+                    <th className="py-2.5 px-3 font-black text-slate-400 uppercase text-[9px]">Tipe Anggaran</th>
+                    <th className="py-2.5 px-3 font-black text-slate-400 uppercase text-[9px]">Pengguna</th>
+                    <th className="py-2.5 px-3 font-black text-slate-400 uppercase text-[9px]">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  {assets.slice(0, 5).map(asset => (
+                    <tr key={asset.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="py-2.5 px-3">
+                        <div className="font-bold text-slate-800 dark:text-white">{asset.name || asset.category}</div>
+                        <div className="text-[10px] text-slate-400">{asset.category}</div>
+                      </td>
+                      <td className="py-2.5 px-3 font-mono text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                        {asset.device_code || asset.asset_id}
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${
+                          (asset.budget_type || 'Capex') === 'Opex'
+                            ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
+                            : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                        }`}>
+                          {asset.budget_type || 'Capex'}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 font-semibold text-slate-600 dark:text-slate-300">
+                        {asset.assigned_to || '-'}
+                      </td>
+                      <td className="py-2.5 px-3">
+                        {getStatusBadge(asset.status)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
+      ) : activeSubTab === 'borrowed' ? (
+        /* DEDICATED PERANGKAT DIPINJAM (LOAN) VIEW */
+        <div className="space-y-6">
+          {/* Information Cards Summary */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className={`p-4 sm:p-5 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Sedang Dipinjam</p>
+                <h3 className="text-2xl sm:text-3xl font-black mt-1 text-amber-600 dark:text-amber-400">
+                  {borrowedAssets.filter(b => b.status === 'Dipinjam').length}
+                </h3>
+                <p className="text-[10px] font-bold text-slate-400 mt-1">Status Perangkat Aktif Dipinjam</p>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 text-amber-500">
+                <ClipboardList className="w-7 h-7" />
+              </div>
+            </div>
 
-        {/* Action Buttons Toolbar (Excel & Tools) */}
-        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 no-scrollbar text-xs">
-          <button
-            onClick={handleDownloadTemplate}
-            title="Download Template XLS"
-            className={`px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all ${
-              isDark 
-                ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' 
-                : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
-            <span>Template XLS</span>
-          </button>
+            <div className={`p-4 sm:p-5 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Sudah Dikembalikan</p>
+                <h3 className="text-2xl sm:text-3xl font-black mt-1 text-emerald-600 dark:text-emerald-400">
+                  {borrowedAssets.filter(b => b.status === 'Dikembalikan').length}
+                </h3>
+                <p className="text-[10px] font-bold text-slate-400 mt-1">Perangkat Telah Kembali ke IT</p>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-500">
+                <CheckCircle2 className="w-7 h-7" />
+              </div>
+            </div>
 
-          <button
-            onClick={() => document.getElementById('import-asset-excel')?.click()}
-            title="Import File XLS"
-            className={`px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all ${
-              isDark 
-                ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' 
-                : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" />
-            <span>Import XLS</span>
-          </button>
+            <div className={`p-4 sm:p-5 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Riwayat Peminjaman</p>
+                <h3 className="text-2xl sm:text-3xl font-black mt-1 text-blue-600 dark:text-blue-400">
+                  {borrowedAssets.length}
+                </h3>
+                <p className="text-[10px] font-bold text-slate-400 mt-1">Keseluruhan Catatan Transaksi</p>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-blue-500/10 text-blue-500">
+                <FileSignature className="w-7 h-7" />
+              </div>
+            </div>
+          </div>
 
-          <button
-            onClick={handleExportExcel}
-            title="Export ke XLS"
-            className={`px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all ${
-              isDark 
-                ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' 
-                : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" />
-            <span>Export XLS</span>
-          </button>
+          {/* Search, Filter, and Action Bar */}
+          <div className={`p-4 rounded-2xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3`}>
+            <div className="relative w-full sm:w-80">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Cari peminjam, perangkat, kode..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={`w-full pl-10 pr-4 py-2 rounded-xl text-xs sm:text-sm font-medium border focus:ring-2 focus:outline-none transition-all ${
+                  isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-amber-500/20'
+                }`}
+              />
+            </div>
 
-          <button
-            onClick={handlePrintAllLabels}
-            title="Cetak Label Aset"
-            className={`px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all ${
-              isDark 
-                ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white' 
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900'
-            }`}
-          >
-            <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
-            <span>Cetak Label</span>
-          </button>
-          
-          <button
-            onClick={() => {
-              setDeleteAllPassword('');
-              setShowDeleteAllModal(true);
-            }}
-            title="Hapus Semua Data Aset"
-            className="px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all bg-rose-500/10 border-rose-500/30 text-rose-600 hover:bg-rose-500 hover:text-white dark:text-rose-400"
-          >
-            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span>Hapus Semua</span>
-          </button>
+            <button
+              onClick={() => {
+                setBorrowFormData({
+                  asset_id: null,
+                  device_name: '',
+                  device_code: '',
+                  budget_type: 'Capex',
+                  borrower_name: '',
+                  borrower_department: '',
+                  borrow_date: new Date().toISOString().split('T')[0],
+                  expected_return_date: '',
+                  notes: '',
+                  signature: ''
+                });
+                setDeviceSearchQuery('');
+                setIsDeviceDropdownOpen(false);
+                setShowBorrowModal(true);
+              }}
+              className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold rounded-xl text-xs shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Pinjamkan Perangkat</span>
+            </button>
+          </div>
 
-          {/* Desktop Primary Add Button */}
-          <button
-            onClick={() => {
-              resetForm();
-              setEditingAsset(null);
-              setIsViewMode(false);
-              setShowModal(true);
-            }}
-            style={{ backgroundColor: primaryColor }}
-            className="hidden sm:flex ml-auto px-4 py-2.5 rounded-2xl text-white text-xs sm:text-sm font-bold items-center gap-2 transition-all hover:brightness-110 shadow-lg whitespace-nowrap"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Tambah Aset</span>
-          </button>
+          {/* Mobile Card Layout (Visible on small screens < md) */}
+          <div className="block md:hidden space-y-3">
+            {borrowedAssets.filter(item => {
+              const query = searchQuery.toLowerCase();
+              return !searchQuery || 
+                item.device_name?.toLowerCase().includes(query) ||
+                item.device_code?.toLowerCase().includes(query) ||
+                item.borrower_name?.toLowerCase().includes(query) ||
+                item.borrower_department?.toLowerCase().includes(query) ||
+                item.notes?.toLowerCase().includes(query);
+            }).length === 0 ? (
+              <div className={`p-8 rounded-2xl border text-center text-slate-400 text-xs font-semibold ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                Belum ada data peminjaman perangkat.
+              </div>
+            ) : (
+              borrowedAssets.filter(item => {
+                const query = searchQuery.toLowerCase();
+                return !searchQuery || 
+                  item.device_name?.toLowerCase().includes(query) ||
+                  item.device_code?.toLowerCase().includes(query) ||
+                  item.borrower_name?.toLowerCase().includes(query) ||
+                  item.borrower_department?.toLowerCase().includes(query) ||
+                  item.notes?.toLowerCase().includes(query);
+              }).map((item) => (
+                <div
+                  key={item.id}
+                  className={`p-4 rounded-2xl border shadow-sm space-y-3 transition-all ${
+                    isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'
+                  }`}
+                >
+                  {/* Card Header: Device Name & Status */}
+                  <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
+                    <div>
+                      <div className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-1.5 flex-wrap">
+                        <span>{item.device_name}</span>
+                        {item.budget_type && (
+                          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${
+                            item.budget_type === 'Opex'
+                              ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
+                              : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                          }`}>
+                            {item.budget_type}
+                          </span>
+                        )}
+                      </div>
+                      {item.device_code && (
+                        <div className="font-mono text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-0.5">
+                          Kode: {item.device_code}
+                        </div>
+                      )}
+                    </div>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold border shrink-0 ${
+                      item.status === 'Dipinjam'
+                        ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                        : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                    }`}>
+                      {item.status === 'Dipinjam' ? <ClipboardList className="w-3 h-3" /> : <Check className="w-3 h-3" />}
+                      <span>{item.status}</span>
+                    </span>
+                  </div>
+
+                  {/* Card Details Grid */}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80">
+                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-0.5">Peminjam</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-100 block">{item.borrower_name}</span>
+                      <span className="text-[10px] text-slate-400 block">{item.borrower_department || '-'}</span>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80">
+                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-0.5">
+                        {item.status === 'Dikembalikan' ? 'Pengembalian' : 'Tgl Dipinjam'}
+                      </span>
+                      <span className="font-bold text-slate-800 dark:text-slate-100 block">
+                        {item.borrow_date ? new Date(item.borrow_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                      </span>
+                      {item.status === 'Dikembalikan' ? (
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block mt-0.5">
+                          Penerima: {item.received_by || '-'}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 block mt-0.5">
+                          Est: {item.expected_return_date ? new Date(item.expected_return_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '-'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {item.notes && (
+                    <div className="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
+                      <span className="font-bold text-[10px] text-slate-400 uppercase block mb-0.5">Keterangan:</span>
+                      {item.notes}
+                    </div>
+                  )}
+
+                  {/* Card Footer Actions */}
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 gap-2">
+                    <div>
+                      {item.signature ? (
+                        <button
+                          onClick={() => setShowSignaturePreview(item.signature!)}
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 text-xs font-bold transition-all cursor-pointer min-h-[38px]"
+                        >
+                          <PenTool className="w-3.5 h-3.5" />
+                          <span>Lihat TTD</span>
+                        </button>
+                      ) : (
+                        <span className="text-slate-400 text-xs italic px-1">Tanpa TTD</span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {item.status === 'Dipinjam' && (
+                        <button
+                          onClick={() => handleOpenReturnModal(item)}
+                          className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer min-h-[38px]"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Kembalikan</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDeleteBorrow(item.id)}
+                        className="p-2 rounded-xl text-rose-500 hover:bg-rose-500/10 active:scale-95 transition-all cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center border border-rose-500/20"
+                        title="Hapus Record"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop Table View (Visible on medium screens & larger) */}
+          <div className={`hidden md:block rounded-2xl border shadow-sm overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className={`border-b text-[10px] font-black uppercase tracking-wider ${isDark ? 'bg-slate-800/60 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-100 text-slate-500'}`}>
+                    <th className="px-4 py-3">Nama & Kode Perangkat</th>
+                    <th className="px-4 py-3">Peminjam</th>
+                    <th className="px-4 py-3">Tgl Dipinjam</th>
+                    <th className="px-4 py-3">Estimasi Kembali</th>
+                    <th className="px-4 py-3">Keterangan</th>
+                    <th className="px-4 py-3 text-center">Tanda Tangan</th>
+                    <th className="px-4 py-3 text-center">Status</th>
+                    <th className="px-4 py-3 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className={`divide-y ${isDark ? 'divide-slate-800/80' : 'divide-slate-100'}`}>
+                  {borrowedAssets.filter(item => {
+                    const query = searchQuery.toLowerCase();
+                    return !searchQuery || 
+                      item.device_name?.toLowerCase().includes(query) ||
+                      item.device_code?.toLowerCase().includes(query) ||
+                      item.borrower_name?.toLowerCase().includes(query) ||
+                      item.borrower_department?.toLowerCase().includes(query) ||
+                      item.notes?.toLowerCase().includes(query);
+                  }).length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="text-center py-12 text-slate-400 text-xs font-semibold">
+                        Belum ada data peminjaman perangkat.
+                      </td>
+                    </tr>
+                  ) : (
+                    borrowedAssets.filter(item => {
+                      const query = searchQuery.toLowerCase();
+                      return !searchQuery || 
+                        item.device_name?.toLowerCase().includes(query) ||
+                        item.device_code?.toLowerCase().includes(query) ||
+                        item.borrower_name?.toLowerCase().includes(query) ||
+                        item.borrower_department?.toLowerCase().includes(query) ||
+                        item.notes?.toLowerCase().includes(query);
+                    }).map((item) => (
+                      <tr key={item.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors text-xs`}>
+                        <td className="px-4 py-3">
+                          <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <span>{item.device_name}</span>
+                            {item.budget_type && (
+                              <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${
+                                item.budget_type === 'Opex'
+                                  ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
+                                  : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                              }`}>
+                                {item.budget_type}
+                              </span>
+                            )}
+                          </div>
+                          <div className="font-mono text-[10px] text-slate-400 mt-0.5">
+                            {item.device_code || '-'}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="font-bold text-slate-800 dark:text-slate-200">{item.borrower_name}</div>
+                          <div className="text-[10px] text-slate-400">{item.borrower_department || '-'}</div>
+                        </td>
+                        <td className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">
+                          {item.borrow_date ? new Date(item.borrow_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                        </td>
+                        <td className="px-4 py-3 font-medium text-slate-600 dark:text-slate-300">
+                          {item.status === 'Dikembalikan' ? (
+                            <div>
+                              <div className="font-bold text-emerald-600 dark:text-emerald-400">
+                                {item.actual_return_date ? new Date(item.actual_return_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                              </div>
+                              {item.received_by && (
+                                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
+                                  Penerima: <span className="capitalize text-slate-800 dark:text-slate-200 font-bold">{item.received_by}</span>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span>
+                              {item.expected_return_date ? new Date(item.expected_return_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-slate-500 dark:text-slate-400 max-w-[180px] truncate" title={item.notes || ''}>
+                          {item.notes || '-'}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {item.signature ? (
+                            <button
+                              onClick={() => setShowSignaturePreview(item.signature!)}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 text-[10px] font-bold transition-all cursor-pointer"
+                            >
+                              <PenTool className="w-3 h-3" />
+                              <span>Lihat TTD</span>
+                            </button>
+                          ) : (
+                            <span className="text-slate-400 text-[10px]">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${
+                            item.status === 'Dipinjam'
+                              ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                              : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                          }`}>
+                            {item.status === 'Dipinjam' ? <ClipboardList className="w-3 h-3" /> : <Check className="w-3 h-3" />}
+                            <span>{item.status}</span>
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {item.status === 'Dipinjam' && (
+                              <button
+                                onClick={() => handleOpenReturnModal(item)}
+                                className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer"
+                                title="Kembalikan Perangkat"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Kembalikan</span>
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeleteBorrow(item.id)}
+                              className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer"
+                              title="Hapus Record"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        /* DEDICATED CAPEX & OPEX PAGE VIEW */
+        <div className="space-y-6">
+          {/* Top Summary Cards specific to Capex / Opex */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+            <div className={`p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Aset {activeSubTab}</p>
+                <h3 className={`text-2xl sm:text-3xl font-black mt-1 ${activeSubTab === 'Capex' ? 'text-blue-600 dark:text-blue-400' : 'text-purple-600 dark:text-purple-400'}`}>
+                  {filteredAssets.length}
+                </h3>
+              </div>
+              <div className={`p-3 rounded-2xl ${activeSubTab === 'Capex' ? 'bg-blue-500/10 text-blue-500' : 'bg-purple-500/10 text-purple-500'}`}>
+                {activeSubTab === 'Capex' ? <Building2 className="w-6 h-6" /> : <Layers className="w-6 h-6" />}
+              </div>
+            </div>
+
+            <div className={`p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Aset Aktif</p>
+                <h3 className="text-2xl sm:text-3xl font-black mt-1 text-emerald-600 dark:text-emerald-400">
+                  {filteredAssets.filter(a => a.status === 'Active').length}
+                </h3>
+              </div>
+              <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-500">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+            </div>
+
+            <div className={`p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Proses Perbaikan</p>
+                <h3 className="text-2xl sm:text-3xl font-black mt-1 text-amber-600 dark:text-amber-400">
+                  {filteredAssets.filter(a => a.status === 'In Repair').length}
+                </h3>
+              </div>
+              <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500">
+                <Filter className="w-6 h-6" />
+              </div>
+            </div>
+
+            <div className={`p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Pengguna Terkait</p>
+                <h3 className="text-2xl sm:text-3xl font-black mt-1 text-violet-600 dark:text-violet-400">
+                  {new Set(filteredAssets.map(a => a.assigned_to).filter(Boolean)).size}
+                </h3>
+              </div>
+              <div className="p-3 rounded-2xl bg-violet-500/10 text-violet-500">
+                <Users className="w-6 h-6" />
+              </div>
+            </div>
+          </div>
+
+          {/* Header Actions & Filter Toolbar */}
+          <div className="flex flex-col gap-3">
+            {/* Search and Filter */}
+            <div className="flex flex-col gap-2.5">
+              <div className="relative w-full">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                <input 
+                  type="text" 
+                  placeholder={`Cari aset ${activeSubTab} (Kode, Nama, Pengguna)...`}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium border focus:ring-2 focus:outline-none transition-all ${
+                    isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
+                  }`}
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative flex-1 min-w-[140px]">
+                  <Filter className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                  <select
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                    className={`w-full pl-9 pr-7 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
+                    }`}
+                  >
+                    <option value="">Semua Kategori</option>
+                    {assetCategories.map(c => (
+                      <option key={c.id} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="relative flex-1 min-w-[140px]">
+                  <Filter className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                  <select
+                    value={filterDepartment}
+                    onChange={(e) => setFilterDepartment(e.target.value)}
+                    className={`w-full pl-9 pr-7 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
+                    }`}
+                  >
+                    <option value="">Semua Departemen</option>
+                    {Array.from(new Set(assets.map(a => a.department).filter(Boolean))).sort().map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="relative flex-1 min-w-[140px]">
+                  <Filter className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                  <select
+                    value={filterUsageStatus}
+                    onChange={(e) => setFilterUsageStatus(e.target.value)}
+                    className={`w-full pl-9 pr-7 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
+                    }`}
+                  >
+                    <option value="">Semua Status Pengguna</option>
+                    <option value="karyawan">Karyawan</option>
+                    <option value="shared department">Shared Dept</option>
+                  </select>
+                </div>
+                
+                <div className="relative flex-1 min-w-[140px]">
+                  <Filter className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                  <select
+                    value={filterAssetStatus}
+                    onChange={(e) => setFilterAssetStatus(e.target.value)}
+                    className={`w-full pl-9 pr-7 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
+                    }`}
+                  >
+                    <option value="">Semua Status Aset</option>
+                    <option value="Active">Aktif</option>
+                    <option value="In Repair">Diperbaiki</option>
+                    <option value="Retired">Pensiun</option>
+                    <option value="Broken">Rusak</option>
+                    <option value="Lost">Hilang</option>
+                  </select>
+                </div>
+
+                {(searchQuery || filterCategory || filterDepartment || filterUsageStatus || filterAssetStatus) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setFilterCategory('');
+                      setFilterDepartment('');
+                      setFilterUsageStatus('');
+                      setFilterAssetStatus('');
+                    }}
+                    className="px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs font-extrabold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition-all whitespace-nowrap"
+                  >
+                    Reset Filter
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Action Buttons Toolbar */}
+            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 no-scrollbar text-xs">
+              <button
+                onClick={handleDownloadTemplate}
+                title="Download Template XLS"
+                className={`px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                  isDark 
+                    ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' 
+                    : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
+                <span>Template XLS</span>
+              </button>
+
+              <button
+                onClick={() => document.getElementById('import-asset-excel')?.click()}
+                title="Import File XLS"
+                className={`px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                  isDark 
+                    ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' 
+                    : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" />
+                <span>Import XLS</span>
+              </button>
+
+              <button
+                onClick={handleExportExcel}
+                title="Export ke XLS"
+                className={`px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                  isDark 
+                    ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' 
+                    : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" />
+                <span>Export XLS</span>
+              </button>
+
+              <button
+                onClick={handlePrintAllLabels}
+                title="Cetak Label Aset"
+                className={`px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                  isDark 
+                    ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white' 
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
+                <span>Cetak Label</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  setDeleteAllPassword('');
+                  setShowDeleteAllModal(true);
+                }}
+                title="Hapus Semua Data Aset"
+                className="px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all bg-rose-500/10 border-rose-500/30 text-rose-600 hover:bg-rose-500 hover:text-white dark:text-rose-400"
+              >
+                <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span>Hapus Semua</span>
+              </button>
+
+              {/* Add Asset Button specific to Capex / Opex */}
+              <button
+                onClick={() => {
+                  resetForm();
+                  setFormData(prev => ({ ...prev, budget_type: activeSubTab }));
+                  setEditingAsset(null);
+                  setIsViewMode(false);
+                  setShowModal(true);
+                }}
+                style={{ backgroundColor: primaryColor }}
+                className="hidden sm:flex ml-auto px-4 py-2.5 rounded-2xl text-white text-xs sm:text-sm font-bold items-center gap-2 transition-all hover:brightness-110 shadow-lg whitespace-nowrap"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Tambah Aset {activeSubTab}</span>
+              </button>
+            </div>
+          </div>
 
       {/* Asset Grid / Table */}
       {loading ? (
@@ -950,6 +1883,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
                   <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400 whitespace-nowrap">Kode Aset</th>
                   <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Pengguna</th>
                   <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Departemen</th>
+                  <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Tipe</th>
                   <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Status Pengguna</th>
                   <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Status Aset</th>
                   <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400 text-right">Aksi</th>
@@ -1001,6 +1935,15 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
                     <td className="px-3 py-2.5">
                       <span className={`text-xs font-medium truncate block max-w-[120px] ${themeClasses.textMuted}`} title={asset.department || '-'}>
                         {asset.department || '-'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${
+                        (asset.budget_type || 'Capex') === 'Opex'
+                          ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+                          : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+                      }`}>
+                        {asset.budget_type || 'Capex'}
                       </span>
                     </td>
                     <td className="px-3 py-2.5">
@@ -1092,6 +2035,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
           )}
         </div>
       )}
+        </div>
+      )}
 
       
 
@@ -1148,6 +2093,13 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
                       <div className="flex items-center gap-2 mt-1">
                         <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                           {editingAsset.category}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${
+                          (editingAsset.budget_type || 'Capex') === 'Opex'
+                            ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+                            : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+                        }`}>
+                          {editingAsset.budget_type || 'Capex'}
                         </span>
                         {getStatusBadge(editingAsset.status)}
                       </div>
@@ -1462,6 +2414,21 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
                     </select>
                   </div>
                   
+                  {/* Tipe Anggaran (Capex / Opex) */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">Tipe Anggaran</label>
+                    <select 
+                      value={formData.budget_type}
+                      onChange={(e) => setFormData({...formData, budget_type: e.target.value})}
+                      className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
+                      }`}
+                    >
+                      <option value="Capex">Capex (Capital Expenditure)</option>
+                      <option value="Opex">Opex (Operational Expenditure)</option>
+                    </select>
+                  </div>
+
                   {/* Status Aset */}
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">Status Aset</label>
@@ -1506,6 +2473,603 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
           </div>
         )}
       </AnimatePresence>
+
+      {/* Borrow Asset Pop-up Modal */}
+      <AnimatePresence>
+        {showBorrowModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-sm overflow-y-auto py-4 sm:py-6">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className={`w-full max-w-xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col ${
+                isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white border border-slate-200'
+              }`}
+            >
+              <div className={`px-4 sm:px-6 py-3.5 sm:py-4 border-b flex items-center justify-between sticky top-0 z-20 flex-shrink-0 ${
+                isDark ? 'border-slate-800 bg-slate-900/95 backdrop-blur-md' : 'border-slate-100 bg-white/95 backdrop-blur-md'
+              }`}>
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 sm:p-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                    <ClipboardList className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className={`text-sm sm:text-base font-black ${themeClasses.heading}`}>
+                      Pinjamkan Perangkat IT
+                    </h2>
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium">Isi formulir peminjaman & tanda tangan digital</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowBorrowModal(false)}
+                  className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveBorrow} className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1">
+                {/* Integrated Searchable Device Combobox */}
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                      <Search className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Cari & Pilih Perangkat Aset</span>
+                    </label>
+
+                    <label className="inline-flex items-center gap-1.5 cursor-pointer text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={onlyITDepartment}
+                        onChange={(e) => setOnlyITDepartment(e.target.checked)}
+                        className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500"
+                      />
+                      <span>Hanya Dept IT</span>
+                    </label>
+                  </div>
+
+                  {/* Single Searchable Input & Dropdown */}
+                  <div className="relative">
+                    <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      placeholder="Ketik nama atau kode perangkat di sini..."
+                      value={deviceSearchQuery}
+                      onFocus={() => setIsDeviceDropdownOpen(true)}
+                      onClick={() => setIsDeviceDropdownOpen(true)}
+                      onChange={(e) => {
+                        setDeviceSearchQuery(e.target.value);
+                        setIsDeviceDropdownOpen(true);
+                      }}
+                      className={`w-full pl-10 pr-9 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                        isDark ? 'bg-slate-900 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-amber-500/20'
+                      }`}
+                    />
+                    {deviceSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeviceSearchQuery('');
+                          setBorrowFormData(prev => ({ ...prev, asset_id: null, device_name: '', device_code: '' }));
+                          setIsDeviceDropdownOpen(false);
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm font-bold p-1 cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    )}
+
+                    {/* Results Dropdown List */}
+                    {isDeviceDropdownOpen && (
+                      <div className={`absolute left-0 right-0 z-30 mt-1.5 max-h-56 overflow-y-auto rounded-2xl border shadow-2xl ${
+                        isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'
+                      }`}>
+                        {assets.filter(a => {
+                          const isStatusValid = a.status === 'Active' || a.status === 'Dipinjam';
+                          if (!isStatusValid) return false;
+
+                          if (onlyITDepartment) {
+                            const dept = (a.department || '').trim().toUpperCase();
+                            const isIT = dept === 'IT' || dept.includes('IT') || dept.includes('INFORMATION TECHNOLOGY') || dept.includes('TEKNOLOGI INFORMASI');
+                            if (!isIT) return false;
+                          }
+
+                          if (deviceSearchQuery.trim()) {
+                            const q = deviceSearchQuery.toLowerCase();
+                            const name = (a.name || '').toLowerCase();
+                            const code = (a.device_code || '').toLowerCase();
+                            const dept = (a.department || '').toLowerCase();
+                            const cat = (a.category || '').toLowerCase();
+                            return name.includes(q) || code.includes(q) || dept.includes(q) || cat.includes(q);
+                          }
+                          return true;
+                        }).length === 0 ? (
+                          <div className="p-4 text-center text-slate-400 text-xs font-medium">
+                            Perangkat tidak ditemukan
+                          </div>
+                        ) : (
+                          assets.filter(a => {
+                            const isStatusValid = a.status === 'Active' || a.status === 'Dipinjam';
+                            if (!isStatusValid) return false;
+
+                            if (onlyITDepartment) {
+                              const dept = (a.department || '').trim().toUpperCase();
+                              const isIT = dept === 'IT' || dept.includes('IT') || dept.includes('INFORMATION TECHNOLOGY') || dept.includes('TEKNOLOGI INFORMASI');
+                              if (!isIT) return false;
+                            }
+
+                            if (deviceSearchQuery.trim()) {
+                              const q = deviceSearchQuery.toLowerCase();
+                              const name = (a.name || '').toLowerCase();
+                              const code = (a.device_code || '').toLowerCase();
+                              const dept = (a.department || '').toLowerCase();
+                              const cat = (a.category || '').toLowerCase();
+                              return name.includes(q) || code.includes(q) || dept.includes(q) || cat.includes(q);
+                            }
+                            return true;
+                          }).map(a => (
+                            <button
+                              key={a.id}
+                              type="button"
+                              onClick={() => {
+                                setBorrowFormData(prev => ({
+                                  ...prev,
+                                  asset_id: a.id,
+                                  device_name: a.name,
+                                  device_code: a.device_code || '',
+                                  budget_type: a.budget_type || 'Capex',
+                                  borrower_name: prev.borrower_name || a.assigned_to || '',
+                                  borrower_department: prev.borrower_department || a.department || ''
+                                }));
+                                setDeviceSearchQuery(`${a.device_code ? `${a.device_code} - ` : ''}${a.name}`);
+                                setIsDeviceDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-4 py-3 hover:bg-amber-500/10 transition-colors border-b last:border-b-0 text-xs flex items-center justify-between cursor-pointer ${
+                                borrowFormData.asset_id === a.id
+                                  ? 'bg-amber-500/15 font-bold text-amber-600 dark:text-amber-400'
+                                  : isDark ? 'border-slate-800 text-slate-200' : 'border-slate-100 text-slate-800'
+                              }`}
+                            >
+                              <div>
+                                <div className="font-extrabold flex items-center gap-1.5 text-xs sm:text-sm">
+                                  <span>{a.name}</span>
+                                  {a.device_code && <span className="font-mono text-[10px] text-slate-400">({a.device_code})</span>}
+                                </div>
+                                <div className="text-[10px] text-slate-400 mt-0.5">
+                                  Dept: {a.department || 'General'}
+                                </div>
+                              </div>
+                              <span className={`text-[9px] font-black px-2 py-0.5 rounded border ${
+                                a.budget_type === 'Opex'
+                                  ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
+                                  : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                              }`}>
+                                {a.budget_type || 'Capex'}
+                              </span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 px-1 pt-0.5">
+                    <span>
+                      Ditemukan:{' '}
+                      <strong className="text-amber-600 dark:text-amber-400">
+                        {assets.filter(a => {
+                          const isStatusValid = a.status === 'Active' || a.status === 'Dipinjam';
+                          if (!isStatusValid) return false;
+                          if (onlyITDepartment) {
+                            const dept = (a.department || '').trim().toUpperCase();
+                            const isIT = dept === 'IT' || dept.includes('IT') || dept.includes('INFORMATION TECHNOLOGY') || dept.includes('TEKNOLOGI INFORMASI');
+                            if (!isIT) return false;
+                          }
+                          if (deviceSearchQuery.trim()) {
+                            const q = deviceSearchQuery.toLowerCase();
+                            const name = (a.name || '').toLowerCase();
+                            const code = (a.device_code || '').toLowerCase();
+                            const dept = (a.department || '').toLowerCase();
+                            const cat = (a.category || '').toLowerCase();
+                            return name.includes(q) || code.includes(q) || dept.includes(q) || cat.includes(q);
+                          }
+                          return true;
+                        }).length}
+                      </strong>{' '}
+                      perangkat
+                    </span>
+                    {onlyITDepartment && <span className="font-semibold text-blue-500">Filtered: IT Dept Only</span>}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">
+                      Nama Perangkat <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Laptop Lenovo ThinkPad"
+                      value={borrowFormData.device_name}
+                      onChange={(e) => setBorrowFormData({ ...borrowFormData, device_name: e.target.value })}
+                      className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-amber-500/20'
+                      }`}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">
+                      Kode Perangkat
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. LPKDK-001"
+                      value={borrowFormData.device_code}
+                      onChange={(e) => setBorrowFormData({ ...borrowFormData, device_code: e.target.value })}
+                      className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-amber-500/20'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                {/* Select Borrower from Master Users */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">
+                    Pilih Karyawan Peminjam
+                  </label>
+                  <select
+                    onChange={(e) => {
+                      const selectedUser = masterUsers.find(u => u.full_name === e.target.value);
+                      if (selectedUser) {
+                        setBorrowFormData(prev => ({
+                          ...prev,
+                          borrower_name: selectedUser.full_name,
+                          borrower_department: selectedUser.department || prev.borrower_department
+                        }));
+                      }
+                    }}
+                    className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-amber-500/20'
+                    }`}
+                  >
+                    <option value="">-- Pilih dari Karyawan --</option>
+                    {masterUsers.map(u => (
+                      <option key={u.id} value={u.full_name}>
+                        {u.full_name} ({u.department || 'General'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">
+                      Nama Peminjam <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Budi Santoso"
+                      value={borrowFormData.borrower_name}
+                      onChange={(e) => setBorrowFormData({ ...borrowFormData, borrower_name: e.target.value })}
+                      className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-amber-500/20'
+                      }`}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">
+                      Departemen
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Marketing"
+                      value={borrowFormData.borrower_department}
+                      onChange={(e) => setBorrowFormData({ ...borrowFormData, borrower_department: e.target.value })}
+                      className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-amber-500/20'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">
+                      Tanggal Dipinjamkan <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={borrowFormData.borrow_date}
+                      onChange={(e) => setBorrowFormData({ ...borrowFormData, borrow_date: e.target.value })}
+                      className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-amber-500/20'
+                      }`}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">
+                      Tanggal Rencana Pengembalian
+                    </label>
+                    <input
+                      type="date"
+                      value={borrowFormData.expected_return_date}
+                      onChange={(e) => setBorrowFormData({ ...borrowFormData, expected_return_date: e.target.value })}
+                      className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-amber-500/20'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">
+                    Keterangan / Keperluan Peminjaman
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="e.g. Dipinjam sementara untuk presentasi client & dinas luar kota"
+                    value={borrowFormData.notes}
+                    onChange={(e) => setBorrowFormData({ ...borrowFormData, notes: e.target.value })}
+                    className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium border focus:ring-2 focus:outline-none transition-all ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-amber-500/20'
+                    }`}
+                  />
+                </div>
+
+                {/* Digital Signature Canvas */}
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1 flex items-center gap-1">
+                      <PenTool className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Tanda Tangan Peminjam (Presisi)</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={clearCanvas}
+                      className="text-[10px] font-extrabold text-rose-500 hover:underline flex items-center gap-1 cursor-pointer p-1"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Bersihkan</span>
+                    </button>
+                  </div>
+
+                  <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-1 bg-white dark:bg-slate-950 touch-none flex justify-center">
+                    <canvas
+                      ref={canvasRef}
+                      width={480}
+                      height={140}
+                      onMouseDown={startDrawing}
+                      onMouseMove={draw}
+                      onMouseUp={stopDrawing}
+                      onMouseLeave={stopDrawing}
+                      onTouchStart={startDrawing}
+                      onTouchMove={draw}
+                      onTouchEnd={stopDrawing}
+                      className="w-full h-32 cursor-crosshair rounded-xl bg-slate-50 dark:bg-slate-900/80"
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 italic">
+                    * Tanda tangan dapat digoreskan menggunakan jari pada layar sentuh smartphone atau mouse.
+                  </p>
+                </div>
+
+                <div className="flex gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setShowBorrowModal(false)}
+                    className={`flex-1 py-3 rounded-xl text-xs sm:text-sm font-extrabold border transition-all min-h-[44px] cursor-pointer ${
+                      isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs sm:text-sm font-black transition-all shadow-md shadow-amber-500/20 cursor-pointer min-h-[44px]"
+                  >
+                    Simpan Peminjaman
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Signature Preview Modal */}
+      <AnimatePresence>
+        {showSignaturePreview && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 10 }}
+              className="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl sm:rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 text-center space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <PenTool className="w-4 h-4 text-blue-500" />
+                  <span>Tanda Tangan Peminjam</span>
+                </h3>
+                <button
+                  onClick={() => setShowSignaturePreview(null)}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all min-h-[38px] min-w-[38px] flex items-center justify-center cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 flex justify-center">
+                <img src={showSignaturePreview} alt="Tanda Tangan" className="max-h-48 object-contain" />
+              </div>
+
+              <button
+                onClick={() => setShowSignaturePreview(null)}
+                className="w-full py-3 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-xs sm:text-sm font-extrabold transition-all min-h-[44px] cursor-pointer"
+              >
+                Tutup
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+        {/* Modal Pengembalian Perangkat */}
+        {showReturnModal && returnItem && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in py-4 sm:py-6">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className={`w-full max-w-md rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl border max-h-[90vh] overflow-y-auto ${
+                isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-900'
+              }`}
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 sm:p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    <RotateCcw className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-extrabold">Pengembalian Perangkat</h3>
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium">Konfirmasi pengembalian aset ke tim IT</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowReturnModal(false)}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all min-h-[38px] min-w-[38px] flex items-center justify-center cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Info Card */}
+              <div className={`p-4 rounded-2xl border mb-4 space-y-2.5 text-xs ${
+                isDark ? 'bg-slate-800/50 border-slate-700/60' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className="flex justify-between items-start gap-2">
+                  <div>
+                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Perangkat</span>
+                    <span className="font-black text-sm text-slate-800 dark:text-slate-100">{returnItem.device_name}</span>
+                    {returnItem.device_code && (
+                      <span className="ml-1.5 text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold">
+                        ({returnItem.device_code})
+                      </span>
+                    )}
+                  </div>
+                  {returnItem.budget_type && (
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded border shrink-0 ${
+                      returnItem.budget_type === 'Opex'
+                        ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
+                        : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                    }`}>
+                      {returnItem.budget_type}
+                    </span>
+                  )}
+                </div>
+
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-700/60 flex justify-between text-xs">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Peminjam:</span>
+                    <strong className="text-slate-700 dark:text-slate-200">{returnItem.borrower_name}</strong>
+                    <span className="text-[10px] text-slate-400 ml-1">({returnItem.borrower_department || '-'})</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-slate-400 block text-[10px]">Tgl Dipinjam:</span>
+                    <span className="font-semibold text-slate-700 dark:text-slate-200">
+                      {returnItem.borrow_date ? new Date(returnItem.borrow_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <form onSubmit={handleConfirmReturn} className="space-y-4">
+                {/* Penerima Barang (Yudha, Bayu, Dita, Chandra) */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">
+                    Penerima Barang (Tim IT) <span className="text-rose-500">*</span>
+                  </label>
+                  
+                  {/* Preset Options */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+                    {['yudha', 'bayu', 'dita', 'chandra'].map((person) => (
+                      <button
+                        key={person}
+                        type="button"
+                        onClick={() => setReceivedBy(person)}
+                        className={`py-2 px-2.5 rounded-xl text-xs font-black capitalize transition-all border text-center min-h-[40px] flex items-center justify-center cursor-pointer ${
+                          receivedBy.toLowerCase() === person
+                            ? 'bg-emerald-500 text-white border-emerald-600 shadow-md shadow-emerald-500/20 scale-[1.02]'
+                            : isDark
+                              ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+                              : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        {person}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Manual Input field if different */}
+                  <input
+                    type="text"
+                    placeholder="Atau ketik nama penerima lain..."
+                    value={receivedBy}
+                    onChange={(e) => setReceivedBy(e.target.value)}
+                    required
+                    className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
+                    }`}
+                  />
+                </div>
+
+                {/* Tanggal Pengembalian */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">
+                    Tanggal Pengembalian <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={returnDate}
+                    onChange={(e) => setReturnDate(e.target.value)}
+                    required
+                    className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
+                    }`}
+                  />
+                </div>
+
+                <div className="flex gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setShowReturnModal(false)}
+                    className={`flex-1 py-3 rounded-xl text-xs sm:text-sm font-bold border transition-all min-h-[44px] cursor-pointer ${
+                      isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-extrabold rounded-xl text-xs sm:text-sm shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 transition-all min-h-[44px] cursor-pointer"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span>Konfirmasi Kembali</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
 
       {/* Modal Hapus Semua Data Aset */}
       <AnimatePresence>

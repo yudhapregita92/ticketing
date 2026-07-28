@@ -22,7 +22,10 @@ import {
   Database,
   Users,
   MonitorSmartphone,
-  Timer
+  Timer,
+  Building2,
+  Layers,
+  ClipboardList
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -49,6 +52,8 @@ interface SidebarProps {
   fetchTickets: (showLoading?: boolean) => void;
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
+  assetSubTab?: 'all' | 'Capex' | 'Opex' | 'borrowed';
+  setAssetSubTab?: (tab: 'all' | 'Capex' | 'Opex' | 'borrowed') => void;
   setShowLogin?: (show: boolean) => void;
   handleLogout?: () => void;
   userCanVoucher?: boolean;
@@ -78,6 +83,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   fetchTickets,
   viewMode,
   setViewMode,
+  assetSubTab,
+  setAssetSubTab,
   setShowLogin,
   handleLogout,
   userCanVoucher,
@@ -85,6 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [masterDataOpen, setMasterDataOpen] = React.useState(false);
   const [reportOpen, setReportOpen] = React.useState(false);
+  const [assetMenuOpen, setAssetMenuOpen] = React.useState(false);
 
   return (
     <div className="lg:col-span-1 space-y-3 lg:space-y-4">
@@ -191,20 +199,104 @@ export const Sidebar: React.FC<SidebarProps> = ({
           
           {adminUser && (
             <>
-              <button
-                onClick={() => setViewMode('assets')}
-                title="Manajemen Aset"
-                className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                  viewMode === 'assets' 
-                    ? 'bg-emerald-500/10 text-emerald-600' 
-                    : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Package className="w-4 h-4" />
-                  {adminThemeLayout !== 'compact' && <span>Manajemen Aset</span>}
-                </div>
-              </button>
+              <div className="space-y-1">
+                <button
+                  onClick={() => {
+                    if (viewMode !== 'assets') setViewMode('assets');
+                    setAssetMenuOpen(!assetMenuOpen);
+                  }}
+                  title="Manajemen Aset"
+                  className={`w-full flex items-center justify-between ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
+                    (viewMode === 'assets' || assetMenuOpen)
+                      ? 'bg-emerald-500/10 text-emerald-600' 
+                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Package className="w-4 h-4" />
+                    {adminThemeLayout !== 'compact' && <span>Manajemen Aset</span>}
+                  </div>
+                  {adminThemeLayout !== 'compact' && (
+                    assetMenuOpen || viewMode === 'assets' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                  )}
+                </button>
+
+                {(assetMenuOpen || viewMode === 'assets') && (
+                  <div className={`space-y-1 ${adminThemeLayout !== 'compact' ? 'pl-9' : ''}`}>
+                    <button
+                      onClick={() => {
+                        setViewMode('assets');
+                        if (setAssetSubTab) setAssetSubTab('all');
+                      }}
+                      title="Semua Aset"
+                      className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
+                        viewMode === 'assets' && (assetSubTab === 'all' || !assetSubTab)
+                          ? 'bg-emerald-500/10 text-emerald-600' 
+                          : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Package className="w-3 h-3" />
+                        {adminThemeLayout !== 'compact' && <span>Semua Aset</span>}
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setViewMode('assets');
+                        if (setAssetSubTab) setAssetSubTab('Capex');
+                      }}
+                      title="Capex (Capital Expenditure)"
+                      className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
+                        viewMode === 'assets' && assetSubTab === 'Capex'
+                          ? 'bg-blue-500/10 text-blue-600' 
+                          : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Building2 className="w-3 h-3" />
+                        {adminThemeLayout !== 'compact' && <span>Aset Capex</span>}
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setViewMode('assets');
+                        if (setAssetSubTab) setAssetSubTab('Opex');
+                      }}
+                      title="Opex (Operational Expenditure)"
+                      className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
+                        viewMode === 'assets' && assetSubTab === 'Opex'
+                          ? 'bg-purple-500/10 text-purple-600' 
+                          : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Layers className="w-3 h-3" />
+                        {adminThemeLayout !== 'compact' && <span>Aset Opex</span>}
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setViewMode('assets');
+                        if (setAssetSubTab) setAssetSubTab('borrowed');
+                      }}
+                      title="Perangkat Dipinjam (IT Loan)"
+                      className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
+                        viewMode === 'assets' && assetSubTab === 'borrowed'
+                          ? 'bg-amber-500/10 text-amber-600' 
+                          : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <ClipboardList className="w-3 h-3" />
+                        {adminThemeLayout !== 'compact' && <span>Perangkat Dipinjam</span>}
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
               
               <button
                 onClick={() => setViewMode('membership')}

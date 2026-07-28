@@ -407,6 +407,7 @@ export default function App() {
   });
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [tempFilters, setTempFilters] = useState({ dept: '', status: '', date: '', search: '' });
+  const [assetSubTab, setAssetSubTab] = useState<'all' | 'Capex' | 'Opex' | 'borrowed'>('all');
 
   const toggleTheme = () => {
     const newMode = appSettings.theme_mode === 'light' ? 'dark' : 'light';
@@ -1634,6 +1635,8 @@ export default function App() {
                   fetchTickets={fetchTickets}
                   viewMode={viewMode}
                   setViewMode={setViewMode}
+                  assetSubTab={assetSubTab}
+                  setAssetSubTab={setAssetSubTab}
                   setShowLogin={setShowLogin}
                   handleLogout={handleLogout}
                   userCanVoucher={userCanVoucher}
@@ -1893,6 +1896,8 @@ export default function App() {
                 isDark={isDark}
                 themeClasses={themeClasses}
                 primaryColor={primaryColor}
+                activeSubTab={assetSubTab}
+                setActiveSubTab={setAssetSubTab}
               />
             ) : viewMode === 'network' ? (
               <NetworkMonitor 

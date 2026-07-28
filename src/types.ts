@@ -136,6 +136,26 @@ export interface IAsset {
   serial_number?: string;
   usage_status?: string;
   user_index?: string;
+  budget_type?: string;
+}
+
+export interface IBorrowedAsset {
+  id: number;
+  asset_id?: number | null;
+  device_name: string;
+  device_code?: string | null;
+  budget_type?: string | null;
+  borrower_name: string;
+  borrower_department?: string | null;
+  borrow_date: string;
+  expected_return_date?: string | null;
+  actual_return_date?: string | null;
+  received_by?: string | null;
+  notes?: string | null;
+  signature?: string | null;
+  status: 'Dipinjam' | 'Dikembalikan';
+  created_at?: string;
+  updated_at?: string;
 }
 export interface IMembershipLog {
   id: number;

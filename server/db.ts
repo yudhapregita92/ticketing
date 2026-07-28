@@ -128,6 +128,7 @@ export function initDb() {
       serial_number TEXT,
       usage_status TEXT,
       user_index TEXT,
+      budget_type TEXT DEFAULT 'Capex',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -137,6 +138,24 @@ export function initDb() {
       name TEXT UNIQUE NOT NULL,
       kode_kategori TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS borrowed_assets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      asset_id INTEGER,
+      device_name TEXT NOT NULL,
+      device_code TEXT,
+      budget_type TEXT,
+      borrower_name TEXT NOT NULL,
+      borrower_department TEXT,
+      borrow_date TEXT NOT NULL,
+      expected_return_date TEXT,
+      actual_return_date TEXT,
+      notes TEXT,
+      signature TEXT,
+      status TEXT DEFAULT 'Dipinjam',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS notifications (
@@ -365,9 +384,15 @@ export function initDb() {
   }
 
   // Add missing columns if they don't exist
-  const tables = ['tickets', 'users', 'categories', 'master_users', 'ticket_logs', 'memberships', 'membership_logs', 'assets', 'voucher_requests', 'eval_m365_usage'];
+  const tables = ['tickets', 'users', 'categories', 'master_users', 'ticket_logs', 'memberships', 'membership_logs', 'assets', 'voucher_requests', 'eval_m365_usage', 'borrowed_assets'];
   for (const table of tables) {
     const columns = db.prepare(`PRAGMA table_info(${table})`).all() as any[];
+
+    if (table === 'borrowed_assets') {
+      if (!columns.find(c => c.name === 'received_by')) {
+        db.prepare("ALTER TABLE borrowed_assets ADD COLUMN received_by TEXT").run();
+      }
+    }
     
     if (table === 'eval_m365_usage') {
       if (!columns.find(c => c.name === 'license_m365')) {
@@ -415,6 +440,14 @@ export function initDb() {
       }
       if (!columns.find(c => c.name === 'user_index')) {
         db.prepare("ALTER TABLE assets ADD COLUMN user_index TEXT").run();
+      }
+      if (!columns.find(c => c.name === 'budget_type')) {
+        db.prepare("ALTER TABLE assets ADD COLUMN budget_type TEXT DEFAULT 'Capex'").run();
+        try {
+          db.prepare("UPDATE assets SET budget_type = 'Capex' WHERE budget_type IS NULL OR budget_type = ''").run();
+        } catch (e) {
+          console.error("Error setting default budget_type:", e);
+        }
       }
     }
 
