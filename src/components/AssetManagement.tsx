@@ -68,6 +68,9 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
+  const [filterDepartment, setFilterDepartment] = useState('');
+  const [filterUsageStatus, setFilterUsageStatus] = useState('');
+  const [filterAssetStatus, setFilterAssetStatus] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingAsset, setEditingAsset] = useState<IAsset | null>(null);
   const [isViewMode, setIsViewMode] = useState(false);
@@ -83,7 +86,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filterCategory]);
+  }, [searchQuery, filterCategory, filterDepartment, filterUsageStatus, filterAssetStatus]);
   
   // Form State
   const [formData, setFormData] = useState({
@@ -681,8 +684,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
       {/* Header Actions & Filter Toolbar */}
       <div className="flex flex-col gap-3">
         {/* Search and Category Filter */}
-        <div className="flex flex-col sm:flex-row gap-2.5 sm:items-center justify-between">
-          <div className="relative flex-1">
+        <div className="flex flex-col gap-2.5">
+          <div className="relative w-full">
             <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
             <input 
               type="text" 
@@ -695,8 +698,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
             />
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1 sm:w-48">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[140px]">
               <Filter className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
               <select
                 value={filterCategory}
@@ -711,21 +714,53 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
                 ))}
               </select>
             </div>
-
-            {/* Mobile Primary Add Button */}
-            <button
-              onClick={() => {
-                resetForm();
-              setEditingAsset(null);
-              setIsViewMode(false);
-              setShowModal(true);
-              }}
-              style={{ backgroundColor: primaryColor }}
-              className="sm:hidden px-3 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 whitespace-nowrap shadow-md hover:brightness-110 active:scale-95 transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Tambah</span>
-            </button>
+            
+            <div className="relative flex-1 min-w-[140px]">
+              <Filter className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <select
+                value={filterDepartment}
+                onChange={(e) => setFilterDepartment(e.target.value)}
+                className={`w-full pl-9 pr-7 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
+                  isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
+                }`}
+              >
+                <option value="">Semua Departemen</option>
+                {Array.from(new Set(assets.map(a => a.department).filter(Boolean))).sort().map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="relative flex-1 min-w-[140px]">
+              <Filter className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <select
+                value={filterUsageStatus}
+                onChange={(e) => setFilterUsageStatus(e.target.value)}
+                className={`w-full pl-9 pr-7 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
+                  isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
+                }`}
+              >
+                <option value="">Semua Status Pengguna</option>
+                <option value="karyawan">Karyawan</option>
+                <option value="shared department">Shared Dept</option>
+              </select>
+            </div>
+            
+            <div className="relative flex-1 min-w-[140px]">
+              <Filter className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <select
+                value={filterAssetStatus}
+                onChange={(e) => setFilterAssetStatus(e.target.value)}
+                className={`w-full pl-9 pr-7 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
+                  isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
+                }`}
+              >
+                <option value="">Semua Status Aset</option>
+                <option value="Active">Aktif</option>
+                <option value="Broken">Rusak</option>
+                <option value="Lost">Hilang</option>
+              </select>
+            </div>
           </div>
         </div>
 
