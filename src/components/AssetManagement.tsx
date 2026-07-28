@@ -403,20 +403,36 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
               display: inline-block;
               font-weight: bold;
             }
-            .qr-container {
-              width: 70px;
-              height: 70px;
+            .qr-wrapper {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
               flex-shrink: 0;
+            }
+            .qr-container {
+              width: 66px;
+              height: 66px;
               border: 1px solid #eee;
               padding: 2px;
               background: white;
               border-radius: 6px;
+              margin-bottom: 4px;
             }
             .qr-container img {
               width: 100%;
               height: 100%;
               display: block;
               object-fit: contain;
+            }
+            .koperasi-text {
+              font-size: 6.5px;
+              text-align: center;
+              color: #333;
+              font-weight: 800;
+              line-height: 1.5;
+              width: 100%;
+              margin-top: 2px;
+              white-space: nowrap;
             }
           </style>
         </head>
@@ -440,8 +456,11 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
                   <div class="departemen">${departemen}</div>
                   <div class="kode">${asset.device_code || asset.asset_id || '-'}</div>
                 </div>
-                <div class="qr-container">
-                  <img src="${qrUrl}" alt="QR" />
+                <div class="qr-wrapper">
+                  <div class="qr-container">
+                    <img src="${qrUrl}" alt="QR" />
+                  </div>
+                  <div class="koperasi-text">Koperasi Konsumen<br/>Karyawan Dwi Karya</div>
                 </div>
               </div>
               `;
