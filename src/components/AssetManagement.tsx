@@ -329,8 +329,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
   };
 
   
-  const handlePrintAllLabels = () => {
-    if (filteredAssets.length === 0) {
+  const printAssets = (assetsToPrint: IAsset[]) => {
+    if (assetsToPrint.length === 0) {
       toast.error('Tidak ada aset untuk dicetak');
       return;
     }
@@ -388,6 +388,11 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
             .jabatan {
               font-size: 11px;
               color: #555;
+              margin-bottom: 2px;
+            }
+            .departemen {
+              font-size: 11px;
+              color: #555;
               margin-bottom: 8px;
             }
             .kode {
@@ -417,9 +422,10 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
         </head>
         <body>
           <div class="grid-container">
-            ${filteredAssets.map(asset => {
+            ${assetsToPrint.map(asset => {
               const matchedUser = masterUsers.find(u => u.full_name === asset.assigned_to);
               const jabatan = matchedUser?.jabatan || '-';
+              const departemen = asset.department || '-';
               
               // Generate QR URL pointing to the public asset detail page
               const assetId = asset.device_code || asset.asset_id || asset.id;
@@ -431,6 +437,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
                 <div class="label-content">
                   <div class="title">${asset.name || asset.category}</div>
                   <div class="jabatan">${jabatan}</div>
+                  <div class="departemen">${departemen}</div>
                   <div class="kode">${asset.device_code || asset.asset_id || '-'}</div>
                 </div>
                 <div class="qr-container">
@@ -457,6 +464,15 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
     printWindow.document.write(printContent);
     printWindow.document.close();
   };
+
+  const handlePrintAllLabels = () => {
+    printAssets(filteredAssets);
+  };
+  
+  const handlePrintSingleLabel = (asset: IAsset) => {
+    printAssets([asset]);
+  };
+
 
   const handleExportExcel = () => {
     if (assets.length === 0) {
@@ -814,6 +830,13 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
                   {/* Actions */}
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button 
+                      onClick={() => handlePrintSingleLabel(asset)}
+                      className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 dark:hover:bg-slate-800 transition-colors"
+                      title="Cetak Label"
+                    >
+                      <Printer className="w-4 h-4" />
+                    </button>
+                    <button 
                       onClick={() => openEditModal(asset, true)}
                       className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
                       title="Lihat Aset"
@@ -938,6 +961,13 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
                     </td>
                     <td className="px-3 py-2.5 text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <button 
+                          onClick={() => handlePrintSingleLabel(asset)}
+                          className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 dark:hover:bg-slate-800 transition-colors"
+                          title="Cetak Label"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                        </button>
                         <button 
                           onClick={() => openEditModal(asset, true)}
                           className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
