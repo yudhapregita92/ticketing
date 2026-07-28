@@ -414,13 +414,13 @@ export const NewTicketModal = React.memo(({
       alert('Silakan pilih tipe piranti yang Anda gunakan.');
       return;
     }
-    if (newTicket.jenis_masalah === 'Hardware') {
+    if (newTicket.jenis_masalah !== 'Aplikasi') {
       if (!newTicket.pc_code?.trim()) {
-        alert('Kode Komputer wajib diisi jika jenis masalah adalah Hardware.');
+        alert('Kode Perangkat wajib diisi.');
         return;
       }
       if (!isPcCodeMatched) {
-        alert('Kode Komputer tidak valid atau tidak ditemukan di database.');
+        alert('Kode Perangkat tidak valid atau tidak ditemukan di database.');
         return;
       }
     }
@@ -822,10 +822,10 @@ export const NewTicketModal = React.memo(({
               </select>
             </div>
 
-            {newTicket.jenis_masalah === 'Hardware' && (
+            {newTicket.jenis_masalah !== 'Aplikasi' && (
               <div className="space-y-0.5 sm:col-span-2">
                 <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
-                  <Monitor className="w-2.5 h-2.5 text-blue-500" /> Kode Komputer (Berlabel di Monitor) <span className="text-rose-500 font-bold">* Wajib</span>
+                  <Monitor className="w-2.5 h-2.5 text-blue-500" /> Kode Perangkat <span className="text-rose-500 font-bold">* Wajib</span>
                 </label>
                 <div className="relative flex items-center">
                   <input 
@@ -844,7 +844,7 @@ export const NewTicketModal = React.memo(({
                   )}
                 </div>
                  <p className="text-[9px] font-bold text-amber-500 dark:text-amber-400 capitalize tracking-wide ml-0.5">
-                  * Masukkan nomor PC yang tertera pada stiker label di casing/layar monitor Anda.
+                  * Masukkan nomor perangkat yang tertera pada stiker label perangkat Anda.
                 </p>
               </div>
             )}
@@ -937,7 +937,7 @@ export const NewTicketModal = React.memo(({
                 !newTicket.priority || 
                 !newTicket.description?.trim() || 
                 !newTicket.device_type || 
-                (newTicket.jenis_masalah === 'Hardware' && (!newTicket.pc_code?.trim() || !isPcCodeMatched))
+                (newTicket.jenis_masalah !== 'Aplikasi' && (!newTicket.pc_code?.trim() || !isPcCodeMatched))
               }
               style={{ 
                 backgroundColor: (
@@ -947,7 +947,7 @@ export const NewTicketModal = React.memo(({
                   newTicket.priority && 
                   newTicket.description?.trim() && 
                   newTicket.device_type && 
-                  (newTicket.jenis_masalah !== 'Hardware' || (newTicket.pc_code?.trim() && isPcCodeMatched))
+                  (newTicket.jenis_masalah === 'Aplikasi' || (newTicket.pc_code?.trim() && isPcCodeMatched))
                 ) ? primaryColor : '#94a3b8' 
               }}
               className={`w-full py-2 sm:py-2.5 rounded-2xl text-white font-black capitalize tracking-widest text-[10px] sm:text-xs shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:cursor-not-allowed`}

@@ -4,7 +4,7 @@ import {
   Package, Search, Plus, Filter, Edit2, Trash2, 
   Monitor, Smartphone, Printer, Server, Laptop, X, Save,
   User, Building2, Download, Upload, FileSpreadsheet,
-  ChevronLeft, ChevronRight, Users, Layers
+  ChevronLeft, ChevronRight, Users, Layers, Eye
 } from 'lucide-react';
 import * as xlsx from 'xlsx';
 import toast from 'react-hot-toast';
@@ -69,7 +69,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [showModal, setShowModal] = useState(false);
-    const [editingAsset, setEditingAsset] = useState<IAsset | null>(null);
+  const [editingAsset, setEditingAsset] = useState<IAsset | null>(null);
+  const [isViewMode, setIsViewMode] = useState(false);
   const [masterUsers, setMasterUsers] = useState<any[]>([]);
   const [assetCategories, setAssetCategories] = useState<any[]>([]);
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
@@ -199,7 +200,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
 
   
   
-  const openEditModal = (asset: IAsset) => {
+  const openEditModal = (asset: IAsset, view: boolean = false) => {
     setEditingAsset(asset);
     setFormData({
       device_code: asset.device_code || '',
@@ -217,6 +218,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
       condition: asset.condition || 'Good',
       notes: asset.notes || ''
     });
+    setIsViewMode(view);
     setShowModal(true);
   };
 
@@ -324,6 +326,136 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
     xlsx.utils.book_append_sheet(wb, ws, 'Template Aset');
     xlsx.writeFile(wb, 'Template_Import_Aset.xlsx');
     toast.success('Template Excel (format KDK) berhasil diunduh');
+  };
+
+  
+  const handlePrintAllLabels = () => {
+    if (filteredAssets.length === 0) {
+      toast.error('Tidak ada aset untuk dicetak');
+      return;
+    }
+
+    const printWindow = window.open('', '', 'width=800,height=600');
+    if (!printWindow) {
+      toast.error("Browser memblokir pop-up. Izinkan pop-up untuk mencetak label.");
+      return;
+    }
+    
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Cetak Label Aset</title>
+          <style>
+            @page { size: A4; margin: 10mm; }
+            body { 
+              margin: 0; 
+              padding: 0;
+              font-family: sans-serif;
+              background-color: white;
+            }
+            .grid-container {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 15px;
+              width: 100%;
+            }
+            .label-box {
+              border: 1px dashed #ccc;
+              padding: 12px;
+              display: flex;
+              flex-direction: row;
+              justify-content: space-between;
+              align-items: center;
+              page-break-inside: avoid;
+              min-height: 90px;
+              border-radius: 8px;
+            }
+            .label-content {
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: flex-start;
+              flex: 1;
+              padding-right: 10px;
+            }
+            .title {
+              font-size: 13px;
+              font-weight: bold;
+              margin-bottom: 4px;
+              color: #111;
+            }
+            .jabatan {
+              font-size: 11px;
+              color: #555;
+              margin-bottom: 8px;
+            }
+            .kode {
+              font-size: 12px;
+              border: 1px solid #333;
+              padding: 3px 6px;
+              border-radius: 4px;
+              display: inline-block;
+              font-weight: bold;
+            }
+            .qr-container {
+              width: 70px;
+              height: 70px;
+              flex-shrink: 0;
+              border: 1px solid #eee;
+              padding: 2px;
+              background: white;
+              border-radius: 6px;
+            }
+            .qr-container img {
+              width: 100%;
+              height: 100%;
+              display: block;
+              object-fit: contain;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="grid-container">
+            ${filteredAssets.map(asset => {
+              const matchedUser = masterUsers.find(u => u.full_name === asset.assigned_to);
+              const jabatan = matchedUser?.jabatan || '-';
+              
+              // Generate QR URL pointing to the public asset detail page
+              const assetId = asset.device_code || asset.asset_id || asset.id;
+              const qrData = `${window.location.origin}?asset=${assetId}`;
+              const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(qrData)}`;
+              
+              return `
+              <div class="label-box">
+                <div class="label-content">
+                  <div class="title">${asset.name || asset.category}</div>
+                  <div class="jabatan">${jabatan}</div>
+                  <div class="kode">${asset.device_code || asset.asset_id || '-'}</div>
+                </div>
+                <div class="qr-container">
+                  <img src="${qrUrl}" alt="QR" />
+                </div>
+              </div>
+              `;
+            }).join('')}
+          </div>
+          <script>
+            window.onload = function() {
+              // Wait a bit for images to load before printing
+              setTimeout(function() {
+                window.print();
+                setTimeout(function() { window.close(); }, 500);
+              }, 1000);
+            }
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(printContent);
+    printWindow.document.close();
   };
 
   const handleExportExcel = () => {
@@ -549,8 +681,9 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
             <button
               onClick={() => {
                 resetForm();
-                setEditingAsset(null);
-                setShowModal(true);
+              setEditingAsset(null);
+              setIsViewMode(false);
+              setShowModal(true);
               }}
               style={{ backgroundColor: primaryColor }}
               className="sm:hidden px-3 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 whitespace-nowrap shadow-md hover:brightness-110 active:scale-95 transition-all"
@@ -603,6 +736,19 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
           </button>
 
           <button
+            onClick={handlePrintAllLabels}
+            title="Cetak Label Aset"
+            className={`px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all ${
+              isDark 
+                ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white' 
+                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+            }`}
+          >
+            <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
+            <span>Cetak Label</span>
+          </button>
+          
+          <button
             onClick={() => {
               setDeleteAllPassword('');
               setShowDeleteAllModal(true);
@@ -619,6 +765,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
             onClick={() => {
               resetForm();
               setEditingAsset(null);
+              setIsViewMode(false);
               setShowModal(true);
             }}
             style={{ backgroundColor: primaryColor }}
@@ -667,11 +814,11 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
                   {/* Actions */}
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button 
-                      onClick={() => openEditModal(asset)}
+                      onClick={() => openEditModal(asset, true)}
                       className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
-                      title="Edit Aset"
+                      title="Lihat Aset"
                     >
-                      <Edit2 className="w-4 h-4" />
+                      <Eye className="w-4 h-4" />
                     </button>
                     <button 
                       onClick={() => handleDelete(asset.id)}
@@ -720,12 +867,15 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className={`border-b ${isDark ? 'border-slate-800 bg-slate-900/50' : 'border-slate-100 bg-slate-50/50'}`}>
-                  <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Kode & Nama Aset</th>
-                  <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Kategori & Merk</th>
-                  <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Pengguna / PJ</th>
-                  <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Departemen</th>
-                  <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Status & Kondisi</th>
-                  <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400 text-right">Aksi</th>
+                  <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Nama Perangkat</th>
+                  <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Kategori</th>
+                  <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400 whitespace-nowrap">Kode Perangkat</th>
+                  <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400 whitespace-nowrap">Kode Aset</th>
+                  <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Pengguna</th>
+                  <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Departemen</th>
+                  <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Status Pengguna</th>
+                  <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Status Aset</th>
+                  <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody className={`divide-y ${isDark ? 'divide-slate-800' : 'divide-slate-100'}`}>
@@ -734,57 +884,66 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
                     key={asset.id} 
                     className={`transition-colors ${isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}
                   >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-xl flex-shrink-0 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className={`p-1.5 rounded-lg flex-shrink-0 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
                           {getCategoryIcon(asset.category)}
                         </div>
-                        <div>
-                          <div className={`font-bold text-xs ${themeClasses.heading}`}>{asset.name}</div>
-                          <div className={`text-[10px] font-mono ${themeClasses.textMuted}`}>
-                            Kode: <span className="font-semibold text-slate-700 dark:text-slate-300">{asset.asset_id || asset.device_code}</span> {asset.device_code && asset.device_code !== asset.asset_id ? `(${asset.device_code})` : ''}
-                          </div>
+                        <div className="min-w-0">
+                          <div className={`font-bold text-xs truncate max-w-[150px] ${themeClasses.heading}`} title={asset.name}>{asset.name || '-'}</div>
+                          {asset.brand && (
+                            <div className={`text-[9px] truncate max-w-[150px] ${themeClasses.textMuted}`}>
+                              {asset.brand}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">{asset.category}</div>
-                      <div className="text-[10px] text-slate-400 dark:text-slate-500">{asset.brand ? `${asset.brand} ` : ''}{asset.specs ? `• ${asset.specs}` : ''}</div>
+                    <td className="px-3 py-2.5">
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 whitespace-nowrap`}>
+                        {asset.category}
+                      </span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2.5">
+                      <span className="font-mono text-[11px] font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                        {asset.device_code || '-'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <span className="font-mono text-[11px] font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                        {asset.asset_id || '-'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5">
                       <div className="flex flex-col">
-                        <span className={`text-xs font-semibold ${themeClasses.heading}`}>
+                        <span className={`text-xs font-semibold truncate max-w-[120px] ${themeClasses.heading}`} title={asset.assigned_to || '-'}>
                           {asset.assigned_to || '-'}
-                        </span>
-                        <span className="text-[10px] text-slate-400">
-                          {asset.user_index ? `Index: ${asset.user_index} • ` : ''}
-                          {asset.usage_status === 'shared department' ? 'Shared Dept' : 'Karyawan'}
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs font-medium ${themeClasses.textMuted}`}>
+                    <td className="px-3 py-2.5">
+                      <span className={`text-xs font-medium truncate block max-w-[120px] ${themeClasses.textMuted}`} title={asset.department || '-'}>
                         {asset.department || '-'}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-col items-start gap-1">
+                    <td className="px-3 py-2.5">
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 whitespace-nowrap">
+                        {asset.usage_status === 'shared department' ? 'Shared Dept' : 'Karyawan'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-1">
                         {getStatusBadge(asset.status)}
-                        {asset.condition && (
-                          <span className="text-[10px] text-slate-400">
-                            Kondisi: {asset.condition}
-                          </span>
-                        )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-3 py-2.5 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button 
-                          onClick={() => openEditModal(asset)}
+                          onClick={() => openEditModal(asset, true)}
                           className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
-                          title="Edit Aset"
+                          title="Lihat Aset"
                         >
-                          <Edit2 className="w-3.5 h-3.5" />
+                          <Eye className="w-3.5 h-3.5" />
                         </button>
                         <button 
                           onClick={() => handleDelete(asset.id)}
@@ -868,18 +1027,116 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
                 isDark ? 'border-slate-800 bg-slate-900' : 'border-slate-100 bg-white'
               }`}>
                 <h2 className={`text-base sm:text-lg font-black flex items-center gap-2 ${themeClasses.heading}`}>
-                  <Package className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" />
-                  {editingAsset ? 'Edit Aset' : 'Tambah Aset Baru'}
+                  {isViewMode ? (
+                    <><Eye className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" /> Detail Aset</>
+                  ) : (
+                    <><Package className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" /> {editingAsset ? 'Edit Aset' : 'Tambah Aset Baru'}</>
+                  )}
                 </h2>
-                <button 
-                  onClick={() => setShowModal(false)}
-                  className="p-1.5 sm:p-2 rounded-xl hover:bg-slate-200/50 transition-colors"
-                >
-                  <X className="w-5 h-5 text-slate-400" />
-                </button>
+                <div className="flex items-center gap-2">
+                  {isViewMode && (
+                    <button 
+                      onClick={() => setIsViewMode(false)}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 text-xs font-bold transition-colors flex items-center gap-1.5"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Edit</span>
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => setShowModal(false)}
+                    className="p-1.5 sm:p-2 rounded-xl hover:bg-slate-200/50 transition-colors"
+                  >
+                    <X className="w-5 h-5 text-slate-400" />
+                  </button>
+                </div>
               </div>
 
-              <form onSubmit={handleSave} className="p-4 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5">
+              
+              {isViewMode && editingAsset ? (
+                <div className="p-4 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5 text-sm">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className={`p-3 rounded-2xl flex-shrink-0 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                      {getCategoryIcon(editingAsset.category)}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg">{editingAsset.name || editingAsset.category}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                          {editingAsset.category}
+                        </span>
+                        {getStatusBadge(editingAsset.status)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={`p-4 rounded-2xl grid grid-cols-1 sm:grid-cols-2 gap-4 ${
+                    isDark ? 'bg-slate-800/40 border border-slate-800' : 'bg-slate-50 border border-slate-100'
+                  }`}>
+                    <div>
+                      <span className="text-[10px] font-black uppercase text-slate-400 block mb-1">Kode Perangkat</span>
+                      <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{editingAsset.device_code || '-'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black uppercase text-slate-400 block mb-1">Kode Aset</span>
+                      <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{editingAsset.asset_id || '-'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black uppercase text-slate-400 block mb-1">Merk</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">{editingAsset.brand || '-'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black uppercase text-slate-400 block mb-1">Serial Number</span>
+                      <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">{editingAsset.serial_number || '-'}</span>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <span className="text-[10px] font-black uppercase text-slate-400 block mb-1">Spesifikasi</span>
+                      <span className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{editingAsset.specs || '-'}</span>
+                    </div>
+                  </div>
+
+                  <div className={`p-4 rounded-2xl grid grid-cols-1 sm:grid-cols-2 gap-4 ${
+                    isDark ? 'bg-slate-800/40 border border-slate-800' : 'bg-slate-50 border border-slate-100'
+                  }`}>
+                    <div>
+                      <span className="text-[10px] font-black uppercase text-slate-400 block mb-1">Pengguna / PJ</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200 block">{editingAsset.assigned_to || '-'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black uppercase text-slate-400 block mb-1">Index / NIK</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-300 block">{editingAsset.user_index || '-'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black uppercase text-slate-400 block mb-1">Departemen</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">{editingAsset.department || '-'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black uppercase text-slate-400 block mb-1">Status Pengguna</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-300 capitalize">{editingAsset.usage_status || '-'}</span>
+                    </div>
+                  </div>
+
+                  {(editingAsset.notes || editingAsset.condition) && (
+                    <div className={`p-4 rounded-2xl space-y-3 ${
+                      isDark ? 'bg-slate-800/40 border border-slate-800' : 'bg-slate-50 border border-slate-100'
+                    }`}>
+                      {editingAsset.condition && (
+                        <div>
+                          <span className="text-[10px] font-black uppercase text-slate-400 block mb-1">Kondisi Fisik</span>
+                          <span className="text-slate-700 dark:text-slate-300">{editingAsset.condition}</span>
+                        </div>
+                      )}
+                      {editingAsset.notes && (
+                        <div>
+                          <span className="text-[10px] font-black uppercase text-slate-400 block mb-1">Catatan Tambahan</span>
+                          <span className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm">{editingAsset.notes}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <form onSubmit={handleSave} className="p-4 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-5">
                   {/* 1. Kategori */}
                   <div className="space-y-1.5">
@@ -1160,6 +1417,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({ isDark, themeC
                   </button>
                 </div>
               </form>
+              )}
             </motion.div>
           </div>
         )}

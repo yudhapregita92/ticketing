@@ -77,6 +77,7 @@ import { MasterPerangkat } from './components/MasterPerangkat';
 import { MasterTeam } from './components/MasterTeam';
 import { ReportSLA } from './components/ReportSLA';
 import { ReportPerangkat } from './components/ReportPerangkat';
+import { PublicAssetView } from './components/PublicAssetView';
 
 // Types, Constants, and Utils
 import { ITicket, IUser, IDepartment, ICategory, IMasterUser, ISettings, ViewMode } from './types';
@@ -102,6 +103,11 @@ import { WifiOff, CloudUpload } from 'lucide-react';
 
 export default function App() {
   const queryClient = useQueryClient();
+
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const publicAssetId = searchParams.get('asset');
+
 
   // --- State Management ---
   const [adminUser, setAdminUser] = useState<any>(null); // Data login admin
@@ -299,7 +305,6 @@ export default function App() {
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  const location = useLocation();
   const navigate = useNavigate();
 
   const getViewModeFromPath = (path: string, hasAdmin: boolean): ViewMode => {
@@ -381,7 +386,7 @@ export default function App() {
     // Check on mount and resize
     handleResize();
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
   }, [viewMode]);
 
   React.useEffect(() => {
@@ -1369,6 +1374,10 @@ export default function App() {
     return null;
   }, [currentUser, adminUser]);
 
+  if (publicAssetId) {
+    return <PublicAssetView assetId={publicAssetId} isDark={isDark} />;
+  }
+
   if (isPublicJurnalRoute) {
     return (
       <div className={`min-h-screen font-sans transition-colors duration-300 ${themeClasses.bg} ${themeClasses.selection}`} style={{ '--primary': primaryColor } as any}>
@@ -1414,6 +1423,8 @@ export default function App() {
       </div>
     );
   }
+
+
 
   return (
     <div className={`min-h-screen font-sans transition-colors duration-300 ${themeClasses.bg} ${themeClasses.selection}`} style={{ '--primary': primaryColor } as any}>

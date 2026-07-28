@@ -121,8 +121,7 @@ export const SettingsModal = React.memo(({
   const [masterUserIndex, setMasterUserIndex] = React.useState('');
   const [masterUserEmail, setMasterUserEmail] = React.useState('');
   const [masterUserJenisPiranti, setMasterUserJenisPiranti] = React.useState('(Tidak Ada)');
-  const [masterUserKodePiranti, setMasterUserKodePiranti] = React.useState('');
-  const [masterUserJabatan, setMasterUserJabatan] = React.useState('');
+    const [masterUserJabatan, setMasterUserJabatan] = React.useState('');
   const [editingMasterUser, setEditingMasterUser] = React.useState<any | null>(null);
   const [masterUserSearch, setMasterUserSearch] = React.useState('');
 
@@ -134,8 +133,7 @@ export const SettingsModal = React.memo(({
       (user.full_name || '').toLowerCase().includes(term) ||
       (user.department || '').toLowerCase().includes(term) ||
       (user.employee_index || '').toLowerCase().includes(term) ||
-      (user.jenis_piranti || '').toLowerCase().includes(term) ||
-      (user.kode_piranti || '').toLowerCase().includes(term)
+      (user.jenis_piranti || '').toLowerCase().includes(term) 
     );
   }, [masterUsers, masterUserSearch]);
 
@@ -298,7 +296,7 @@ export const SettingsModal = React.memo(({
           employee_index: masterUserIndex,
           email: masterUserEmail || null,
           jenis_piranti: masterUserJenisPiranti,
-          kode_piranti: masterUserKodePiranti,
+          
           jabatan: masterUserJabatan
         });
         setAddingType(null);
@@ -309,8 +307,7 @@ export const SettingsModal = React.memo(({
         setMasterUserIndex('');
         setMasterUserEmail('');
         setMasterUserJenisPiranti('(Tidak Ada)');
-        setMasterUserKodePiranti('');
-        setMasterUserJabatan('');
+                setMasterUserJabatan('');
         handleManagementAction('master-user', 'delete', { id: editingMasterUser.id }); // Invalidate queries/refresh
       } else {
         // Add Mode
@@ -321,7 +318,7 @@ export const SettingsModal = React.memo(({
           employee_index: masterUserIndex,
           email: masterUserEmail || null,
           jenis_piranti: masterUserJenisPiranti,
-          kode_piranti: masterUserKodePiranti,
+          
           jabatan: masterUserJabatan
         });
         setAddingType(null);
@@ -331,8 +328,7 @@ export const SettingsModal = React.memo(({
         setMasterUserIndex('');
         setMasterUserEmail('');
         setMasterUserJenisPiranti('(Tidak Ada)');
-        setMasterUserKodePiranti('');
-        setMasterUserJabatan('');
+                setMasterUserJabatan('');
         handleManagementAction('master-user', 'add');
       }
     } catch (err: any) {
@@ -348,8 +344,7 @@ export const SettingsModal = React.memo(({
     setMasterUserIndex('');
     setMasterUserEmail('');
     setMasterUserJenisPiranti('(Tidak Ada)');
-    setMasterUserKodePiranti('');
-    setMasterUserJabatan('');
+        setMasterUserJabatan('');
     setAddingType('master-user');
   };
 
@@ -370,8 +365,7 @@ export const SettingsModal = React.memo(({
     setMasterUserIndex(user.employee_index || '');
     setMasterUserEmail(user.email || '');
     setMasterUserJenisPiranti(normalizeJenisPiranti(user.jenis_piranti));
-    setMasterUserKodePiranti(user.kode_piranti && user.kode_piranti !== '-' ? user.kode_piranti : '');
-    setMasterUserJabatan(user.jabatan || '');
+        setMasterUserJabatan(user.jabatan || '');
     setAddingType('master-user');
   };
 
@@ -415,7 +409,6 @@ export const SettingsModal = React.memo(({
         'No. Telepon': '081234567890',
         'Index Karyawan': '12345',
         'Jenis Piranti': 'Komputer',
-        'Kode Piranti': 'KMP-001',
         'Email': 'budi@example.com',
         'Jabatan': 'Staff GA'
       },
@@ -425,7 +418,6 @@ export const SettingsModal = React.memo(({
         'No. Telepon': '081234567891',
         'Index Karyawan': '67890',
         'Jenis Piranti': 'Laptop',
-        'Kode Piranti': 'LPT-002',
         'Email': 'siti@example.com',
         'Jabatan': 'Supervisor CE'
       },
@@ -435,7 +427,6 @@ export const SettingsModal = React.memo(({
         'No. Telepon': '081234567892',
         'Index Karyawan': '11223',
         'Jenis Piranti': '(Tidak Ada)',
-        'Kode Piranti': '-',
         'Email': '',
         'Jabatan': 'Driver'
       }
@@ -618,7 +609,6 @@ export const SettingsModal = React.memo(({
       'No. Telepon': user.phone || '',
       'Index Karyawan': user.employee_index || '',
       'Jenis Piranti': user.jenis_piranti || '(Tidak Ada)',
-      'Kode Piranti': user.kode_piranti || '-',
       'Email': user.email || '',
       'Jabatan': user.jabatan || '-'
     }));

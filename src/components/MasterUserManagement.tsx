@@ -46,8 +46,7 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
   const [masterUserIndex, setMasterUserIndex] = React.useState('');
   const [masterUserEmail, setMasterUserEmail] = React.useState('');
   const [masterUserJenisPiranti, setMasterUserJenisPiranti] = React.useState('(Tidak Ada)');
-  const [masterUserKodePiranti, setMasterUserKodePiranti] = React.useState('');
-  const [masterUserJabatan, setMasterUserJabatan] = React.useState('');
+    const [masterUserJabatan, setMasterUserJabatan] = React.useState('');
   const [editingMasterUser, setEditingMasterUser] = React.useState<any | null>(null);
   const [masterUserSearch, setMasterUserSearch] = React.useState('');
   const [addingType, setAddingType] = React.useState<'master-user' | null>(null);
@@ -72,8 +71,7 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
       (user.full_name || '').toLowerCase().includes(term) ||
       (user.department || '').toLowerCase().includes(term) ||
       (user.employee_index || '').toLowerCase().includes(term) ||
-      (user.jenis_piranti || '').toLowerCase().includes(term) ||
-      (user.kode_piranti || '').toLowerCase().includes(term)
+      (user.jenis_piranti || '').toLowerCase().includes(term) 
     );
   }, [masterUsers, masterUserSearch]);
 
@@ -92,7 +90,6 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
         'No. Telepon': '081234567890',
         'Index Karyawan': '12345',
         'Jenis Piranti': 'Komputer',
-        'Kode Piranti': 'KMP-001',
         'Email': 'budi@example.com',
         'Jabatan': 'Staff GA'
       },
@@ -102,7 +99,6 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
         'No. Telepon': '081234567891',
         'Index Karyawan': '67890',
         'Jenis Piranti': 'Laptop',
-        'Kode Piranti': 'LPT-002',
         'Email': 'siti@example.com',
         'Jabatan': 'Supervisor CE'
       },
@@ -112,7 +108,6 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
         'No. Telepon': '081234567892',
         'Index Karyawan': '11223',
         'Jenis Piranti': '(Tidak Ada)',
-        'Kode Piranti': '-',
         'Email': '',
         'Jabatan': 'Driver'
       }
@@ -314,7 +309,6 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
       'No. Telepon': user.phone || '',
       'Index Karyawan': user.employee_index || '',
       'Jenis Piranti': user.jenis_piranti || '(Tidak Ada)',
-      'Kode Piranti': user.kode_piranti || '-',
       'Email': user.email || '',
       'Jabatan': user.jabatan || '',
       'Akses Voucher': user.can_request_voucher === 1 ? 'Ya' : 'Tidak',
@@ -342,7 +336,7 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
           employee_index: masterUserIndex,
           email: masterUserEmail || null,
           jenis_piranti: masterUserJenisPiranti,
-          kode_piranti: masterUserKodePiranti,
+          
           jabatan: masterUserJabatan
         });
         setAddingType(null);
@@ -358,7 +352,7 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
           employee_index: masterUserIndex,
           email: masterUserEmail || null,
           jenis_piranti: masterUserJenisPiranti,
-          kode_piranti: masterUserKodePiranti,
+          
           jabatan: masterUserJabatan
         });
         setAddingType(null);
@@ -378,8 +372,7 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
     setMasterUserIndex('');
     setMasterUserEmail('');
     setMasterUserJenisPiranti('(Tidak Ada)');
-    setMasterUserKodePiranti('');
-    setMasterUserJabatan('');
+        setMasterUserJabatan('');
   };
 
   const handleOpenAddMasterUser = () => {
@@ -405,8 +398,7 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
     setMasterUserIndex(user.employee_index || '');
     setMasterUserEmail(user.email || '');
     setMasterUserJenisPiranti(normalizeJenisPiranti(user.jenis_piranti));
-    setMasterUserKodePiranti(user.kode_piranti && user.kode_piranti !== '-' ? user.kode_piranti : '');
-    setMasterUserJabatan(user.jabatan || '');
+        setMasterUserJabatan(user.jabatan || '');
     setAddingType('master-user');
   };
 
@@ -616,17 +608,7 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Kode Piranti (Opsional)</label>
-                    <input 
-                      type="text"
-                      placeholder="Contoh: KMP-01 atau LPT-02"
-                      className={`w-full px-3 py-2.5 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
-                      value={masterUserKodePiranti}
-                      onChange={e => setMasterUserKodePiranti(e.target.value)}
-                    />
-                  </div>
+                <div className="grid grid-cols-1 gap-3">
                   <div>
                     <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Email (Opsional)</label>
                     <input 
@@ -739,10 +721,7 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
                     </td>
                     <td className="px-4 py-3">
                       {user.jenis_piranti && user.jenis_piranti !== '(Tidak Ada)' ? (
-                        <div className="flex flex-col">
-                          <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{user.jenis_piranti}</span>
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500">Kode: {user.kode_piranti || '-'}</span>
-                        </div>
+                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{user.jenis_piranti}</span>
                       ) : (
                         <span className="text-xs text-slate-400">-</span>
                       )}
