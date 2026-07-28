@@ -40,7 +40,8 @@ import {
   Database,
   Users,
   MonitorSmartphone,
-  Timer
+  Timer,
+  Bell
 } from 'lucide-react';
 
 // Import modular components
@@ -58,6 +59,7 @@ import { TakeoverModal } from './components/modals/TakeoverModal';
 import { SuccessModal } from './components/modals/SuccessModal';
 import { MobileFilterModal } from './components/modals/MobileFilterModal';
 import { ImageManagerModal } from './components/modals/ImageManagerModal';
+import { NotificationModal } from './components/modals/NotificationModal';
 import { SplashScreen } from './components/SplashScreen';
 import { hapticFeedback } from './utils/haptics';
 import { AdminDashboard } from './components/AdminDashboard';
@@ -80,7 +82,7 @@ import { ReportPerangkat } from './components/ReportPerangkat';
 import { PublicAssetView } from './components/PublicAssetView';
 
 // Types, Constants, and Utils
-import { ITicket, IUser, IDepartment, ICategory, IMasterUser, ISettings, ViewMode } from './types';
+import { ITicket, IUser, IDepartment, ICategory, IMasterUser, ISettings, ViewMode, INotification } from './types';
 import { STATUSES, LOGO_OPTIONS, PRIORITIES } from './constants';
 import { parseSafeDate, formatDate } from './utils/dateUtils';
 import { getDeviceInfo } from './utils/deviceUtils';
@@ -282,6 +284,62 @@ export default function App() {
     }
   };
 
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [notifications, setNotifications] = useState<INotification[]>([]);
+
+  const playNotificationSound = useCallback(() => {
+    try {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+    } catch (e) {
+      console.warn('Could not play notification sound:', e);
+    }
+  }, []);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const empIdx = currentUser?.employee_index || adminUser?.employee_index;
+      const empName = currentUser?.full_name || adminUser?.username;
+      const data = await api.getNotifications(empIdx, empName);
+      if (Array.isArray(data)) {
+        setNotifications(data);
+      }
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    }
+  }, [currentUser, adminUser]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  const handleMarkNotificationRead = async (id?: number, all?: boolean) => {
+    try {
+      const empIdx = currentUser?.employee_index || adminUser?.employee_index;
+      const empName = currentUser?.full_name || adminUser?.username;
+      await api.markNotificationRead(id, all, empIdx, empName);
+      fetchNotifications();
+    } catch (err) {
+      console.error('Error marking notification read:', err);
+    }
+  };
+
+  const unreadCount = useMemo(() => {
+    return notifications.filter(n => n.is_read === 0).length;
+  }, [notifications]);
+
   const [loading, setLoading] = useState(false); // Loading state untuk fetch data awal
   const [showForm, setShowForm] = useState(false); // Toggle modal buat tiket baru
   const [showSuccess, setShowSuccess] = useState(false); // Toggle modal sukses
@@ -299,6 +357,7 @@ export default function App() {
   const [newItemAssignedTo, setNewItemAssignedTo] = useState('');
   const [newItemResponseTime, setNewItemResponseTime] = useState<number>(0);
   const [newItemJenisMasalah, setNewItemJenisMasalah] = useState('Hardware');
+  const [newItemAssignedToList, setNewItemAssignedToList] = useState<string[]>([]);
   const [newEmailInput, setNewEmailInput] = useState('');
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -736,10 +795,38 @@ export default function App() {
       queryClient.invalidateQueries({ queryKey: ['publicData'] });
     });
 
+    socket.on('new_notification', (newNotif: INotification) => {
+      fetchNotifications();
+      playNotificationSound();
+
+      toast.custom((t) => (
+        <div className="bg-slate-900 text-white p-3.5 rounded-2xl shadow-xl border border-slate-800 flex items-start gap-3 max-w-sm">
+          <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 shrink-0">
+            <Bell className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-emerald-400 mb-0.5">{newNotif.title}</p>
+            <p className="text-xs text-slate-300 line-clamp-2">{newNotif.message}</p>
+          </div>
+        </div>
+      ), { duration: 5000 });
+
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+        try {
+          new Notification(newNotif.title, {
+            body: newNotif.message,
+            icon: appSettings?.custom_logo || '/pwa-192x192.png'
+          });
+        } catch (e) {
+          console.error('Push notification error:', e);
+        }
+      }
+    });
+
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [fetchNotifications, playNotificationSound, appSettings]);
 
   const handleUserLogin = (user: any) => {
     setCurrentUser(user);
@@ -857,11 +944,18 @@ export default function App() {
         let result;
         if (type === 'it') result = await api.addITPersonnel({ name: newItemName.trim() });
         else if (type === 'dept') result = await api.addDepartment({ name: newItemName.trim() });
-        else if (type === 'cat') result = await api.addCategory({ name: newItemName.trim(), assigned_to: newItemAssignedTo, response_time: newItemResponseTime, jenis_masalah: newItemJenisMasalah });
+        else if (type === 'cat') result = await api.addCategory({ 
+          name: newItemName.trim(), 
+          assigned_to: newItemAssignedTo, 
+          assigned_to_list: newItemAssignedToList.length > 0 ? newItemAssignedToList : (newItemAssignedTo ? [newItemAssignedTo] : []),
+          response_time: newItemResponseTime, 
+          jenis_masalah: newItemJenisMasalah 
+        });
         
         if (result) {
           setNewItemName('');
           setNewItemAssignedTo('');
+          setNewItemAssignedToList([]);
           setNewItemResponseTime(0);
           setNewItemJenisMasalah('Hardware');
           setAddingType(null);
@@ -875,6 +969,7 @@ export default function App() {
           result = await api.updateCategory(data.id, {
             name: data.name.trim(),
             assigned_to: data.assigned_to,
+            assigned_to_list: data.assigned_to_list,
             response_time: data.response_time,
             jenis_masalah: data.jenis_masalah
           });
@@ -1495,6 +1590,16 @@ export default function App() {
               notificationPermission={notificationPermission}
               requestNotificationPermission={requestNotificationPermission}
               toggleTheme={toggleTheme}
+              unreadCount={unreadCount}
+              onOpenNotifications={() => setShowNotificationModal(true)}
+              onDutyChange={(nextDuty) => {
+                if (adminUser) {
+                  const updated = { ...adminUser, is_on_duty: nextDuty };
+                  setAdminUser(updated);
+                  safeSetItem('adminUser', JSON.stringify(updated));
+                  queryClient.invalidateQueries({ queryKey: ['managementData'] });
+                }
+              }}
             />
 
       <main className="w-full max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-6 py-2 sm:py-4 pb-20 lg:pb-4 transition-all duration-300">
@@ -2188,6 +2293,24 @@ export default function App() {
           />
         )}
       </AnimatePresence>
+
+        {showNotificationModal && (
+          <NotificationModal
+            isOpen={showNotificationModal}
+            onClose={() => setShowNotificationModal(false)}
+            notifications={notifications}
+            onMarkAsRead={handleMarkNotificationRead}
+            onSelectTicket={(ticketNo) => {
+              const target = tickets.find(t => t.ticket_no === ticketNo);
+              if (target) {
+                handleSelectTicket(target);
+              } else {
+                toast.error(`Tiket #${ticketNo} tidak ditemukan atau telah dihapus.`);
+              }
+            }}
+            isDark={isDark}
+          />
+        )}
 
       <div className="print:hidden">
         <BottomNav 

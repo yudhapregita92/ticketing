@@ -2,6 +2,7 @@ export interface ITicket {
   id: number;
   ticket_no: string;
   name: string;
+  employee_index?: string | null;
   department: string;
   phone: string;
   category: string;
@@ -34,6 +35,7 @@ export interface IUser {
   username: string;
   full_name: string;
   role: string;
+  is_on_duty?: number;
 }
 
 export interface IDepartment {
@@ -45,6 +47,7 @@ export interface ICategory {
   id: number;
   name: string;
   assigned_to?: string;
+  assigned_to_list?: string | string[];
   device_code?: string;
   brand?: string;
   specs?: string;
@@ -151,6 +154,19 @@ export interface IMembership {
   photo_offset_y?: number | null;
   updated_at?: string;
   created_at?: string;
+}
+
+export interface INotification {
+  id: number;
+  ticket_id: number;
+  ticket_no: string;
+  employee_index?: string | null;
+  recipient_name?: string | null;
+  title: string;
+  message: string;
+  type: string;
+  is_read: number;
+  created_at: string;
 }
 
 export const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];

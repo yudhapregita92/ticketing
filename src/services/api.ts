@@ -131,6 +131,11 @@ export const api = {
   }).then(handleResponse),
 
   getUsers: (): Promise<IUser[]> => fetch('/api/users').then(handleResponse),
+  updateDutyStatus: (username: string, is_on_duty: number) => fetch('/api/users/duty-status', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, is_on_duty })
+  }).then(handleResponse),
   
   getMasterUsers: (): Promise<IMasterUser[]> => fetch('/api/master-users').then(handleResponse),
   addMasterUser: (data: any) => fetch('/api/master-users', {
@@ -394,5 +399,20 @@ export const api = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ items })
+  }).then(handleResponse),
+
+  getNotifications: (employeeIndex?: string, name?: string, ticketNo?: string): Promise<any[]> => {
+    const params = new URLSearchParams();
+    if (employeeIndex) params.append('employee_index', employeeIndex);
+    if (name) params.append('name', name);
+    if (ticketNo) params.append('ticket_no', ticketNo);
+    const url = params.toString() ? `/api/notifications?${params.toString()}` : '/api/notifications';
+    return fetch(url).then(handleResponse);
+  },
+
+  markNotificationRead: (id?: number, all?: boolean, employeeIndex?: string, name?: string) => fetch('/api/notifications/read', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, all, employee_index: employeeIndex, name })
   }).then(handleResponse),
 };

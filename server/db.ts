@@ -139,6 +139,20 @@ export function initDb() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ticket_id INTEGER NOT NULL,
+      ticket_no TEXT NOT NULL,
+      employee_index TEXT,
+      recipient_name TEXT,
+      title TEXT NOT NULL,
+      message TEXT NOT NULL,
+      type TEXT DEFAULT 'status_change',
+      is_read INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(ticket_id) REFERENCES tickets(id)
+    );
+
     CREATE TABLE IF NOT EXISTS network_devices (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -480,11 +494,17 @@ export function initDb() {
       if (!columns.find(c => c.name === 'primary_color')) {
         db.prepare("ALTER TABLE users ADD COLUMN primary_color TEXT DEFAULT '#8b5cf6'").run();
       }
+      if (!columns.find(c => c.name === 'is_on_duty')) {
+        db.prepare("ALTER TABLE users ADD COLUMN is_on_duty INTEGER DEFAULT 1").run();
+      }
     }
 
     if (table === 'categories') {
       if (!columns.find(c => c.name === 'assigned_to')) {
         db.prepare("ALTER TABLE categories ADD COLUMN assigned_to TEXT").run();
+      }
+      if (!columns.find(c => c.name === 'assigned_to_list')) {
+        db.prepare("ALTER TABLE categories ADD COLUMN assigned_to_list TEXT").run();
       }
     }
 

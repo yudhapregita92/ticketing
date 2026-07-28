@@ -34,6 +34,7 @@ import {
 import * as xlsx from 'xlsx';
 
 import { api } from '../../services/api';
+import toast from 'react-hot-toast';
 import { APP_VERSION, BUILD_DATE, UPDATE_HISTORY, getEnvironment } from '../../version';
 
 interface SettingsModalProps {
@@ -149,6 +150,7 @@ export const SettingsModal = React.memo(({
   const [editingCategoryName, setEditingCategoryName] = React.useState('');
   const [editingCategoryResponseTime, setEditingCategoryResponseTime] = React.useState<number>(0);
   const [editingCategoryAssignedTo, setEditingCategoryAssignedTo] = React.useState('');
+  const [editingCategoryAssignedToList, setEditingCategoryAssignedToList] = React.useState<string[]>([]);
   const [editingCategoryJenisMasalah, setEditingCategoryJenisMasalah] = React.useState('Hardware');
 
   const [isMigrating, setIsMigrating] = React.useState(false);
@@ -1677,32 +1679,79 @@ export const SettingsModal = React.memo(({
                             />
                             <span className={`text-[10px] font-black uppercase tracking-widest ${themeClasses.textMuted}`}>JAM</span>
                           </div>
-                          <div className="flex gap-2 items-center">
-                            <select
-                              value={newItemAssignedTo}
-                              onChange={e => setNewItemAssignedTo(e.target.value)}
-                              className={`flex-1 border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
-                            >
-                              <option value="">Pilih IT Penanggung Jawab...</option>
-                              {adminUsers.map(user => (
-                                <option key={user.id} value={user.username}>{user.full_name} ({user.username})</option>
-                              ))}
-                            </select>
+                          <div className="flex flex-col gap-1">
+                            <label className={`text-[9px] font-black uppercase tracking-wider ${themeClasses.textMuted}`}>Pilih IT Penanggung Jawab (Multi-PIC / Prioritas Sequential)</label>
+                            <div className="flex flex-wrap gap-1.5 p-2 border rounded-xl bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800">
+                              {adminUsers.map(user => {
+                                const selectedIndex = (editingCategoryAssignedToList || []).indexOf(user.username);
+                                const isSelected = selectedIndex !== -1;
+                                return (
+                                  <button
+                                    key={user.id}
+                                    type="button"
+                                    onClick={() => {
+                                      if (isSelected) {
+                                        const next = editingCategoryAssignedToList.filter(u => u !== user.username);
+                                        setEditingCategoryAssignedToList(next);
+                                        setEditingCategoryAssignedTo(next[0] || '');
+                                      } else {
+                                        const next = [...editingCategoryAssignedToList, user.username];
+                                        setEditingCategoryAssignedToList(next);
+                                        setEditingCategoryAssignedTo(next[0] || '');
+                                      }
+                                    }}
+                                    className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 border transition-all ${
+                                      isSelected
+                                        ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm'
+                                        : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700'
+                                    }`}
+                                  >
+                                    <span className={`w-1.5 h-1.5 rounded-full ${Number(user.is_on_duty) === 0 ? 'bg-rose-400' : 'bg-emerald-400'}`} title={Number(user.is_on_duty) === 0 ? 'Off Duty' : 'Siap Kerja'} />
+                                    <span>{user.full_name || user.username}</span>
+                                    {isSelected && (
+                                      <span className="bg-emerald-800 text-emerald-100 text-[9px] px-1.5 rounded-full font-black">
+                                        P{selectedIndex + 1}
+                                      </span>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          <div className="flex justify-end pt-1">
                             <button 
                               type="button"
-                              onClick={() => handleManagementAction('cat', 'add')}
-                              className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black capitalize"
+                              onClick={() => {
+                                handleManagementAction('cat', 'add');
+                                setEditingCategoryAssignedToList([]);
+                              }}
+                              className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-xl text-xs font-black capitalize shadow-sm transition-all"
                             >
-                              Simpan
+                              Simpan Kategori
                             </button>
                           </div>
                         </div>
                       )}
 
                       <div className="flex flex-wrap gap-2">
-                        {Array.isArray(categories) && categories.map(cat => (
-                          editingCategoryId === cat.id ? (
-                            <div key={cat.id} className={`flex flex-col gap-2 ${themeClasses.bgSecondary} px-3 py-2.5 rounded-lg border border-emerald-500 min-w-[180px] max-w-[240px]`}>
+                        {Array.isArray(categories) && categories.map(cat => {
+                          const getCatPics = (categoryItem: any): string[] => {
+                            if (categoryItem.assigned_to_list) {
+                              try {
+                                const parsed = typeof categoryItem.assigned_to_list === 'string' ? JSON.parse(categoryItem.assigned_to_list) : categoryItem.assigned_to_list;
+                                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                              } catch {
+                                const list = String(categoryItem.assigned_to_list).split(',').map(s => s.trim()).filter(Boolean);
+                                if (list.length > 0) return list;
+                              }
+                            }
+                            return categoryItem.assigned_to ? [categoryItem.assigned_to] : [];
+                          };
+
+                          const pics = getCatPics(cat);
+
+                          return editingCategoryId === cat.id ? (
+                            <div key={cat.id} className={`flex flex-col gap-2 ${themeClasses.bgSecondary} p-3 rounded-xl border border-emerald-500 w-full max-w-sm`}>
                               <div className="flex flex-col gap-0.5">
                                 <label className={`text-[8px] font-black uppercase tracking-wider ${themeClasses.textMuted}`}>Nama Kategori</label>
                                 <input 
@@ -1736,18 +1785,44 @@ export const SettingsModal = React.memo(({
                                   <option value="Aplikasi">Aplikasi</option>
                                 </select>
                               </div>
-                              <div className="flex flex-col gap-0.5">
-                                <label className={`text-[8px] font-black uppercase tracking-wider ${themeClasses.textMuted}`}>PIC Kategori</label>
-                                <select
-                                  value={editingCategoryAssignedTo}
-                                  onChange={e => setEditingCategoryAssignedTo(e.target.value)}
-                                  className={`w-full border rounded-lg px-2 py-1 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
-                                >
-                                  <option value="">Pilih IT Penanggung Jawab...</option>
-                                  {adminUsers.map(user => (
-                                    <option key={user.id} value={user.username}>{user.full_name} ({user.username})</option>
-                                  ))}
-                                </select>
+                              <div className="flex flex-col gap-1">
+                                <label className={`text-[8px] font-black uppercase tracking-wider ${themeClasses.textMuted}`}>PIC Multi-Admin (Urutan Prioritas)</label>
+                                <div className="flex flex-wrap gap-1 p-1.5 border rounded-lg bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800">
+                                  {adminUsers.map(user => {
+                                    const selectedIndex = editingCategoryAssignedToList.indexOf(user.username);
+                                    const isSelected = selectedIndex !== -1;
+                                    return (
+                                      <button
+                                        key={user.id}
+                                        type="button"
+                                        onClick={() => {
+                                          if (isSelected) {
+                                            const next = editingCategoryAssignedToList.filter(u => u !== user.username);
+                                            setEditingCategoryAssignedToList(next);
+                                            setEditingCategoryAssignedTo(next[0] || '');
+                                          } else {
+                                            const next = [...editingCategoryAssignedToList, user.username];
+                                            setEditingCategoryAssignedToList(next);
+                                            setEditingCategoryAssignedTo(next[0] || '');
+                                          }
+                                        }}
+                                        className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 border transition-all ${
+                                          isSelected
+                                            ? 'bg-emerald-600 text-white border-emerald-700'
+                                            : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700'
+                                        }`}
+                                      >
+                                        <span className={`w-1.5 h-1.5 rounded-full ${Number(user.is_on_duty) === 0 ? 'bg-rose-400' : 'bg-emerald-400'}`} />
+                                        <span>{user.full_name || user.username}</span>
+                                        {isSelected && (
+                                          <span className="bg-emerald-800 text-emerald-100 text-[8px] px-1 rounded-full font-black">
+                                            P{selectedIndex + 1}
+                                          </span>
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
                               </div>
                               <div className="flex gap-2 justify-end pt-1">
                                 <button 
@@ -1764,7 +1839,8 @@ export const SettingsModal = React.memo(({
                                     handleManagementAction('cat', 'update', {
                                       id: cat.id,
                                       name: editingCategoryName.trim(),
-                                      assigned_to: editingCategoryAssignedTo,
+                                      assigned_to: editingCategoryAssignedToList[0] || editingCategoryAssignedTo,
+                                      assigned_to_list: editingCategoryAssignedToList,
                                       response_time: editingCategoryResponseTime,
                                       jenis_masalah: editingCategoryJenisMasalah
                                     });
@@ -1777,7 +1853,7 @@ export const SettingsModal = React.memo(({
                               </div>
                             </div>
                           ) : (
-                            <div key={cat.id} className={`flex flex-col gap-1 ${themeClasses.bgSecondary} px-3 py-2 rounded-lg border ${themeClasses.border} group min-w-[120px]`}>
+                            <div key={cat.id} className={`flex flex-col gap-1.5 ${themeClasses.bgSecondary} px-3 py-2.5 rounded-xl border ${themeClasses.border} group min-w-[150px]`}>
                               <div className="flex items-center justify-between gap-2">
                                 <span className={`text-xs font-bold ${themeClasses.text}`}>{cat.name}</span>
                                 <div className="flex items-center gap-1.5 opacity-80 hover:opacity-100 transition-opacity">
@@ -1788,6 +1864,7 @@ export const SettingsModal = React.memo(({
                                       setEditingCategoryName(cat.name);
                                       setEditingCategoryResponseTime(cat.response_time || 0);
                                       setEditingCategoryAssignedTo(cat.assigned_to || '');
+                                      setEditingCategoryAssignedToList(pics);
                                       setEditingCategoryJenisMasalah(cat.jenis_masalah || 'Hardware');
                                     }} 
                                     className="text-blue-500 hover:text-blue-400"
@@ -1800,24 +1877,47 @@ export const SettingsModal = React.memo(({
                                   </button>
                                 </div>
                               </div>
-                              <div className="flex flex-col gap-0.5">
-                                {cat.assigned_to && (
-                                  <span className="text-[9px] font-black text-emerald-500 capitalize tracking-tighter">
-                                    PIC: {cat.assigned_to}
+                              <div className="flex flex-col gap-1">
+                                <div className="flex flex-wrap items-center gap-1">
+                                  <span className="text-[9px] font-black text-slate-400">PIC:</span>
+                                  {pics.length > 0 ? (
+                                    pics.map((picUser, idx) => {
+                                      const uInfo = adminUsers.find(u => u.username.toLowerCase() === picUser.toLowerCase() || u.full_name.toLowerCase() === picUser.toLowerCase());
+                                      const isOff = uInfo && (uInfo.is_on_duty === 0 || uInfo.is_on_duty === '0' || uInfo.is_on_duty === false);
+                                      return (
+                                        <span 
+                                          key={picUser} 
+                                          className={`text-[8px] font-black px-1.5 py-0.5 rounded flex items-center gap-1 border ${
+                                            isOff 
+                                              ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' 
+                                              : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                                          }`}
+                                          title={isOff ? `${picUser} sedang OFF DUTY` : `${picUser} SIAP KERJA`}
+                                        >
+                                          <span className={`w-1 h-1 rounded-full ${isOff ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+                                          <span>{picUser}</span>
+                                          <span className="text-[7px] opacity-75">P{idx + 1}</span>
+                                        </span>
+                                      );
+                                    })
+                                  ) : (
+                                    <span className="text-[9px] text-slate-400 italic">Belum ada PIC</span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {cat.jenis_masalah && (
+                                    <span className="text-[9px] font-black text-purple-500 capitalize tracking-tighter">
+                                      {cat.jenis_masalah}
+                                    </span>
+                                  )}
+                                  <span className={`text-[9px] font-bold ${themeClasses.textMuted} tracking-tight`}>
+                                    SLA: {cat.response_time && cat.response_time > 0 ? `${cat.response_time} Jam` : 'Tanpa SLA'}
                                   </span>
-                                )}
-                                {cat.jenis_masalah && (
-                                  <span className="text-[9px] font-black text-purple-500 capitalize tracking-tighter">
-                                    {cat.jenis_masalah}
-                                  </span>
-                                )}
-                                <span className={`text-[9px] font-bold ${themeClasses.textMuted} tracking-tight`}>
-                                  SLA: {cat.response_time && cat.response_time > 0 ? `${cat.response_time} Jam` : 'Tanpa SLA'}
-                                </span>
+                                </div>
                               </div>
                             </div>
-                          )
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -1902,6 +2002,36 @@ export const SettingsModal = React.memo(({
                               <span className="text-[9px] text-slate-400 capitalize font-black">{user.role}</span>
                             </div>
                             <div className="flex items-center gap-1.5">
+                              {(() => {
+                                const isOff = Number(user.is_on_duty) === 0;
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        const nextDuty = isOff ? 1 : 0;
+                                        await api.updateDutyStatus(user.username, nextDuty);
+                                        user.is_on_duty = nextDuty;
+                                        handleManagementAction('admin-user', 'refresh');
+                                        window.dispatchEvent(new Event('duty_status_changed'));
+                                        toast.success(`Status ${user.full_name}: ${nextDuty === 1 ? 'SIAP KERJA (ON)' : 'OFF DUTY (OFF)'}`);
+                                      } catch (e) {
+                                        toast.error('Gagal memperbarui status duty');
+                                      }
+                                    }}
+                                    className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
+                                      !isOff
+                                        ? 'bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-500'
+                                        : 'bg-rose-600 text-white border-rose-500 hover:bg-rose-500'
+                                    }`}
+                                    title="Klik untuk mengubah status kerja Admin ini"
+                                  >
+                                    <span className={`w-1.5 h-1.5 rounded-full ${!isOff ? 'bg-white animate-pulse' : 'bg-white/90'}`} />
+                                    <span>{!isOff ? 'SIAP KERJA' : 'OFF DUTY'}</span>
+                                  </button>
+                                );
+                              })()}
+
                               <button 
                                 type="button"
                                 onClick={() => {

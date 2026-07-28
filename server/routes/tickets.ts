@@ -1,6 +1,6 @@
 import express from "express";
 import db from "../db.ts";
-import { sendNotificationEmail, sendTelegramNotification, sendUserNotificationEmail } from "../utils/notifications.ts";
+import { sendNotificationEmail, sendTelegramNotification, sendUserNotificationEmail, createDbNotification } from "../utils/notifications.ts";
 import { Server } from "socket.io";
 import { asyncHandler } from "../utils/asyncHandler.ts";
 import type { Ticket, User, TicketLog } from "../types.ts";
@@ -103,11 +103,46 @@ export default function(io: Server) {
     const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const userAgent = req.headers['user-agent'];
 
-    // Auto-mapping logic
-    let assignedTo = 'yudha'; // Default
-    const catInfo = db.prepare("SELECT assigned_to FROM categories WHERE name = ?").get(category) as { assigned_to: string } | undefined;
-    if (catInfo && catInfo.assigned_to) {
-      assignedTo = catInfo.assigned_to;
+    // Auto-mapping logic with Multi-PIC & Duty Status fallback
+    let assignedTo = 'yudha'; // Default fallback
+    const catInfo = db.prepare("SELECT assigned_to, assigned_to_list FROM categories WHERE name = ?").get(category) as { assigned_to: string; assigned_to_list?: string } | undefined;
+    
+    let candidatePics: string[] = [];
+    if (catInfo) {
+      if (catInfo.assigned_to_list) {
+        try {
+          const parsed = JSON.parse(catInfo.assigned_to_list);
+          if (Array.isArray(parsed)) candidatePics = parsed.map((s: any) => String(s).trim()).filter(Boolean);
+        } catch {
+          candidatePics = catInfo.assigned_to_list.split(',').map(s => s.trim()).filter(Boolean);
+        }
+      }
+      if (candidatePics.length === 0 && catInfo.assigned_to) {
+        candidatePics = [catInfo.assigned_to.trim()];
+      }
+    }
+
+    let selectedPic: string | null = null;
+    for (const cand of candidatePics) {
+      const user = db.prepare("SELECT username, is_on_duty FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(full_name) = LOWER(?)").get(cand, cand) as { username: string; is_on_duty?: number } | undefined;
+      // If user is registered and on duty (is_on_duty != 0), select this PIC
+      if (!user || user.is_on_duty === undefined || user.is_on_duty === null || user.is_on_duty === 1) {
+        selectedPic = user ? user.username : cand;
+        break;
+      }
+    }
+
+    if (selectedPic) {
+      assignedTo = selectedPic;
+    } else {
+      // If all designated PICs are Off, assign to an active Super Admin
+      const activeSuperAdmin = db.prepare("SELECT username FROM users WHERE (role = 'Super Admin' OR role = 'superadmin' OR username = 'admin' OR username = 'yudha') AND (is_on_duty IS NULL OR is_on_duty = 1) LIMIT 1").get() as { username: string } | undefined;
+      if (activeSuperAdmin && activeSuperAdmin.username) {
+        assignedTo = activeSuperAdmin.username;
+      } else {
+        assignedTo = 'yudha';
+      }
+      console.log(`[AUTO-ASSIGN] Semse PIC Kategori '${category}' sedang Off. Tiket #${ticketNo} diambil alih Superadmin: ${assignedTo}`);
     }
 
     const savedPhoto = saveMediaFile(photo, { entityType: 'ticket_photo', identifier: ticketNo, name });
@@ -259,6 +294,32 @@ async function handleTicketUpdate(req: any, res: any, io: Server) {
     sendUserNotificationEmail(updatedTicket, 'done');
   }
 
+  // Generate DB notification for user when status changes
+  if (status !== undefined && status !== currentTicket.status) {
+    createDbNotification({
+      ticket_id: currentTicket.id,
+      ticket_no: currentTicket.ticket_no,
+      employee_index: currentTicket.employee_index,
+      recipient_name: currentTicket.name,
+      title: `Status Tiket #${currentTicket.ticket_no} Berubah`,
+      message: `Status tiket Anda diubah dari "${currentTicket.status}" menjadi "${newStatus}"${note ? '. Catatan: ' + note : '.'}`,
+      type: 'status_change'
+    }, io);
+  }
+
+  // Generate DB notification for user when admin replies
+  if (admin_reply !== undefined && admin_reply !== currentTicket.admin_reply && admin_reply.trim()) {
+    createDbNotification({
+      ticket_id: currentTicket.id,
+      ticket_no: currentTicket.ticket_no,
+      employee_index: currentTicket.employee_index,
+      recipient_name: currentTicket.name,
+      title: `Balasan Baru Tiket #${currentTicket.ticket_no}`,
+      message: `IT Support (${performed_by || 'Admin'}): "${admin_reply.trim()}"`,
+      type: 'admin_reply'
+    }, io);
+  }
+
   res.json({ success: true });
   io.emit("ticket_updated", { id, status: newStatus, assigned_to: newAssignedTo, priority: newPriority });
 }
@@ -316,6 +377,17 @@ export function processAutoRespond(io: Server) {
           .run(ticket.id, 'Auto Respond', `Sistem otomatis merespon tiket ke status Progres (${delayMins} menit auto-respond)`, `System (${assignee})`);
 
         const updatedTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(ticket.id) as Ticket;
+        
+        createDbNotification({
+          ticket_id: updatedTicket.id,
+          ticket_no: updatedTicket.ticket_no,
+          employee_index: updatedTicket.employee_index,
+          recipient_name: updatedTicket.name,
+          title: `Tiket #${updatedTicket.ticket_no} Sedang Diproses`,
+          message: `Tiket Anda telah direspon otomatis dan saat ini sedang ditangani oleh IT Support (${assignee}).`,
+          type: 'auto_respond'
+        }, io);
+
         console.log(`[AUTO-RESPOND] Ticket #${updatedTicket.ticket_no || updatedTicket.id} auto-responded for ${assignee} (age: ${Math.round(ageMins)}m)`);
         io.emit("ticket_updated", updatedTicket);
       }

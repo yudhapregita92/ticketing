@@ -28,7 +28,8 @@ router.post("/login", asyncHandler(async (req, res) => {
           role: user.role, 
           full_name: user.full_name,
           theme_mode: user.theme_mode,
-          primary_color: user.primary_color
+          primary_color: user.primary_color,
+          is_on_duty: user.is_on_duty !== undefined ? user.is_on_duty : 1
         } 
       });
       return;
@@ -40,7 +41,7 @@ router.post("/login", asyncHandler(async (req, res) => {
 }));
 
 router.get("/admin-users", asyncHandler(async (req, res) => {
-  const users = db.prepare("SELECT id, username, full_name, role FROM users ORDER BY id ASC").all() as User[];
+  const users = db.prepare("SELECT id, username, full_name, role, is_on_duty FROM users ORDER BY id ASC").all() as User[];
   res.json(users);
 }));
 
@@ -92,8 +93,19 @@ router.post("/change-password", asyncHandler(async (req, res) => {
 }));
 
 router.get("/users", asyncHandler(async (req, res) => {
-  const users = db.prepare("SELECT id, username, full_name, role FROM users WHERE role != 'Super Admin'").all() as User[];
+  const users = db.prepare("SELECT id, username, full_name, role, is_on_duty FROM users").all() as User[];
   res.json(users);
+}));
+
+router.post("/users/duty-status", asyncHandler(async (req, res) => {
+  const { username, is_on_duty } = req.body;
+  if (!username) {
+    throw new AppError("Username required", 400);
+  }
+  const statusValue = is_on_duty ? 1 : 0;
+  db.prepare("UPDATE users SET is_on_duty = ? WHERE LOWER(username) = LOWER(?)").run(statusValue, String(username).trim());
+  
+  res.json({ success: true, username, is_on_duty: statusValue });
 }));
 
 router.patch("/users/:username/settings", asyncHandler(async (req, res) => {

@@ -19,6 +19,8 @@ import {
 import { IAppSettings, IAdminUser, ITicket } from '../types';
 import { LOGO_OPTIONS } from '../constants';
 import { Logo } from './Logo';
+import { api } from '../services/api';
+import toast from 'react-hot-toast';
 
 const RealTimeClock: React.FC<{ isDark: boolean }> = ({ isDark }) => {
   const [time, setTime] = useState(new Date());
@@ -74,6 +76,9 @@ interface HeaderProps {
   setShowForm: (show: boolean) => void;
   tickets: ITicket[];
   toggleTheme: () => void;
+  unreadCount?: number;
+  onOpenNotifications?: () => void;
+  onDutyChange?: (nextDuty: number) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -91,8 +96,40 @@ export const Header: React.FC<HeaderProps> = ({
   setShowLogin,
   setShowForm,
   tickets,
-  toggleTheme
+  toggleTheme,
+  unreadCount = 0,
+  onOpenNotifications,
+  onDutyChange,
 }) => {
+  const [dutyStatus, setDutyStatus] = useState<number>(() => {
+    if (!adminUser) return 1;
+    return Number(adminUser.is_on_duty) === 0 ? 0 : 1;
+  });
+
+  useEffect(() => {
+    if (adminUser) {
+      setDutyStatus(Number(adminUser.is_on_duty) === 0 ? 0 : 1);
+    }
+  }, [adminUser?.is_on_duty, adminUser?.username]);
+
+  const handleToggleDuty = async () => {
+    if (!adminUser) return;
+    const nextDuty = dutyStatus === 1 ? 0 : 1;
+    setDutyStatus(nextDuty);
+    adminUser.is_on_duty = nextDuty;
+
+    try {
+      await api.updateDutyStatus(adminUser.username, nextDuty);
+      toast.success(nextDuty === 1 ? 'Status: SIAP KERJA (ON)' : 'Status: OFF DUTY (OFF)');
+      window.dispatchEvent(new Event('duty_status_changed'));
+      if (onDutyChange) onDutyChange(nextDuty);
+    } catch (err) {
+      const prev = nextDuty === 1 ? 0 : 1;
+      setDutyStatus(prev);
+      adminUser.is_on_duty = prev;
+      toast.error('Gagal memperbarui status kerja');
+    }
+  };
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
@@ -155,9 +192,30 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="hidden md:flex items-center gap-2 sm:gap-4">
             {adminUser ? (
             <div className="flex items-center gap-2">
-              <div className="hidden sm:flex flex-col items-end mr-2">
-                <span className={`text-[10px] font-bold capitalize tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>{adminUser.full_name}</span>
-                <span className="text-[8px] font-bold text-emerald-500 capitalize tracking-widest">{adminUser.role}</span>
+              <div className="hidden sm:flex flex-col items-end mr-1">
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-[10px] font-bold capitalize tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>{adminUser.full_name}</span>
+                  <button
+                    type="button"
+                    onClick={handleToggleDuty}
+                    className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
+                      dutyStatus === 1
+                        ? 'bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-500'
+                        : 'bg-rose-600 text-white border-rose-500 hover:bg-rose-500'
+                    }`}
+                    title="Klik untuk mengubah status (Siap Kerja / Off Duty)"
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      dutyStatus === 1 ? 'bg-white animate-pulse' : 'bg-white/90'
+                    }`} />
+                    <span>{dutyStatus === 1 ? 'SIAP KERJA' : 'OFF DUTY'}</span>
+                  </button>
+                </div>
+                <span className={`text-[8px] font-extrabold capitalize tracking-widest ${
+                  dutyStatus === 1 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                }`}>
+                  {adminUser.role}
+                </span>
               </div>
               
               <div className="flex items-center gap-1">
@@ -174,11 +232,23 @@ export const Header: React.FC<HeaderProps> = ({
                 <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={requestNotificationPermission}
-                  className={`p-1.5 rounded-lg transition-all ${isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
-                  title="Notifications"
+                  onClick={() => {
+                    if (notificationPermission !== 'granted') {
+                      requestNotificationPermission();
+                    }
+                    if (onOpenNotifications) {
+                      onOpenNotifications();
+                    }
+                  }}
+                  className={`relative p-1.5 rounded-lg transition-all ${isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-100'}`}
+                  title="Pemberitahuan & Notifikasi"
                 >
-                  {notificationPermission === 'granted' ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                  <Bell className="w-4 h-4" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 px-1.5 py-0.5 min-w-[16px] h-[16px] rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center leading-none shadow-sm animate-pulse">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </motion.button>
 
                 <motion.button 
@@ -225,16 +295,44 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
           ) : (
-            <motion.button 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black capitalize tracking-wider transition-all shadow-sm border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-rose-500 dark:text-rose-400 hover:bg-slate-50 dark:hover:bg-zinc-700/50"
-              title="Keluar"
-            >
-              <LogOut className="w-4 h-4 text-rose-500" />
-              <span>Keluar</span>
-            </motion.button>
+            <div className="flex items-center gap-2">
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  if (notificationPermission !== 'granted') {
+                    requestNotificationPermission();
+                  }
+                  if (onOpenNotifications) {
+                    onOpenNotifications();
+                  }
+                }}
+                className={`relative p-2 rounded-xl border transition-all shadow-sm ${
+                  isDark 
+                    ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700' 
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+                title="Pemberitahuan & Notifikasi"
+              >
+                <Bell className="w-4 h-4 text-emerald-500" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 px-1.5 py-0.5 min-w-[16px] h-[16px] rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center leading-none shadow-sm animate-pulse">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </motion.button>
+
+              <motion.button 
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black capitalize tracking-wider transition-all shadow-sm border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-rose-500 dark:text-rose-400 hover:bg-slate-50 dark:hover:bg-zinc-700/50"
+                title="Keluar"
+              >
+                <LogOut className="w-4 h-4 text-rose-500" />
+                <span>Keluar</span>
+              </motion.button>
+            </div>
           )}
           </div>
           

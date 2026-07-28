@@ -179,3 +179,36 @@ export async function sendUserNotificationEmail(ticket: any, type: 'submit' | 'd
     console.error(`Error sending user notification email for ticket ${ticket.ticket_no}:`, error);
   }
 }
+
+export function createDbNotification(data: {
+  ticket_id: number;
+  ticket_no: string;
+  employee_index?: string | null;
+  recipient_name?: string | null;
+  title: string;
+  message: string;
+  type?: string;
+}, io?: any) {
+  try {
+    const info = db.prepare(`
+      INSERT INTO notifications (ticket_id, ticket_no, employee_index, recipient_name, title, message, type)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      data.ticket_id,
+      data.ticket_no,
+      data.employee_index || null,
+      data.recipient_name || null,
+      data.title,
+      data.message,
+      data.type || 'status_change'
+    );
+
+    const notif = db.prepare("SELECT * FROM notifications WHERE id = ?").get(info.lastInsertRowid);
+    if (io) {
+      io.emit("new_notification", notif);
+    }
+    return notif;
+  } catch (err) {
+    console.error("Error creating database notification:", err);
+  }
+}

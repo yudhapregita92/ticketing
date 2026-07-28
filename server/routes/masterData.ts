@@ -21,7 +21,7 @@ router.get("/master-data/all", asyncHandler(async (req, res) => {
   const cats = db.prepare("SELECT * FROM categories ORDER BY name ASC").all();
   const users = db.prepare("SELECT * FROM users ORDER BY username ASC").all();
   const masters = db.prepare("SELECT * FROM master_users ORDER BY full_name ASC").all();
-  const admins = db.prepare("SELECT id, username, full_name, role FROM users WHERE role != 'staff' ORDER BY username ASC").all();
+  const admins = db.prepare("SELECT id, username, full_name, role, is_on_duty FROM users WHERE role != 'staff' ORDER BY username ASC").all();
   res.json({ it, depts, cats, users, masters, admins });
 }));
 
@@ -89,11 +89,37 @@ router.get("/categories", asyncHandler(async (req, res) => {
   res.json(db.prepare("SELECT * FROM categories ORDER BY name ASC").all());
 }));
 
+function parsePicList(assigned_to: any, assigned_to_list: any): { primary: string | null, listStr: string } {
+  let pics: string[] = [];
+  if (Array.isArray(assigned_to_list)) {
+    pics = assigned_to_list.filter((p: any) => typeof p === 'string' && p.trim().length > 0);
+  } else if (typeof assigned_to_list === 'string' && assigned_to_list.trim()) {
+    try {
+      const parsed = JSON.parse(assigned_to_list);
+      if (Array.isArray(parsed)) pics = parsed;
+      else pics = assigned_to_list.split(',').map((s: string) => s.trim()).filter(Boolean);
+    } catch {
+      pics = assigned_to_list.split(',').map((s: string) => s.trim()).filter(Boolean);
+    }
+  }
+
+  if (pics.length === 0 && assigned_to) {
+    pics = [String(assigned_to).trim()];
+  }
+
+  const primary = pics.length > 0 ? pics[0] : (assigned_to || null);
+  const listStr = JSON.stringify(pics);
+  return { primary, listStr };
+}
+
 router.post("/categories", asyncHandler(async (req, res) => {
-  const { name, assigned_to, response_time, jenis_masalah } = req.body;
-  db.prepare("INSERT INTO categories (name, assigned_to, response_time, jenis_masalah) VALUES (?, ?, ?, ?)").run(
+  const { name, assigned_to, assigned_to_list, response_time, jenis_masalah } = req.body;
+  const { primary, listStr } = parsePicList(assigned_to, assigned_to_list);
+
+  db.prepare("INSERT INTO categories (name, assigned_to, assigned_to_list, response_time, jenis_masalah) VALUES (?, ?, ?, ?, ?)").run(
     name, 
-    assigned_to || null, 
+    primary, 
+    listStr,
     response_time ? parseInt(String(response_time), 10) : 0,
     jenis_masalah || 'Hardware'
   );
@@ -103,10 +129,13 @@ router.post("/categories", asyncHandler(async (req, res) => {
 
 router.put("/categories/:id", asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { name, assigned_to, response_time, jenis_masalah } = req.body;
-  db.prepare("UPDATE categories SET name = ?, assigned_to = ?, response_time = ?, jenis_masalah = ? WHERE id = ?").run(
+  const { name, assigned_to, assigned_to_list, response_time, jenis_masalah } = req.body;
+  const { primary, listStr } = parsePicList(assigned_to, assigned_to_list);
+
+  db.prepare("UPDATE categories SET name = ?, assigned_to = ?, assigned_to_list = ?, response_time = ?, jenis_masalah = ? WHERE id = ?").run(
     name, 
-    assigned_to || null, 
+    primary, 
+    listStr,
     response_time ? parseInt(String(response_time), 10) : 0, 
     jenis_masalah || 'Hardware',
     id

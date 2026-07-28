@@ -6,12 +6,14 @@ export interface User {
   role: string;
   theme_mode?: string;
   primary_color?: string;
+  is_on_duty?: number;
 }
 
 export interface Ticket {
   id: number;
   ticket_no: string;
   name: string;
+  employee_index?: string;
   department: string;
   phone: string;
   category: string;
