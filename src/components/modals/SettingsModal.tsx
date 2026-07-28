@@ -36,6 +36,8 @@ import * as xlsx from 'xlsx';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
 import { APP_VERSION, BUILD_DATE, UPDATE_HISTORY, getEnvironment } from '../../version';
+import { IJenisMasalahRule } from '../../types';
+import { parseJenisMasalahRules } from '../../utils/jenisMasalah';
 
 interface SettingsModalProps {
   showSettings?: boolean;
@@ -152,6 +154,99 @@ export const SettingsModal = React.memo(({
   const [editingCategoryAssignedTo, setEditingCategoryAssignedTo] = React.useState('');
   const [editingCategoryAssignedToList, setEditingCategoryAssignedToList] = React.useState<string[]>([]);
   const [editingCategoryJenisMasalah, setEditingCategoryJenisMasalah] = React.useState('Hardware');
+
+  const [isCustomNewItemJenis, setIsCustomNewItemJenis] = React.useState(false);
+  const [isCustomEditingJenis, setIsCustomEditingJenis] = React.useState(false);
+
+  // --- Jenis Masalah Rules Management ---
+  const [showAddJenisRuleModal, setShowAddJenisRuleModal] = React.useState(false);
+  const [newJenisRuleName, setNewJenisRuleName] = React.useState('');
+  const [newJenisRuleRequireCode, setNewJenisRuleRequireCode] = React.useState(true);
+
+  const [editingJenisRuleIndex, setEditingJenisRuleIndex] = React.useState<number | null>(null);
+  const [editingJenisRuleName, setEditingJenisRuleName] = React.useState('');
+  const [editingJenisRuleRequireCode, setEditingJenisRuleRequireCode] = React.useState(true);
+
+  const jenisMasalahRules = React.useMemo(() => {
+    return parseJenisMasalahRules(appSettings?.jenis_masalah_rules, categories);
+  }, [appSettings?.jenis_masalah_rules, categories]);
+
+  const allJenisMasalahList = React.useMemo(() => {
+    const setJM = new Set<string>();
+    jenisMasalahRules.forEach(r => setJM.add(r.name));
+    if (Array.isArray(categories)) {
+      categories.forEach(cat => {
+        if (cat.jenis_masalah && typeof cat.jenis_masalah === 'string' && cat.jenis_masalah.trim()) {
+          setJM.add(cat.jenis_masalah.trim());
+        }
+      });
+    }
+    return Array.from(setJM);
+  }, [jenisMasalahRules, categories]);
+
+  const handleSaveJenisMasalahRules = async (updatedRules: IJenisMasalahRule[]) => {
+    try {
+      const jsonStr = JSON.stringify(updatedRules);
+      const updated = {
+        ...appSettings,
+        jenis_masalah_rules: jsonStr
+      };
+      if (setAppSettings) setAppSettings(updated);
+      await api.updateSettings({ jenis_masalah_rules: jsonStr });
+      toast.success('Aturan Jenis Masalah berhasil disimpan!');
+    } catch (err: any) {
+      console.error('Failed to update jenis masalah rules', err);
+      toast.error('Gagal menyimpan Aturan Jenis Masalah');
+    }
+  };
+
+  const handleAddJenisRule = () => {
+    if (!newJenisRuleName.trim()) {
+      toast.error('Nama Jenis Masalah tidak boleh kosong');
+      return;
+    }
+    const norm = newJenisRuleName.trim();
+    if (jenisMasalahRules.some(r => r.name.toLowerCase() === norm.toLowerCase())) {
+      toast.error('Jenis Masalah dengan nama ini sudah ada');
+      return;
+    }
+    const nextRules = [...jenisMasalahRules, { name: norm, require_device_code: newJenisRuleRequireCode }];
+    handleSaveJenisMasalahRules(nextRules);
+    setNewJenisRuleName('');
+    setNewJenisRuleRequireCode(true);
+    setShowAddJenisRuleModal(false);
+  };
+
+  const handleToggleJenisRuleCode = (index: number) => {
+    const nextRules = [...jenisMasalahRules];
+    nextRules[index] = {
+      ...nextRules[index],
+      require_device_code: !nextRules[index].require_device_code
+    };
+    handleSaveJenisMasalahRules(nextRules);
+  };
+
+  const handleDeleteJenisRule = (index: number) => {
+    const item = jenisMasalahRules[index];
+    if (item.name.toLowerCase() === 'hardware' || item.name.toLowerCase() === 'aplikasi') {
+      toast.error('Jenis masalah bawaan (Hardware / Aplikasi) tidak dapat dihapus');
+      return;
+    }
+    if (!confirm(`Hapus jenis masalah "${item.name}"?`)) return;
+    const nextRules = jenisMasalahRules.filter((_, i) => i !== index);
+    handleSaveJenisMasalahRules(nextRules);
+  };
+
+  const handleSaveEditJenisRule = (index: number) => {
+    if (!editingJenisRuleName.trim()) return;
+    const nextRules = [...jenisMasalahRules];
+    nextRules[index] = {
+      name: editingJenisRuleName.trim(),
+      require_device_code: editingJenisRuleRequireCode
+    };
+    handleSaveJenisMasalahRules(nextRules);
+    setEditingJenisRuleIndex(null);
+  };
 
   const [isMigrating, setIsMigrating] = React.useState(false);
 
@@ -1660,14 +1755,47 @@ export const SettingsModal = React.memo(({
                             />
                           </div>
                           <div className="flex gap-2 items-center">
-                            <select
-                              value={newItemJenisMasalah}
-                              onChange={e => setNewItemJenisMasalah && setNewItemJenisMasalah(e.target.value)}
-                              className={`w-32 border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
-                            >
-                              <option value="Hardware">Hardware</option>
-                              <option value="Aplikasi">Aplikasi</option>
-                            </select>
+                            {isCustomNewItemJenis ? (
+                              <div className="flex items-center gap-1 flex-1">
+                                <input 
+                                  type="text"
+                                  autoFocus
+                                  value={newItemJenisMasalah}
+                                  onChange={e => setNewItemJenisMasalah && setNewItemJenisMasalah(e.target.value)}
+                                  placeholder="Jenis Masalah Baru (cth: Jaringan)..."
+                                  className={`w-full border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIsCustomNewItemJenis(false);
+                                    setNewItemJenisMasalah && setNewItemJenisMasalah('Hardware');
+                                  }}
+                                  className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                  title="Pilih dari daftar"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <select
+                                value={newItemJenisMasalah}
+                                onChange={e => {
+                                  if (e.target.value === '__NEW__') {
+                                    setIsCustomNewItemJenis(true);
+                                    setNewItemJenisMasalah && setNewItemJenisMasalah('');
+                                  } else {
+                                    setNewItemJenisMasalah && setNewItemJenisMasalah(e.target.value);
+                                  }
+                                }}
+                                className={`w-36 border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
+                              >
+                                {allJenisMasalahList.map(jm => (
+                                  <option key={jm} value={jm}>{jm}</option>
+                                ))}
+                                <option value="__NEW__">+ Tambah Jenis Baru...</option>
+                              </select>
+                            )}
                             <input 
                               type="number"
                               min="0"
@@ -1733,8 +1861,9 @@ export const SettingsModal = React.memo(({
                         </div>
                       )}
 
-                      <div className="flex flex-wrap gap-2">
-                        {Array.isArray(categories) && categories.map(cat => {
+                      <div className="max-h-64 overflow-y-auto p-2 border border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/40 space-y-2">
+                        {Array.isArray(categories) && categories.length > 0 ? (
+                          categories.map(cat => {
                           const getCatPics = (categoryItem: any): string[] => {
                             if (categoryItem.assigned_to_list) {
                               try {
@@ -1776,14 +1905,44 @@ export const SettingsModal = React.memo(({
                               </div>
                               <div className="flex flex-col gap-0.5">
                                 <label className={`text-[8px] font-black uppercase tracking-wider ${themeClasses.textMuted}`}>Jenis Masalah</label>
-                                <select
-                                  value={editingCategoryJenisMasalah}
-                                  onChange={e => setEditingCategoryJenisMasalah(e.target.value)}
-                                  className={`w-full border rounded-lg px-2 py-1 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
-                                >
-                                  <option value="Hardware">Hardware</option>
-                                  <option value="Aplikasi">Aplikasi</option>
-                                </select>
+                                {isCustomEditingJenis ? (
+                                  <div className="flex items-center gap-1">
+                                    <input 
+                                      type="text"
+                                      autoFocus
+                                      value={editingCategoryJenisMasalah}
+                                      onChange={e => setEditingCategoryJenisMasalah(e.target.value)}
+                                      placeholder="Jenis Masalah Baru..."
+                                      className={`w-full border rounded-lg px-2 py-1 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => setIsCustomEditingJenis(false)}
+                                      className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                      title="Pilih dari daftar"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <select
+                                    value={editingCategoryJenisMasalah}
+                                    onChange={e => {
+                                      if (e.target.value === '__NEW__') {
+                                        setIsCustomEditingJenis(true);
+                                        setEditingCategoryJenisMasalah('');
+                                      } else {
+                                        setEditingCategoryJenisMasalah(e.target.value);
+                                      }
+                                    }}
+                                    className={`w-full border rounded-lg px-2 py-1 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
+                                  >
+                                    {allJenisMasalahList.map(jm => (
+                                      <option key={jm} value={jm}>{jm}</option>
+                                    ))}
+                                    <option value="__NEW__">+ Tambah Jenis Baru...</option>
+                                  </select>
+                                )}
                               </div>
                               <div className="flex flex-col gap-1">
                                 <label className={`text-[8px] font-black uppercase tracking-wider ${themeClasses.textMuted}`}>PIC Multi-Admin (Urutan Prioritas)</label>
@@ -1853,76 +2012,264 @@ export const SettingsModal = React.memo(({
                               </div>
                             </div>
                           ) : (
-                            <div key={cat.id} className={`flex flex-col gap-1.5 ${themeClasses.bgSecondary} px-3 py-2.5 rounded-xl border ${themeClasses.border} group min-w-[150px]`}>
-                              <div className="flex items-center justify-between gap-2">
-                                <span className={`text-xs font-bold ${themeClasses.text}`}>{cat.name}</span>
-                                <div className="flex items-center gap-1.5 opacity-80 hover:opacity-100 transition-opacity">
-                                  <button 
-                                    type="button" 
-                                    onClick={() => {
-                                      setEditingCategoryId(cat.id);
-                                      setEditingCategoryName(cat.name);
-                                      setEditingCategoryResponseTime(cat.response_time || 0);
-                                      setEditingCategoryAssignedTo(cat.assigned_to || '');
-                                      setEditingCategoryAssignedToList(pics);
-                                      setEditingCategoryJenisMasalah(cat.jenis_masalah || 'Hardware');
-                                    }} 
-                                    className="text-blue-500 hover:text-blue-400"
-                                    title="Edit Kategori"
-                                  >
-                                    <Edit3 className="w-3 h-3" />
-                                  </button>
-                                  <button type="button" onClick={() => handleManagementAction('cat', 'delete', cat)} className="text-rose-500 hover:text-rose-400 transition-colors" title="Hapus Kategori">
-                                    <Trash2 className="w-3 h-3" />
-                                  </button>
-                                </div>
-                              </div>
-                              <div className="flex flex-col gap-1">
-                                <div className="flex flex-wrap items-center gap-1">
-                                  <span className="text-[9px] font-black text-slate-400">PIC:</span>
-                                  {pics.length > 0 ? (
-                                    pics.map((picUser, idx) => {
-                                      const uInfo = adminUsers.find(u => u.username.toLowerCase() === picUser.toLowerCase() || u.full_name.toLowerCase() === picUser.toLowerCase());
-                                      const isOff = uInfo && (uInfo.is_on_duty === 0 || uInfo.is_on_duty === '0' || uInfo.is_on_duty === false);
-                                      return (
-                                        <span 
-                                          key={picUser} 
-                                          className={`text-[8px] font-black px-1.5 py-0.5 rounded flex items-center gap-1 border ${
-                                            isOff 
-                                              ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' 
-                                              : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                                          }`}
-                                          title={isOff ? `${picUser} sedang OFF DUTY` : `${picUser} SIAP KERJA`}
-                                        >
-                                          <span className={`w-1 h-1 rounded-full ${isOff ? 'bg-rose-500' : 'bg-emerald-500'}`} />
-                                          <span>{picUser}</span>
-                                          <span className="text-[7px] opacity-75">P{idx + 1}</span>
-                                        </span>
-                                      );
-                                    })
-                                  ) : (
-                                    <span className="text-[9px] text-slate-400 italic">Belum ada PIC</span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2">
+                            <div key={cat.id} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${themeClasses.bgSecondary} px-3 py-2.5 rounded-xl border ${themeClasses.border} group w-full shadow-sm`}>
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 min-w-0">
+                                <span className={`text-xs font-bold ${themeClasses.text} min-w-[120px]`}>{cat.name}</span>
+                                <div className="flex flex-wrap items-center gap-2">
                                   {cat.jenis_masalah && (
-                                    <span className="text-[9px] font-black text-purple-500 capitalize tracking-tighter">
+                                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 capitalize">
                                       {cat.jenis_masalah}
                                     </span>
                                   )}
-                                  <span className={`text-[9px] font-bold ${themeClasses.textMuted} tracking-tight`}>
+                                  <span className={`text-[9px] font-bold ${themeClasses.textMuted} tracking-tight bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700`}>
                                     SLA: {cat.response_time && cat.response_time > 0 ? `${cat.response_time} Jam` : 'Tanpa SLA'}
                                   </span>
+                                  <div className="flex flex-wrap items-center gap-1">
+                                    <span className="text-[9px] font-black text-slate-400 ml-1">PIC:</span>
+                                    {pics.length > 0 ? (
+                                      pics.map((picUser, idx) => {
+                                        const uInfo = adminUsers.find(u => u.username.toLowerCase() === picUser.toLowerCase() || u.full_name.toLowerCase() === picUser.toLowerCase());
+                                        const isOff = uInfo && (uInfo.is_on_duty === 0 || uInfo.is_on_duty === '0' || uInfo.is_on_duty === false);
+                                        return (
+                                          <span 
+                                            key={picUser} 
+                                            className={`text-[8px] font-black px-1.5 py-0.5 rounded flex items-center gap-1 border ${
+                                              isOff 
+                                                ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' 
+                                                : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                                            }`}
+                                            title={isOff ? `${picUser} sedang OFF DUTY` : `${picUser} SIAP KERJA`}
+                                          >
+                                            <span className={`w-1 h-1 rounded-full ${isOff ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+                                            <span>{picUser}</span>
+                                            <span className="text-[7px] opacity-75">P{idx + 1}</span>
+                                          </span>
+                                        );
+                                      })
+                                    ) : (
+                                      <span className="text-[9px] text-slate-400 italic">Belum ada PIC</span>
+                                    )}
+                                  </div>
                                 </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 self-end sm:self-auto opacity-80 hover:opacity-100 transition-opacity">
+                                <button 
+                                  type="button" 
+                                  onClick={() => {
+                                    setEditingCategoryId(cat.id);
+                                    setEditingCategoryName(cat.name);
+                                    setEditingCategoryResponseTime(cat.response_time || 0);
+                                    setEditingCategoryAssignedTo(cat.assigned_to || '');
+                                    setEditingCategoryAssignedToList(pics);
+                                    setEditingCategoryJenisMasalah(cat.jenis_masalah || 'Hardware');
+                                  }} 
+                                  className="p-1.5 text-blue-500 hover:text-blue-400 transition-colors"
+                                  title="Edit Kategori"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                                <button type="button" onClick={() => handleManagementAction('cat', 'delete', cat)} className="p-1.5 text-rose-500 hover:text-rose-400 transition-colors" title="Hapus Kategori">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
                               </div>
                             </div>
                           );
-                        })}
+                        })
+                      ) : (
+                        <div className="p-4 text-center text-xs font-bold text-slate-400 italic">
+                          Belum ada Kategori yang dibuat.
+                        </div>
+                      )}
                       </div>
                     </div>
                   </div>
-                  
 
+                  {/* --- MANAJEMEN JENIS MASALAH (ATURAN KODE PERANGKAT) --- */}
+                  <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <h3 className="text-xs font-black capitalize tracking-widest text-slate-400 flex items-center gap-2">
+                          <Zap className="w-3.5 h-3.5 text-emerald-500" />
+                          Manajemen Jenis Masalah (Aturan Kode Perangkat)
+                        </h3>
+                        <p className="text-[10px] font-medium text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Atur jenis masalah tiket dan tentukan apakah jenis tersebut mewajibkan pengisian & scan Kode Perangkat.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAddJenisRuleModal(!showAddJenisRuleModal);
+                          setNewJenisRuleName('');
+                          setNewJenisRuleRequireCode(true);
+                        }}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm flex items-center gap-1 self-start sm:self-auto"
+                      >
+                        <Plus className="w-3 h-3" />
+                        {showAddJenisRuleModal ? 'Batal' : 'Tambah Jenis Masalah'}
+                      </button>
+                    </div>
+
+                    {/* Form Tambah Jenis Masalah */}
+                    {showAddJenisRuleModal && (
+                      <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-3">
+                        <div className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                          Tambah Jenis Masalah Baru
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className={`block text-[9px] font-black uppercase tracking-wider mb-1 ${themeClasses.textMuted}`}>
+                              Nama Jenis Masalah
+                            </label>
+                            <input
+                              type="text"
+                              value={newJenisRuleName}
+                              onChange={e => setNewJenisRuleName(e.target.value)}
+                              placeholder="Contoh: Jaringan, Infrastruktur, Printer..."
+                              className={`w-full border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
+                            />
+                          </div>
+                          <div>
+                            <label className={`block text-[9px] font-black uppercase tracking-wider mb-1 ${themeClasses.textMuted}`}>
+                              Aturan Kode Perangkat
+                            </label>
+                            <select
+                              value={newJenisRuleRequireCode ? 'true' : 'false'}
+                              onChange={e => setNewJenisRuleRequireCode(e.target.value === 'true')}
+                              className={`w-full border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
+                            >
+                              <option value="true">🖥️ Wajib Kode Perangkat (Munculkan Kolom & QR)</option>
+                              <option value="false">📱 Tanpa Kode Perangkat (Sembunyikan Kolom)</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setShowAddJenisRuleModal(false)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold ${isDark ? 'bg-zinc-800 text-zinc-300' : 'bg-slate-200 text-slate-700'}`}
+                          >
+                            Batal
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleAddJenisRule}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-xl text-xs font-black capitalize tracking-wider"
+                          >
+                            Simpan Jenis Masalah
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* List Card Jenis Masalah */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {jenisMasalahRules.map((rule, idx) => {
+                        const isBuiltin = rule.name.toLowerCase() === 'hardware' || rule.name.toLowerCase() === 'aplikasi';
+                        const isEditing = editingJenisRuleIndex === idx;
+
+                        if (isEditing) {
+                          return (
+                            <div key={idx} className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 space-y-2">
+                              <input
+                                type="text"
+                                disabled={isBuiltin}
+                                value={editingJenisRuleName}
+                                onChange={e => setEditingJenisRuleName(e.target.value)}
+                                className={`w-full border rounded-lg px-2.5 py-1.5 text-xs font-bold ${themeClasses.input}`}
+                              />
+                              <select
+                                value={editingJenisRuleRequireCode ? 'true' : 'false'}
+                                onChange={e => setEditingJenisRuleRequireCode(e.target.value === 'true')}
+                                className={`w-full border rounded-lg px-2.5 py-1.5 text-xs font-bold ${themeClasses.input}`}
+                              >
+                                <option value="true">🖥️ Wajib Kode Perangkat</option>
+                                <option value="false">📱 Tanpa Kode Perangkat</option>
+                              </select>
+                              <div className="flex justify-end gap-2 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingJenisRuleIndex(null)}
+                                  className="px-2 py-1 text-[10px] font-bold text-slate-500 hover:text-slate-700"
+                                >
+                                  Batal
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveEditJenisRule(idx)}
+                                  className="bg-emerald-600 text-white px-3 py-1 rounded text-[10px] font-black"
+                                >
+                                  Simpan
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div 
+                            key={rule.name}
+                            className={`p-3.5 rounded-2xl border flex items-center justify-between gap-2 transition-all ${
+                              rule.require_device_code
+                                ? 'bg-gradient-to-r from-blue-500/5 to-indigo-500/5 border-blue-500/20'
+                                : 'bg-gradient-to-r from-slate-500/5 to-zinc-500/5 border-slate-200 dark:border-slate-800'
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <span className={`text-xs font-black ${themeClasses.text}`}>
+                                  {rule.name}
+                                </span>
+                                {isBuiltin && (
+                                  <span className="text-[8px] font-black px-1.5 py-0.2 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                    Bawaan
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleToggleJenisRuleCode(idx)}
+                                className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border flex items-center gap-1 transition-all hover:scale-105 ${
+                                  rule.require_device_code
+                                    ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30'
+                                    : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                                }`}
+                                title="Klik untuk mengubah Aturan Kode Perangkat"
+                              >
+                                <span className={`w-1.5 h-1.5 rounded-full ${rule.require_device_code ? 'bg-blue-500 animate-pulse' : 'bg-emerald-500'}`} />
+                                {rule.require_device_code ? '🖥️ Wajib Kode Perangkat' : '📱 Tanpa Kode Perangkat'}
+                              </button>
+                            </div>
+
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingJenisRuleIndex(idx);
+                                  setEditingJenisRuleName(rule.name);
+                                  setEditingJenisRuleRequireCode(rule.require_device_code);
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-blue-500 transition-colors"
+                                title="Edit Jenis Masalah"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              {!isBuiltin && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteJenisRule(idx)}
+                                  className="p-1.5 text-slate-400 hover:text-rose-500 transition-colors"
+                                  title="Hapus Jenis Masalah"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
 
                   {/* Admin Users */}
                   <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800">

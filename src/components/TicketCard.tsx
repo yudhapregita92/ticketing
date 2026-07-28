@@ -117,14 +117,14 @@ export const TicketCard: React.FC<TicketCardProps> = ({
             whileTap={{ scale: 0.95 }}
             animate={ticket.status === 'New' ? {
               scale: [1, 1.03, 1],
-              boxShadow: ["0 0 0px rgba(99, 102, 241, 0)", "0 0 4px rgba(99, 102, 241, 0.2)", "0 0 0px rgba(99, 102, 241, 0)"]
+              boxShadow: ["0 0 0px rgba(99, 102, 241, 0)", "0 0 8px rgba(99, 102, 241, 0.4)", "0 0 0px rgba(99, 102, 241, 0)"]
             } : {}}
             transition={{ repeat: Infinity, duration: 2 }}
-            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center border ${
-              ticket.status === 'Completed' ? 'bg-emerald-50 border-emerald-100 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900/40' :
-              ticket.status === 'New' ? 'bg-indigo-50 border-indigo-100 text-indigo-600 dark:bg-indigo-950/20 dark:border-indigo-900/40' :
-              ticket.status === 'Cancelled' ? 'bg-rose-50 border-rose-100 text-rose-600 dark:bg-rose-950/20 dark:border-rose-900/40' :
-              'bg-blue-50 border-blue-100 text-blue-600 dark:bg-blue-950/20 dark:border-blue-900/40'
+            className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center font-bold shadow-sm ${
+              ticket.status === 'Completed' ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-500/20' :
+              ticket.status === 'New' ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-indigo-500/20' :
+              ticket.status === 'Cancelled' ? 'bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-rose-500/20' :
+              'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-500/20'
             }`}
           >
             {getStatusIcon(ticket.status)}
@@ -133,14 +133,14 @@ export const TicketCard: React.FC<TicketCardProps> = ({
         <div className="min-w-0 flex-1">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 mb-0.5 sm:mb-1.5">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] sm:text-xs font-bold text-slate-400 dark:text-zinc-500 tracking-tight">
+              <span className="text-[10px] sm:text-xs font-black text-slate-500 dark:text-zinc-400 tracking-tight">
                 #<HighlightText text={ticket.ticket_no || ticket.id.toString().padStart(4, '0')} highlight={searchQuery} isDark={isDark} />
               </span>
               {adminUser?.role === 'Super Admin' && ticket.assigned_to && (
                 <span className={`text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded capitalize leading-none ${isDark ? 'bg-zinc-800 text-zinc-300' : 'bg-slate-100 text-slate-600'}`}>@{ticket.assigned_to}</span>
               )}
               {getSLALabel(ticket.created_at, ticket.status, customCritical, customDelayed) && (
-                <span className="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded capitalize bg-rose-500 text-white leading-none whitespace-nowrap">{getSLALabel(ticket.created_at, ticket.status, customCritical, customDelayed)}</span>
+                <span className="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded capitalize bg-rose-500 text-white leading-none whitespace-nowrap shadow-sm shadow-rose-500/30">{getSLALabel(ticket.created_at, ticket.status, customCritical, customDelayed)}</span>
               )}
               {(ticket.estimated_duration || ticket.estimated_target_at) && (
                 <span className="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded capitalize bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 leading-none whitespace-nowrap flex items-center gap-0.5">
@@ -153,7 +153,7 @@ export const TicketCard: React.FC<TicketCardProps> = ({
               <span className="flex items-center gap-0.5 sm:gap-1 text-[9px] sm:text-xs text-slate-400 dark:text-zinc-500 font-medium whitespace-nowrap">
                 <Calendar className="w-3 sm:w-3.5 h-3 sm:h-3.5 shrink-0" /> {formatDate(ticket.created_at)}
               </span>
-              <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[8px] sm:text-[10px] font-bold capitalize tracking-wide sm:tracking-wider border text-center min-w-[50px] sm:min-w-[70px] inline-block ${getStatusColor(ticket.status)}`}>
+              <span className={`px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-extrabold capitalize tracking-wider shadow-sm text-center min-w-[55px] sm:min-w-[70px] inline-block ${getStatusColor(ticket.status)}`}>
                 {ticket.status === 'In Progress' ? 'Progres' : 
                  ticket.status === 'Completed' ? 'Selesai' : 
                  ticket.status === 'Closed' ? 'Closed' : 
@@ -179,7 +179,7 @@ export const TicketCard: React.FC<TicketCardProps> = ({
             </div>
           )}
           
-          <div className="flex items-center justify-between gap-1 mt-1 sm:mt-2">
+          <div className="hidden sm:flex items-center justify-between gap-1 mt-1 sm:mt-2">
             <div className={`flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-0.5 text-[10px] sm:text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               <span className="flex items-center gap-1 sm:gap-1.5 truncate">
                 <User className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-slate-400 shrink-0" /> <HighlightText text={ticket.name} highlight={searchQuery} isDark={isDark} />
@@ -198,6 +198,32 @@ export const TicketCard: React.FC<TicketCardProps> = ({
             >
               <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
+          </div>
+
+          {/* Full-color structured details block for Mobile layout (matching Asset Management) */}
+          <div className={`mt-2 p-2.5 rounded-xl grid grid-cols-2 gap-2 text-[11px] sm:hidden ${isDark ? 'bg-slate-800/60 border border-slate-700/60' : 'bg-slate-50 border border-slate-200/80'}`}>
+            <div>
+              <span className="text-[9px] font-black uppercase text-slate-400 block tracking-wider">Pelapor</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">
+                <HighlightText text={ticket.name} highlight={searchQuery} isDark={isDark} />
+              </span>
+            </div>
+            <div>
+              <span className="text-[9px] font-black uppercase text-slate-400 block tracking-wider">Departemen</span>
+              <span className="font-semibold text-slate-700 dark:text-slate-300 truncate block">{ticket.department || '-'}</span>
+            </div>
+            {ticket.pc_code && (
+              <div>
+                <span className="text-[9px] font-black uppercase text-indigo-500 dark:text-indigo-400 block tracking-wider">Kode Perangkat</span>
+                <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate block">PC: {ticket.pc_code}</span>
+              </div>
+            )}
+            {ticket.assigned_to && (
+              <div>
+                <span className="text-[9px] font-black uppercase text-emerald-500 block tracking-wider">Petugas IT</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400 truncate block">@{ticket.assigned_to}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

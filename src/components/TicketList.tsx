@@ -96,49 +96,49 @@ export const TicketList: React.FC<TicketListProps> = ({
       {/* Mobile Navigation Tabs */}
       <div className="lg:hidden flex flex-col gap-3 mb-4">
         {/* Interactive Stats Quick-Filter Grid */}
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 w-full">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 w-full">
           {[
             { 
               id: '', 
               label: 'Semua', 
               count: tickets.length,
-              activeClass: isDark ? 'bg-zinc-800 border-zinc-700 text-white ring-1 ring-emerald-500/20' : 'bg-white border-slate-300 text-slate-900 shadow-sm ring-1 ring-emerald-500/20',
-              idleClass: isDark ? 'bg-zinc-900/30 border-zinc-850/60 text-zinc-400 hover:bg-zinc-800/20' : 'bg-slate-50/50 border-slate-100 text-slate-500 hover:bg-slate-100/50'
+              activeClass: 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white border-emerald-600 shadow-md shadow-emerald-500/20 scale-[1.02]',
+              idleClass: isDark ? 'bg-emerald-950/30 border-emerald-800/40 text-emerald-400 hover:bg-emerald-900/40' : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
             },
             { 
               id: 'New', 
               label: 'Baru', 
               count: tickets.filter(t => t.status === 'New').length,
-              activeClass: isDark ? 'bg-indigo-500/10 border-indigo-500/40 text-indigo-400 ring-1 ring-indigo-500/30' : 'bg-indigo-50 border-indigo-200 text-indigo-600 ring-1 ring-indigo-500/20',
-              idleClass: isDark ? 'bg-zinc-900/30 border-zinc-850/60 text-zinc-400 hover:bg-zinc-850/40' : 'bg-slate-50/50 border-slate-100 text-slate-500 hover:bg-slate-100/50'
+              activeClass: 'bg-gradient-to-br from-indigo-500 to-indigo-700 text-white border-indigo-600 shadow-md shadow-indigo-500/20 scale-[1.02]',
+              idleClass: isDark ? 'bg-indigo-950/40 border-indigo-800/50 text-indigo-300 hover:bg-indigo-900/40' : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
             },
             { 
               id: 'In Progress', 
               label: 'Progres', 
               count: tickets.filter(t => t.status === 'In Progress').length,
-              activeClass: isDark ? 'bg-blue-500/10 border-blue-500/40 text-blue-400 ring-1 ring-blue-500/30' : 'bg-blue-50 border-blue-200 text-blue-600 ring-1 ring-blue-500/20',
-              idleClass: isDark ? 'bg-zinc-900/30 border-zinc-850/60 text-zinc-400 hover:bg-zinc-850/40' : 'bg-slate-50/50 border-slate-100 text-slate-500 hover:bg-slate-100/50'
+              activeClass: 'bg-gradient-to-br from-blue-500 to-blue-700 text-white border-blue-600 shadow-md shadow-blue-500/20 scale-[1.02]',
+              idleClass: isDark ? 'bg-blue-950/40 border-blue-800/50 text-blue-300 hover:bg-blue-900/40' : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
             },
             { 
               id: 'Completed', 
               label: 'Selesai', 
               count: tickets.filter(t => t.status === 'Completed' || t.status === 'Done' || t.status === 'Solved' || t.status === 'Selesai').length,
-              activeClass: isDark ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400 ring-1 ring-emerald-500/30' : 'bg-emerald-50 border-emerald-200 text-emerald-600 ring-1 ring-emerald-500/20',
-              idleClass: isDark ? 'bg-zinc-900/30 border-zinc-850/60 text-zinc-400 hover:bg-zinc-850/40' : 'bg-slate-50/50 border-slate-100 text-slate-500 hover:bg-slate-100/50'
+              activeClass: 'bg-gradient-to-br from-emerald-500 to-green-700 text-white border-emerald-600 shadow-md shadow-emerald-500/20 scale-[1.02]',
+              idleClass: isDark ? 'bg-emerald-950/40 border-emerald-800/50 text-emerald-300 hover:bg-emerald-900/40' : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
             },
             { 
               id: 'Closed', 
               label: 'Closed', 
               count: tickets.filter(t => t.status === 'Closed').length,
-              activeClass: isDark ? 'bg-slate-500/20 border-slate-500/40 text-slate-300 ring-1 ring-slate-500/30' : 'bg-slate-100 border-slate-300 text-slate-700 ring-1 ring-slate-500/20',
-              idleClass: isDark ? 'bg-zinc-900/30 border-zinc-850/60 text-zinc-400 hover:bg-zinc-850/40' : 'bg-slate-50/50 border-slate-100 text-slate-500 hover:bg-slate-100/50'
+              activeClass: 'bg-gradient-to-br from-slate-600 to-slate-800 text-white border-slate-600 shadow-md shadow-slate-500/20 scale-[1.02]',
+              idleClass: isDark ? 'bg-slate-800/50 border-slate-700/60 text-slate-300 hover:bg-slate-800' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
             },
             { 
               id: 'Re-opened', 
               label: 'Re-Open', 
               count: tickets.filter(t => t.status === 'Re-opened').length,
-              activeClass: isDark ? 'bg-amber-500/10 border-amber-500/40 text-amber-400 ring-1 ring-amber-500/30' : 'bg-amber-50 border-amber-200 text-amber-600 ring-1 ring-amber-500/20',
-              idleClass: isDark ? 'bg-zinc-900/30 border-zinc-850/60 text-zinc-400 hover:bg-zinc-850/40' : 'bg-slate-50/50 border-slate-100 text-slate-500 hover:bg-slate-100/50'
+              activeClass: 'bg-gradient-to-br from-amber-500 to-amber-700 text-white border-amber-600 shadow-md shadow-amber-500/20 scale-[1.02]',
+              idleClass: isDark ? 'bg-amber-950/40 border-amber-800/50 text-amber-300 hover:bg-amber-900/40' : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
             }
           ].map((item) => {
             const isActive = filterStatus === item.id;
@@ -147,14 +147,14 @@ export const TicketList: React.FC<TicketListProps> = ({
                 key={item.label}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setFilterStatus(item.id)}
-                className={`py-1.5 px-1 rounded-xl border text-center flex flex-col items-center justify-center transition-all ${
+                className={`py-2 px-1.5 rounded-2xl border text-center flex flex-col items-center justify-center transition-all ${
                   isActive ? item.activeClass : item.idleClass
                 }`}
               >
-                <span className="text-xs font-black tracking-tight leading-none mb-0.5">
+                <span className="text-sm font-black tracking-tight leading-none mb-0.5">
                   <RollingNumber value={item.count} />
                 </span>
-                <span className="text-[8px] sm:text-[9px] font-bold tracking-tight whitespace-nowrap">{item.label}</span>
+                <span className="text-[9px] font-extrabold tracking-tight whitespace-nowrap">{item.label}</span>
               </motion.button>
             );
           })}

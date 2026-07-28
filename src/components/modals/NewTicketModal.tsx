@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { PRIORITIES } from '../../types';
 import { api } from "../../services/api";
+import { parseJenisMasalahRules, isDeviceCodeRequiredForJenisMasalah } from '../../utils/jenisMasalah';
 
 interface NewTicketModalProps {
   showForm: boolean;
@@ -445,6 +446,19 @@ export const NewTicketModal = React.memo(({
     };
   }, [showQrScannerModal, setNewTicket]);
 
+  const availableJenisMasalah = React.useMemo(() => {
+    const rules = parseJenisMasalahRules(appSettings?.jenis_masalah_rules, rawCategories);
+    return rules.map(r => r.name);
+  }, [appSettings?.jenis_masalah_rules, rawCategories]);
+
+  const isDeviceCodeRequired = React.useMemo(() => {
+    return isDeviceCodeRequiredForJenisMasalah(
+      newTicket.jenis_masalah,
+      appSettings?.jenis_masalah_rules,
+      rawCategories
+    );
+  }, [newTicket.jenis_masalah, appSettings?.jenis_masalah_rules, rawCategories]);
+
   const filteredCategories = React.useMemo(() => {
     if (!newTicket.jenis_masalah) return [];
     if (Array.isArray(rawCategories)) {
@@ -516,7 +530,7 @@ export const NewTicketModal = React.memo(({
       alert('Silakan pilih tipe piranti yang Anda gunakan.');
       return;
     }
-    if (newTicket.jenis_masalah !== 'Aplikasi') {
+    if (isDeviceCodeRequired) {
       if (!newTicket.pc_code?.trim()) {
         alert('Kode Perangkat wajib diisi.');
         return;
@@ -904,8 +918,9 @@ export const NewTicketModal = React.memo(({
                 onChange={e => setNewTicket({...newTicket, jenis_masalah: e.target.value, category: ''})}
               >
                 <option value="">Pilih Jenis Masalah...</option>
-                <option value="Aplikasi">Aplikasi</option>
-                <option value="Hardware">Hardware</option>
+                {availableJenisMasalah.map(jm => (
+                  <option key={jm} value={jm}>{jm}</option>
+                ))}
               </select>
             </div>
             <div className="space-y-0.5">
@@ -924,7 +939,7 @@ export const NewTicketModal = React.memo(({
               </select>
             </div>
 
-            {newTicket.jenis_masalah !== 'Aplikasi' && (
+            {isDeviceCodeRequired && (
               <div className="space-y-0.5 sm:col-span-2">
                 <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
                   <Monitor className="w-2.5 h-2.5 text-blue-500" /> Kode Perangkat <span className="text-rose-500 font-bold">* Wajib</span>
@@ -1050,7 +1065,7 @@ export const NewTicketModal = React.memo(({
                 !newTicket.priority || 
                 !newTicket.description?.trim() || 
                 !newTicket.device_type || 
-                (newTicket.jenis_masalah !== 'Aplikasi' && (!newTicket.pc_code?.trim() || !isPcCodeMatched))
+                (isDeviceCodeRequired && (!newTicket.pc_code?.trim() || !isPcCodeMatched))
               }
               style={{ 
                 backgroundColor: (
@@ -1060,7 +1075,7 @@ export const NewTicketModal = React.memo(({
                   newTicket.priority && 
                   newTicket.description?.trim() && 
                   newTicket.device_type && 
-                  (newTicket.jenis_masalah === 'Aplikasi' || (newTicket.pc_code?.trim() && isPcCodeMatched))
+                  (!isDeviceCodeRequired || (newTicket.pc_code?.trim() && isPcCodeMatched))
                 ) ? primaryColor : '#94a3b8' 
               }}
               className={`w-full py-2 sm:py-2.5 rounded-2xl text-white font-black capitalize tracking-widest text-[10px] sm:text-xs shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:cursor-not-allowed`}

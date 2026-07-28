@@ -68,6 +68,11 @@ export interface IMasterUser {
   kode_piranti?: string;
 }
 
+export interface IJenisMasalahRule {
+  name: string;
+  require_device_code: boolean;
+}
+
 export interface ISettings {
   id: number;
   app_name: string;
@@ -107,6 +112,7 @@ export interface ISettings {
   yudha_auto_respond_categories?: string | string[];
   yudha_auto_respond_delay?: number;
   yudha_auto_respond_assignee?: string;
+  jenis_masalah_rules?: string;
 }
 
 export interface IAdminUser extends IUser {}
