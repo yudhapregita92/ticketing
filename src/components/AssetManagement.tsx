@@ -96,6 +96,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
   const [receivedBy, setReceivedBy] = useState<string>('yudha');
   const [deviceSearchQuery, setDeviceSearchQuery] = useState('');
   const [isDeviceDropdownOpen, setIsDeviceDropdownOpen] = useState(false);
+  const [borrowerSearchQuery, setBorrowerSearchQuery] = useState('');
+  const [isBorrowerDropdownOpen, setIsBorrowerDropdownOpen] = useState(false);
   const [onlyITDepartment, setOnlyITDepartment] = useState(true);
   const [showSignaturePreview, setShowSignaturePreview] = useState<string | null>(null);
   const [editingAsset, setEditingAsset] = useState<IAsset | null>(null);
@@ -2717,32 +2719,96 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                 </div>
 
                 {/* Select Borrower from Master Users */}
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">
-                    Pilih Karyawan Peminjam
+                <div className="space-y-1 relative">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1 flex items-center gap-1.5">
+                    <Search className="w-3.5 h-3.5" />
+                    <span>Cari & Pilih Karyawan Peminjam</span>
                   </label>
-                  <select
-                    onChange={(e) => {
-                      const selectedUser = masterUsers.find(u => u.full_name === e.target.value);
-                      if (selectedUser) {
-                        setBorrowFormData(prev => ({
-                          ...prev,
-                          borrower_name: selectedUser.full_name,
-                          borrower_department: selectedUser.department || prev.borrower_department
-                        }));
-                      }
-                    }}
-                    className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
-                      isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-amber-500/20'
-                    }`}
-                  >
-                    <option value="">-- Pilih dari Karyawan --</option>
-                    {masterUsers.map(u => (
-                      <option key={u.id} value={u.full_name}>
-                        {u.full_name} ({u.department || 'General'})
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      placeholder="Ketik nama karyawan..."
+                      value={borrowerSearchQuery}
+                      onFocus={() => setIsBorrowerDropdownOpen(true)}
+                      onClick={() => setIsBorrowerDropdownOpen(true)}
+                      onChange={(e) => {
+                        setBorrowerSearchQuery(e.target.value);
+                        setIsBorrowerDropdownOpen(true);
+                      }}
+                      className={`w-full pl-10 pr-9 py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-amber-500/20'
+                      }`}
+                    />
+                    {borrowerSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBorrowerSearchQuery('');
+                          setBorrowFormData(prev => ({ ...prev, borrower_name: '', borrower_department: '' }));
+                          setIsBorrowerDropdownOpen(false);
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm font-bold p-1 cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    )}
+                    {isBorrowerDropdownOpen && (
+                      <div className={`absolute left-0 right-0 z-30 mt-1.5 max-h-56 overflow-y-auto rounded-2xl border shadow-2xl ${
+                        isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'
+                      }`}>
+                        {masterUsers.filter(u => {
+                          if (borrowerSearchQuery.trim()) {
+                            const q = borrowerSearchQuery.toLowerCase();
+                            const name = (u.full_name || '').toLowerCase();
+                            const dept = (u.department || '').toLowerCase();
+                            return name.includes(q) || dept.includes(q);
+                          }
+                          return true;
+                        }).length === 0 ? (
+                          <div className="p-4 text-center text-slate-400 text-xs font-medium">
+                            Karyawan tidak ditemukan
+                          </div>
+                        ) : (
+                          masterUsers.filter(u => {
+                            if (borrowerSearchQuery.trim()) {
+                              const q = borrowerSearchQuery.toLowerCase();
+                              const name = (u.full_name || '').toLowerCase();
+                              const dept = (u.department || '').toLowerCase();
+                              return name.includes(q) || dept.includes(q);
+                            }
+                            return true;
+                          }).map(u => (
+                            <button
+                              key={u.id}
+                              type="button"
+                              onClick={() => {
+                                setBorrowFormData(prev => ({
+                                  ...prev,
+                                  borrower_name: u.full_name,
+                                  borrower_department: u.department || prev.borrower_department
+                                }));
+                                setBorrowerSearchQuery(u.full_name);
+                                setIsBorrowerDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-4 py-3 hover:bg-amber-500/10 transition-colors border-b last:border-b-0 text-xs flex items-center justify-between cursor-pointer ${
+                                borrowFormData.borrower_name === u.full_name
+                                  ? 'bg-amber-500/15 font-bold text-amber-600 dark:text-amber-400'
+                                  : isDark ? 'border-slate-800 text-slate-200' : 'border-slate-100 text-slate-800'
+                              }`}
+                            >
+                              <div className="font-extrabold flex items-center gap-1.5 text-xs sm:text-sm">
+                                <span>{u.full_name}</span>
+                              </div>
+                              <div className="text-[10px] text-slate-400 mt-0.5">
+                                Dept: {u.department || 'General'}
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
