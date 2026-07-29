@@ -392,6 +392,9 @@ export function initDb() {
       if (!columns.find(c => c.name === 'received_by')) {
         db.prepare("ALTER TABLE borrowed_assets ADD COLUMN received_by TEXT").run();
       }
+      if (!columns.find(c => c.name === 'budget_type')) {
+        db.prepare("ALTER TABLE borrowed_assets ADD COLUMN budget_type TEXT").run();
+      }
     }
     
     if (table === 'eval_m365_usage') {

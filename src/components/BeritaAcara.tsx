@@ -21,41 +21,78 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
     queryFn: () => api.getBeritaAcara()
   });
 
-  const [formData, setFormData] = useState(() => {
-    const saved = localStorage.getItem('beritaAcaraSettings');
-    const parsed = saved ? JSON.parse(saved) : {};
-    
-    return {
-      docType: parsed.docType || 'rekomendasi',
-      recommenderName: adminUser?.full_name || '',
-      recommenderDept: 'IT KDK',
-      recommendeeName: '',
-      recommendeeDept: '',
-      recommendeePosition: '',
-      reason: '',
-      location: 'Terbanggi Besar',
-      date: new Date().toISOString().split('T')[0],
-      logo1: parsed.logo1 || null,
-      logo2: parsed.logo2 || null,
-      headerTitle: parsed.headerTitle || 'KOPKAR DWI KARYA',
-      headerSubtitle: parsed.headerSubtitle || 'SURAT REKOMENDASI',
-      headerDocNo: parsed.headerDocNo || 'No. Dok: F/KDK/18/XII/2022 Rev. 5, Tanggal 27 September 2024',
-      headerFontSize: parsed.headerFontSize || 18 // Default to 18px (text-lg)
-    };
+  const [formData, setFormData] = useState({
+    docType: 'rekomendasi',
+    recommenderName: adminUser?.full_name || '',
+    recommenderDept: 'IT KDK',
+    recommendeeName: '',
+    recommendeeDept: '',
+    recommendeePosition: '',
+    reason: '',
+    location: 'Terbanggi Besar',
+    date: new Date().toISOString().split('T')[0],
+    logo1: null,
+    logo2: null,
+    headerTitle: 'KOPKAR DWI KARYA',
+    headerSubtitle: 'SURAT REKOMENDASI',
+    headerDocNo: 'No. Dok: F/KDK/18/XII/2022 Rev. 5, Tanggal 27 September 2024',
+    headerFontSize: 18 // Default to 18px (text-lg)
+  });
+
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: () => api.getSettings(),
+  });
+
+  useEffect(() => {
+    if (settings && settings.berita_acara_settings) {
+      try {
+        const parsed = typeof settings.berita_acara_settings === 'string' 
+          ? JSON.parse(settings.berita_acara_settings) 
+          : settings.berita_acara_settings;
+          
+        setFormData(prev => ({
+          ...prev,
+          docType: parsed.docType || prev.docType,
+          logo1: parsed.logo1 || prev.logo1,
+          logo2: parsed.logo2 || prev.logo2,
+          headerTitle: parsed.headerTitle || prev.headerTitle,
+          headerSubtitle: parsed.headerSubtitle || prev.headerSubtitle,
+          headerDocNo: parsed.headerDocNo || prev.headerDocNo,
+          headerFontSize: parsed.headerFontSize || prev.headerFontSize
+        }));
+      } catch (e) {
+        console.error('Failed to parse berita_acara_settings', e);
+      }
+    }
+  }, [settings]);
+
+  const updateSettingsMutation = useMutation({
+    mutationFn: (newSettings: any) => api.updateSettings({ berita_acara_settings: JSON.stringify(newSettings) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+    }
   });
 
   const [currentId, setCurrentId] = useState<string>(() => Date.now().toString());
 
+  // Save template configuration to database after short delay when it changes
   useEffect(() => {
-    localStorage.setItem('beritaAcaraSettings', JSON.stringify({
-      docType: formData.docType,
-      logo1: formData.logo1,
-      logo2: formData.logo2,
-      headerTitle: formData.headerTitle,
-      headerSubtitle: formData.headerSubtitle,
-      headerDocNo: formData.headerDocNo,
-      headerFontSize: formData.headerFontSize
-    }));
+    const timeoutId = setTimeout(() => {
+      if (settings) {
+        updateSettingsMutation.mutate({
+          docType: formData.docType,
+          logo1: formData.logo1,
+          logo2: formData.logo2,
+          headerTitle: formData.headerTitle,
+          headerSubtitle: formData.headerSubtitle,
+          headerDocNo: formData.headerDocNo,
+          headerFontSize: formData.headerFontSize
+        });
+      }
+    }, 1500);
+    
+    return () => clearTimeout(timeoutId);
   }, [formData.docType, formData.logo1, formData.logo2, formData.headerTitle, formData.headerSubtitle, formData.headerDocNo, formData.headerFontSize]);
 
   const containerRef = React.useRef<HTMLDivElement>(null);

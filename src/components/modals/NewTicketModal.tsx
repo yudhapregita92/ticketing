@@ -22,7 +22,8 @@ import {
   Smartphone,
   Monitor,
   Box,
-  QrCode
+  QrCode,
+  ZoomIn
 } from 'lucide-react';
 import { PRIORITIES } from '../../types';
 import { api } from "../../services/api";
@@ -368,8 +369,26 @@ export const NewTicketModal = React.memo(({
   // QR Code Scanner State & Logic
   const [showQrScannerModal, setShowQrScannerModal] = React.useState(false);
   const qrScannerRef = React.useRef<Html5Qrcode | null>(null);
+  
+  // Zoom Support State
+  const [zoomLevel, setZoomLevel] = React.useState<number>(1);
+  const [zoomCapabilities, setZoomCapabilities] = React.useState<{min: number, max: number, step: number, apply: (val: number) => void} | null>(null);
+
+  const handleZoomChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(e.target.value);
+    setZoomLevel(val);
+    if (zoomCapabilities) {
+      try {
+        zoomCapabilities.apply(val);
+      } catch (err) {
+        console.warn("Failed to apply zoom:", err);
+      }
+    }
+  };
 
   const startQrScanner = React.useCallback(() => {
+    setZoomLevel(1);
+    setZoomCapabilities(null);
     setShowQrScannerModal(true);
   }, []);
 
@@ -428,6 +447,28 @@ export const NewTicketModal = React.memo(({
           },
           () => {} // silent scan frame callback
         );
+        
+        // Setup Zoom if supported
+        try {
+          if (scanner.getRunningTrackCameraCapabilities) {
+            const capabilities = scanner.getRunningTrackCameraCapabilities();
+            if (capabilities && typeof capabilities.zoomFeature === 'function') {
+              const zf = capabilities.zoomFeature();
+              if (zf.isSupported()) {
+                setZoomCapabilities({
+                  min: zf.min(),
+                  max: zf.max(),
+                  step: zf.step(),
+                  apply: (val: number) => zf.apply(val)
+                });
+                setZoomLevel(zf.min());
+              }
+            }
+          }
+        } catch(e) {
+          console.warn("Camera zoom not supported", e);
+        }
+
       } catch (err: any) {
         console.error("Failed to start QR scanner:", err);
         toast.error("Tidak dapat membuka kamera untuk scan QR. Pastikan izin kamera aktif.");
@@ -1126,6 +1167,21 @@ export const NewTicketModal = React.memo(({
               <div className="relative w-full max-w-[260px] aspect-square rounded-2xl overflow-hidden border-2 border-indigo-500 bg-black shadow-inner flex items-center justify-center">
                 <div id="qr-reader-element" className="w-full h-full" />
               </div>
+
+              {zoomCapabilities && (
+                <div className="w-full max-w-[260px] mt-4 flex items-center gap-3">
+                  <ZoomIn className="w-4 h-4 text-slate-400 shrink-0" />
+                  <input 
+                    type="range" 
+                    min={zoomCapabilities.min} 
+                    max={zoomCapabilities.max} 
+                    step={zoomCapabilities.step}
+                    value={zoomLevel}
+                    onChange={handleZoomChange}
+                    className="w-full accent-indigo-500"
+                  />
+                </div>
+              )}
 
               <button
                 type="button"
