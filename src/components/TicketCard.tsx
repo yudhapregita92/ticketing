@@ -229,28 +229,41 @@ export const TicketCard: React.FC<TicketCardProps> = ({
       </div>
 
       <div className={`flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t border-dashed sm:border-t-0 sm:pl-3 sm:border-l ${isDark ? 'border-zinc-805' : 'border-slate-100'}`}>
-        {adminUser?.role === 'Super Admin' && (
-          <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1">
+          {adminUser?.role === 'Super Admin' && (
+            <>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleIntervention(ticket.id, 'takeover');
+                }}
+                className="px-2 py-1 bg-emerald-500 text-white text-[8px] font-black capitalize rounded hover:bg-emerald-600 transition-colors"
+              >
+                Ambil
+              </button>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleIntervention(ticket.id, 'reassign');
+                }}
+                className="px-2 py-1 bg-blue-500 text-white text-[8px] font-black capitalize rounded hover:bg-blue-600 transition-colors"
+              >
+                Pindah
+              </button>
+            </>
+          )}
+          {adminUser && (
             <button 
               onClick={(e) => {
                 e.stopPropagation();
-                handleIntervention(ticket.id, 'takeover');
+                handleDeleteTicket(ticket.id);
               }}
-              className="px-2 py-1 bg-emerald-500 text-white text-[8px] font-black capitalize rounded hover:bg-emerald-600 transition-colors"
+              className="px-2 py-1 bg-rose-500 text-white text-[8px] font-black capitalize rounded hover:bg-rose-600 transition-colors"
             >
-              Ambil
+              Hapus
             </button>
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                handleIntervention(ticket.id, 'reassign');
-              }}
-              className="px-2 py-1 bg-blue-500 text-white text-[8px] font-black capitalize rounded hover:bg-blue-600 transition-colors"
-            >
-              Pindah
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </motion.div>
   );

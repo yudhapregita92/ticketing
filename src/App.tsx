@@ -349,6 +349,7 @@ export default function App() {
   const [showImageManager, setShowImageManager] = useState(false); // Toggle modal manajemen gambar
   const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup'>('general');
   const [showResetConfirm, setShowResetConfirm] = useState(false); // Toggle konfirmasi reset data
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<{type: 'single' | 'bulk', id?: number} | null>(null);
   const [showTakeoverConfirm, setShowTakeoverConfirm] = useState<{id: number, type: 'takeover' | 'reassign', targetUser?: string} | null>(null);
   const [showDistribution, setShowDistribution] = useState(false); // Toggle distribusi masalah
   const [pendingUpdate, setPendingUpdate] = useState<{id: number, status: string, assigned_to: string | null, admin_reply: string | null, internal_notes: string | null} | null>(null); // Data update yang menunggu konfirmasi
@@ -920,7 +921,36 @@ export default function App() {
   };
 
   const handleDeleteTicket = async (id: number) => {
-    toast.error('Tiket individual tidak dapat dihapus.');
+    setShowDeleteConfirm({ type: 'single', id });
+  };
+
+  const confirmDeleteTicket = async (password?: string) => {
+    if (!password) {
+      toast.error('Password otorisasi wajib diisi!');
+      return;
+    }
+    
+    if (!showDeleteConfirm) return;
+
+    setLoading(true);
+    try {
+      if (showDeleteConfirm.type === 'single' && showDeleteConfirm.id) {
+        await api.deleteTicket(showDeleteConfirm.id, password);
+        toast.success('Tiket berhasil dihapus');
+      } else if (showDeleteConfirm.type === 'bulk') {
+        await Promise.all(selectedTickets.map(id => api.deleteTicket(id, password)));
+        toast.success(`${selectedTickets.length} tiket berhasil dihapus!`);
+        setSelectedTickets([]);
+      }
+      fetchTickets();
+      setShowDeleteConfirm(null);
+      hapticFeedback.medium();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Gagal menghapus tiket');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleManagementAction = async (type: 'it' | 'dept' | 'cat' | 'master-user' | 'admin-user', action: 'add' | 'delete' | 'refresh' | 'update', data?: any) => {
@@ -1144,15 +1174,21 @@ export default function App() {
     });
   };
 
-  const handleBulkAction = async (status: string) => {
+  const handleBulkAction = async (action: string) => {
     if (selectedTickets.length === 0 || !adminUser) return;
-    if (!confirm(`Update ${selectedTickets.length} tiket menjadi ${status}?`)) return;
+    
+    if (action === 'delete') {
+      setShowDeleteConfirm({ type: 'bulk' });
+      return;
+    }
+
+    if (!confirm(`Update ${selectedTickets.length} tiket menjadi ${action}?`)) return;
     
     setLoading(true);
     try {
       await Promise.all(selectedTickets.map(id => 
         api.updateTicket(id, {
-          status,
+          status: action,
           performed_by: adminUser.username
         })
       ));
@@ -2259,6 +2295,22 @@ export default function App() {
             type="danger"
             hasPasswordInput={true}
             passwordPlaceholder="Password konfirmasi (root)..."
+          />
+        )}
+
+        {showDeleteConfirm && (
+          <ConfirmModal 
+            show={!!showDeleteConfirm}
+            onClose={() => setShowDeleteConfirm(null)}
+            onConfirm={confirmDeleteTicket}
+            title="Konfirmasi Hapus Tiket"
+            message={`Apakah Anda yakin ingin menghapus ${showDeleteConfirm.type === 'bulk' ? `${selectedTickets.length} tiket ini` : 'tiket ini'}? Tindakan ini tidak dapat dibatalkan. Masukkan password otorisasi (root) untuk menghapus.`}
+            confirmText="Ya, Hapus"
+            isDark={isDark}
+            themeClasses={themeClasses}
+            type="danger"
+            hasPasswordInput={true}
+            passwordPlaceholder="Password otorisasi (root)..."
           />
         )}
 

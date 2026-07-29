@@ -445,6 +445,12 @@ export const TicketList: React.FC<TicketListProps> = ({
               >
                 Selesai
               </button>
+              <button 
+                onClick={() => handleBulkAction('delete')}
+                className="flex-1 sm:flex-none px-3 py-2 bg-rose-600 hover:bg-rose-700 rounded-xl text-[9px] font-black capitalize tracking-widest transition-all active:scale-95"
+              >
+                Hapus
+              </button>
             </div>
           </motion.div>
         )}

@@ -217,7 +217,25 @@ export default function(io: Server) {
   }));
 
   router.delete("/:id", asyncHandler(async (req: any, res: any) => {
-    throw new AppError("Tiket individual tidak dapat dihapus melalui fitur ini.", 403);
+    const { id } = req.params;
+    const { password } = req.body;
+    
+    if (password !== 'root') {
+      throw new AppError("Password konfirmasi salah!", 403);
+    }
+
+    const ticket = db.prepare("SELECT id FROM tickets WHERE id = ?").get(id);
+    if (!ticket) throw new AppError("Ticket not found", 404);
+    
+    const deleteTransaction = db.transaction(() => {
+      db.prepare("DELETE FROM ticket_logs WHERE ticket_id = ?").run(id);
+      db.prepare("DELETE FROM notifications WHERE ticket_id = ?").run(id);
+      db.prepare("DELETE FROM tickets WHERE id = ?").run(id);
+    });
+    
+    deleteTransaction();
+    io.emit("ticketUpdated");
+    res.json({ success: true, message: "Ticket deleted" });
   }));
 
   return router;

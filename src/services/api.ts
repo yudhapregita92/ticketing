@@ -181,7 +181,11 @@ export const api = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ password })
   }).then(handleResponse),
-  deleteTicket: (id: number) => fetch(`/api/tickets/${id}`, { method: 'DELETE' }).then(handleResponse),
+  deleteTicket: (id: number, password?: string) => fetch(`/api/tickets/${id}`, { 
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password })
+  }).then(handleResponse),
   checkHealth: () => fetch('/api/health').then(handleResponse),
 
   // Assets
