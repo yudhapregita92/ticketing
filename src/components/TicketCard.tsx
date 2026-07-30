@@ -3,10 +3,12 @@ import { motion } from 'framer-motion';
 import { 
   User, 
   Building2, 
+  UserCheck,
+  RotateCw,
   Eye,
   Trash2,
-  Calendar,
-  Clock
+  Clock,
+  Calendar
 } from 'lucide-react';
 import { ITicket, IAdminUser, ICategory } from '../types';
 import { getSLAColor, getSLALabel } from '../utils/ticketUtils';
@@ -28,6 +30,7 @@ interface TicketCardProps {
   formatDate: (date: string) => string;
   searchQuery: string;
   categories?: ICategory[];
+  appSettings?: any;
 }
 
 export const TicketCard: React.FC<TicketCardProps> = ({
@@ -45,14 +48,16 @@ export const TicketCard: React.FC<TicketCardProps> = ({
   getStatusColor,
   formatDate,
   searchQuery,
-  categories = []
+  categories = [],
+  appSettings
 }) => {
+  const cardRadius = appSettings?.ui_card_radius ?? 24;
   const ticketCategory = categories?.find(c => c.name === ticket.category);
   const customDelayed = ticketCategory?.response_time && ticketCategory.response_time > 0 ? ticketCategory.response_time : undefined;
   
   let customCritical: number | undefined = undefined;
   if (customDelayed) {
-    let ratio = 2.5; // Default: 5h critical / 2h delayed
+    let ratio = 2.5;
     try {
       const saved = localStorage.getItem('appSettings');
       if (saved) {
@@ -67,204 +72,195 @@ export const TicketCard: React.FC<TicketCardProps> = ({
     customCritical = customDelayed * ratio;
   }
 
+  // Get status badge badge display text and custom badge background
+  const getStatusDisplay = (status: string) => {
+    switch (status) {
+      case 'In Progress': 
+        return { label: 'Progres', bg: 'bg-blue-600 text-white' };
+      case 'Completed': 
+        return { label: 'Selesai', bg: 'bg-emerald-600 text-white' };
+      case 'Closed': 
+        return { label: 'Closed', bg: 'bg-slate-600 text-white' };
+      case 'Re-opened': 
+        return { label: 'Re-Open', bg: 'bg-amber-600 text-white' };
+      case 'Cancelled': 
+        return { label: 'Batal', bg: 'bg-rose-600 text-white' };
+      case 'New': 
+        return { label: 'Baru', bg: 'bg-indigo-600 text-white' };
+      default: 
+        return { label: status, bg: 'bg-blue-600 text-white' };
+    }
+  };
+
+  const statusInfo = getStatusDisplay(ticket.status);
+
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       whileHover={{ 
         y: -2, 
-        scale: 1.01,
-        boxShadow: isDark ? "0 10px 30px -10px rgba(0,0,0,0.5)" : "0 10px 30px -10px rgba(16,185,129,0.1)"
+        boxShadow: isDark ? "0 10px 25px -5px rgba(0,0,0,0.4)" : "0 10px 25px -5px rgba(0,0,0,0.06)"
       }}
-      whileTap={{ scale: 0.99 }}
       transition={{ 
-        delay: index * 0.04,
+        delay: index * 0.03,
         type: "spring",
-        stiffness: 260,
-        damping: 20
+        stiffness: 300,
+        damping: 24
       }}
-      className={`${themeClasses.card} rounded-md sm:rounded-md p-2.5 sm:p-4 shadow-sm hover:shadow-md transition-all group cursor-pointer relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-4 ${
-        selectedTickets.includes(ticket.id) ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
-      } ${
-        getSLAColor(ticket.created_at, ticket.status, customCritical, customDelayed) || (isDark ? 'hover:border-emerald-900' : 'hover:border-emerald-100')
+      style={{ borderRadius: `${cardRadius}px` }}
+      className={`relative border ${
+        selectedTickets.includes(ticket.id) 
+          ? 'ring-2 ring-emerald-500 border-emerald-500' 
+          : isDark ? 'border-slate-800 bg-slate-900/95 text-slate-100' : 'border-slate-200/90 bg-white text-slate-900'
+      } p-4 sm:p-5 shadow-xs transition-all group cursor-pointer overflow-hidden ${
+        getSLAColor(ticket.created_at, ticket.status, customCritical, customDelayed) || ''
       }`}
       onClick={() => handleSelectTicket(ticket)}
     >
-      <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-      
-      <div className="flex items-center gap-2.5 min-w-0 flex-1">
-        {adminUser && (
-          <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-            <input 
-              type="checkbox"
-              checked={selectedTickets.includes(ticket.id)}
-              onChange={(e) => {
-                if (e.target.checked) {
-                  setSelectedTickets(prev => [...prev, ticket.id]);
-                } else {
-                  setSelectedTickets(prev => prev.filter(id => id !== ticket.id));
-                }
-              }}
-              className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-            />
-          </div>
-        )}
-        <div className="flex-shrink-0">
-          <motion.div 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            animate={ticket.status === 'New' ? {
-              scale: [1, 1.03, 1],
-              boxShadow: ["0 0 0px rgba(99, 102, 241, 0)", "0 0 8px rgba(99, 102, 241, 0.4)", "0 0 0px rgba(99, 102, 241, 0)"]
-            } : {}}
-            transition={{ repeat: Infinity, duration: 2 }}
-            className={`w-9 h-9 sm:w-10 sm:h-10 rounded-md flex items-center justify-center font-bold shadow-sm ${
-              ticket.status === 'Completed' ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-500/20' :
-              ticket.status === 'New' ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-indigo-500/20' :
-              ticket.status === 'Cancelled' ? 'bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-rose-500/20' :
-              'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-500/20'
-            }`}
-          >
-            {getStatusIcon(ticket.status)}
-          </motion.div>
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 mb-0.5 sm:mb-1.5">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] sm:text-xs font-black text-slate-500 dark:text-zinc-400 tracking-tight">
-                #<HighlightText text={ticket.ticket_no || ticket.id.toString().padStart(4, '0')} highlight={searchQuery} isDark={isDark} />
-              </span>
-              {adminUser?.role === 'Super Admin' && ticket.assigned_to && (
-                <span className={`text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded capitalize leading-none ${isDark ? 'bg-zinc-800 text-zinc-300' : 'bg-slate-100 text-slate-600'}`}>@{ticket.assigned_to}</span>
-              )}
-              {getSLALabel(ticket.created_at, ticket.status, customCritical, customDelayed) && (
-                <span className="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded capitalize bg-rose-500 text-white leading-none whitespace-nowrap shadow-sm shadow-rose-500/30">{getSLALabel(ticket.created_at, ticket.status, customCritical, customDelayed)}</span>
-              )}
-              {(ticket.estimated_duration || ticket.estimated_target_at) && (
-                <span className="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded capitalize bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 leading-none whitespace-nowrap flex items-center gap-0.5">
-                  <Clock className="w-2.5 h-2.5" />
-                  Est: {ticket.estimated_duration || 'Jadwal Khusus'}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center sm:items-end flex-wrap gap-1.5 sm:gap-2">
-              <span className="flex items-center gap-0.5 sm:gap-1 text-[9px] sm:text-xs text-slate-400 dark:text-zinc-500 font-medium whitespace-nowrap">
-                <Calendar className="w-3 sm:w-3.5 h-3 sm:h-3.5 shrink-0" /> {formatDate(ticket.created_at)}
-              </span>
-              <span className={`px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-extrabold capitalize tracking-wider shadow-sm text-center min-w-[55px] sm:min-w-[70px] inline-block ${getStatusColor(ticket.status)}`}>
-                {ticket.status === 'In Progress' ? 'Progres' : 
-                 ticket.status === 'Completed' ? 'Selesai' : 
-                 ticket.status === 'Closed' ? 'Closed' : 
-                 ticket.status === 'Re-opened' ? 'Re-Open' : 
-                 ticket.status === 'Cancelled' ? 'Batal' : 
-                 ticket.status === 'New' ? 'Baru' : ticket.status}
-              </span>
-            </div>
-          </div>
-          <h3 className={`text-xs sm:text-sm font-bold truncate group-hover:text-emerald-500 transition-colors mb-1 sm:mb-1.5 ${themeClasses.text}`}>
-            <HighlightText text={`${ticket.category} Request`} highlight={searchQuery} isDark={isDark} />
-          </h3>
-          
-          {(ticket.estimated_duration || ticket.estimated_target_at) && (
-            <div className="flex flex-wrap items-center gap-1.5 text-[10px] sm:text-xs font-semibold text-emerald-700 dark:text-emerald-300 mb-1.5 bg-emerald-500/10 dark:bg-emerald-950/40 px-2.5 py-1 rounded-md border border-emerald-500/20 dark:border-emerald-800/60 w-fit">
-              <Clock className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-              <span>Estimasi: <strong className="font-extrabold text-emerald-600 dark:text-emerald-400">{ticket.estimated_duration || 'Jadwal Khusus'}</strong></span>
-              {ticket.estimated_target_at && (
-                <span className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 font-mono">
-                  • Target: {formatDate(ticket.estimated_target_at)}
-                </span>
-              )}
+      {/* Top Header Row: Ticket ID + Status Badge + Refresh Circular Button */}
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <div className="flex items-center gap-2.5 min-w-0">
+          {adminUser && (
+            <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+              <input 
+                type="checkbox"
+                checked={selectedTickets.includes(ticket.id)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedTickets(prev => [...prev, ticket.id]);
+                  } else {
+                    setSelectedTickets(prev => prev.filter(id => id !== ticket.id));
+                  }
+                }}
+                className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+              />
             </div>
           )}
-          
-          <div className="hidden sm:flex items-center justify-between gap-1 mt-1 sm:mt-2">
-            <div className={`flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-0.5 text-[10px] sm:text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              <span className="flex items-center gap-1 sm:gap-1.5 truncate">
-                <User className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-slate-400 shrink-0" /> <HighlightText text={ticket.name} highlight={searchQuery} isDark={isDark} />
-              </span>
-              <span className="flex items-center gap-1 sm:gap-1.5 truncate">
-                <Building2 className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-slate-400 shrink-0" /> {ticket.department}
-              </span>
-            </div>
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                handleSelectTicket(ticket);
-              }}
-              className={`p-1 sm:p-1.5 rounded-lg transition-all ${isDark ? 'text-slate-400 hover:text-emerald-400 hover:bg-zinc-800' : 'text-slate-400 hover:text-emerald-600 hover:bg-slate-100'}`}
-              title="View Details"
-            >
-              <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </button>
-          </div>
 
-          {/* Full-color structured details block for Mobile layout (matching Asset Management) */}
-          <div className={`mt-2 p-2.5 rounded-md grid grid-cols-2 gap-2 text-[11px] sm:hidden ${isDark ? 'bg-slate-800/60 border border-slate-700/60' : 'bg-slate-50 border border-slate-200/80'}`}>
-            <div>
-              <span className="text-[9px] font-black uppercase text-slate-400 block tracking-wider">Pelapor</span>
-              <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">
-                <HighlightText text={ticket.name} highlight={searchQuery} isDark={isDark} />
-              </span>
-            </div>
-            <div>
-              <span className="text-[9px] font-black uppercase text-slate-400 block tracking-wider">Departemen</span>
-              <span className="font-semibold text-slate-700 dark:text-slate-300 truncate block">{ticket.department || '-'}</span>
-            </div>
-            {ticket.pc_code && (
-              <div>
-                <span className="text-[9px] font-black uppercase text-indigo-500 dark:text-indigo-400 block tracking-wider">Kode Perangkat</span>
-                <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate block">PC: {ticket.pc_code}</span>
-              </div>
-            )}
-            {ticket.assigned_to && (
-              <div>
-                <span className="text-[9px] font-black uppercase text-emerald-500 block tracking-wider">Petugas IT</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400 truncate block">@{ticket.assigned_to}</span>
-              </div>
-            )}
+          {/* Ticket ID */}
+          <span className="text-sm sm:text-base font-black text-slate-900 dark:text-slate-100 tracking-tight">
+            #<HighlightText text={ticket.ticket_no || `TKT-${ticket.id.toString().padStart(4, '0')}`} highlight={searchQuery} isDark={isDark} />
+          </span>
+
+          {/* Status Badge Pill */}
+          <span className={`px-3 py-0.5 rounded-full text-xs font-bold tracking-wide shadow-xs ${statusInfo.bg}`}>
+            {statusInfo.label}
+          </span>
+
+          {/* SLA Badge if active */}
+          {getSLALabel(ticket.created_at, ticket.status, customCritical, customDelayed) && (
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-rose-500 text-white leading-none whitespace-nowrap shadow-xs">
+              {getSLALabel(ticket.created_at, ticket.status, customCritical, customDelayed)}
+            </span>
+          )}
+        </div>
+
+        {/* Circular Action Button */}
+        <button 
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleSelectTicket(ticket);
+          }}
+          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-slate-200 dark:border-slate-700/80 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
+          title="Lihat Detail Tiket"
+        >
+          <RotateCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-700 dark:text-slate-300" />
+        </button>
+      </div>
+
+      {/* Second Row: Category Title (Left) + Date & Time (Right) */}
+      <div className="flex items-baseline justify-between gap-2 mb-3 sm:mb-4">
+        <h3 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1">
+          <HighlightText text={ticket.category ? `${ticket.category} Request` : 'Hardware Request'} highlight={searchQuery} isDark={isDark} />
+        </h3>
+        <span className="text-xs sm:text-sm text-slate-400 dark:text-slate-400 font-normal shrink-0">
+          {formatDate(ticket.created_at)}
+        </span>
+      </div>
+
+      {/* Estimated Duration if specified */}
+      {ticket.estimated_duration && (
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 mb-3 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-200/60 dark:border-emerald-800/60 w-fit">
+          <Clock className="w-3 h-3 text-emerald-600 shrink-0" />
+          <span>Estimasi: <strong>{ticket.estimated_duration}</strong></span>
+        </div>
+      )}
+
+      {/* Fourth Row: Footer Info Grid (Pelapor, Departemen, Petugas IT) */}
+      <div className="border-t border-slate-100 dark:border-slate-800/80 pt-3 grid grid-cols-3 gap-1 sm:gap-2 text-left">
+        {/* Column 1: Pelapor */}
+        <div className="pr-1">
+          <div className="flex items-center gap-1 mb-0.5">
+            <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate">PELAPOR</span>
           </div>
+          <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 truncate">
+            <HighlightText text={ticket.name} highlight={searchQuery} isDark={isDark} />
+          </p>
+        </div>
+
+        {/* Column 2: Departemen */}
+        <div className="border-x border-slate-100 dark:border-slate-800/80 px-2 sm:px-3">
+          <div className="flex items-center gap-1 mb-0.5">
+            <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate">DEPARTEMEN</span>
+          </div>
+          <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 truncate">
+            {ticket.department || '-'}
+          </p>
+        </div>
+
+        {/* Column 3: Petugas IT */}
+        <div className="pl-1">
+          <div className="flex items-center gap-1 mb-0.5">
+            <UserCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate">PETUGAS IT</span>
+          </div>
+          <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 truncate">
+            {ticket.assigned_to ? `@${ticket.assigned_to}` : '-'}
+          </p>
         </div>
       </div>
 
-      <div className={`flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t border-dashed sm:border-t-0 sm:pl-3 sm:border-l ${isDark ? 'border-zinc-805' : 'border-slate-100'}`}>
-        <div className="flex items-center gap-1">
-          {adminUser?.role === 'Super Admin' && (
-            <>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleIntervention(ticket.id, 'takeover');
-                }}
-                className="px-2 py-1 bg-emerald-500 text-white text-[8px] font-black capitalize rounded hover:bg-emerald-600 transition-colors"
-              >
-                Ambil
-              </button>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleIntervention(ticket.id, 'reassign');
-                }}
-                className="px-2 py-1 bg-blue-500 text-white text-[8px] font-black capitalize rounded hover:bg-blue-600 transition-colors"
-              >
-                Pindah
-              </button>
-            </>
-          )}
-          {adminUser && (
+      {/* Admin Action Bar if Super Admin or Admin */}
+      {adminUser && (
+        <div className="mt-3 pt-2 border-t border-dashed border-slate-200 dark:border-slate-800/80 flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
+          <div className="text-[10px] font-mono text-slate-400">
+            {ticket.pc_code ? `PC: ${ticket.pc_code}` : `ID: ${ticket.id}`}
+          </div>
+          <div className="flex items-center gap-1.5">
+            {adminUser.role === 'Super Admin' && (
+              <>
+                <button 
+                  type="button"
+                  onClick={() => handleIntervention(ticket.id, 'takeover')}
+                  className="px-2 py-0.5 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold rounded-md transition-colors"
+                >
+                  Ambil
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => handleIntervention(ticket.id, 'reassign')}
+                  className="px-2 py-0.5 bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold rounded-md transition-colors"
+                >
+                  Pindah
+                </button>
+              </>
+            )}
             <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteTicket(ticket.id);
-              }}
-              className="px-2 py-1 bg-rose-500 text-white text-[8px] font-black capitalize rounded hover:bg-rose-600 transition-colors"
+              type="button"
+              onClick={() => handleDeleteTicket(ticket.id)}
+              className="px-2 py-0.5 bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold rounded-md transition-colors"
             >
               Hapus
             </button>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </motion.div>
   );
 };

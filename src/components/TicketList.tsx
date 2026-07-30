@@ -8,14 +8,17 @@ import {
   SlidersHorizontal,
   CheckCircle2,
   Activity,
-  AlertCircle
+  AlertCircle,
+  ArrowUpDown
 } from 'lucide-react';
 import { ITicket, IAdminUser, ICategory } from '../types';
 import { TicketCard } from './TicketCard';
 import { SkeletonTicket, RollingNumber } from './Common';
+import { UserHeroBanner } from './UserHeroBanner';
 
 interface TicketListProps {
   adminUser: IAdminUser | null;
+  currentUser?: any;
   isDark: boolean;
   themeClasses: any;
   categories?: ICategory[];
@@ -52,10 +55,12 @@ interface TicketListProps {
   CurrentLogo: any;
   setShowForm: (show: boolean) => void;
   handleBulkAction: (status: string) => Promise<void>;
+  appSettings?: any;
 }
 
 export const TicketList: React.FC<TicketListProps> = ({
   adminUser,
+  currentUser,
   isDark,
   themeClasses,
   categories = [],
@@ -91,12 +96,87 @@ export const TicketList: React.FC<TicketListProps> = ({
   primaryColor,
   CurrentLogo,
   setShowForm,
-  handleBulkAction
+  handleBulkAction,
+  appSettings
 }) => {
+  const cardRadius = appSettings?.ui_card_radius ?? 24;
+
   return (
     <div className="lg:col-span-2 space-y-2 sm:space-y-3">
-      {/* Mobile Navigation Tabs */}
-      <div className="lg:hidden flex flex-col gap-3 mb-4">
+      {/* Banner Hero - Displayed only for Users (not Admin) */}
+      {!adminUser && (
+        <UserHeroBanner 
+          currentUser={currentUser}
+          tickets={tickets}
+          isDark={isDark}
+          primaryColor={primaryColor}
+          appSettings={appSettings}
+        />
+      )}
+
+      {/* Primary View Tabs: Hari Ini / Semua */}
+      <div className={`relative mt-1 mb-2 sm:mb-3 border-b transition-colors flex items-center ${
+        isDark ? 'border-slate-800' : 'border-slate-200/80'
+      }`}>
+        <button
+          onClick={() => setViewMode('today')}
+          className={`relative flex-1 py-2.5 sm:py-3 px-4 text-center text-sm sm:text-base font-bold transition-colors ${
+            viewMode === 'today'
+              ? 'text-emerald-600 dark:text-emerald-400 font-extrabold'
+              : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-900'
+          }`}
+        >
+          Hari Ini
+          {viewMode === 'today' && (
+            <motion.div 
+              layoutId="tabUnderline"
+              className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-600 dark:bg-emerald-500 rounded-full"
+              transition={{ type: "spring", stiffness: 350, damping: 30 }}
+            />
+          )}
+        </button>
+
+        <button
+          onClick={() => setViewMode('all')}
+          className={`relative flex-1 py-2.5 sm:py-3 px-4 text-center text-sm sm:text-base font-bold transition-colors ${
+            viewMode === 'all'
+              ? 'text-emerald-600 dark:text-emerald-400 font-extrabold'
+              : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-900'
+          }`}
+        >
+          Semua
+          {viewMode === 'all' && (
+            <motion.div 
+              layoutId="tabUnderline"
+              className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-600 dark:bg-emerald-500 rounded-full"
+              transition={{ type: "spring", stiffness: 350, damping: 30 }}
+            />
+          )}
+        </button>
+
+        {adminUser && (
+          <button
+            onClick={() => setViewMode('my_tickets')}
+            className={`relative flex-1 py-2.5 sm:py-3 px-4 text-center text-sm sm:text-base font-bold transition-colors ${
+              viewMode === 'my_tickets'
+                ? 'text-emerald-600 dark:text-emerald-400 font-extrabold'
+                : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            Tiket Saya
+            {viewMode === 'my_tickets' && (
+              <motion.div 
+                layoutId="tabUnderline"
+                className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-600 dark:bg-emerald-500 rounded-full"
+                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+              />
+            )}
+          </button>
+        )}
+      </div>
+
+      {/* Mobile Navigation Stats Grid */}
+      <div className="lg:hidden mb-2.5 sm:mb-3">
         {/* Interactive Stats Quick-Filter Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
           {[
@@ -147,7 +227,8 @@ export const TicketList: React.FC<TicketListProps> = ({
                 key={item.label}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setFilterStatus(item.id)}
-                className={`p-3 sm:p-4 rounded-md sm:rounded-md border text-left flex items-center justify-between transition-all ${
+                style={{ borderRadius: `${cardRadius}px` }}
+                className={`p-3 sm:p-4 border text-left flex items-center justify-between transition-all ${
                   isActive ? item.activeClass : item.idleClass
                 }`}
               >
@@ -159,45 +240,12 @@ export const TicketList: React.FC<TicketListProps> = ({
                     <RollingNumber value={item.count} />
                   </span>
                 </div>
-                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-md sm:rounded-md flex items-center justify-center flex-shrink-0 ${item.iconBg}`}>
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${item.iconBg}`}>
                   {item.icon}
                 </div>
               </motion.button>
             );
           })}
-        </div>
-
-        {/* Quick Actions (Filter and Refresh) */}
-        <div className="flex items-center justify-end gap-2 p-1.5 rounded-md">
-          <div className="flex items-center gap-1">
-            <button 
-              onClick={() => {
-                setTempFilters({ dept: filterDept, status: filterStatus, date: filterDate, search: searchQuery });
-                setShowMobileFilter(true);
-              }}
-              className={`flex items-center justify-center w-8 h-8 rounded-md border relative ${
-                (filterDept || filterStatus || filterDate || searchQuery)
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-800'
-                : isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white' : 'bg-white border-slate-200 text-slate-500 hover:text-slate-800'
-              }`}
-              title="Filter"
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-              {(filterDept || filterStatus || filterDate || searchQuery) && (
-                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-500" />
-              )}
-            </button>
-            <button 
-              onClick={() => fetchTickets(true)}
-              className={`flex items-center justify-center w-8 h-8 rounded-md border ${
-                isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white' : 'bg-white border-slate-200 text-slate-500 hover:text-slate-800'
-              }`}
-              title="Segarkan Antrian"
-              aria-label="Refresh tickets"
-            >
-              <RefreshCcw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
         </div>
       </div>
 
@@ -223,32 +271,58 @@ export const TicketList: React.FC<TicketListProps> = ({
         </button>
       </div>
 
-      {/* Results Summary & Filter Toggle */}
-      <div className="flex items-center justify-between mb-2 px-1">
-        <div className={`text-[10px] sm:text-xs font-bold ${themeClasses.textMuted} flex items-center gap-1`}>
-          Menampilkan 
-          <RollingNumber value={Math.min((currentPage - 1) * itemsPerPage + 1, filteredTickets.length)} className={themeClasses.text} /> 
-          - 
-          <RollingNumber value={Math.min(currentPage * itemsPerPage, filteredTickets.length)} className={themeClasses.text} /> 
-          dari 
-          <RollingNumber value={filteredTickets.length} className={themeClasses.text} /> 
+      {/* Results Summary & Filter Toggle - Clean Top/Bottom Bordered Bar */}
+      <div className={`py-2.5 px-2 my-2 border-y flex items-center justify-between text-xs sm:text-sm font-medium ${
+        isDark ? 'border-slate-800 text-slate-400' : 'border-slate-200/80 text-slate-500'
+      }`}>
+        <div className="flex items-center gap-1">
+          Menampilkan{' '}
+          <span className="font-extrabold text-slate-800 dark:text-slate-100">
+            {filteredTickets.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}
+          </span>{' '}
+          -{' '}
+          <span className="font-extrabold text-slate-800 dark:text-slate-100">
+            {Math.min(currentPage * itemsPerPage, filteredTickets.length)}
+          </span>{' '}
+          dari{' '}
+          <span className="font-extrabold text-slate-800 dark:text-slate-100">
+            {filteredTickets.length}
+          </span>{' '}
           tiket
         </div>
-        <div className="flex items-center gap-3">
-          {searchQuery && (
-            <button 
-              onClick={() => setSearchQuery('')}
-              className="text-[10px] font-bold text-rose-500 hover:underline"
-            >
-              Hapus Pencarian
-            </button>
-          )}
-          <button
-            onClick={() => setShowMobileFilter(true)}
-            className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border ${themeClasses.card} ${themeClasses.border} hover:border-emerald-500 hover:text-emerald-500 ${themeClasses.text}`}
+
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Vertical Separator Line */}
+          <div className={`h-4 w-[1px] ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
+
+          {/* Filter Button */}
+          <button 
+            type="button"
+            onClick={() => {
+              setTempFilters({ dept: filterDept, status: filterStatus, date: filterDate, search: searchQuery });
+              setShowMobileFilter(true);
+            }}
+            className={`p-1 transition-colors relative ${
+              (filterDept || filterStatus || filterDate || searchQuery)
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+            }`}
+            title="Filter Tiket"
           >
-            <Filter className="w-3.5 h-3.5" />
-            Filter Antrian
+            <SlidersHorizontal className="w-4 h-4" />
+            {(filterDept || filterStatus || filterDate || searchQuery) && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500" />
+            )}
+          </button>
+
+          {/* Sort Button */}
+          <button 
+            type="button"
+            onClick={() => fetchTickets(true)}
+            className="p-1 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+            title="Urutkan / Segarkan"
+          >
+            <ArrowUpDown className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -354,6 +428,7 @@ export const TicketList: React.FC<TicketListProps> = ({
                     formatDate={formatDate}
                     searchQuery={searchQuery}
                     categories={categories}
+                    appSettings={appSettings}
                   />
                 ))}
               </div>

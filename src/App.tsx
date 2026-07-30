@@ -350,7 +350,7 @@ export default function App() {
   const [loginData, setLoginData] = useState({ username: '', password: '' });
   const [showSettings, setShowSettings] = useState(false); // Toggle modal pengaturan aplikasi
   const [showImageManager, setShowImageManager] = useState(false); // Toggle modal manajemen gambar
-  const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup'>('general');
+  const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'banner' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup'>('general');
   const [showResetConfirm, setShowResetConfirm] = useState(false); // Toggle konfirmasi reset data
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<{type: 'single' | 'bulk', id?: number} | null>(null);
   const [showTakeoverConfirm, setShowTakeoverConfirm] = useState<{id: number, type: 'takeover' | 'reassign', targetUser?: string} | null>(null);
@@ -1687,13 +1687,15 @@ export default function App() {
 
           {/* --- MAIN CONTENT --- */}
           <div className="flex-1 min-w-0 space-y-2 sm:space-y-3 transition-all duration-300">
-            <MobileAppNav 
-              viewMode={viewMode}
-              setViewMode={setViewMode}
-              isDark={isDark}
-              adminUser={adminUser}
-              userCanVoucher={userCanVoucher}
-            />
+            {(adminUser || userCanVoucher) && (
+              <MobileAppNav 
+                viewMode={viewMode}
+                setViewMode={setViewMode}
+                isDark={isDark}
+                adminUser={adminUser}
+                userCanVoucher={userCanVoucher}
+              />
+            )}
             {adminThemeLayout === 'executive' && adminUser && (
               <div className={`hidden lg:flex items-center gap-1.5 p-2 ${themeClasses.card} rounded-md border ${themeClasses.border} overflow-x-auto shadow-sm no-scrollbar`}>
                 <button
@@ -2063,6 +2065,7 @@ export default function App() {
               ) : (
                 <TicketList 
                   adminUser={adminUser}
+                  currentUser={currentUser}
                   isDark={isDark}
                   themeClasses={themeClasses}
                   categories={categories}
@@ -2099,6 +2102,7 @@ export default function App() {
                   CurrentLogo={CurrentLogo}
                   setShowForm={setShowForm}
                   handleBulkAction={handleBulkAction}
+                  appSettings={appSettings}
                 />
               )}
             </Suspense>

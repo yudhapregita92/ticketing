@@ -38,6 +38,7 @@ import toast from 'react-hot-toast';
 import { APP_VERSION, BUILD_DATE, UPDATE_HISTORY, getEnvironment } from '../../version';
 import { IJenisMasalahRule } from '../../types';
 import { parseJenisMasalahRules } from '../../utils/jenisMasalah';
+import { UserHeroBanner } from '../UserHeroBanner';
 
 interface SettingsModalProps {
   showSettings?: boolean;
@@ -45,8 +46,8 @@ interface SettingsModalProps {
   inline?: boolean;
   isDark: boolean;
   themeClasses: any;
-  settingsTab: 'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup';
-  setSettingsTab: (tab: 'general' | 'branding' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup') => void;
+  settingsTab: 'general' | 'branding' | 'banner' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup';
+  setSettingsTab: (tab: 'general' | 'branding' | 'banner' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup') => void;
   appSettings: any;
   setAppSettings: (settings: any) => void;
   LOGO_OPTIONS: any[];
@@ -774,6 +775,13 @@ export const SettingsModal = React.memo(({
               className={`whitespace-nowrap shrink-0 sm:w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'branding' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Palette className="w-4 h-4" /> Branding
+            </button>
+            <button 
+              type="button"
+              onClick={() => setSettingsTab('banner')}
+              className={`whitespace-nowrap shrink-0 sm:w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'banner' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+            >
+              <ImageIcon className="w-4 h-4" /> Banner Hero
             </button>
             <button 
               onClick={() => setSettingsTab('login')}
@@ -1626,6 +1634,229 @@ export const SettingsModal = React.memo(({
                           <span className={`opacity-90 ${appSettings.nav_text_weight || 'font-medium'}`} style={{ fontSize: `${appSettings.nav_text_size || 10}px`, color: appSettings.nav_text_color || '#ffffff' }}>Keluar</span>
                         </div>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {settingsTab === 'banner' && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                    <div>
+                      <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <ImageIcon className="w-4 h-4 text-emerald-500" />
+                        Pengaturan Banner Hero & Ilustrasi
+                      </h3>
+                      <p className="text-[11px] font-medium text-slate-400 mt-0.5">
+                        Atur tampilan banner greeting di beranda user, lebar/padding, jarak ke tab filter, dan upload gambar kustom.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Toggle Enable Banner */}
+                  <div className={`p-4 rounded-2xl border ${themeClasses.border} ${themeClasses.bgSecondary} flex items-center justify-between gap-4`}>
+                    <div>
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Tampilkan Banner Hero</p>
+                      <p className="text-[10px] text-slate-400 font-medium">Aktifkan atau sembunyikan banner salam di beranda user</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                      <input 
+                        type="checkbox" 
+                        checked={appSettings.banner_enabled !== false} 
+                        onChange={e => setAppSettings({...appSettings, banner_enabled: e.target.checked})}
+                        className="sr-only peer" 
+                      />
+                      <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-slate-600 peer-checked:bg-emerald-600"></div>
+                    </label>
+                  </div>
+
+                  {/* Spacing Controls */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Padding Y (Tinggi / Padding Atas-Bawah) */}
+                    <div className={`p-4 rounded-2xl border ${themeClasses.border} ${themeClasses.bgSecondary} space-y-3`}>
+                      <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest">Padding Atas & Bawah</label>
+                        <span className="text-xs font-black text-emerald-500 px-2 py-0.5 rounded-md bg-emerald-500/10">
+                          {appSettings.banner_padding_y ?? 14} px
+                        </span>
+                      </div>
+                      <input 
+                        type="range"
+                        min="4"
+                        max="40"
+                        step="1"
+                        value={appSettings.banner_padding_y ?? 14}
+                        onChange={e => setAppSettings({...appSettings, banner_padding_y: parseInt(e.target.value)})}
+                        className="w-full accent-emerald-600 cursor-pointer"
+                      />
+                      <p className="text-[9px] text-slate-400 font-medium">Mengecilkan atau memperbesar ruang vertikal di dalam banner.</p>
+                    </div>
+
+                    {/* Margin Bottom (Jarak ke Filter Tab) */}
+                    <div className={`p-4 rounded-2xl border ${themeClasses.border} ${themeClasses.bgSecondary} space-y-3`}>
+                      <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest">Jarak ke Tab Filter</label>
+                        <span className="text-xs font-black text-emerald-500 px-2 py-0.5 rounded-md bg-emerald-500/10">
+                          {appSettings.banner_margin_bottom ?? 2} px
+                        </span>
+                      </div>
+                      <input 
+                        type="range"
+                        min="0"
+                        max="30"
+                        step="1"
+                        value={appSettings.banner_margin_bottom ?? 2}
+                        onChange={e => setAppSettings({...appSettings, banner_margin_bottom: parseInt(e.target.value)})}
+                        className="w-full accent-emerald-600 cursor-pointer"
+                      />
+                      <p className="text-[9px] text-slate-400 font-medium">Atur kerapatan jarak antara banner dengan tab Hari Ini / Semua.</p>
+                    </div>
+                  </div>
+
+                  {/* Unified Card Radius Setting (1 Pengaturan untuk Banner, Stat, & Card Tiket) */}
+                  <div className={`p-4 rounded-2xl border ${themeClasses.border} ${themeClasses.bgSecondary} space-y-3`}>
+                    <div className="flex justify-between items-center">
+                      <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                        Kelengkungan Sudut (Border Radius)
+                      </label>
+                      <span className="text-xs font-black text-emerald-500 px-2 py-0.5 rounded-md bg-emerald-500/10">
+                        {appSettings.ui_card_radius ?? 24} px
+                      </span>
+                    </div>
+                    <input 
+                      type="range"
+                      min="8"
+                      max="36"
+                      step="2"
+                      value={appSettings.ui_card_radius ?? 24}
+                      onChange={e => setAppSettings({...appSettings, ui_card_radius: parseInt(e.target.value)})}
+                      className="w-full accent-emerald-600 cursor-pointer"
+                    />
+                    <p className="text-[9px] text-slate-400 font-medium">
+                      1 Pengaturan terpusat untuk kelengkungan (curve) Banner Hero, Kartu Filter Stat, dan Kartu List Tiket agar konsisten 100%.
+                    </p>
+                  </div>
+
+                  {/* Image Type Selection */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Tipe Ilustrasi / Gambar</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setAppSettings({...appSettings, banner_image_type: 'default_vector'})}
+                        className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col gap-1.5 ${
+                          (appSettings.banner_image_type || 'default_vector') === 'default_vector'
+                            ? 'bg-emerald-600/10 border-emerald-500 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                            : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400 hover:border-slate-400`
+                        }`}
+                      >
+                        <span className="text-xs font-black">Vektor Default (Teknisi IT)</span>
+                        <span className="text-[10px] opacity-80 font-medium">Ilustrasi karakter teknisi dengan kotak perkakas</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setAppSettings({...appSettings, banner_image_type: 'custom_image'})}
+                        className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col gap-1.5 ${
+                          appSettings.banner_image_type === 'custom_image'
+                            ? 'bg-emerald-600/10 border-emerald-500 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                            : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400 hover:border-slate-400`
+                        }`}
+                      >
+                        <span className="text-xs font-black">Upload Gambar Kustom</span>
+                        <span className="text-[10px] opacity-80 font-medium">Gunakan foto, karakter 3D, atau logo pilihan Anda</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Custom Image Upload Section */}
+                  {appSettings.banner_image_type === 'custom_image' && (
+                    <div className={`p-4 rounded-2xl border ${themeClasses.border} ${themeClasses.bgSecondary} space-y-4`}>
+                      <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest flex items-center gap-1.5">
+                        <Upload className="w-3.5 h-3.5 text-emerald-500" /> Upload Gambar Banner
+                      </label>
+
+                      <div className="flex flex-col sm:flex-row items-center gap-4 p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                        <div className="w-24 h-24 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                          {appSettings.banner_custom_image ? (
+                            <img src={appSettings.banner_custom_image} alt="Banner Custom" className="w-full h-full object-contain p-1" />
+                          ) : (
+                            <ImageIcon className="w-8 h-8 text-slate-300" />
+                          )}
+                        </div>
+
+                        <div className="flex-1 text-center sm:text-left space-y-2">
+                          <p className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                            Pilih gambar transparan (PNG/SVG/WebP) untuk hasil terbaik.
+                          </p>
+                          <div className="flex flex-wrap justify-center sm:justify-start gap-2">
+                            <label className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black capitalize tracking-widest cursor-pointer transition-all flex items-center gap-1.5">
+                              <Upload className="w-3 h-3" /> Pilih File Gambar
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                className="hidden" 
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                      setAppSettings({...appSettings, banner_custom_image: reader.result as string});
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }} 
+                              />
+                            </label>
+                            {appSettings.banner_custom_image && (
+                              <button 
+                                type="button"
+                                onClick={() => setAppSettings({...appSettings, banner_custom_image: ''})}
+                                className="px-4 py-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl text-[10px] font-black capitalize tracking-widest transition-all"
+                              >
+                                Hapus Gambar
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Image/Vector Size Slider */}
+                  <div className={`p-4 rounded-2xl border ${themeClasses.border} ${themeClasses.bgSecondary} space-y-3`}>
+                    <div className="flex justify-between items-center">
+                      <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest">Besar / Ukuran Gambar / Vektor</label>
+                      <span className="text-xs font-black text-emerald-500 px-2 py-0.5 rounded-md bg-emerald-500/10">
+                        {appSettings.banner_image_size ?? 110} px
+                      </span>
+                    </div>
+                    <input 
+                      type="range"
+                      min="60"
+                      max="240"
+                      step="5"
+                      value={appSettings.banner_image_size ?? 110}
+                      onChange={e => setAppSettings({...appSettings, banner_image_size: parseInt(e.target.value)})}
+                      className="w-full accent-emerald-600 cursor-pointer"
+                    />
+                    <p className="text-[9px] text-slate-400 font-medium">Atur skala besar kecilnya ilustrasi/gambar di sisi kanan banner.</p>
+                  </div>
+
+                  {/* Live Banner Preview Box */}
+                  <div className="space-y-2 pt-2">
+                    <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-amber-500" /> Live Preview Banner
+                    </label>
+                    <div className="p-3 bg-slate-100 dark:bg-slate-950/80 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                      <UserHeroBanner 
+                        currentUser={{ full_name: adminUser?.username || 'Admin IT' }}
+                        tickets={[]}
+                        isDark={isDark}
+                        primaryColor={primaryColor}
+                        appSettings={appSettings}
+                      />
                     </div>
                   </div>
                 </div>

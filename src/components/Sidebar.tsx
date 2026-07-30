@@ -25,7 +25,8 @@ import {
   Timer,
   Building2,
   Layers,
-  ClipboardList
+  ClipboardList,
+  Ticket
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -90,12 +91,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   userCanVoucher,
   adminThemeLayout
 }) => {
+  const [ticketMenuOpen, setTicketMenuOpen] = React.useState(viewMode === 'today' || viewMode === 'all' || viewMode === 'my_tickets');
   const [masterDataOpen, setMasterDataOpen] = React.useState(viewMode === 'master_user' || viewMode === 'master_perangkat' || viewMode === 'master_team');
   const [reportOpen, setReportOpen] = React.useState(viewMode === 'report_sla' || viewMode === 'report_perangkat');
   const [assetMenuOpen, setAssetMenuOpen] = React.useState(viewMode === 'assets');
 
   React.useEffect(() => {
-    if (viewMode === 'master_user' || viewMode === 'master_perangkat' || viewMode === 'master_team') {
+    if (viewMode === 'today' || viewMode === 'all' || viewMode === 'my_tickets') {
+      setTicketMenuOpen(true);
+    } else if (viewMode === 'master_user' || viewMode === 'master_perangkat' || viewMode === 'master_team') {
       setMasterDataOpen(true);
     } else if (viewMode === 'report_sla' || viewMode === 'report_perangkat') {
       setReportOpen(true);
@@ -135,60 +139,87 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           )}
           
-          <button
-            onClick={() => setViewMode('today')}
-            title="Antrian Hari Ini"
-            className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-              viewMode === 'today' 
-                ? 'bg-emerald-500/10 text-emerald-600' 
-                : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-            }`}
-          >
-            <div className="flex items-center gap-2.5 relative">
-              <Zap className="w-4 h-4" />
-              {adminThemeLayout !== 'compact' && <span>Antrian Hari Ini</span>}
-              {adminThemeLayout === 'compact' && tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 px-1 py-0.5 bg-rose-500 text-white text-[7px] font-bold rounded-full scale-90">
-                  {tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length}
-                </span>
+          {/* Menu Group: Tiket */}
+          <div className="space-y-1">
+            <button
+              onClick={() => {
+                setTicketMenuOpen(!ticketMenuOpen);
+              }}
+              title="Tiket"
+              className={`w-full flex items-center justify-between ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
+                (viewMode === 'today' || viewMode === 'all' || viewMode === 'my_tickets' || ticketMenuOpen)
+                  ? 'bg-emerald-500/10 text-emerald-600' 
+                  : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Ticket className="w-4 h-4" />
+                {adminThemeLayout !== 'compact' && <span>Tiket</span>}
+              </div>
+              {adminThemeLayout !== 'compact' && (
+                ticketMenuOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
               )}
-            </div>
-            {adminThemeLayout !== 'compact' && tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length > 0 && (
-              <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[9px] font-black rounded-full">
-                {tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length}
-              </span>
+            </button>
+
+            {ticketMenuOpen && (
+              <div className={`space-y-1 ${adminThemeLayout !== 'compact' ? 'pl-9' : ''}`}>
+                <button
+                  onClick={() => setViewMode('today')}
+                  title="Antrian Hari Ini"
+                  className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
+                    viewMode === 'today' 
+                      ? 'bg-emerald-500/10 text-emerald-600' 
+                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 relative">
+                    <Zap className="w-3.5 h-3.5" />
+                    {adminThemeLayout !== 'compact' && <span>Antrian Hari Ini</span>}
+                    {adminThemeLayout === 'compact' && tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 px-1 py-0.5 bg-rose-500 text-white text-[7px] font-bold rounded-full scale-90">
+                        {tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length}
+                      </span>
+                    )}
+                  </div>
+                  {adminThemeLayout !== 'compact' && tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length > 0 && (
+                    <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[9px] font-black rounded-full">
+                      {tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length}
+                    </span>
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => setViewMode('all')}
+                  title="Semua Antrian"
+                  className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
+                    viewMode === 'all' 
+                      ? 'bg-emerald-500/10 text-emerald-600' 
+                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    {adminThemeLayout !== 'compact' && <span>Semua Antrian</span>}
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => setViewMode('my_tickets')}
+                  title={adminUser ? 'Tiket Saya' : 'Riwayat Tiket Saya'}
+                  className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
+                    viewMode === 'my_tickets' 
+                      ? 'bg-emerald-500/10 text-emerald-600' 
+                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    {adminThemeLayout !== 'compact' && <span>{adminUser ? 'Tiket Saya' : 'Riwayat Tiket Saya'}</span>}
+                  </div>
+                </button>
+              </div>
             )}
-          </button>
-          
-          <button
-            onClick={() => setViewMode('all')}
-            title="Semua Antrian"
-            className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-              viewMode === 'all' 
-                ? 'bg-emerald-500/10 text-emerald-600' 
-                : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <AlertCircle className="w-4 h-4" />
-              {adminThemeLayout !== 'compact' && <span>Semua Antrian</span>}
-            </div>
-          </button>
-          
-          <button
-            onClick={() => setViewMode('my_tickets')}
-            title={adminUser ? 'Tiket Saya' : 'Riwayat Tiket Saya'}
-            className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-              viewMode === 'my_tickets' 
-                ? 'bg-emerald-500/10 text-emerald-600' 
-                : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="w-4 h-4" />
-              {adminThemeLayout !== 'compact' && <span>{adminUser ? 'Tiket Saya' : 'Riwayat Tiket Saya'}</span>}
-            </div>
-          </button>
+          </div>
           
           {(adminUser || userCanVoucher) && (
             <button

@@ -128,6 +128,13 @@ export interface ISettings {
   fab_icon_color?: string;
   fab_border_color?: string;
   fab_border_width?: number;
+  banner_enabled?: boolean;
+  banner_padding_y?: number;
+  banner_margin_bottom?: number;
+  banner_image_type?: 'default_vector' | 'custom_image';
+  banner_custom_image?: string;
+  banner_image_size?: number;
+  ui_card_radius?: number;
 }
 
 export interface IAdminUser extends IUser {}

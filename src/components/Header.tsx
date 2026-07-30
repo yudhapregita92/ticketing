@@ -148,42 +148,46 @@ export const Header: React.FC<HeaderProps> = ({
   const CurrentLogo = LOGO_OPTIONS.find(l => l.id === appSettings.logo_type)?.icon || LOGO_OPTIONS[0].icon;
 
   return (
-    <header className={`sticky top-0 z-40 w-full border-b backdrop-blur-md transition-colors ${
+    <header className={`sticky top-0 z-40 w-full backdrop-blur-md transition-colors ${
       adminUser
-        ? (isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-zinc-100/80 border-zinc-200')
-        : (isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200')
+        ? (isDark ? 'bg-zinc-900/80 border-b border-zinc-800' : 'bg-zinc-100/80 border-b border-zinc-200')
+        : (isDark ? 'bg-slate-900/80' : 'bg-white/80')
     }`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[4rem] py-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-3 min-w-0">
-          <div 
-            className="w-10 h-10 rounded-md flex items-center justify-center shadow-lg transition-all shrink-0"
-            style={{ backgroundColor: primaryColor }}
-          >
-            {appSettings.custom_logo ? (
-              <img src={appSettings.custom_logo} alt="Logo" className="w-6 h-6 object-contain" referrerPolicy="no-referrer" />
-            ) : (
-              appSettings.logo_type === 'Send' ? (
-                <Logo className="text-white w-6 h-6" color="white" />
-              ) : (
-                <CurrentLogo className="text-white w-6 h-6" />
-              )
-            )}
-          </div>
-          <div className="min-w-0 flex items-center gap-2">
-            <h1 className={`text-sm sm:text-lg font-bold tracking-tight leading-tight truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{appSettings.app_name}</h1>
-            <div 
-              className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border transition-all ${
-                isOnline 
-                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' 
-                  : 'bg-rose-500/10 border-rose-500/20 text-rose-500'
-              }`}
-              title={isOnline ? 'Online' : 'Offline'}
-            >
-              {isOnline ? <Wifi className="w-2 h-2" /> : <WifiOff className="w-2 h-2" />}
-              <span className="hidden xs:inline">{isOnline ? 'Online' : 'Offline'}</span>
-              <span className={`w-1 h-1 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-            </div>
-          </div>
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 min-h-[3.5rem] sm:min-h-[4rem] py-2 flex items-center justify-between gap-1.5 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          {adminUser && (
+            <>
+              <div 
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shadow-md transition-all shrink-0"
+                style={{ backgroundColor: primaryColor }}
+              >
+                {appSettings.custom_logo ? (
+                  <img src={appSettings.custom_logo} alt="Logo" className="w-5 h-5 sm:w-6 sm:h-6 object-contain" referrerPolicy="no-referrer" />
+                ) : (
+                  appSettings.logo_type === 'Send' ? (
+                    <Logo className="text-white w-5 h-5 sm:w-6 sm:h-6" color="white" />
+                  ) : (
+                    <CurrentLogo className="text-white w-5 h-5 sm:w-6 sm:h-6" />
+                  )
+                )}
+              </div>
+              <div className="min-w-0 flex-1 flex items-center gap-1.5">
+                <h1 className={`text-xs xs:text-sm sm:text-base md:text-lg font-black tracking-tight leading-tight truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{appSettings.app_name}</h1>
+                <div 
+                  className={`hidden xs:flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border transition-all shrink-0 ${
+                    isOnline 
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' 
+                      : 'bg-rose-500/10 border-rose-500/20 text-rose-500'
+                  }`}
+                  title={isOnline ? 'Online' : 'Offline'}
+                >
+                  {isOnline ? <Wifi className="w-2 h-2" /> : <WifiOff className="w-2 h-2" />}
+                  <span className="hidden sm:inline">{isOnline ? 'Online' : 'Offline'}</span>
+                  <span className={`w-1 h-1 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
@@ -337,32 +341,32 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
           
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {(adminUser || currentUser) && (
-              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 max-w-[110px] xs:max-w-[140px] sm:max-w-[180px]">
-                <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 bg-white dark:bg-slate-700 shadow-xs">
-                  {adminUser ? (
-                    <ShieldCheck className="w-2.5 h-2.5 text-emerald-500" />
-                  ) : (
-                    <User className="w-2.5 h-2.5 text-slate-500 dark:text-slate-300" />
-                  )}
-                </div>
-                <span className={`text-[10px] font-bold truncate capitalize tracking-tight ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
-                  {adminUser ? adminUser.full_name : currentUser?.full_name}
-                </span>
-              </div>
-            )}
-
             <motion.button 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={toggleTheme}
               style={{ backgroundColor: primaryColor }}
-              className="text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer transition-all"
+              className="text-white p-1.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold shadow-md flex items-center justify-center gap-1.5 shrink-0 cursor-pointer transition-all"
               title={isDark ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
             >
-              {isDark ? <Sun className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : <Moon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
-              <span className="font-bold">Mode</span>
+              {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+              <span className="font-bold hidden sm:inline">Mode</span>
             </motion.button>
+
+            {(adminUser || currentUser) && (
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 py-0.5">
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center shrink-0 bg-slate-100 dark:bg-slate-800">
+                  {adminUser ? (
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                  ) : (
+                    <User className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
+                  )}
+                </div>
+                <span className={`text-xs sm:text-sm font-bold whitespace-nowrap capitalize tracking-tight ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                  {adminUser ? adminUser.full_name : currentUser?.full_name}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
