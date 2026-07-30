@@ -6,7 +6,9 @@ import {
   ChevronRight,
   Ticket as TicketIcon,
   SlidersHorizontal,
-  CheckCircle2
+  CheckCircle2,
+  Activity,
+  AlertCircle
 } from 'lucide-react';
 import { ITicket, IAdminUser, ICategory } from '../types';
 import { TicketCard } from './TicketCard';
@@ -96,49 +98,47 @@ export const TicketList: React.FC<TicketListProps> = ({
       {/* Mobile Navigation Tabs */}
       <div className="lg:hidden flex flex-col gap-3 mb-4">
         {/* Interactive Stats Quick-Filter Grid */}
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 w-full">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
           {[
             { 
               id: '', 
-              label: 'Semua', 
+              label: 'Semua Tiket', 
               count: tickets.length,
-              activeClass: 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white border-emerald-600 shadow-md shadow-emerald-500/20 scale-[1.02]',
-              idleClass: isDark ? 'bg-emerald-950/30 border-emerald-800/40 text-emerald-400 hover:bg-emerald-900/40' : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+              icon: <TicketIcon className="w-5 h-5" />,
+              numColor: 'text-blue-600 dark:text-blue-400',
+              iconBg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+              activeClass: 'border-blue-500 ring-1 ring-blue-500 bg-blue-50/50 dark:bg-blue-900/20',
+              idleClass: isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800' : 'bg-white border-slate-200 hover:bg-slate-50'
             },
             { 
               id: 'New', 
-              label: 'Baru', 
+              label: 'Tiket Baru', 
               count: tickets.filter(t => t.status === 'New').length,
-              activeClass: 'bg-gradient-to-br from-indigo-500 to-indigo-700 text-white border-indigo-600 shadow-md shadow-indigo-500/20 scale-[1.02]',
-              idleClass: isDark ? 'bg-indigo-950/40 border-indigo-800/50 text-indigo-300 hover:bg-indigo-900/40' : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
+              icon: <CheckCircle2 className="w-5 h-5" />,
+              numColor: 'text-emerald-600 dark:text-emerald-400',
+              iconBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+              activeClass: 'border-emerald-500 ring-1 ring-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/20',
+              idleClass: isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800' : 'bg-white border-slate-200 hover:bg-slate-50'
             },
             { 
               id: 'In Progress', 
-              label: 'Progres', 
+              label: 'Tiket Progres', 
               count: tickets.filter(t => t.status === 'In Progress').length,
-              activeClass: 'bg-gradient-to-br from-blue-500 to-blue-700 text-white border-blue-600 shadow-md shadow-blue-500/20 scale-[1.02]',
-              idleClass: isDark ? 'bg-blue-950/40 border-blue-800/50 text-blue-300 hover:bg-blue-900/40' : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
-            },
-            { 
-              id: 'Completed', 
-              label: 'Selesai', 
-              count: tickets.filter(t => t.status === 'Completed' || t.status === 'Done' || t.status === 'Solved' || t.status === 'Selesai').length,
-              activeClass: 'bg-gradient-to-br from-emerald-500 to-green-700 text-white border-emerald-600 shadow-md shadow-emerald-500/20 scale-[1.02]',
-              idleClass: isDark ? 'bg-emerald-950/40 border-emerald-800/50 text-emerald-300 hover:bg-emerald-900/40' : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
-            },
-            { 
-              id: 'Closed', 
-              label: 'Closed', 
-              count: tickets.filter(t => t.status === 'Closed').length,
-              activeClass: 'bg-gradient-to-br from-slate-600 to-slate-800 text-white border-slate-600 shadow-md shadow-slate-500/20 scale-[1.02]',
-              idleClass: isDark ? 'bg-slate-800/50 border-slate-700/60 text-slate-300 hover:bg-slate-800' : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
+              icon: <Activity className="w-5 h-5" />,
+              numColor: 'text-orange-600 dark:text-orange-400',
+              iconBg: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
+              activeClass: 'border-orange-500 ring-1 ring-orange-500 bg-orange-50/50 dark:bg-orange-900/20',
+              idleClass: isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800' : 'bg-white border-slate-200 hover:bg-slate-50'
             },
             { 
               id: 'Re-opened', 
-              label: 'Re-Open', 
+              label: 'Tiket Reopen', 
               count: tickets.filter(t => t.status === 'Re-opened').length,
-              activeClass: 'bg-gradient-to-br from-amber-500 to-amber-700 text-white border-amber-600 shadow-md shadow-amber-500/20 scale-[1.02]',
-              idleClass: isDark ? 'bg-amber-950/40 border-amber-800/50 text-amber-300 hover:bg-amber-900/40' : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
+              icon: <AlertCircle className="w-5 h-5" />,
+              numColor: 'text-purple-600 dark:text-purple-400',
+              iconBg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+              activeClass: 'border-purple-500 ring-1 ring-purple-500 bg-purple-50/50 dark:bg-purple-900/20',
+              idleClass: isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800' : 'bg-white border-slate-200 hover:bg-slate-50'
             }
           ].map((item) => {
             const isActive = filterStatus === item.id;
@@ -147,28 +147,35 @@ export const TicketList: React.FC<TicketListProps> = ({
                 key={item.label}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setFilterStatus(item.id)}
-                className={`py-2 px-1.5 rounded-2xl border text-center flex flex-col items-center justify-center transition-all ${
+                className={`p-3 sm:p-4 rounded-md sm:rounded-md border text-left flex items-center justify-between transition-all ${
                   isActive ? item.activeClass : item.idleClass
                 }`}
               >
-                <span className="text-sm font-black tracking-tight leading-none mb-0.5">
-                  <RollingNumber value={item.count} />
-                </span>
-                <span className="text-[9px] font-extrabold tracking-tight whitespace-nowrap">{item.label}</span>
+                <div className="flex flex-col h-full justify-between gap-2 sm:gap-3">
+                  <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    {item.label}
+                  </span>
+                  <span className={`text-xl sm:text-2xl font-black leading-none ${item.numColor}`}>
+                    <RollingNumber value={item.count} />
+                  </span>
+                </div>
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-md sm:rounded-md flex items-center justify-center flex-shrink-0 ${item.iconBg}`}>
+                  {item.icon}
+                </div>
               </motion.button>
             );
           })}
         </div>
 
         {/* Quick Actions (Filter and Refresh) */}
-        <div className="flex items-center justify-end gap-2 p-1.5 rounded-2xl">
+        <div className="flex items-center justify-end gap-2 p-1.5 rounded-md">
           <div className="flex items-center gap-1">
             <button 
               onClick={() => {
                 setTempFilters({ dept: filterDept, status: filterStatus, date: filterDate, search: searchQuery });
                 setShowMobileFilter(true);
               }}
-              className={`flex items-center justify-center w-8 h-8 rounded-xl border relative ${
+              className={`flex items-center justify-center w-8 h-8 rounded-md border relative ${
                 (filterDept || filterStatus || filterDate || searchQuery)
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-800'
                 : isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white' : 'bg-white border-slate-200 text-slate-500 hover:text-slate-800'
@@ -182,7 +189,7 @@ export const TicketList: React.FC<TicketListProps> = ({
             </button>
             <button 
               onClick={() => fetchTickets(true)}
-              className={`flex items-center justify-center w-8 h-8 rounded-xl border ${
+              className={`flex items-center justify-center w-8 h-8 rounded-md border ${
                 isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white' : 'bg-white border-slate-200 text-slate-500 hover:text-slate-800'
               }`}
               title="Segarkan Antrian"
@@ -251,7 +258,7 @@ export const TicketList: React.FC<TicketListProps> = ({
           {[1, 2, 3, 4, 5].map(i => <SkeletonTicket key={i} isDark={isDark} />)}
         </div>
       ) : tickets.length === 0 ? (
-        <div className={`flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+        <div className={`flex flex-col items-center justify-center py-20 rounded-md border border-dashed ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
           <CurrentLogo className="w-12 h-12 text-slate-200 mb-4" />
           <p className={`font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>No tickets in queue</p>
           <button 
@@ -289,7 +296,7 @@ export const TicketList: React.FC<TicketListProps> = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className={`flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}
+                className={`flex flex-col items-center justify-center py-20 rounded-md border border-dashed ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}
               >
                 <motion.div
                   animate={{ y: [0, -10, 0] }}
@@ -359,7 +366,7 @@ export const TicketList: React.FC<TicketListProps> = ({
               <button 
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className={`p-2 rounded-xl border transition-all ${
+                className={`p-2 rounded-md border transition-all ${
                   currentPage === 1 
                   ? 'opacity-30 cursor-not-allowed' 
                   : isDark ? 'hover:bg-emerald-900/30 hover:border-emerald-800 text-slate-300' : 'hover:bg-emerald-50 hover:border-emerald-200 text-slate-600'
@@ -379,7 +386,7 @@ export const TicketList: React.FC<TicketListProps> = ({
                       <button
                         key={page}
                         onClick={() => setCurrentPage(page)}
-                        className={`w-8 h-8 rounded-xl text-[10px] font-bold transition-all ${
+                        className={`w-8 h-8 rounded-md text-[10px] font-bold transition-all ${
                           currentPage === page
                           ? 'bg-emerald-600 text-white shadow-lg'
                           : `border hover:bg-emerald-50 ${themeClasses.card} ${themeClasses.textMuted}`
@@ -401,7 +408,7 @@ export const TicketList: React.FC<TicketListProps> = ({
               <button 
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
-                className={`p-2 rounded-xl border transition-all ${
+                className={`p-2 rounded-md border transition-all ${
                   currentPage === totalPages 
                   ? 'opacity-30 cursor-not-allowed' 
                   : isDark ? 'hover:bg-emerald-900/30 hover:border-emerald-800 text-slate-300' : 'hover:bg-emerald-50 hover:border-emerald-200 text-slate-600'
@@ -421,10 +428,10 @@ export const TicketList: React.FC<TicketListProps> = ({
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 w-[90%] max-w-lg bg-slate-900 text-white rounded-2xl p-4 shadow-2xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4"
+            className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 w-[90%] max-w-lg bg-slate-900 text-white rounded-md p-4 shadow-2xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4"
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-900/40">
+              <div className="w-10 h-10 bg-emerald-500 rounded-md flex items-center justify-center shadow-lg shadow-emerald-900/40">
                 <CheckCircle2 className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -435,19 +442,19 @@ export const TicketList: React.FC<TicketListProps> = ({
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <button 
                 onClick={() => handleBulkAction('In Progress')}
-                className="flex-1 sm:flex-none px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-xl text-[9px] font-black capitalize tracking-widest transition-all active:scale-95"
+                className="flex-1 sm:flex-none px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-[9px] font-black capitalize tracking-widest transition-all active:scale-95"
               >
                 Progres
               </button>
               <button 
                 onClick={() => handleBulkAction('Completed')}
-                className="flex-1 sm:flex-none px-3 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-xl text-[9px] font-black capitalize tracking-widest transition-all active:scale-95"
+                className="flex-1 sm:flex-none px-3 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-md text-[9px] font-black capitalize tracking-widest transition-all active:scale-95"
               >
                 Selesai
               </button>
               <button 
                 onClick={() => handleBulkAction('delete')}
-                className="flex-1 sm:flex-none px-3 py-2 bg-rose-600 hover:bg-rose-700 rounded-xl text-[9px] font-black capitalize tracking-widest transition-all active:scale-95"
+                className="flex-1 sm:flex-none px-3 py-2 bg-rose-600 hover:bg-rose-700 rounded-md text-[9px] font-black capitalize tracking-widest transition-all active:scale-95"
               >
                 Hapus
               </button>

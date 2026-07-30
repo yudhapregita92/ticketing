@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Package, Smartphone, Monitor, Printer, Server, Laptop, Activity, Box } from 'lucide-react';
+import { Package, Smartphone, Monitor, Printer, Server, Laptop, Activity, Box, Clock, ShieldAlert } from 'lucide-react';
+import { calculateAssetDepreciation } from '../utils/assetUtils';
 
 const getCategoryIcon = (category: string = '') => {
   if (!category) return <Package className="w-5 h-5" />;
@@ -88,8 +89,61 @@ export const PublicAssetView = ({ assetId, isDark }: { assetId: string, isDark: 
           <DetailRow label="Departemen" value={asset.department || '-'} isDark={isDark} />
           <DetailRow label="Merk / Brand" value={asset.brand || '-'} isDark={isDark} />
           <DetailRow label="Serial Number" value={asset.serial_number || '-'} isDark={isDark} />
-          <DetailRow label="Tanggal Pembelian" value={asset.purchase_date || '-'} isDark={isDark} />
+          <DetailRow label="Tanggal Pembelian" value={asset.purchase_date ? new Date(asset.purchase_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'} isDark={isDark} />
           <DetailRow label="Kondisi" value={asset.condition || 'Good'} isDark={isDark} />
+          
+          {/* Section Penyusutan Aset (4 Tahun) */}
+          {(() => {
+            const dep = calculateAssetDepreciation(asset.purchase_date);
+            return (
+              <div className={`p-3.5 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700/80' : 'bg-slate-50 border-slate-200'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-emerald-500" />
+                    <span className={`text-[11px] font-black uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      Penyusutan Aset (4 Tahun)
+                    </span>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${dep.badgeClass}`}>
+                    {dep.status}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs font-semibold mb-2">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block uppercase">Usia Aset</span>
+                    <span className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{dep.ageText}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-slate-400 block uppercase">Akumulasi Penyusutan</span>
+                    <span className={`font-bold ${dep.isReplaceReady ? 'text-rose-500' : isDark ? 'text-white' : 'text-slate-900'}`}>
+                      {dep.percentage}%
+                    </span>
+                  </div>
+                </div>
+
+                {/* Progress bar penyusutan */}
+                <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all duration-500 ${
+                      dep.percentage >= 100 
+                        ? 'bg-rose-500' 
+                        : dep.percentage >= 85 
+                          ? 'bg-amber-500' 
+                          : 'bg-emerald-500'
+                    }`} 
+                    style={{ width: `${dep.percentage}%` }}
+                  />
+                </div>
+                {dep.isReplaceReady && (
+                  <div className="mt-2.5 flex items-center gap-1.5 text-[10px] font-bold text-rose-500 bg-rose-500/10 p-2 rounded-xl border border-rose-500/20">
+                    <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>Perangkat telah memenuhi masa pakai 4 tahun dan direkomendasikan untuk penggantian/replace.</span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           
           {asset.specs && (
             <div className="pt-2">
@@ -121,8 +175,8 @@ export const PublicAssetView = ({ assetId, isDark }: { assetId: string, isDark: 
 };
 
 const DetailRow = ({ label, value, isDark }: { label: string, value: string, isDark: boolean }) => (
-  <div className="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-dashed border-slate-200 dark:border-slate-800 last:border-0 gap-1 sm:gap-4">
-    <span className={`text-[11px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{label}</span>
-    <span className={`text-sm font-bold text-right ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{value}</span>
+  <div className="flex flex-col py-3.5 border-b border-dashed border-slate-200 dark:border-slate-800 last:border-0 gap-1.5">
+    <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{label}</span>
+    <span className={`text-sm sm:text-[15px] font-bold text-right ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{value}</span>
   </div>
 );

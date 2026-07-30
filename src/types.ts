@@ -113,6 +113,21 @@ export interface ISettings {
   yudha_auto_respond_delay?: number;
   yudha_auto_respond_assignee?: string;
   jenis_masalah_rules?: string;
+  berita_acara_settings?: string;
+  fab_size?: number;
+  fab_top_offset?: number;
+  fab_icon_size?: number;
+  nav_container_height?: number;
+  nav_container_radius?: number;
+  nav_text_size?: number;
+  nav_text_weight?: string;
+  nav_text_color?: string;
+  nav_bg_color?: string;
+  nav_bg_opacity?: number;
+  fab_bg_color?: string;
+  fab_icon_color?: string;
+  fab_border_color?: string;
+  fab_border_width?: number;
 }
 
 export interface IAdminUser extends IUser {}

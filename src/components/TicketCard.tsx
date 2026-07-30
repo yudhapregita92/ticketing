@@ -85,7 +85,7 @@ export const TicketCard: React.FC<TicketCardProps> = ({
         stiffness: 260,
         damping: 20
       }}
-      className={`${themeClasses.card} rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-sm hover:shadow-md transition-all group cursor-pointer relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-4 ${
+      className={`${themeClasses.card} rounded-md sm:rounded-md p-2.5 sm:p-4 shadow-sm hover:shadow-md transition-all group cursor-pointer relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-4 ${
         selectedTickets.includes(ticket.id) ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
       } ${
         getSLAColor(ticket.created_at, ticket.status, customCritical, customDelayed) || (isDark ? 'hover:border-emerald-900' : 'hover:border-emerald-100')
@@ -120,7 +120,7 @@ export const TicketCard: React.FC<TicketCardProps> = ({
               boxShadow: ["0 0 0px rgba(99, 102, 241, 0)", "0 0 8px rgba(99, 102, 241, 0.4)", "0 0 0px rgba(99, 102, 241, 0)"]
             } : {}}
             transition={{ repeat: Infinity, duration: 2 }}
-            className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center font-bold shadow-sm ${
+            className={`w-9 h-9 sm:w-10 sm:h-10 rounded-md flex items-center justify-center font-bold shadow-sm ${
               ticket.status === 'Completed' ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-500/20' :
               ticket.status === 'New' ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-indigo-500/20' :
               ticket.status === 'Cancelled' ? 'bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-rose-500/20' :
@@ -168,7 +168,7 @@ export const TicketCard: React.FC<TicketCardProps> = ({
           </h3>
           
           {(ticket.estimated_duration || ticket.estimated_target_at) && (
-            <div className="flex flex-wrap items-center gap-1.5 text-[10px] sm:text-xs font-semibold text-emerald-700 dark:text-emerald-300 mb-1.5 bg-emerald-500/10 dark:bg-emerald-950/40 px-2.5 py-1 rounded-xl border border-emerald-500/20 dark:border-emerald-800/60 w-fit">
+            <div className="flex flex-wrap items-center gap-1.5 text-[10px] sm:text-xs font-semibold text-emerald-700 dark:text-emerald-300 mb-1.5 bg-emerald-500/10 dark:bg-emerald-950/40 px-2.5 py-1 rounded-md border border-emerald-500/20 dark:border-emerald-800/60 w-fit">
               <Clock className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
               <span>Estimasi: <strong className="font-extrabold text-emerald-600 dark:text-emerald-400">{ticket.estimated_duration || 'Jadwal Khusus'}</strong></span>
               {ticket.estimated_target_at && (
@@ -201,7 +201,7 @@ export const TicketCard: React.FC<TicketCardProps> = ({
           </div>
 
           {/* Full-color structured details block for Mobile layout (matching Asset Management) */}
-          <div className={`mt-2 p-2.5 rounded-xl grid grid-cols-2 gap-2 text-[11px] sm:hidden ${isDark ? 'bg-slate-800/60 border border-slate-700/60' : 'bg-slate-50 border border-slate-200/80'}`}>
+          <div className={`mt-2 p-2.5 rounded-md grid grid-cols-2 gap-2 text-[11px] sm:hidden ${isDark ? 'bg-slate-800/60 border border-slate-700/60' : 'bg-slate-50 border border-slate-200/80'}`}>
             <div>
               <span className="text-[9px] font-black uppercase text-slate-400 block tracking-wider">Pelapor</span>
               <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">

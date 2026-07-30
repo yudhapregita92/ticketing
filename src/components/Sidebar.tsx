@@ -90,9 +90,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
   userCanVoucher,
   adminThemeLayout
 }) => {
-  const [masterDataOpen, setMasterDataOpen] = React.useState(false);
-  const [reportOpen, setReportOpen] = React.useState(false);
-  const [assetMenuOpen, setAssetMenuOpen] = React.useState(false);
+  const [masterDataOpen, setMasterDataOpen] = React.useState(viewMode === 'master_user' || viewMode === 'master_perangkat' || viewMode === 'master_team');
+  const [reportOpen, setReportOpen] = React.useState(viewMode === 'report_sla' || viewMode === 'report_perangkat');
+  const [assetMenuOpen, setAssetMenuOpen] = React.useState(viewMode === 'assets');
+
+  React.useEffect(() => {
+    if (viewMode === 'master_user' || viewMode === 'master_perangkat' || viewMode === 'master_team') {
+      setMasterDataOpen(true);
+    } else if (viewMode === 'report_sla' || viewMode === 'report_perangkat') {
+      setReportOpen(true);
+    } else if (viewMode === 'assets') {
+      setAssetMenuOpen(true);
+    }
+  }, [viewMode]);
 
   return (
     <div className="lg:col-span-1 space-y-3 lg:space-y-4">
@@ -221,7 +231,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   )}
                 </button>
 
-                {(assetMenuOpen || viewMode === 'assets') && (
+                {assetMenuOpen && (
                   <div className={`space-y-1 ${adminThemeLayout !== 'compact' ? 'pl-9' : ''}`}>
                     <button
                       onClick={() => {
@@ -347,7 +357,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   )}
                 </button>
 
-                {(reportOpen || viewMode === 'report_sla' || viewMode === 'report_perangkat') && (
+                {reportOpen && (
                   <div className={`space-y-1 ${adminThemeLayout !== 'compact' ? 'pl-9' : ''}`}>
                     <button
                       onClick={() => setViewMode('report_sla')}
@@ -402,7 +412,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       )}
                     </button>
 
-                    {(masterDataOpen || viewMode === 'master_user' || viewMode === 'master_perangkat' || viewMode === 'master_team') && (
+                    {masterDataOpen && (
                       <div className={`space-y-1 ${adminThemeLayout !== 'compact' ? 'pl-9' : ''}`}>
                         <button
                           onClick={() => setViewMode('master_user')}

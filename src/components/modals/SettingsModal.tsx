@@ -762,72 +762,71 @@ export const SettingsModal = React.memo(({
 
         <div className="flex flex-col sm:flex-row flex-1 overflow-hidden">
           {/* Sidebar Tabs */}
-          <div className={`w-full sm:w-64 border-b sm:border-b-0 sm:border-r p-2 sm:p-6 space-y-2 ${themeClasses.border} ${themeClasses.bgSecondary}`}>
+          <div className={`w-full sm:w-64 border-b sm:border-b-0 sm:border-r p-3 sm:p-6 flex flex-row sm:flex-col overflow-x-auto sm:overflow-visible gap-2 sm:gap-0 sm:space-y-2 hide-scrollbar shrink-0 ${themeClasses.border} ${themeClasses.bgSecondary}`}>
             <button 
               onClick={() => setSettingsTab('general')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'general' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+              className={`whitespace-nowrap shrink-0 sm:w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'general' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Layout className="w-4 h-4" /> Umum
             </button>
             <button 
               onClick={() => setSettingsTab('branding')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'branding' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+              className={`whitespace-nowrap shrink-0 sm:w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'branding' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Palette className="w-4 h-4" /> Branding
             </button>
             <button 
               onClick={() => setSettingsTab('login')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'login' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+              className={`whitespace-nowrap shrink-0 sm:w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'login' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Key className="w-4 h-4" /> Halaman Login
             </button>
             <button 
               onClick={() => setSettingsTab('notifications')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'notifications' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+              className={`whitespace-nowrap shrink-0 sm:w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'notifications' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Bell className="w-4 h-4" /> Notifikasi
             </button>
             <button 
               onClick={() => setSettingsTab('data')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'data' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+              className={`whitespace-nowrap shrink-0 sm:w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'data' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Database className="w-4 h-4" /> Data & API
             </button>
             <button 
               onClick={() => setSettingsTab('system')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'system' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+              className={`whitespace-nowrap shrink-0 sm:w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'system' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Settings2 className="w-4 h-4" /> Sistem
             </button>
             <button 
               type="button"
               onClick={() => setSettingsTab('sla')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'sla' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+              className={`whitespace-nowrap shrink-0 sm:w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'sla' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Clock className="w-4 h-4" /> Waktu SLA
             </button>
             <button 
               type="button"
               onClick={() => setSettingsTab('auto_respond')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'auto_respond' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+              className={`whitespace-nowrap shrink-0 sm:w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'auto_respond' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <Zap className="w-4 h-4 text-purple-400" /> Auto Respond (Yudha)
             </button>
             <button 
               type="button"
               onClick={() => setSettingsTab('ticket_popup')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'ticket_popup' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+              className={`whitespace-nowrap shrink-0 sm:w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'ticket_popup' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <MessageCircle className="w-4 h-4" /> Pop-up Tiket
             </button>
             <button 
               onClick={() => setSettingsTab('panduan')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'panduan' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+              className={`whitespace-nowrap shrink-0 sm:w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'panduan' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <BookOpen className="w-4 h-4" /> Panduan
             </button>
           </div>
-
           {/* Tab Content */}
           <div className="flex-1 overflow-y-auto custom-scrollbar">
             <form id="settings-form" onSubmit={handleUpdateSettings} className="p-4 sm:p-6 space-y-6">
@@ -1212,6 +1211,419 @@ export const SettingsModal = React.memo(({
                               Reset Favicon
                             </button>
                           )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Kustomisasi Bottom Navigation & Floating Action Button (FAB) */}
+                  <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-xs font-black text-emerald-600 dark:text-emerald-400 capitalize tracking-wider flex items-center gap-2">
+                          <Layout className="w-4 h-4" /> Kustomisasi Menu Bawah, Teks & Tombol FAB
+                        </h4>
+                        <p className="text-[10px] text-slate-400 font-medium">
+                          Atur warna tema/latar navbar, transparansi (opasitas), ukuran & ketebalan teks, serta warna & outline tombol Kirim Tiket (FAB).
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAppSettings({
+                            ...appSettings,
+                            fab_size: 58,
+                            fab_top_offset: -29,
+                            fab_icon_size: 24,
+                            nav_container_height: 56,
+                            nav_container_radius: 22,
+                            nav_text_size: 10,
+                            nav_text_weight: 'font-medium',
+                            nav_bg_color: '',
+                            nav_bg_opacity: 100,
+                            fab_bg_color: '',
+                            fab_icon_color: '#ffffff',
+                            fab_border_color: '#ffffff',
+                            fab_border_width: 3.5
+                          });
+                          toast.success("Pengaturan FAB & Menu Bawah di-reset ke default");
+                        }}
+                        className="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-[9px] font-black uppercase tracking-wider hover:bg-slate-300 dark:hover:bg-slate-700 transition-all shrink-0 cursor-pointer"
+                      >
+                        Reset Default
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40">
+                      
+                      {/* Section Header: Latar & Transparansi Navbar */}
+                      <div className="sm:col-span-2 text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 border-b border-slate-200 dark:border-slate-800 pb-1">
+                        1. Latar & Opasitas Navigasi
+                      </div>
+
+                      {/* Warna Latar Navbar */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 capitalize tracking-wider block">
+                          Warna Latar Navigasi Bawah
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            className="w-8 h-8 rounded-lg cursor-pointer border border-slate-300 dark:border-slate-700 p-0.5 bg-white"
+                            value={appSettings.nav_bg_color || '#10b981'}
+                            onChange={(e) => setAppSettings({ ...appSettings, nav_bg_color: e.target.value })}
+                          />
+                          <input
+                            type="text"
+                            className="flex-1 px-3 py-1.5 text-xs font-mono rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                            placeholder="#10b981"
+                            value={appSettings.nav_bg_color || ''}
+                            onChange={(e) => setAppSettings({ ...appSettings, nav_bg_color: e.target.value })}
+                          />
+                        </div>
+                        <p className="text-[8px] text-slate-400 font-medium">Kosongkan untuk mengikuti warna tema utama aplikasi.</p>
+                      </div>
+
+                      {/* Opasitas / Transparansi Latar Navbar */}
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between items-center text-[10px] font-black text-slate-500">
+                          <label className="capitalize tracking-wider">Opasitas / Transparansi Navbar</label>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                            {(appSettings.nav_bg_opacity !== undefined && appSettings.nav_bg_opacity !== null && appSettings.nav_bg_opacity !== '') ? appSettings.nav_bg_opacity : 100}%
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="10"
+                          max="100"
+                          step="5"
+                          className="w-full accent-emerald-600 cursor-pointer h-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                          value={(appSettings.nav_bg_opacity !== undefined && appSettings.nav_bg_opacity !== null && appSettings.nav_bg_opacity !== '') ? appSettings.nav_bg_opacity : 100}
+                          onChange={(e) => setAppSettings({ ...appSettings, nav_bg_opacity: Number(e.target.value) })}
+                        />
+                        <p className="text-[8px] text-slate-400 font-medium">100% = Pekat solid, 50% = Semi transparan/transparan.</p>
+                      </div>
+
+                      {/* Section Header: Tipografi Teks Navigasi */}
+                      <div className="sm:col-span-2 text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 border-b border-slate-200 dark:border-slate-800 pb-1 pt-2">
+                        2. Teks & Font Navigasi
+                      </div>
+
+                      {/* Warna Teks/Font Navigasi */}
+                      <div className="space-y-1.5 sm:col-span-2">
+                        <label className="text-[10px] font-black text-slate-500 capitalize tracking-wider block">
+                          Warna Teks/Font Menu Navigasi
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            className="w-8 h-8 rounded-lg cursor-pointer border border-slate-300 dark:border-slate-700 p-0.5 bg-white"
+                            value={appSettings.nav_text_color || '#ffffff'}
+                            onChange={(e) => setAppSettings({ ...appSettings, nav_text_color: e.target.value })}
+                          />
+                          <input
+                            type="text"
+                            className="flex-1 px-3 py-1.5 text-xs font-mono rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                            placeholder="#ffffff (atau #000000)"
+                            value={appSettings.nav_text_color || ''}
+                            onChange={(e) => setAppSettings({ ...appSettings, nav_text_color: e.target.value })}
+                          />
+                        </div>
+                        <p className="text-[8px] text-slate-400 font-medium">Contoh: #ffffff untuk teks putih, #000000 untuk teks hitam. Kosongkan untuk default.</p>
+                      </div>
+
+                      {/* Ukuran Teks Navigasi */}
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between items-center text-[10px] font-black text-slate-500">
+                          <label className="capitalize tracking-wider">Ukuran Teks Menu</label>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                            {appSettings.nav_text_size || 10} px
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="8"
+                          max="14"
+                          step="1"
+                          className="w-full accent-emerald-600 cursor-pointer h-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                          value={appSettings.nav_text_size || 10}
+                          onChange={(e) => setAppSettings({ ...appSettings, nav_text_size: Number(e.target.value) })}
+                        />
+                        <p className="text-[8px] text-slate-400 font-medium">Ukuran huruf judul menu (Default: 10px).</p>
+                      </div>
+
+                      {/* Ketebalan Font Teks Navigasi */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 capitalize tracking-wider block">
+                          Ketebalan Font (Font Weight)
+                        </label>
+                        <select
+                          className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                          value={appSettings.nav_text_weight || 'font-medium'}
+                          onChange={(e) => setAppSettings({ ...appSettings, nav_text_weight: e.target.value })}
+                        >
+                          <option value="font-normal">Tipis (Normal - 400)</option>
+                          <option value="font-medium">Sedang (Medium - 500)</option>
+                          <option value="font-semibold">Agak Tebal (SemiBold - 600)</option>
+                          <option value="font-bold">Tebal (Bold - 700)</option>
+                          <option value="font-extrabold">Sangat Tebal (ExtraBold - 800)</option>
+                          <option value="font-black">Super Tebal (Black - 900)</option>
+                        </select>
+                        <p className="text-[8px] text-slate-400 font-medium">Tingkat ketebalan huruf label menu.</p>
+                      </div>
+
+                      {/* Section Header: Tombol Kirim Tiket (FAB) */}
+                      <div className="sm:col-span-2 text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 border-b border-slate-200 dark:border-slate-800 pb-1 pt-2">
+                        3. Tombol Melayang FAB (Kirim Tiket)
+                      </div>
+
+                      {/* Warna Background FAB */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 capitalize tracking-wider block">
+                          Warna Background Tombol FAB
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            className="w-8 h-8 rounded-lg cursor-pointer border border-slate-300 dark:border-slate-700 p-0.5 bg-white"
+                            value={appSettings.fab_bg_color || '#10b981'}
+                            onChange={(e) => setAppSettings({ ...appSettings, fab_bg_color: e.target.value })}
+                          />
+                          <input
+                            type="text"
+                            className="flex-1 px-3 py-1.5 text-xs font-mono rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                            placeholder="#10b981 (atau #ffffff)"
+                            value={appSettings.fab_bg_color || ''}
+                            onChange={(e) => setAppSettings({ ...appSettings, fab_bg_color: e.target.value })}
+                          />
+                        </div>
+                        <p className="text-[8px] text-slate-400 font-medium">Contoh: #ffffff jika ingin tombol berlatar putih.</p>
+                      </div>
+
+                      {/* Warna Ikon Pesawat */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 capitalize tracking-wider block">
+                          Warna Ikon Pesawat (Send)
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            className="w-8 h-8 rounded-lg cursor-pointer border border-slate-300 dark:border-slate-700 p-0.5 bg-white"
+                            value={appSettings.fab_icon_color || '#ffffff'}
+                            onChange={(e) => setAppSettings({ ...appSettings, fab_icon_color: e.target.value })}
+                          />
+                          <input
+                            type="text"
+                            className="flex-1 px-3 py-1.5 text-xs font-mono rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                            placeholder="#ffffff (atau #10b981)"
+                            value={appSettings.fab_icon_color || '#ffffff'}
+                            onChange={(e) => setAppSettings({ ...appSettings, fab_icon_color: e.target.value })}
+                          />
+                        </div>
+                        <p className="text-[8px] text-slate-400 font-medium">Contoh: #10b981 jika latar putih, pesawat hijau.</p>
+                      </div>
+
+                      {/* Warna Border / Outline FAB */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-500 capitalize tracking-wider block">
+                          Warna Garis Pinggir (Border Outline) FAB
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            className="w-8 h-8 rounded-lg cursor-pointer border border-slate-300 dark:border-slate-700 p-0.5 bg-white"
+                            value={appSettings.fab_border_color || '#ffffff'}
+                            onChange={(e) => setAppSettings({ ...appSettings, fab_border_color: e.target.value })}
+                          />
+                          <input
+                            type="text"
+                            className="flex-1 px-3 py-1.5 text-xs font-mono rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                            placeholder="#ffffff"
+                            value={appSettings.fab_border_color || '#ffffff'}
+                            onChange={(e) => setAppSettings({ ...appSettings, fab_border_color: e.target.value })}
+                          />
+                        </div>
+                        <p className="text-[8px] text-slate-400 font-medium">Warna lis lingkar luar tombol melayang.</p>
+                      </div>
+
+                      {/* Ketebalan Border FAB */}
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between items-center text-[10px] font-black text-slate-500">
+                          <label className="capitalize tracking-wider">Ketebalan Border Outline</label>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                            {(appSettings.fab_border_width !== undefined && appSettings.fab_border_width !== null && appSettings.fab_border_width !== '') ? appSettings.fab_border_width : 3.5} px
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="8"
+                          step="0.5"
+                          className="w-full accent-emerald-600 cursor-pointer h-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                          value={(appSettings.fab_border_width !== undefined && appSettings.fab_border_width !== null && appSettings.fab_border_width !== '') ? appSettings.fab_border_width : 3.5}
+                          onChange={(e) => setAppSettings({ ...appSettings, fab_border_width: Number(e.target.value) })}
+                        />
+                        <p className="text-[8px] text-slate-400 font-medium">0px = Tanpa border outline, default 3.5px.</p>
+                      </div>
+
+                      {/* Posisi Vertikal FAB (Top Offset) */}
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between items-center text-[10px] font-black text-slate-500">
+                          <label className="capitalize tracking-wider">Posisi Naik/Turun FAB (Top Offset)</label>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                            {(appSettings.fab_top_offset !== undefined && appSettings.fab_top_offset !== null && appSettings.fab_top_offset !== '') ? appSettings.fab_top_offset : -29} px
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-60"
+                          max="20"
+                          step="1"
+                          className="w-full accent-emerald-600 cursor-pointer h-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                          value={(appSettings.fab_top_offset !== undefined && appSettings.fab_top_offset !== null && appSettings.fab_top_offset !== '') ? appSettings.fab_top_offset : -29}
+                          onChange={(e) => setAppSettings({ ...appSettings, fab_top_offset: Number(e.target.value) })}
+                        />
+                        <p className="text-[8px] text-slate-400 font-medium">Minus (-) = posisi melayang naik lebih tinggi ke atas.</p>
+                      </div>
+
+                      {/* Ukuran Tombol FAB */}
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between items-center text-[10px] font-black text-slate-500">
+                          <label className="capitalize tracking-wider">Ukuran Tombol FAB (Diameter)</label>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                            {appSettings.fab_size || 58} px
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="36"
+                          max="80"
+                          step="1"
+                          className="w-full accent-emerald-600 cursor-pointer h-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                          value={appSettings.fab_size || 58}
+                          onChange={(e) => setAppSettings({ ...appSettings, fab_size: Number(e.target.value) })}
+                        />
+                        <p className="text-[8px] text-slate-400 font-medium">Diameter lingkaran tombol Kirim Tiket (Default: 58px).</p>
+                      </div>
+
+                      {/* Section Header: Dimensi Container Navbar */}
+                      <div className="sm:col-span-2 text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 border-b border-slate-200 dark:border-slate-800 pb-1 pt-2">
+                        4. Dimensi Container Navigasi
+                      </div>
+
+                      {/* Ukuran Ikon Pesawat (Send) */}
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between items-center text-[10px] font-black text-slate-500">
+                          <label className="capitalize tracking-wider">Ukuran Ikon Pesawat</label>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                            {appSettings.fab_icon_size || 24} px
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="16"
+                          max="40"
+                          step="1"
+                          className="w-full accent-emerald-600 cursor-pointer h-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                          value={appSettings.fab_icon_size || 24}
+                          onChange={(e) => setAppSettings({ ...appSettings, fab_icon_size: Number(e.target.value) })}
+                        />
+                        <p className="text-[8px] text-slate-400 font-medium">Ukuran simbol ikon di dalam tombol (Default: 24px).</p>
+                      </div>
+
+                      {/* Tinggi Navbar Bottom */}
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between items-center text-[10px] font-black text-slate-500">
+                          <label className="capitalize tracking-wider">Tinggi Bar Navigasi Bawah</label>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                            {appSettings.nav_container_height || 56} px
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="40"
+                          max="80"
+                          step="1"
+                          className="w-full accent-emerald-600 cursor-pointer h-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                          value={appSettings.nav_container_height || 56}
+                          onChange={(e) => setAppSettings({ ...appSettings, nav_container_height: Number(e.target.value) })}
+                        />
+                        <p className="text-[8px] text-slate-400 font-medium">Tinggi container melayang di bagian bawah (Default: 56px).</p>
+                      </div>
+
+                      {/* Radius Sudut Navbar */}
+                      <div className="space-y-1.5 sm:col-span-2">
+                        <div className="flex justify-between items-center text-[10px] font-black text-slate-500">
+                          <label className="capitalize tracking-wider">Kelengkungan Sudut (Border Radius) Navbar</label>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                            {appSettings.nav_container_radius || 22} px
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="36"
+                          step="1"
+                          className="w-full accent-emerald-600 cursor-pointer h-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                          value={appSettings.nav_container_radius || 22}
+                          onChange={(e) => setAppSettings({ ...appSettings, nav_container_radius: Number(e.target.value) })}
+                        />
+                        <p className="text-[8px] text-slate-400 font-medium">Kebulatan sudut bar navigasi (Default: 22px).</p>
+                      </div>
+                    </div>
+
+                    {/* Mini Live Preview inside Modal */}
+                    <div className="p-3 bg-slate-100 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 text-center space-y-2">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Pratinjau Langsung (Live Preview)</span>
+                      <div className="relative mx-auto max-w-xs h-28 bg-slate-200/50 dark:bg-slate-900/80 rounded-xl flex items-end justify-center pb-2 overflow-hidden border border-slate-300 dark:border-slate-800">
+                        {/* Simulated background items */}
+                        <div className="absolute top-2 left-2 right-2 flex justify-between opacity-30 text-[8px] text-slate-500">
+                          <span>Konten Halaman</span>
+                          <span>Tiket #123</span>
+                        </div>
+
+                        <div
+                          className="relative text-white flex items-center justify-between px-3 w-64 shadow-md transition-all"
+                          style={{
+                            height: `${appSettings.nav_container_height || 56}px`,
+                            borderRadius: `${appSettings.nav_container_radius || 22}px`,
+                            backgroundColor: appSettings.nav_bg_color 
+                              ? `rgba(${parseInt((appSettings.nav_bg_color.replace('#','')+'000000').substring(0,2),16)}, ${parseInt((appSettings.nav_bg_color.replace('#','')+'000000').substring(2,4),16)}, ${parseInt((appSettings.nav_bg_color.replace('#','')+'000000').substring(4,6),16)}, ${(appSettings.nav_bg_opacity !== undefined && appSettings.nav_bg_opacity !== null && appSettings.nav_bg_opacity !== '') ? appSettings.nav_bg_opacity / 100 : 1})`
+                              : `rgba(16, 185, 129, ${(appSettings.nav_bg_opacity !== undefined && appSettings.nav_bg_opacity !== null && appSettings.nav_bg_opacity !== '') ? appSettings.nav_bg_opacity / 100 : 1})`
+                          }}
+                        >
+                          <span className={`opacity-90 ${appSettings.nav_text_weight || 'font-medium'}`} style={{ fontSize: `${appSettings.nav_text_size || 10}px`, color: appSettings.nav_text_color || '#ffffff' }}>Beranda</span>
+                          <span className={`opacity-90 ${appSettings.nav_text_weight || 'font-medium'}`} style={{ fontSize: `${appSettings.nav_text_size || 10}px`, color: appSettings.nav_text_color || '#ffffff' }}>Riwayat</span>
+                          
+                          {/* FAB Preview */}
+                          <div
+                            className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center transition-all"
+                            style={{ top: `${(appSettings.fab_top_offset !== undefined && appSettings.fab_top_offset !== null && appSettings.fab_top_offset !== '') ? appSettings.fab_top_offset : -29}px` }}
+                          >
+                            <div
+                              className="rounded-full flex items-center justify-center shadow-lg transition-all"
+                              style={{
+                                width: `${appSettings.fab_size || 58}px`,
+                                height: `${appSettings.fab_size || 58}px`,
+                                backgroundColor: appSettings.fab_bg_color || '#10b981',
+                                borderColor: appSettings.fab_border_color || '#ffffff',
+                                borderWidth: `${(appSettings.fab_border_width !== undefined && appSettings.fab_border_width !== null && appSettings.fab_border_width !== '') ? appSettings.fab_border_width : 3.5}px`,
+                                borderStyle: 'solid'
+                              }}
+                            >
+                              <Send
+                                className="ml-[-1px]"
+                                style={{
+                                  width: `${appSettings.fab_icon_size || 24}px`,
+                                  height: `${appSettings.fab_icon_size || 24}px`,
+                                  color: appSettings.fab_icon_color || '#ffffff'
+                                }}
+                              />
+                            </div>
+                          </div>
+
+                          <span className={`opacity-90 ${appSettings.nav_text_weight || 'font-medium'}`} style={{ fontSize: `${appSettings.nav_text_size || 10}px`, color: appSettings.nav_text_color || '#ffffff' }}>Panduan</span>
+                          <span className={`opacity-90 ${appSettings.nav_text_weight || 'font-medium'}`} style={{ fontSize: `${appSettings.nav_text_size || 10}px`, color: appSettings.nav_text_color || '#ffffff' }}>Keluar</span>
                         </div>
                       </div>
                     </div>

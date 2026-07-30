@@ -5,12 +5,13 @@ import {
   Monitor, Smartphone, Printer, Server, Laptop, X, Save,
   User, Building2, Download, Upload, FileSpreadsheet,
   ChevronLeft, ChevronRight, Users, Layers, Eye, CheckCircle2, PieChart,
-  ClipboardList, RotateCcw, PenTool, Calendar, Check, AlertCircle, FileSignature
+  ClipboardList, RotateCcw, PenTool, Calendar, Check, AlertCircle, FileSignature, QrCode, Clock, ExternalLink
 } from 'lucide-react';
 import * as xlsx from 'xlsx';
 import toast from 'react-hot-toast';
 import { IAsset, IBorrowedAsset } from '../types';
 import { api } from '../services/api';
+import { calculateAssetDepreciation } from '../utils/assetUtils';
 
 interface AssetManagementProps {
   isDark: boolean;
@@ -101,6 +102,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
   const [onlyITDepartment, setOnlyITDepartment] = useState(true);
   const [showSignaturePreview, setShowSignaturePreview] = useState<string | null>(null);
   const [editingAsset, setEditingAsset] = useState<IAsset | null>(null);
+  const [qrPreviewAsset, setQrPreviewAsset] = useState<IAsset | null>(null);
   const [isViewMode, setIsViewMode] = useState(false);
   const [masterUsers, setMasterUsers] = useState<any[]>([]);
   const [assetCategories, setAssetCategories] = useState<any[]>([]);
@@ -132,7 +134,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
     status: 'Active',
     condition: 'Good',
     notes: '',
-    budget_type: 'Capex'
+    budget_type: 'Capex',
+    purchase_date: new Date().toISOString().split('T')[0]
   });
 
   // Borrow Form State
@@ -360,7 +363,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
       status: 'Active',
       condition: 'Good',
       notes: '',
-      budget_type: activeSubTab !== 'all' ? activeSubTab : 'Capex'
+      budget_type: activeSubTab !== 'all' ? activeSubTab : 'Capex',
+      purchase_date: new Date().toISOString().split('T')[0]
     });
   };
 
@@ -393,7 +397,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
       status: asset.status || 'Active',
       condition: asset.condition || 'Good',
       notes: asset.notes || '',
-      budget_type: asset.budget_type || 'Capex'
+      budget_type: asset.budget_type || 'Capex',
+      purchase_date: asset.purchase_date || ''
     });
     setIsViewMode(view);
     setShowModal(true);
@@ -1751,6 +1756,25 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                 <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
                 <span>Cetak Label</span>
               </button>
+
+              <button
+                onClick={() => {
+                  if (filteredAssets.length > 0) {
+                    setQrPreviewAsset(filteredAssets[0]);
+                  } else {
+                    toast.error('Tidak ada data aset untuk dipreview');
+                  }
+                }}
+                title="Preview Hasil Halaman Scan QR Code"
+                className={`px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                  isDark 
+                    ? 'bg-slate-800 border-slate-700 text-blue-400 hover:bg-slate-700 hover:text-white' 
+                    : 'bg-white border-slate-200 text-blue-600 hover:bg-blue-50'
+                }`}
+              >
+                <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" />
+                <span>Preview Scan QR</span>
+              </button>
               
               <button
                 onClick={() => {
@@ -1819,6 +1843,13 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   {/* Actions */}
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button 
+                      onClick={() => setQrPreviewAsset(asset)}
+                      className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors"
+                      title="Preview Scan QR"
+                    >
+                      <QrCode className="w-4 h-4" />
+                    </button>
+                    <button 
                       onClick={() => handlePrintSingleLabel(asset)}
                       className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 dark:hover:bg-slate-800 transition-colors"
                       title="Cetak Label"
@@ -1861,6 +1892,25 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     <span className="text-[9px] font-black uppercase text-slate-400 block">Departemen</span>
                     <span className="font-medium text-slate-700 dark:text-slate-300">{asset.department || '-'}</span>
                   </div>
+                  <div className="col-span-2 border-t border-slate-200/50 dark:border-slate-700/50 pt-1.5 mt-0.5 flex justify-between items-center text-[10px]">
+                    <div>
+                      <span className="text-[9px] font-black uppercase text-slate-400 block">Tgl Pembelian</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">
+                        {asset.purchase_date ? new Date(asset.purchase_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                      </span>
+                    </div>
+                    {(() => {
+                      const dep = calculateAssetDepreciation(asset.purchase_date);
+                      return (
+                        <div className="text-right">
+                          <span className="text-[9px] font-black uppercase text-slate-400 block">Penyusutan (4 Thn)</span>
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold border ${dep.badgeClass}`}>
+                            {dep.status} ({dep.percentage}%)
+                          </span>
+                        </div>
+                      );
+                    })()}
+                  </div>
                   {(asset.brand || asset.specs) && (
                     <div className="col-span-2 border-t border-slate-200/50 dark:border-slate-700/50 pt-1.5 mt-0.5">
                       <span className="text-[9px] font-black uppercase text-slate-400 block">Merk & Spesifikasi</span>
@@ -1883,6 +1933,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Kategori</th>
                   <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400 whitespace-nowrap">Kode Perangkat</th>
                   <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400 whitespace-nowrap">Kode Aset</th>
+                  <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400 whitespace-nowrap">Tgl Pembelian</th>
+                  <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400 whitespace-nowrap">Penyusutan (4 Thn)</th>
                   <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Pengguna</th>
                   <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Departemen</th>
                   <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Tipe</th>
@@ -1927,6 +1979,26 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                         {asset.asset_id || '-'}
                       </span>
                     </td>
+                    <td className="px-3 py-2.5 whitespace-nowrap">
+                      <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        {asset.purchase_date ? new Date(asset.purchase_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 whitespace-nowrap">
+                      {(() => {
+                        const dep = calculateAssetDepreciation(asset.purchase_date);
+                        return (
+                          <div className="flex flex-col gap-0.5">
+                            <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-md border inline-block w-fit ${dep.badgeClass}`}>
+                              {dep.status}
+                            </span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
+                              Usia: {dep.ageText} ({dep.percentage}%)
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </td>
                     <td className="px-3 py-2.5">
                       <div className="flex flex-col">
                         <span className={`text-xs font-semibold truncate max-w-[120px] ${themeClasses.heading}`} title={asset.assigned_to || '-'}>
@@ -1960,6 +2032,13 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     </td>
                     <td className="px-3 py-2.5 text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <button 
+                          onClick={() => setQrPreviewAsset(asset)}
+                          className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors"
+                          title="Preview Hasil Halaman Scan QR"
+                        >
+                          <QrCode className="w-3.5 h-3.5" />
+                        </button>
                         <button 
                           onClick={() => handlePrintSingleLabel(asset)}
                           className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 dark:hover:bg-slate-800 transition-colors"
@@ -2429,6 +2508,67 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       <option value="Capex">Capex (Capital Expenditure)</option>
                       <option value="Opex">Opex (Operational Expenditure)</option>
                     </select>
+                  </div>
+
+                  {/* Tanggal Pembelian */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">Tanggal Pembelian</label>
+                    <input 
+                      type="date" 
+                      value={formData.purchase_date}
+                      onChange={(e) => setFormData({...formData, purchase_date: e.target.value})}
+                      className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
+                      }`}
+                    />
+                  </div>
+
+                  {/* Info Penyusutan Aset 4 Tahun (Live Preview) */}
+                  <div className="sm:col-span-2">
+                    {(() => {
+                      const dep = calculateAssetDepreciation(formData.purchase_date);
+                      return (
+                        <div className={`p-3.5 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="w-4 h-4 text-emerald-500" />
+                              <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                                Estimasi Penyusutan (Standar 4 Tahun)
+                              </span>
+                            </div>
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${dep.badgeClass}`}>
+                              {dep.status}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-xs font-semibold mb-1.5">
+                            <div>
+                              <span className="text-[9px] text-slate-400 block uppercase">Usia Pemakaian</span>
+                              <span className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{dep.ageText}</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-[9px] text-slate-400 block uppercase">Akumulasi Depresiasi</span>
+                              <span className={`font-bold ${dep.isReplaceReady ? 'text-rose-500' : isDark ? 'text-white' : 'text-slate-900'}`}>
+                                {dep.percentage}%
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full transition-all duration-500 ${
+                                dep.percentage >= 100 
+                                  ? 'bg-rose-500' 
+                                  : dep.percentage >= 85 
+                                    ? 'bg-amber-500' 
+                                    : 'bg-emerald-500'
+                              }`} 
+                              style={{ width: `${dep.percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Status Aset */}
@@ -3203,6 +3343,190 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Preview Hasil Halaman Scan QR Code */}
+      <AnimatePresence>
+        {qrPreviewAsset && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto py-6">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className={`w-full max-w-xl p-5 sm:p-6 rounded-3xl border shadow-2xl space-y-4 max-h-[90vh] flex flex-col ${
+                isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+              }`}
+            >
+              {/* Header Modal */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500">
+                    <QrCode className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-extrabold">Preview Hasil Halaman Scan QR</h3>
+                    <p className="text-[11px] text-slate-400">Tampilan publik saat QR Code label dikunjungi / discan</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setQrPreviewAsset(null)}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Selector Aset Cepat */}
+              <div className="flex items-center gap-2 text-xs">
+                <label className="text-[10px] font-black uppercase text-slate-400 whitespace-nowrap">Pilih Aset:</label>
+                <select
+                  value={qrPreviewAsset.id}
+                  onChange={(e) => {
+                    const sel = assets.find(a => a.id === Number(e.target.value));
+                    if (sel) setQrPreviewAsset(sel);
+                  }}
+                  className={`w-full px-3 py-1.5 rounded-xl border text-xs font-bold ${
+                    isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                  }`}
+                >
+                  {assets.map(a => (
+                    <option key={a.id} value={a.id}>
+                      [{a.device_code || a.asset_id}] {a.name || a.category} - {a.assigned_to || 'Tanpa User'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Display QR Image and Live Scan Page Card */}
+              <div className="overflow-y-auto flex-1 pr-1 space-y-4">
+                <div className={`p-4 rounded-2xl border text-center flex flex-col items-center justify-center gap-2 ${
+                  isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <span className="text-[10px] font-black uppercase text-slate-400">QR Code Label</span>
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+                      window.location.origin + '/?asset=' + (qrPreviewAsset.device_code || qrPreviewAsset.asset_id)
+                    )}`}
+                    alt="QR Code"
+                    className="w-28 h-28 p-1.5 bg-white rounded-xl shadow-md border"
+                  />
+                  <span className="font-mono text-xs font-extrabold text-blue-600 dark:text-blue-400">
+                    {window.location.origin}/?asset={qrPreviewAsset.device_code || qrPreviewAsset.asset_id}
+                  </span>
+                </div>
+
+                {/* Simulated Public Screen */}
+                <div className="rounded-2xl border overflow-hidden shadow-inner">
+                  <div className="bg-slate-800 text-white px-3 py-2 text-[10px] font-bold flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      Live Preview Tampilan Publik
+                    </span>
+                    <span className="text-slate-400 font-mono">/?asset={qrPreviewAsset.device_code || qrPreviewAsset.asset_id}</span>
+                  </div>
+
+                  <div className="max-h-[350px] overflow-y-auto">
+                    <div className="p-4 scale-95 transform-gpu">
+                      <div className={`p-4 sm:p-5 rounded-2xl border shadow-lg ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className={`p-3 rounded-xl ${isDark ? 'bg-slate-800 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
+                            {getCategoryIcon(qrPreviewAsset.category)}
+                          </div>
+                          <div>
+                            <h4 className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{qrPreviewAsset.name || qrPreviewAsset.category}</h4>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
+                                {qrPreviewAsset.category}
+                              </span>
+                              {getStatusBadge(qrPreviewAsset.status)}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-0 text-xs">
+                          <div className="flex flex-col py-2 border-b border-dashed border-slate-200 dark:border-slate-800 gap-1">
+                            <span className="text-slate-400 font-bold uppercase text-[10px]">Kode Perangkat</span>
+                            <span className="font-mono font-bold">{qrPreviewAsset.device_code || '-'}</span>
+                          </div>
+                          <div className="flex flex-col py-2 border-b border-dashed border-slate-200 dark:border-slate-800 gap-1">
+                            <span className="text-slate-400 font-bold uppercase text-[10px]">Pengguna</span>
+                            <span className="font-bold">{qrPreviewAsset.assigned_to || '-'}</span>
+                          </div>
+                          <div className="flex flex-col py-2 border-b border-dashed border-slate-200 dark:border-slate-800 gap-1">
+                            <span className="text-slate-400 font-bold uppercase text-[10px]">Departemen</span>
+                            <span className="font-bold">{qrPreviewAsset.department || '-'}</span>
+                          </div>
+                          <div className="flex flex-col py-2 border-b border-dashed border-slate-200 dark:border-slate-800 gap-1">
+                            <span className="text-slate-400 font-bold uppercase text-[10px]">Tanggal Pembelian</span>
+                            <span className="font-bold">
+                              {qrPreviewAsset.purchase_date ? new Date(qrPreviewAsset.purchase_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}
+                            </span>
+                          </div>
+
+                          {/* Section Penyusutan Aset 4 Tahun */}
+                          {(() => {
+                            const dep = calculateAssetDepreciation(qrPreviewAsset.purchase_date);
+                            return (
+                              <div className={`mt-3 p-3 rounded-xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2">
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="w-3.5 h-3.5 text-emerald-500" />
+                                    <span className="text-[10px] font-black uppercase text-slate-400">Penyusutan (4 Tahun)</span>
+                                  </div>
+                                  <span className={`w-fit px-2 py-0.5 rounded-full text-[9px] font-extrabold border ${dep.badgeClass}`}>
+                                    {dep.status}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between text-[11px] font-bold mb-1">
+                                  <span>Usia: {dep.ageText}</span>
+                                  <span className={dep.isReplaceReady ? 'text-rose-500' : ''}>{dep.percentage}% Depresiasi</span>
+                                </div>
+                                <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                                  <div 
+                                    className={`h-full ${dep.percentage >= 100 ? 'bg-rose-500' : dep.percentage >= 85 ? 'bg-amber-500' : 'bg-emerald-500'}`} 
+                                    style={{ width: `${dep.percentage}%` }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons Footer */}
+              <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = `${window.location.origin}/?asset=${encodeURIComponent(qrPreviewAsset.device_code || qrPreviewAsset.asset_id)}`;
+                    navigator.clipboard.writeText(url);
+                    toast.success('Link QR Code berhasil disalin ke clipboard!');
+                  }}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all ${
+                    isDark ? 'border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700' : 'border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <span>📋 Salin Link Scan</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = `/?asset=${encodeURIComponent(qrPreviewAsset.device_code || qrPreviewAsset.asset_id)}`;
+                    window.open(url, '_blank');
+                  }}
+                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>Buka Tab Baru</span>
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

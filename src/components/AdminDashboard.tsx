@@ -39,19 +39,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const stats = useMemo(() => {
     const total = tickets.length;
-    const open = tickets.filter(t => t.status === 'New' || t.status === 'In Progress').length;
-    const resolved = tickets.filter(t => t.status === 'Completed').length;
+    const baru = tickets.filter(t => t.status === 'New').length;
+    const progres = tickets.filter(t => t.status === 'In Progress').length;
+    const reopen = tickets.filter(t => t.status === 'Re-opened').length;
     
-    // Calculate overdue (e.g., New tickets older than 2 hours)
-    const now = new Date().getTime();
-    const overdue = tickets.filter(t => {
-      if (t.status === 'Completed') return false;
-      const created = new Date(t.created_at.replace(' ', 'T')).getTime();
-      const diffHours = (now - created) / (1000 * 60 * 60);
-      return diffHours > 2;
-    }).length;
-
-    return { total, open, resolved, overdue };
+    return { total, baru, progres, reopen };
   }, [tickets]);
 
   const monthlyData = useMemo(() => {
@@ -117,7 +109,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   }, [tickets]);
 
   // Using specific colors from the screenshot
-  const cardClass = `${isDark ? 'bg-[#1e2330] border-[#2a3142]' : 'bg-white border-slate-200'} border rounded-2xl p-5 shadow-sm`;
+  const cardClass = `${isDark ? 'bg-[#1e2330] border-[#2a3142]' : 'bg-white border-slate-200'} border rounded-md p-5 shadow-sm`;
   const textMuted = isDark ? 'text-slate-400' : 'text-slate-500';
   const textMain = isDark ? 'text-white' : 'text-slate-900';
 
@@ -132,44 +124,64 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-        <div className={`p-3 sm:p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <div>
-            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400">Total Tiket</p>
-            <h3 className="text-xl sm:text-2xl font-black mt-0.5 sm:mt-1 text-blue-600 dark:text-blue-400">{stats.total}</h3>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Card 1: Semua Tiket */}
+        <div className={`p-4 sm:p-5 rounded-md sm:rounded-md border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <div className="flex flex-col h-full justify-between gap-3 sm:gap-4">
+            <p className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>
+              Semua Tiket
+            </p>
+            <h3 className="text-2xl sm:text-3xl font-black leading-none text-blue-600 dark:text-blue-400">
+              {stats.total}
+            </h3>
           </div>
-          <div className="p-2 sm:p-3 rounded-2xl bg-blue-500/10 text-blue-500">
-            <Ticket className="w-5 h-5 sm:w-6 sm:h-6" />
-          </div>
-        </div>
-
-        <div className={`p-3 sm:p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <div>
-            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400">Tiket Open</p>
-            <h3 className="text-xl sm:text-2xl font-black mt-0.5 sm:mt-1 text-orange-600 dark:text-orange-400">{stats.open}</h3>
-          </div>
-          <div className="p-2 sm:p-3 rounded-2xl bg-orange-500/10 text-orange-500">
-            <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6" />
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+            <Ticket className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
         </div>
 
-        <div className={`p-3 sm:p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <div>
-            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400">Resolved</p>
-            <h3 className="text-xl sm:text-2xl font-black mt-0.5 sm:mt-1 text-emerald-600 dark:text-emerald-400">{stats.resolved}</h3>
+        {/* Card 2: Baru */}
+        <div className={`p-4 sm:p-5 rounded-md sm:rounded-md border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <div className="flex flex-col h-full justify-between gap-3 sm:gap-4">
+            <p className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>
+              Tiket Baru
+            </p>
+            <h3 className="text-2xl sm:text-3xl font-black leading-none text-emerald-600 dark:text-emerald-400">
+              {stats.baru}
+            </h3>
           </div>
-          <div className="p-2 sm:p-3 rounded-2xl bg-emerald-500/10 text-emerald-500">
-            <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" />
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+            <CheckCircle2 className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
         </div>
 
-        <div className={`p-3 sm:p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <div>
-            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400">Overdue</p>
-            <h3 className="text-xl sm:text-2xl font-black mt-0.5 sm:mt-1 text-rose-600 dark:text-rose-400">{stats.overdue}</h3>
+        {/* Card 3: Progres */}
+        <div className={`p-4 sm:p-5 rounded-md sm:rounded-md border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <div className="flex flex-col h-full justify-between gap-3 sm:gap-4">
+            <p className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>
+              Tiket Progres
+            </p>
+            <h3 className="text-2xl sm:text-3xl font-black leading-none text-orange-600 dark:text-orange-400">
+              {stats.progres}
+            </h3>
           </div>
-          <div className="p-2 sm:p-3 rounded-2xl bg-rose-500/10 text-rose-500">
-            <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6" />
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-md bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center flex-shrink-0">
+            <Activity className="w-6 h-6 sm:w-7 sm:h-7" />
+          </div>
+        </div>
+
+        {/* Card 4: Reopen */}
+        <div className={`p-4 sm:p-5 rounded-md sm:rounded-md border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <div className="flex flex-col h-full justify-between gap-3 sm:gap-4">
+            <p className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>
+              Tiket Reopen
+            </p>
+            <h3 className="text-2xl sm:text-3xl font-black leading-none text-purple-600 dark:text-purple-400">
+              {stats.reopen}
+            </h3>
+          </div>
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0">
+            <AlertCircle className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
         </div>
       </div>

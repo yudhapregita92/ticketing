@@ -1,5 +1,5 @@
-import {StrictMode} from 'react';
-import {createRoot} from 'react-dom/client';
+import React, { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App.tsx';
@@ -9,9 +9,9 @@ import './index.css';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      staleTime: 1000 * 60 * 5,
       retry: 1,
-      networkMode: 'always', // Allow fetching even if browser incorrectly reports offline in PWA
+      networkMode: 'always',
     },
     mutations: {
       networkMode: 'always',
@@ -19,11 +19,33 @@ const queryClient = new QueryClient({
   },
 });
 
+class ErrorBoundary extends React.Component<any, { hasError: boolean, error: any }> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return <div style={{padding: 20, color: 'red', background: 'white', minHeight: '100vh'}}>
+        <h1>Runtime Error</h1>
+        <pre>{this.state.error?.toString()}</pre>
+        <pre>{this.state.error?.stack}</pre>
+      </div>;
+    }
+    return this.props.children;
+  }
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <App />
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>,

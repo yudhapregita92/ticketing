@@ -38,12 +38,12 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
 
   return (
     <div className="lg:hidden mb-4 relative" ref={menuRef}>
-      <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-zinc-900/40 p-1.5 rounded-2xl border border-slate-100/80 dark:border-zinc-800/60">
+      <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-zinc-900/40 p-1.5 rounded-md border border-slate-100/80 dark:border-zinc-800/60">
         
         {(adminUser || userCanVoucher) && (
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className={`flex-none p-2 rounded-xl transition-all ${
+            className={`flex-none p-2 rounded-md transition-all ${
               isMenuOpen || ['dashboard', 'assets', 'network', 'ba', 'membership', 'evaluasi_project', 'voucher'].includes(viewMode)
                 ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/15' 
                 : isDark ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
@@ -56,7 +56,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
         <div className="flex-1 overflow-x-auto no-scrollbar scroll-smooth flex items-center gap-1.5">
           <button 
             onClick={() => setViewMode('today')}
-            className={`flex-none py-2 px-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-center ${
+            className={`flex-none py-2 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap text-center ${
               viewMode === 'today' 
                 ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/15' 
                 : isDark ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
@@ -64,9 +64,10 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
           >
             Hari Ini
           </button>
+
           <button 
             onClick={() => setViewMode('all')}
-            className={`flex-none py-2 px-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-center ${
+            className={`flex-none py-2 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap text-center ${
               viewMode === 'all' 
                 ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/15' 
                 : isDark ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
@@ -77,7 +78,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
           {adminUser && (
             <button 
               onClick={() => setViewMode('my_tickets')}
-              className={`flex-none py-2 px-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-center ${
+              className={`flex-none py-2 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap text-center ${
                 viewMode === 'my_tickets' 
                   ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/15' 
                   : isDark ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
@@ -96,7 +97,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className={`absolute top-full left-0 mt-2 w-48 rounded-xl shadow-lg border overflow-hidden z-50 ${
+            className={`absolute top-full left-0 mt-2 w-48 rounded-md shadow-lg border overflow-hidden z-50 ${
               isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-white border-slate-200'
             }`}
           >
@@ -105,7 +106,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
                 <>
                   <button 
                     onClick={() => handleMenuClick('dashboard')}
-                    className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                    className={`text-left w-full py-2.5 px-3 rounded-md text-xs font-bold transition-all ${
                       viewMode === 'dashboard' 
                         ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
                         : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
@@ -115,7 +116,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
                   </button>
                   <button 
                     onClick={() => handleMenuClick('assets')}
-                    className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                    className={`text-left w-full py-2.5 px-3 rounded-md text-xs font-bold transition-all ${
                       viewMode === 'assets' 
                         ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
                         : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
@@ -125,7 +126,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
                   </button>
                   <button 
                     onClick={() => handleMenuClick('membership')}
-                    className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                    className={`text-left w-full py-2.5 px-3 rounded-md text-xs font-bold transition-all ${
                       viewMode === 'membership' 
                         ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
                         : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
@@ -139,7 +140,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
               {(adminUser || userCanVoucher) && (
                 <button 
                   onClick={() => handleMenuClick('voucher')}
-                  className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                  className={`text-left w-full py-2.5 px-3 rounded-md text-xs font-bold transition-all ${
                     viewMode === 'voucher' 
                       ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
                       : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
@@ -153,7 +154,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
                 <>
                   <button 
                     onClick={() => handleMenuClick('evaluasi_project')}
-                    className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                    className={`text-left w-full py-2.5 px-3 rounded-md text-xs font-bold transition-all ${
                       viewMode === 'evaluasi_project' 
                         ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
                         : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
@@ -164,7 +165,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
 
                   <button 
                     onClick={() => handleMenuClick('report_sla')}
-                    className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                    className={`text-left w-full py-2.5 px-3 rounded-md text-xs font-bold transition-all ${
                       viewMode === 'report_sla' 
                         ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
                         : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
@@ -175,7 +176,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
                   
                   <button 
                     onClick={() => handleMenuClick('report_perangkat')}
-                    className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                    className={`text-left w-full py-2.5 px-3 rounded-md text-xs font-bold transition-all ${
                       viewMode === 'report_perangkat' 
                         ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
                         : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
@@ -191,7 +192,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
                       </div>
                       <button 
                         onClick={() => handleMenuClick('master_user')}
-                        className={`text-left w-full py-2.5 px-4 rounded-lg text-xs font-bold transition-all ${
+                        className={`text-left w-full py-2.5 px-4 rounded-md text-xs font-bold transition-all ${
                           viewMode === 'master_user' 
                             ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
                             : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
@@ -201,7 +202,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
                       </button>
                       <button 
                         onClick={() => handleMenuClick('master_perangkat')}
-                        className={`text-left w-full py-2.5 px-4 rounded-lg text-xs font-bold transition-all ${
+                        className={`text-left w-full py-2.5 px-4 rounded-md text-xs font-bold transition-all ${
                           viewMode === 'master_perangkat' 
                             ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
                             : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
@@ -211,7 +212,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
                       </button>
                       <button 
                         onClick={() => handleMenuClick('master_team')}
-                        className={`text-left w-full py-2.5 px-4 rounded-lg text-xs font-bold transition-all ${
+                        className={`text-left w-full py-2.5 px-4 rounded-md text-xs font-bold transition-all ${
                           viewMode === 'master_team' 
                             ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
                             : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
@@ -221,7 +222,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
                       </button>
                       <button 
                         onClick={() => handleMenuClick('network')}
-                        className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all mt-1 ${
+                        className={`text-left w-full py-2.5 px-3 rounded-md text-xs font-bold transition-all mt-1 ${
                           viewMode === 'network' 
                             ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
                             : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
@@ -234,7 +235,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
                   {adminUser.role === 'Super Admin' && (
                     <button 
                       onClick={() => handleMenuClick('ba')}
-                      className={`text-left w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                      className={`text-left w-full py-2.5 px-3 rounded-md text-xs font-bold transition-all ${
                         viewMode === 'ba' 
                           ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
                           : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'

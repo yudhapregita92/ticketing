@@ -1,0 +1,1 @@
+sed -i 's/--breakpoint-xs: 400px;/--breakpoint-xs: 400px;\n  --radius-xs: 8px;\n  --radius-sm: 12px;\n  --radius-md: 16px;\n  --radius-lg: 20px;\n  --radius-xl: 24px;\n  --radius-2xl: 28px;\n  --radius-3xl: 32px;/g' src/index.css

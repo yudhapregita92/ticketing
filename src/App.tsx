@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -48,38 +48,41 @@ import {
 import { Counter, Shimmer, HighlightText, SkeletonTicket } from './components/Common';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
-import { TicketDetailModal } from './components/modals/TicketDetailModal';
-import { NewTicketModal } from './components/modals/NewTicketModal';
 import { LoginModal } from './components/modals/LoginModal';
-import { SettingsModal } from './components/modals/SettingsModal';
 import { ConfirmModal } from './components/modals/ConfirmModal';
 import { UserLoginScreen } from './components/UserLoginScreen';
 import { BottomNav } from './components/BottomNav';
 import { TakeoverModal } from './components/modals/TakeoverModal';
 import { SuccessModal } from './components/modals/SuccessModal';
 import { MobileFilterModal } from './components/modals/MobileFilterModal';
-import { ImageManagerModal } from './components/modals/ImageManagerModal';
 import { NotificationModal } from './components/modals/NotificationModal';
 import { SplashScreen } from './components/SplashScreen';
 import { hapticFeedback } from './utils/haptics';
-import { AdminDashboard } from './components/AdminDashboard';
-import { Panduan } from './components/Panduan';
-import { AssetManagement } from './components/AssetManagement';
-import { ProjectEvaluation } from './components/ProjectEvaluation';
-import NetworkMonitor from './components/NetworkMonitor';
-import BeritaAcara from './components/BeritaAcara';
-import { MembershipManagement } from './components/MembershipManagement';
-import { MembershipJournalForm } from './components/MembershipJournalForm';
 import { MobileAppNav } from './components/MobileAppNav';
 import { TicketList } from './components/TicketList';
-import { TestingView } from './components/TestingView';
-import { VoucherManagement } from './components/VoucherManagement';
-import { MasterUserManagement } from './components/MasterUserManagement';
-import { MasterPerangkat } from './components/MasterPerangkat';
-import { MasterTeam } from './components/MasterTeam';
-import { ReportSLA } from './components/ReportSLA';
-import { ReportPerangkat } from './components/ReportPerangkat';
-import { PublicAssetView } from './components/PublicAssetView';
+
+// Lazy Loaded Components
+const TicketDetailModal = lazy(() => import('./components/modals/TicketDetailModal').then(m => ({ default: m.TicketDetailModal })));
+const NewTicketModal = lazy(() => import('./components/modals/NewTicketModal').then(m => ({ default: m.NewTicketModal })));
+const SettingsModal = lazy(() => import('./components/modals/SettingsModal').then(m => ({ default: m.SettingsModal })));
+const ImageManagerModal = lazy(() => import('./components/modals/ImageManagerModal').then(m => ({ default: m.ImageManagerModal })));
+
+const AdminDashboard = lazy(() => import('./components/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const Panduan = lazy(() => import('./components/Panduan').then(m => ({ default: m.Panduan })));
+const AssetManagement = lazy(() => import('./components/AssetManagement').then(m => ({ default: m.AssetManagement })));
+const ProjectEvaluation = lazy(() => import('./components/ProjectEvaluation').then(m => ({ default: m.ProjectEvaluation })));
+const NetworkMonitor = lazy(() => import('./components/NetworkMonitor'));
+const BeritaAcara = lazy(() => import('./components/BeritaAcara'));
+const MembershipManagement = lazy(() => import('./components/MembershipManagement').then(m => ({ default: m.MembershipManagement })));
+const MembershipJournalForm = lazy(() => import('./components/MembershipJournalForm').then(m => ({ default: m.MembershipJournalForm })));
+const TestingView = lazy(() => import('./components/TestingView').then(m => ({ default: m.TestingView })));
+const VoucherManagement = lazy(() => import('./components/VoucherManagement').then(m => ({ default: m.VoucherManagement })));
+const MasterUserManagement = lazy(() => import('./components/MasterUserManagement').then(m => ({ default: m.MasterUserManagement })));
+const MasterPerangkat = lazy(() => import('./components/MasterPerangkat').then(m => ({ default: m.MasterPerangkat })));
+const MasterTeam = lazy(() => import('./components/MasterTeam').then(m => ({ default: m.MasterTeam })));
+const ReportSLA = lazy(() => import('./components/ReportSLA').then(m => ({ default: m.ReportSLA })));
+const ReportPerangkat = lazy(() => import('./components/ReportPerangkat').then(m => ({ default: m.ReportPerangkat })));
+const PublicAssetView = lazy(() => import('./components/PublicAssetView').then(m => ({ default: m.PublicAssetView })));
 
 // Types, Constants, and Utils
 import { ITicket, IUser, IDepartment, ICategory, IMasterUser, ISettings, ViewMode, INotification } from './types';
@@ -802,8 +805,8 @@ export default function App() {
       playNotificationSound();
 
       toast.custom((t) => (
-        <div className="bg-slate-900 text-white p-3.5 rounded-2xl shadow-xl border border-slate-800 flex items-start gap-3 max-w-sm">
-          <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 shrink-0">
+        <div className="bg-slate-900 text-white p-3.5 rounded-md shadow-xl border border-slate-800 flex items-start gap-3 max-w-sm">
+          <div className="p-2 rounded-md bg-emerald-500/20 text-emerald-400 shrink-0">
             <Bell className="w-4 h-4" />
           </div>
           <div className="flex-1 min-w-0">
@@ -1621,8 +1624,8 @@ export default function App() {
               setShowImageManager={setShowImageManager}
               setShowResetConfirm={setShowResetConfirm}
               handleLogout={handleLogout}
-              setShowLogin={setShowLogin}
-              setShowForm={setShowForm}
+              
+              setShowForm={setShowForm} setShowLogin={setShowLogin}
               tickets={tickets}
               notificationPermission={notificationPermission}
               requestNotificationPermission={requestNotificationPermission}
@@ -1667,13 +1670,13 @@ export default function App() {
                   filteredTickets={filteredTickets}
                   categoryStats={categoryStats}
                   showDistribution={showDistribution}
-                  setShowForm={setShowForm}
+                  setShowForm={setShowForm} setShowLogin={setShowLogin}
                   fetchTickets={fetchTickets}
                   viewMode={viewMode}
                   setViewMode={setViewMode}
                   assetSubTab={assetSubTab}
                   setAssetSubTab={setAssetSubTab}
-                  setShowLogin={setShowLogin}
+                  
                   handleLogout={handleLogout}
                   userCanVoucher={userCanVoucher}
                   adminThemeLayout={adminThemeLayout}
@@ -1692,10 +1695,10 @@ export default function App() {
               userCanVoucher={userCanVoucher}
             />
             {adminThemeLayout === 'executive' && adminUser && (
-              <div className={`hidden lg:flex items-center gap-1.5 p-2 ${themeClasses.card} rounded-2xl border ${themeClasses.border} overflow-x-auto shadow-sm no-scrollbar`}>
+              <div className={`hidden lg:flex items-center gap-1.5 p-2 ${themeClasses.card} rounded-md border ${themeClasses.border} overflow-x-auto shadow-sm no-scrollbar`}>
                 <button
                   onClick={() => setViewMode('dashboard')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
                     viewMode === 'dashboard'
                       ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                       : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1707,7 +1710,7 @@ export default function App() {
 
                 <button
                   onClick={() => setViewMode('today')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap relative ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap relative ${
                     viewMode === 'today'
                       ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                       : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1724,7 +1727,7 @@ export default function App() {
 
                 <button
                   onClick={() => setViewMode('all')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
                     viewMode === 'all'
                       ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                       : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1736,7 +1739,7 @@ export default function App() {
 
                 <button
                   onClick={() => setViewMode('my_tickets')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
                     viewMode === 'my_tickets'
                       ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                       : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1749,7 +1752,7 @@ export default function App() {
                 {(adminUser || userCanVoucher) && (
                   <button
                     onClick={() => setViewMode('voucher')}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
                       viewMode === 'voucher'
                         ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                         : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1762,7 +1765,7 @@ export default function App() {
 
                 <button
                   onClick={() => setViewMode('assets')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
                     viewMode === 'assets'
                       ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                       : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1774,7 +1777,7 @@ export default function App() {
 
                 <button
                   onClick={() => setViewMode('membership')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
                     viewMode === 'membership'
                       ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                       : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1786,7 +1789,7 @@ export default function App() {
 
                 <button
                   onClick={() => setViewMode('evaluasi_project')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
                     viewMode === 'evaluasi_project'
                       ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                       : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1798,7 +1801,7 @@ export default function App() {
 
                 <button
                   onClick={() => setViewMode('report_sla')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
                     viewMode === 'report_sla'
                       ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                       : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1809,7 +1812,7 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => setViewMode('report_perangkat')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
                     viewMode === 'report_perangkat'
                       ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                       : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1823,7 +1826,7 @@ export default function App() {
                   <>
                     <button
                       onClick={() => setViewMode('master_user')}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
                         viewMode === 'master_user'
                           ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                           : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1834,7 +1837,7 @@ export default function App() {
                     </button>
                     <button
                       onClick={() => setViewMode('master_perangkat')}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
                         viewMode === 'master_perangkat'
                           ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                           : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1845,7 +1848,7 @@ export default function App() {
                     </button>
                     <button
                       onClick={() => setViewMode('master_team')}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
                         viewMode === 'master_team'
                           ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                           : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1856,7 +1859,7 @@ export default function App() {
                     </button>
                     <button
                       onClick={() => setViewMode('network')}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
                         viewMode === 'network'
                           ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                           : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1871,7 +1874,7 @@ export default function App() {
                 {adminUser.role === 'Super Admin' && (
                   <button
                     onClick={() => setViewMode('ba')}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
                       viewMode === 'ba'
                         ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                         : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1884,7 +1887,7 @@ export default function App() {
 
                 <button
                   onClick={() => setViewMode('panduan')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
                     viewMode === 'panduan'
                       ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                       : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1896,7 +1899,7 @@ export default function App() {
 
                 <button
                   onClick={() => setViewMode('settings')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
                     viewMode === 'settings'
                       ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                       : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1908,7 +1911,7 @@ export default function App() {
 
                 <button
                   onClick={() => setViewMode('testing')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
                     viewMode === 'testing'
                       ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                       : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -1919,184 +1922,191 @@ export default function App() {
                 </button>
               </div>
             )}
-            {viewMode === 'dashboard' ? (
-              <AdminDashboard 
-                tickets={tickets}
-                adminUser={adminUser}
-                isDark={isDark}
-                themeClasses={themeClasses}
-                setViewMode={setViewMode}
-              />
-            ) : viewMode === 'assets' ? (
-              <AssetManagement 
-                isDark={isDark}
-                themeClasses={themeClasses}
-                primaryColor={primaryColor}
-                activeSubTab={assetSubTab}
-                setActiveSubTab={setAssetSubTab}
-              />
-            ) : viewMode === 'network' ? (
-              <NetworkMonitor 
-                isDark={isDark}
-                themeClasses={themeClasses}
-                primaryColor={primaryColor}
-                adminUser={adminUser}
-              />
-            ) : viewMode === 'master_user' ? (
-              <MasterUserManagement 
-                isDark={isDark}
-                themeClasses={themeClasses}
-                masterUsers={masterUsers}
-                departments={departments}
-                handleManagementAction={handleManagementAction}
-                adminUser={adminUser}
-              />
-            ) : viewMode === 'master_perangkat' ? (
-              <MasterPerangkat isDark={isDark} primaryColor={primaryColor} />
-            ) : viewMode === 'master_team' ? (
-              <MasterTeam isDark={isDark} primaryColor={primaryColor} />
-            ) : viewMode === 'ba' ? (
-              <BeritaAcara 
-                isDark={isDark}
-                themeClasses={themeClasses}
-                primaryColor={primaryColor}
-                adminUser={adminUser}
-              />
-            ) : viewMode === 'membership' ? (
-              <MembershipManagement
-                isDark={isDark}
-                themeClasses={themeClasses}
-                primaryColor={primaryColor}
-              />
-            ) : viewMode === 'voucher' ? (
-              <VoucherManagement
-                isDark={isDark}
-                themeClasses={themeClasses}
-                primaryColor={primaryColor}
-                adminUser={adminUser}
-                currentUser={currentUser}
-                loggedInMasterUser={loggedInMasterUser}
-              />
-            ) : viewMode === 'evaluasi_project' ? (
-              <ProjectEvaluation 
-                isDark={isDark}
-                themeClasses={themeClasses}
-                primaryColor={primaryColor}
-              />
-            ) : viewMode === 'report_sla' ? (
-              <ReportSLA 
-                tickets={tickets}
-                isDark={isDark}
-                themeClasses={themeClasses}
-                adminUser={adminUser}
-                masterUsers={masterUsers}
-                onSelectTicket={(ticket) => setSelectedTicket(ticket)}
-              />
-            ) : viewMode === 'report_perangkat' ? (
-              <ReportPerangkat 
-                tickets={tickets}
-                isDark={isDark}
-                themeClasses={themeClasses}
-                adminUser={adminUser}
-                masterUsers={masterUsers}
-                categories={categories}
-              />
-            ) : viewMode === 'settings' ? (
-              <SettingsModal 
-                inline={true}
-                isDark={isDark}
-                themeClasses={themeClasses}
-                settingsTab={settingsTab}
-                setSettingsTab={setSettingsTab}
-                appSettings={appSettings}
-                setAppSettings={setAppSettings}
-                LOGO_OPTIONS={LOGO_OPTIONS}
-                newEmailInput={newEmailInput}
-                setNewEmailInput={setNewEmailInput}
-                showEmailInput={showEmailInput}
-                setShowEmailInput={setShowEmailInput}
-                handleUpdateSettings={handleUpdateSettings}
-                primaryColor={primaryColor}
-                adminUser={adminUser}
-                itPersonnel={itPersonnel}
-                departments={departments}
-                categories={categories}
-                addingType={addingType}
-                setAddingType={setAddingType}
-                newItemName={newItemName}
-                setNewItemName={setNewItemName}
-                newItemAssignedTo={newItemAssignedTo}
-                setNewItemAssignedTo={setNewItemAssignedTo}
-                newItemResponseTime={newItemResponseTime}
-                setNewItemResponseTime={setNewItemResponseTime}
-                newItemJenisMasalah={newItemJenisMasalah}
-                setNewItemJenisMasalah={setNewItemJenisMasalah}
-                handleManagementAction={handleManagementAction}
-                masterUsers={masterUsers}
-                adminUsers={adminUsers}
-                handleUploadExcel={handleUploadExcel}
-                adminThemeLayout={adminThemeLayout}
-                setAdminThemeLayout={setAdminThemeLayout}
-              />
-            ) : viewMode === 'testing' ? (
-              <TestingView 
-                isDark={isDark}
-                themeClasses={themeClasses}
-              />
-            ) : viewMode === 'panduan' ? (
-              <Panduan 
-                isDark={isDark} 
-                primaryColor={primaryColor} 
-                appSettings={appSettings} 
-                setAppSettings={setAppSettings}
-                adminUser={adminUser}
-              />
-            ) : (
-              <TicketList 
-                adminUser={adminUser}
-                isDark={isDark}
-                themeClasses={themeClasses}
-                categories={categories}
-                viewMode={viewMode as any}
-                setViewMode={setViewMode as any}
-                filterDept={filterDept}
-                setFilterDept={setFilterDept}
-                filterStatus={filterStatus}
-                setFilterStatus={setFilterStatus}
-                filterDate={filterDate}
-                setFilterDate={setFilterDate}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                loading={loading}
-                tickets={tickets}
-                filteredTickets={filteredTickets}
-                paginatedTickets={paginatedTickets}
-                currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
-                totalPages={totalPages}
-                itemsPerPage={itemsPerPage}
-                handleSelectTicket={handleSelectTicket}
-                handleDeleteTicket={handleDeleteTicket}
-                handleIntervention={handleIntervention}
-                getStatusIcon={getStatusIcon}
-                getStatusColor={getStatusColor}
-                formatDate={formatDate}
-                fetchTickets={fetchTickets}
-                setShowMobileFilter={setShowMobileFilter}
-                setTempFilters={setTempFilters}
-                selectedTickets={selectedTickets}
-                setSelectedTickets={setSelectedTickets}
-                primaryColor={primaryColor}
-                CurrentLogo={CurrentLogo}
-                setShowForm={setShowForm}
-                handleBulkAction={handleBulkAction}
-              />
-            )}
+            <Suspense fallback={
+              <div className="p-8 text-center flex flex-col items-center justify-center min-h-[300px]">
+                <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-3" />
+                <p className="text-xs text-slate-500 font-bold">Memuat halaman...</p>
+              </div>
+            }>
+              {viewMode === 'dashboard' ? (
+                <AdminDashboard 
+                  tickets={tickets}
+                  adminUser={adminUser}
+                  isDark={isDark}
+                  themeClasses={themeClasses}
+                  setViewMode={setViewMode}
+                />
+              ) : viewMode === 'assets' ? (
+                <AssetManagement 
+                  isDark={isDark}
+                  themeClasses={themeClasses}
+                  primaryColor={primaryColor}
+                  activeSubTab={assetSubTab}
+                  setActiveSubTab={setAssetSubTab}
+                />
+              ) : viewMode === 'network' ? (
+                <NetworkMonitor 
+                  isDark={isDark}
+                  themeClasses={themeClasses}
+                  primaryColor={primaryColor}
+                  adminUser={adminUser}
+                />
+              ) : viewMode === 'master_user' ? (
+                <MasterUserManagement 
+                  isDark={isDark}
+                  themeClasses={themeClasses}
+                  masterUsers={masterUsers}
+                  departments={departments}
+                  handleManagementAction={handleManagementAction}
+                  adminUser={adminUser}
+                />
+              ) : viewMode === 'master_perangkat' ? (
+                <MasterPerangkat isDark={isDark} primaryColor={primaryColor} />
+              ) : viewMode === 'master_team' ? (
+                <MasterTeam isDark={isDark} primaryColor={primaryColor} />
+              ) : viewMode === 'ba' ? (
+                <BeritaAcara 
+                  isDark={isDark}
+                  themeClasses={themeClasses}
+                  primaryColor={primaryColor}
+                  adminUser={adminUser}
+                />
+              ) : viewMode === 'membership' ? (
+                <MembershipManagement
+                  isDark={isDark}
+                  themeClasses={themeClasses}
+                  primaryColor={primaryColor}
+                />
+              ) : viewMode === 'voucher' ? (
+                <VoucherManagement
+                  isDark={isDark}
+                  themeClasses={themeClasses}
+                  primaryColor={primaryColor}
+                  adminUser={adminUser}
+                  currentUser={currentUser}
+                  loggedInMasterUser={loggedInMasterUser}
+                />
+              ) : viewMode === 'evaluasi_project' ? (
+                <ProjectEvaluation 
+                  isDark={isDark}
+                  themeClasses={themeClasses}
+                  primaryColor={primaryColor}
+                />
+              ) : viewMode === 'report_sla' ? (
+                <ReportSLA 
+                  tickets={tickets}
+                  isDark={isDark}
+                  themeClasses={themeClasses}
+                  adminUser={adminUser}
+                  masterUsers={masterUsers}
+                  onSelectTicket={(ticket) => setSelectedTicket(ticket)}
+                />
+              ) : viewMode === 'report_perangkat' ? (
+                <ReportPerangkat 
+                  tickets={tickets}
+                  isDark={isDark}
+                  themeClasses={themeClasses}
+                  adminUser={adminUser}
+                  masterUsers={masterUsers}
+                  categories={categories}
+                />
+              ) : viewMode === 'settings' ? (
+                <SettingsModal 
+                  inline={true}
+                  isDark={isDark}
+                  themeClasses={themeClasses}
+                  settingsTab={settingsTab}
+                  setSettingsTab={setSettingsTab}
+                  appSettings={appSettings}
+                  setAppSettings={setAppSettings}
+                  LOGO_OPTIONS={LOGO_OPTIONS}
+                  newEmailInput={newEmailInput}
+                  setNewEmailInput={setNewEmailInput}
+                  showEmailInput={showEmailInput}
+                  setShowEmailInput={setShowEmailInput}
+                  handleUpdateSettings={handleUpdateSettings}
+                  primaryColor={primaryColor}
+                  adminUser={adminUser}
+                  itPersonnel={itPersonnel}
+                  departments={departments}
+                  categories={categories}
+                  addingType={addingType}
+                  setAddingType={setAddingType}
+                  newItemName={newItemName}
+                  setNewItemName={setNewItemName}
+                  newItemAssignedTo={newItemAssignedTo}
+                  setNewItemAssignedTo={setNewItemAssignedTo}
+                  newItemResponseTime={newItemResponseTime}
+                  setNewItemResponseTime={setNewItemResponseTime}
+                  newItemJenisMasalah={newItemJenisMasalah}
+                  setNewItemJenisMasalah={setNewItemJenisMasalah}
+                  handleManagementAction={handleManagementAction}
+                  masterUsers={masterUsers}
+                  adminUsers={adminUsers}
+                  handleUploadExcel={handleUploadExcel}
+                  adminThemeLayout={adminThemeLayout}
+                  setAdminThemeLayout={setAdminThemeLayout}
+                />
+              ) : viewMode === 'testing' ? (
+                <TestingView 
+                  isDark={isDark}
+                  themeClasses={themeClasses}
+                />
+              ) : viewMode === 'panduan' ? (
+                <Panduan 
+                  isDark={isDark} 
+                  primaryColor={primaryColor} 
+                  appSettings={appSettings} 
+                  setAppSettings={setAppSettings}
+                  adminUser={adminUser}
+                />
+              ) : (
+                <TicketList 
+                  adminUser={adminUser}
+                  isDark={isDark}
+                  themeClasses={themeClasses}
+                  categories={categories}
+                  viewMode={viewMode as any}
+                  setViewMode={setViewMode as any}
+                  filterDept={filterDept}
+                  setFilterDept={setFilterDept}
+                  filterStatus={filterStatus}
+                  setFilterStatus={setFilterStatus}
+                  filterDate={filterDate}
+                  setFilterDate={setFilterDate}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  loading={loading}
+                  tickets={tickets}
+                  filteredTickets={filteredTickets}
+                  paginatedTickets={paginatedTickets}
+                  currentPage={currentPage}
+                  setCurrentPage={setCurrentPage}
+                  totalPages={totalPages}
+                  itemsPerPage={itemsPerPage}
+                  handleSelectTicket={handleSelectTicket}
+                  handleDeleteTicket={handleDeleteTicket}
+                  handleIntervention={handleIntervention}
+                  getStatusIcon={getStatusIcon}
+                  getStatusColor={getStatusColor}
+                  formatDate={formatDate}
+                  fetchTickets={fetchTickets}
+                  setShowMobileFilter={setShowMobileFilter}
+                  setTempFilters={setTempFilters}
+                  selectedTickets={selectedTickets}
+                  setSelectedTickets={setSelectedTickets}
+                  primaryColor={primaryColor}
+                  CurrentLogo={CurrentLogo}
+                  setShowForm={setShowForm}
+                  handleBulkAction={handleBulkAction}
+                />
+              )}
+            </Suspense>
           </div>
 
                 {/* Help CTA - Visible on mobile at the bottom */}
             <section 
-              className="lg:hidden rounded-3xl p-4 sm:p-5 text-white shadow-xl relative overflow-hidden group transition-all mt-4 sm:mt-6"
+              className="lg:hidden rounded-md p-4 sm:p-5 text-white shadow-xl relative overflow-hidden group transition-all mt-4 sm:mt-6"
               style={{ backgroundColor: primaryColor, boxShadow: `0 20px 25px -5px ${primaryColor}30` }}
             >
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
@@ -2110,7 +2120,7 @@ export default function App() {
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowForm(true)}
-                className={`w-full font-bold py-3 rounded-2xl text-xs transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 ${
+                className={`w-full font-bold py-3 rounded-md text-xs transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 ${
                   isDark ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-white text-slate-900 hover:bg-slate-50'
                 }`}
               >
@@ -2139,235 +2149,237 @@ export default function App() {
           </div>
         </main>
 
-      <AnimatePresence>
-        {/* --- MODAL: TICKET DETAIL --- */}
-        {selectedTicket && (
-          <TicketDetailModal
-            selectedTicket={selectedTicket}
-            setSelectedTicket={setSelectedTicket}
-            isDark={isDark}
-            themeClasses={themeClasses}
-            adminUser={adminUser}
-            users={users}
-            ticketLogs={ticketLogs}
-            modalStatus={modalStatus}
-            setModalStatus={setModalStatus}
-            modalPriority={modalPriority}
-            setModalPriority={setModalPriority}
-            handleIntervention={handleIntervention}
-            handleUpdateClick={handleUpdateClick}
-            formatDate={formatDate}
-            getDeviceInfo={getDeviceInfo}
-            getStatusColor={getStatusColor}
-            STATUSES={STATUSES}
-            primaryColor={primaryColor}
-            onRefreshTickets={() => queryClient.invalidateQueries({ queryKey: ['tickets'] })}
-          />
-        )}
+      <Suspense fallback={null}>
+        <AnimatePresence>
+          {/* --- MODAL: TICKET DETAIL --- */}
+          {selectedTicket && (
+            <TicketDetailModal
+              selectedTicket={selectedTicket}
+              setSelectedTicket={setSelectedTicket}
+              isDark={isDark}
+              themeClasses={themeClasses}
+              adminUser={adminUser}
+              users={users}
+              ticketLogs={ticketLogs}
+              modalStatus={modalStatus}
+              setModalStatus={setModalStatus}
+              modalPriority={modalPriority}
+              setModalPriority={setModalPriority}
+              handleIntervention={handleIntervention}
+              handleUpdateClick={handleUpdateClick}
+              formatDate={formatDate}
+              getDeviceInfo={getDeviceInfo}
+              getStatusColor={getStatusColor}
+              STATUSES={STATUSES}
+              primaryColor={primaryColor}
+              onRefreshTickets={() => queryClient.invalidateQueries({ queryKey: ['tickets'] })}
+            />
+          )}
 
-        {/* --- MODAL: NEW TICKET FORM --- */}
-        {showForm && (
-          <NewTicketModal
-            showForm={showForm}
-            setShowForm={setShowForm}
-            isDark={isDark}
-            themeClasses={themeClasses}
-            newTicket={formData}
-            setNewTicket={setFormData}
-            DEPARTMENTS={Array.isArray(departments) ? departments.map(d => d.name) : []}
-            CATEGORIES={Array.isArray(categories) ? categories.map(c => c.name) : []}
-            rawCategories={categories}
-            handlePhotoChange={handlePhotoUpload}
-            handleSubmit={handleSubmit}
-            isSubmitting={submitting}
-            primaryColor={primaryColor}
-            masterUsers={masterUsers}
-            currentUser={modalCurrentUser}
-            appSettings={appSettings}
-          />
-        )}
+          {/* --- MODAL: NEW TICKET FORM --- */}
+          {showForm && (
+            <NewTicketModal
+              showForm={showForm}
+              setShowForm={setShowForm}
+              isDark={isDark}
+              themeClasses={themeClasses}
+              newTicket={formData}
+              setNewTicket={setFormData}
+              DEPARTMENTS={Array.isArray(departments) ? departments.map(d => d.name) : []}
+              CATEGORIES={Array.isArray(categories) ? categories.map(c => c.name) : []}
+              rawCategories={categories}
+              handlePhotoChange={handlePhotoUpload}
+              handleSubmit={handleSubmit}
+              isSubmitting={submitting}
+              primaryColor={primaryColor}
+              masterUsers={masterUsers}
+              currentUser={modalCurrentUser}
+              appSettings={appSettings}
+            />
+          )}
 
-        {/* --- MODAL: MOBILE Filter --- */}
-        {showMobileFilter && (
-          <MobileFilterModal 
-            show={showMobileFilter}
-            onClose={() => setShowMobileFilter(false)}
-            isDark={isDark}
-            themeClasses={themeClasses}
-            tempFilters={tempFilters}
-            setTempFilters={setTempFilters}
-            departments={departments}
-            STATUSES={STATUSES}
-            onReset={() => {
-              setFilterDept('');
-              setFilterStatus('');
-              setFilterDate('');
-              setSearchQuery('');
-              setTempFilters({ dept: '', status: '', date: '', search: '' });
-              setShowMobileFilter(false);
-            }}
-            onApply={() => {
-              setFilterDept(tempFilters.dept);
-              setFilterStatus(tempFilters.status);
-              setFilterDate(tempFilters.date);
-              setSearchQuery(tempFilters.search);
-              setShowMobileFilter(false);
-            }}
-          />
-        )}
+          {/* --- MODAL: MOBILE Filter --- */}
+          {showMobileFilter && (
+            <MobileFilterModal 
+              show={showMobileFilter}
+              onClose={() => setShowMobileFilter(false)}
+              isDark={isDark}
+              themeClasses={themeClasses}
+              tempFilters={tempFilters}
+              setTempFilters={setTempFilters}
+              departments={departments}
+              STATUSES={STATUSES}
+              onReset={() => {
+                setFilterDept('');
+                setFilterStatus('');
+                setFilterDate('');
+                setSearchQuery('');
+                setTempFilters({ dept: '', status: '', date: '', search: '' });
+                setShowMobileFilter(false);
+              }}
+              onApply={() => {
+                setFilterDept(tempFilters.dept);
+                setFilterStatus(tempFilters.status);
+                setFilterDate(tempFilters.date);
+                setSearchQuery(tempFilters.search);
+                setShowMobileFilter(false);
+              }}
+            />
+          )}
 
-        {/* Success Modal */}
-        {showSuccess && (
-          <SuccessModal 
-            show={showSuccess}
-            themeClasses={themeClasses}
-            onClose={() => setShowSuccess(false)}
-            onViewHistory={() => {
-              setShowSuccess(false);
-              setViewMode('my_tickets');
-            }}
-          />
-        )}
+          {/* Success Modal */}
+          {showSuccess && (
+            <SuccessModal 
+              show={showSuccess}
+              themeClasses={themeClasses}
+              onClose={() => setShowSuccess(false)}
+              onViewHistory={() => {
+                setShowSuccess(false);
+                setViewMode('my_tickets');
+              }}
+            />
+          )}
 
-        {showLogin && (
-          <LoginModal 
-            showLogin={showLogin}
-            setShowLogin={setShowLogin}
-            isDark={isDark}
-            themeClasses={themeClasses}
-            loginData={loginData}
-            setLoginData={setLoginData}
-            handleLogin={handleLogin}
-            primaryColor={primaryColor}
-          />
-        )}
+          {showLogin && (
+            <LoginModal 
+              showLogin={showLogin}
+              setShowLogin={setShowLogin}
+              isDark={isDark}
+              themeClasses={themeClasses}
+              loginData={loginData}
+              setLoginData={setLoginData}
+              handleLogin={handleLogin}
+              primaryColor={primaryColor}
+            />
+          )}
 
-        {showSettings && (
-          <SettingsModal 
-            showSettings={showSettings}
-            setShowSettings={setShowSettings}
-            isDark={isDark}
-            themeClasses={themeClasses}
-            settingsTab={settingsTab}
-            setSettingsTab={setSettingsTab}
-            appSettings={appSettings}
-            setAppSettings={setAppSettings}
-            LOGO_OPTIONS={LOGO_OPTIONS}
-            newEmailInput={newEmailInput}
-            setNewEmailInput={setNewEmailInput}
-            showEmailInput={showEmailInput}
-            setShowEmailInput={setShowEmailInput}
-            handleUpdateSettings={handleUpdateSettings}
-            primaryColor={primaryColor}
-            adminUser={adminUser}
-            itPersonnel={itPersonnel}
-            departments={departments}
-            categories={categories}
-            addingType={addingType}
-            setAddingType={setAddingType}
-            newItemName={newItemName}
-            setNewItemName={setNewItemName}
-            newItemAssignedTo={newItemAssignedTo}
-            setNewItemAssignedTo={setNewItemAssignedTo}
-            newItemResponseTime={newItemResponseTime}
-            setNewItemResponseTime={setNewItemResponseTime}
-            newItemJenisMasalah={newItemJenisMasalah}
-            setNewItemJenisMasalah={setNewItemJenisMasalah}
-            handleManagementAction={handleManagementAction}
-            masterUsers={masterUsers}
-            adminUsers={adminUsers}
-            handleUploadExcel={handleUploadExcel}
-            adminThemeLayout={adminThemeLayout}
-            setAdminThemeLayout={setAdminThemeLayout}
-          />
-        )}
+          {showSettings && (
+            <SettingsModal 
+              showSettings={showSettings}
+              setShowSettings={setShowSettings}
+              isDark={isDark}
+              themeClasses={themeClasses}
+              settingsTab={settingsTab}
+              setSettingsTab={setSettingsTab}
+              appSettings={appSettings}
+              setAppSettings={setAppSettings}
+              LOGO_OPTIONS={LOGO_OPTIONS}
+              newEmailInput={newEmailInput}
+              setNewEmailInput={setNewEmailInput}
+              showEmailInput={showEmailInput}
+              setShowEmailInput={setShowEmailInput}
+              handleUpdateSettings={handleUpdateSettings}
+              primaryColor={primaryColor}
+              adminUser={adminUser}
+              itPersonnel={itPersonnel}
+              departments={departments}
+              categories={categories}
+              addingType={addingType}
+              setAddingType={setAddingType}
+              newItemName={newItemName}
+              setNewItemName={setNewItemName}
+              newItemAssignedTo={newItemAssignedTo}
+              setNewItemAssignedTo={setNewItemAssignedTo}
+              newItemResponseTime={newItemResponseTime}
+              setNewItemResponseTime={setNewItemResponseTime}
+              newItemJenisMasalah={newItemJenisMasalah}
+              setNewItemJenisMasalah={setNewItemJenisMasalah}
+              handleManagementAction={handleManagementAction}
+              masterUsers={masterUsers}
+              adminUsers={adminUsers}
+              handleUploadExcel={handleUploadExcel}
+              adminThemeLayout={adminThemeLayout}
+              setAdminThemeLayout={setAdminThemeLayout}
+            />
+          )}
 
-        {showResetConfirm && (
-          <ConfirmModal 
-            show={showResetConfirm}
-            onClose={() => setShowResetConfirm(false)}
-            onConfirm={handleReset}
-            title="Reset All Data?"
-            message="This action will permanently delete all tickets in the queue. This cannot be undone. Enter password 'root' to confirm."
-            confirmText="Yes, Reset"
-            isDark={isDark}
-            themeClasses={themeClasses}
-            type="danger"
-            hasPasswordInput={true}
-            passwordPlaceholder="Password konfirmasi (root)..."
-          />
-        )}
+          {showResetConfirm && (
+            <ConfirmModal 
+              show={showResetConfirm}
+              onClose={() => setShowResetConfirm(false)}
+              onConfirm={handleReset}
+              title="Reset All Data?"
+              message="This action will permanently delete all tickets in the queue. This cannot be undone. Enter password 'root' to confirm."
+              confirmText="Yes, Reset"
+              isDark={isDark}
+              themeClasses={themeClasses}
+              type="danger"
+              hasPasswordInput={true}
+              passwordPlaceholder="Password konfirmasi (root)..."
+            />
+          )}
 
-        {showDeleteConfirm && (
-          <ConfirmModal 
-            show={!!showDeleteConfirm}
-            onClose={() => setShowDeleteConfirm(null)}
-            onConfirm={confirmDeleteTicket}
-            title="Konfirmasi Hapus Tiket"
-            message={`Apakah Anda yakin ingin menghapus ${showDeleteConfirm.type === 'bulk' ? `${selectedTickets.length} tiket ini` : 'tiket ini'}? Tindakan ini tidak dapat dibatalkan. Masukkan password otorisasi (root) untuk menghapus.`}
-            confirmText="Ya, Hapus"
-            isDark={isDark}
-            themeClasses={themeClasses}
-            type="danger"
-            hasPasswordInput={true}
-            passwordPlaceholder="Password otorisasi (root)..."
-          />
-        )}
+          {showDeleteConfirm && (
+            <ConfirmModal 
+              show={!!showDeleteConfirm}
+              onClose={() => setShowDeleteConfirm(null)}
+              onConfirm={confirmDeleteTicket}
+              title="Konfirmasi Hapus Tiket"
+              message={`Apakah Anda yakin ingin menghapus ${showDeleteConfirm.type === 'bulk' ? `${selectedTickets.length} tiket ini` : 'tiket ini'}? Tindakan ini tidak dapat dibatalkan. Masukkan password otorisasi (root) untuk menghapus.`}
+              confirmText="Ya, Hapus"
+              isDark={isDark}
+              themeClasses={themeClasses}
+              type="danger"
+              hasPasswordInput={true}
+              passwordPlaceholder="Password otorisasi (root)..."
+            />
+          )}
 
-        {pendingUpdate && (
-          <ConfirmModal 
-            show={!!pendingUpdate}
-            onClose={() => setPendingUpdate(null)}
-            onConfirm={confirmUpdate}
-            title="Konfirmasi Perubahan"
-            message={pendingUpdate ? `Apakah Anda yakin ingin memperbarui status menjadi ${pendingUpdate.status} dan menyimpan data penanganan ini?` : ''}
-            confirmText="Ya, Simpan"
-            isDark={isDark}
-            themeClasses={themeClasses}
-            type="success"
-          />
-        )}
+          {pendingUpdate && (
+            <ConfirmModal 
+              show={!!pendingUpdate}
+              onClose={() => setPendingUpdate(null)}
+              onConfirm={confirmUpdate}
+              title="Konfirmasi Perubahan"
+              message={pendingUpdate ? `Apakah Anda yakin ingin memperbarui status menjadi ${pendingUpdate.status} dan menyimpan data penanganan ini?` : ''}
+              confirmText="Ya, Simpan"
+              isDark={isDark}
+              themeClasses={themeClasses}
+              type="success"
+            />
+          )}
 
-        {showTakeoverConfirm && (
-          <TakeoverModal 
-            showTakeoverConfirm={showTakeoverConfirm}
-            setShowTakeoverConfirm={setShowTakeoverConfirm}
-            isDark={isDark}
-            users={users}
-            executeIntervention={executeIntervention}
-          />
-        )}
-      </AnimatePresence>
+          {showTakeoverConfirm && (
+            <TakeoverModal 
+              showTakeoverConfirm={showTakeoverConfirm}
+              setShowTakeoverConfirm={setShowTakeoverConfirm}
+              isDark={isDark}
+              users={users}
+              executeIntervention={executeIntervention}
+            />
+          )}
+        </AnimatePresence>
 
-      <AnimatePresence>
-        {showImageManager && (
-          <ImageManagerModal 
-            show={showImageManager}
-            setShow={setShowImageManager}
-            isDark={isDark}
-            themeClasses={themeClasses}
-            primaryColor={primaryColor}
-          />
-        )}
-      </AnimatePresence>
+        <AnimatePresence>
+          {showImageManager && (
+            <ImageManagerModal 
+              show={showImageManager}
+              setShow={setShowImageManager}
+              isDark={isDark}
+              themeClasses={themeClasses}
+              primaryColor={primaryColor}
+            />
+          )}
+        </AnimatePresence>
 
-        {showNotificationModal && (
-          <NotificationModal
-            isOpen={showNotificationModal}
-            onClose={() => setShowNotificationModal(false)}
-            notifications={notifications}
-            onMarkAsRead={handleMarkNotificationRead}
-            onSelectTicket={(ticketNo) => {
-              const target = tickets.find(t => t.ticket_no === ticketNo);
-              if (target) {
-                handleSelectTicket(target);
-              } else {
-                toast.error(`Tiket #${ticketNo} tidak ditemukan atau telah dihapus.`);
-              }
-            }}
-            isDark={isDark}
-          />
-        )}
+          {showNotificationModal && (
+            <NotificationModal
+              isOpen={showNotificationModal}
+              onClose={() => setShowNotificationModal(false)}
+              notifications={notifications}
+              onMarkAsRead={handleMarkNotificationRead}
+              onSelectTicket={(ticketNo) => {
+                const target = tickets.find(t => t.ticket_no === ticketNo);
+                if (target) {
+                  handleSelectTicket(target);
+                } else {
+                  toast.error(`Tiket #${ticketNo} tidak ditemukan atau telah dihapus.`);
+                }
+              }}
+              isDark={isDark}
+            />
+          )}
+      </Suspense>
 
       <div className="print:hidden">
         <BottomNav 
@@ -2375,14 +2387,13 @@ export default function App() {
           viewMode={viewMode}
           setViewMode={setViewMode}
           setShowForm={setShowForm}
-          setShowLogin={setShowLogin}
+          
           setShowSettings={setShowSettings}
           setShowImageManager={setShowImageManager}
           handleLogout={handleLogout}
           primaryColor={primaryColor}
           isDark={isDark}
-          toggleTheme={toggleTheme}
-          onSearchClick={() => setShowMobileFilter(true)}
+          appSettings={appSettings}
         />
       </div>
 
