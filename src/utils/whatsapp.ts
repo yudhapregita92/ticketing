@@ -24,12 +24,12 @@ export const findAgentPhoneNumber = (
   // 1. Search adminUsers
   if (Array.isArray(adminUsers)) {
     const admin = adminUsers.find(
-      u => (u.username && u.username.toLowerCase() === cleanAssigned) ||
-           (u.full_name && u.full_name.toLowerCase() === cleanAssigned) ||
-           (u.username && u.username.toLowerCase().includes(cleanAssigned)) ||
-           (u.full_name && u.full_name.toLowerCase().includes(cleanAssigned)) ||
-           (cleanAssigned.includes(u.username?.toLowerCase() || '')) ||
-           (cleanAssigned.includes(u.full_name?.toLowerCase() || ''))
+      u => (u.username && String(u.username).toLowerCase() === cleanAssigned) ||
+           (u.full_name && String(u.full_name).toLowerCase() === cleanAssigned) ||
+           (u.username && String(u.username).toLowerCase().includes(cleanAssigned)) ||
+           (u.full_name && String(u.full_name).toLowerCase().includes(cleanAssigned)) ||
+           (cleanAssigned.includes(String(u.username || '').toLowerCase())) ||
+           (cleanAssigned.includes(String(u.full_name || '').toLowerCase()))
     );
     if (admin && admin.phone) {
       return { phone: formatPhoneNumber(admin.phone), name: admin.full_name || admin.username };
@@ -39,10 +39,10 @@ export const findAgentPhoneNumber = (
   // 2. Search teamMembers
   if (Array.isArray(teamMembers)) {
     const member = teamMembers.find(
-      m => (m.name && m.name.toLowerCase() === cleanAssigned) ||
-           (m.id && m.id.toLowerCase() === cleanAssigned) ||
-           (m.name && m.name.toLowerCase().includes(cleanAssigned)) ||
-           (cleanAssigned.includes(m.name?.toLowerCase() || ''))
+      m => (m.name && String(m.name).toLowerCase() === cleanAssigned) ||
+           (m.id !== undefined && m.id !== null && String(m.id).toLowerCase() === cleanAssigned) ||
+           (m.name && String(m.name).toLowerCase().includes(cleanAssigned)) ||
+           (cleanAssigned.includes(String(m.name || '').toLowerCase()))
     );
     if (member && member.phone) {
       return { phone: formatPhoneNumber(member.phone), name: member.name };
@@ -52,9 +52,9 @@ export const findAgentPhoneNumber = (
   // 3. Search masterUsers
   if (Array.isArray(masterUsers)) {
     const master = masterUsers.find(
-      u => (u.full_name && u.full_name.toLowerCase() === cleanAssigned) ||
-           (u.full_name && u.full_name.toLowerCase().includes(cleanAssigned)) ||
-           (cleanAssigned.includes(u.full_name?.toLowerCase() || ''))
+      u => (u.full_name && String(u.full_name).toLowerCase() === cleanAssigned) ||
+           (u.full_name && String(u.full_name).toLowerCase().includes(cleanAssigned)) ||
+           (cleanAssigned.includes(String(u.full_name || '').toLowerCase()))
     );
     if (master && master.phone) {
       return { phone: formatPhoneNumber(master.phone), name: master.full_name };
