@@ -141,12 +141,12 @@ export const TicketCard: React.FC<TicketCardProps> = ({
           )}
 
           {/* Ticket ID */}
-          <span className="text-sm sm:text-base font-extrabold text-slate-700 dark:text-slate-200 tracking-tight">
+          <span className="text-xs sm:text-sm font-extrabold text-slate-700 dark:text-slate-200 tracking-tight">
             #<HighlightText text={ticket.ticket_no || `TKT-${ticket.id.toString().padStart(4, '0')}`} highlight={searchQuery} isDark={isDark} />
           </span>
 
           {/* Status Badge Pill */}
-          <span className={`px-3 py-0.5 rounded-full text-xs font-bold tracking-wide shadow-xs ${statusInfo.bg}`}>
+          <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide shadow-xs ${statusInfo.bg}`}>
             {statusInfo.label}
           </span>
 
@@ -165,19 +165,19 @@ export const TicketCard: React.FC<TicketCardProps> = ({
             e.stopPropagation();
             handleSelectTicket(ticket);
           }}
-          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-slate-200 dark:border-slate-700/80 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
+          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-slate-200 dark:border-slate-700/80 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
           title="Lihat Detail Tiket"
         >
-          <RotateCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-600 dark:text-slate-300" />
+          <RotateCw className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
         </button>
       </div>
 
       {/* Second Row: Category Title (Left) + Date & Time (Right) */}
-      <div className="flex items-baseline justify-between gap-2 mb-3 sm:mb-4">
-        <h3 className="text-base sm:text-lg font-extrabold text-slate-700 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1">
+      <div className="flex items-baseline justify-between gap-2 mb-2.5 sm:mb-3">
+        <h3 className="text-sm sm:text-base font-extrabold text-emerald-900 dark:text-emerald-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1">
           <HighlightText text={ticket.category ? `${ticket.category} Request` : 'Hardware Request'} highlight={searchQuery} isDark={isDark} />
         </h3>
-        <span className="text-xs sm:text-sm text-slate-400 dark:text-slate-400 font-normal shrink-0">
+        <span className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-400 font-normal shrink-0">
           {formatDate(ticket.created_at)}
         </span>
       </div>

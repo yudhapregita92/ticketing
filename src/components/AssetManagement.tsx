@@ -645,8 +645,19 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
         <body>
           <div class="grid-container">
             ${assetsToPrint.map(asset => {
-              const matchedUser = masterUsers.find(u => u.full_name === asset.assigned_to);
-              const jabatan = matchedUser?.jabatan || '-';
+              const assignedToClean = asset.assigned_to?.trim().toLowerCase() || '';
+              const matchedUser = masterUsers.find(u => 
+                u.full_name?.trim().toLowerCase() === assignedToClean
+              ) || masterUsers.find(u => 
+                assignedToClean && (
+                  u.full_name?.trim().toLowerCase().includes(assignedToClean) ||
+                  assignedToClean.includes(u.full_name?.trim().toLowerCase() || '___')
+                )
+              ) || masterUsers.find(u => 
+                asset.department && u.department?.trim().toLowerCase() === asset.department.trim().toLowerCase() && u.jabatan && u.jabatan !== '-'
+              );
+
+              const jabatan = (matchedUser?.jabatan && matchedUser.jabatan !== '-') ? matchedUser.jabatan : '-';
               const departemen = asset.department || '-';
               
               // Generate QR URL pointing to the public asset detail page
@@ -3455,6 +3466,18 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                             <span className="text-slate-400 font-bold uppercase text-[10px]">Pengguna</span>
                             <span className="font-bold">{qrPreviewAsset.assigned_to || '-'}</span>
                           </div>
+                          {(() => {
+                            const assignedToClean = qrPreviewAsset.assigned_to?.trim().toLowerCase() || '';
+                            const matchedUser = masterUsers.find(u => u.full_name?.trim().toLowerCase() === assignedToClean) ||
+                              masterUsers.find(u => assignedToClean && u.full_name?.trim().toLowerCase().includes(assignedToClean));
+                            const jab = matchedUser?.jabatan && matchedUser.jabatan !== '-' ? matchedUser.jabatan : null;
+                            return jab ? (
+                              <div className="flex flex-col py-2 border-b border-dashed border-slate-200 dark:border-slate-800 gap-1">
+                                <span className="text-slate-400 font-bold uppercase text-[10px]">Jabatan</span>
+                                <span className="font-bold">{jab}</span>
+                              </div>
+                            ) : null;
+                          })()}
                           <div className="flex flex-col py-2 border-b border-dashed border-slate-200 dark:border-slate-800 gap-1">
                             <span className="text-slate-400 font-bold uppercase text-[10px]">Departemen</span>
                             <span className="font-bold">{qrPreviewAsset.department || '-'}</span>
