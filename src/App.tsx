@@ -202,12 +202,12 @@ export default function App() {
       admins: managementData.admins || []
     };
     if (publicData) return { 
-      it: [], 
+      it: publicData.it || [], 
       depts: publicData.depts || [], 
       cats: publicData.cats || [], 
       users: [], 
       masters: publicData.masters || [], 
-      admins: [] 
+      admins: publicData.admins || [] 
     };
     return { it: [], depts: [], cats: [], users: [], masters: [], admins: [] };
   }, [adminUser, managementData, publicData]);

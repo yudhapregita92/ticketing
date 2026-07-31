@@ -30,17 +30,34 @@ export const ForwardWhatsAppModal: React.FC<ForwardWhatsAppModalProps> = ({
     const list: { name: string; username: string; phone: string; role: string; type: string }[] = [];
     const seen = new Set<string>();
 
+    // Helper to find phone from masterUsers if missing
+    const resolvePhone = (nameOrUser: string, rawPhone?: string) => {
+      if (rawPhone) return formatPhoneNumber(rawPhone);
+      if (Array.isArray(masterUsers)) {
+        const clean = nameOrUser.toLowerCase().trim();
+        const foundMaster = masterUsers.find(mu => 
+          (mu.full_name && mu.full_name.toLowerCase().trim() === clean) ||
+          (mu.username && mu.username.toLowerCase().trim() === clean)
+        );
+        if (foundMaster?.phone) {
+          return formatPhoneNumber(foundMaster.phone);
+        }
+      }
+      return '';
+    };
+
     // From adminUsers
     if (Array.isArray(adminUsers)) {
       adminUsers.forEach(u => {
-        if (!u.username) return;
-        const key = u.username.toLowerCase();
+        if (!u.username && !u.full_name) return;
+        const key = (u.username || u.full_name).toLowerCase();
         if (!seen.has(key)) {
           seen.add(key);
+          const name = u.full_name || u.username;
           list.push({
-            name: u.full_name || u.username,
-            username: u.username,
-            phone: u.phone ? formatPhoneNumber(u.phone) : '',
+            name: name,
+            username: u.username || u.full_name,
+            phone: resolvePhone(name, u.phone),
             role: u.role || 'Admin IT',
             type: 'admin'
           });
@@ -48,7 +65,7 @@ export const ForwardWhatsAppModal: React.FC<ForwardWhatsAppModalProps> = ({
       });
     }
 
-    // From teamMembers
+    // From teamMembers (IT personnel)
     if (Array.isArray(teamMembers)) {
       teamMembers.forEach(m => {
         if (!m.name) return;
@@ -58,7 +75,7 @@ export const ForwardWhatsAppModal: React.FC<ForwardWhatsAppModalProps> = ({
           list.push({
             name: m.name,
             username: m.name,
-            phone: m.phone ? formatPhoneNumber(m.phone) : '',
+            phone: resolvePhone(m.name, m.phone),
             role: m.subRoleTitle || m.role || 'Tim IT',
             type: 'team'
           });
@@ -66,14 +83,50 @@ export const ForwardWhatsAppModal: React.FC<ForwardWhatsAppModalProps> = ({
       });
     }
 
+    // From masterUsers (if IT department)
+    if (Array.isArray(masterUsers)) {
+      masterUsers.forEach(mu => {
+        if (!mu.full_name) return;
+        const dept = (mu.department || '').toLowerCase();
+        const isIT = dept.includes('it') || dept.includes('edp') || dept.includes('tech') || dept.includes('informasi');
+        if (isIT) {
+          const key = mu.full_name.toLowerCase();
+          if (!seen.has(key)) {
+            seen.add(key);
+            list.push({
+              name: mu.full_name,
+              username: mu.full_name,
+              phone: formatPhoneNumber(mu.phone),
+              role: `IT (${mu.department || 'Support'})`,
+              type: 'master'
+            });
+          }
+        }
+      });
+    }
+
     return list;
-  }, [adminUsers, teamMembers]);
+  }, [adminUsers, teamMembers, masterUsers]);
 
   // Initial agent detection
   const detectedAgent = useMemo(() => {
     if (!ticket.assigned_to) return null;
     const cleanAssigned = ticket.assigned_to.replace(/^@/, '').trim().toLowerCase();
-    return agentList.find(a => a.username.toLowerCase() === cleanAssigned || a.name.toLowerCase() === cleanAssigned) || null;
+    if (!cleanAssigned) return null;
+
+    let found = agentList.find(a => 
+      a.username.toLowerCase() === cleanAssigned || 
+      a.name.toLowerCase() === cleanAssigned
+    );
+    if (found) return found;
+
+    found = agentList.find(a => 
+      a.username.toLowerCase().includes(cleanAssigned) || 
+      a.name.toLowerCase().includes(cleanAssigned) ||
+      cleanAssigned.includes(a.username.toLowerCase()) ||
+      cleanAssigned.includes(a.name.toLowerCase())
+    );
+    return found || null;
   }, [ticket.assigned_to, agentList]);
 
   const [selectedAgentKey, setSelectedAgentKey] = useState<string>('');
@@ -82,21 +135,24 @@ export const ForwardWhatsAppModal: React.FC<ForwardWhatsAppModalProps> = ({
   useEffect(() => {
     if (detectedAgent) {
       setSelectedAgentKey(detectedAgent.username);
-      setCustomPhone(detectedAgent.phone);
+      const agentPhone = detectedAgent.phone || findAgentPhoneNumber(detectedAgent.name, adminUsers, teamMembers, masterUsers)?.phone || '';
+      setCustomPhone(agentPhone);
     } else if (agentList.length > 0) {
-      setSelectedAgentKey(agentList[0].username);
-      setCustomPhone(agentList[0].phone);
+      const agentWithPhone = agentList.find(a => !!a.phone) || agentList[0];
+      setSelectedAgentKey(agentWithPhone.username);
+      setCustomPhone(agentWithPhone.phone);
     } else {
       setSelectedAgentKey('');
       setCustomPhone('');
     }
-  }, [ticket, detectedAgent, agentList]);
+  }, [ticket, detectedAgent, agentList, adminUsers, teamMembers, masterUsers]);
 
   const handleAgentChange = (key: string) => {
     setSelectedAgentKey(key);
     const agent = agentList.find(a => a.username === key);
     if (agent) {
-      setCustomPhone(agent.phone);
+      const p = agent.phone || findAgentPhoneNumber(agent.name, adminUsers, teamMembers, masterUsers)?.phone || '';
+      setCustomPhone(p);
     }
   };
 

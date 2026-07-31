@@ -29,7 +29,9 @@ router.get("/public-data/all", asyncHandler(async (req, res) => {
   const depts = db.prepare("SELECT * FROM departments ORDER BY name ASC").all();
   const cats = db.prepare("SELECT * FROM categories ORDER BY name ASC").all();
   const masters = db.prepare("SELECT * FROM master_users ORDER BY full_name ASC").all();
-  res.json({ depts, cats, masters });
+  const it = db.prepare("SELECT * FROM it_personnel ORDER BY name ASC").all();
+  const admins = db.prepare("SELECT id, username, full_name, role, is_on_duty, phone FROM users WHERE role != 'staff' ORDER BY username ASC").all();
+  res.json({ depts, cats, masters, it, admins });
 }));
 
 // IT Personnel
