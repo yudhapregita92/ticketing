@@ -129,6 +129,8 @@ export function initDb() {
       usage_status TEXT,
       user_index TEXT,
       budget_type TEXT DEFAULT 'Capex',
+      is_issued INTEGER DEFAULT 0,
+      issued_reason TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -451,6 +453,12 @@ export function initDb() {
         } catch (e) {
           console.error("Error setting default budget_type:", e);
         }
+      }
+      if (!columns.find(c => c.name === 'is_issued')) {
+        db.prepare("ALTER TABLE assets ADD COLUMN is_issued INTEGER DEFAULT 0").run();
+      }
+      if (!columns.find(c => c.name === 'issued_reason')) {
+        db.prepare("ALTER TABLE assets ADD COLUMN issued_reason TEXT").run();
       }
     }
 

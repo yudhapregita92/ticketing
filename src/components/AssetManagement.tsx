@@ -5,7 +5,7 @@ import {
   Monitor, Smartphone, Printer, Server, Laptop, X, Save,
   User, Building2, Download, Upload, FileSpreadsheet,
   ChevronLeft, ChevronRight, Users, Layers, Eye, CheckCircle2, PieChart,
-  ClipboardList, RotateCcw, PenTool, Calendar, Check, AlertCircle, FileSignature, QrCode, Clock, ExternalLink
+  ClipboardList, RotateCcw, PenTool, Calendar, Check, AlertCircle, AlertTriangle, FileSignature, QrCode, Clock, ExternalLink
 } from 'lucide-react';
 import * as xlsx from 'xlsx';
 import toast from 'react-hot-toast';
@@ -135,6 +135,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
     condition: 'Good',
     notes: '',
     budget_type: 'Capex',
+    is_issued: false as boolean,
+    issued_reason: '',
     purchase_date: new Date().toISOString().split('T')[0]
   });
 
@@ -364,6 +366,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
       condition: 'Good',
       notes: '',
       budget_type: activeSubTab !== 'all' ? activeSubTab : 'Capex',
+      is_issued: false,
+      issued_reason: '',
       purchase_date: new Date().toISOString().split('T')[0]
     });
   };
@@ -398,6 +402,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
       condition: asset.condition || 'Good',
       notes: asset.notes || '',
       budget_type: asset.budget_type || 'Capex',
+      is_issued: Boolean(asset.is_issued),
+      issued_reason: asset.issued_reason || '',
       purchase_date: asset.purchase_date || ''
     });
     setIsViewMode(view);
@@ -668,7 +674,10 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
               return `
               <div class="label-box">
                 <div class="label-content">
-                  <div class="title">${asset.category || asset.name}</div>
+                  <div class="title" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                    <span>${asset.category || asset.name}</span>
+                    ${asset.is_issued ? `<span style="font-size: 7px; font-weight: 800; color: #ea580c; background: #fff7ed; border: 1px solid #f97316; padding: 0px 4px; border-radius: 3px; display: inline-flex; align-items: center; gap: 2px; text-transform: uppercase; vertical-align: middle; line-height: 1.3;">⚠️ ISSUED</span>` : ''}
+                  </div>
                   <div class="jabatan">${jabatan}</div>
                   <div class="departemen">${departemen}</div>
                   <div class="kode">${asset.device_code || asset.asset_id || '-'}</div>
@@ -1847,6 +1856,11 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                           {asset.category}
                         </span>
                         {getStatusBadge(asset.status)}
+                        {Boolean(asset.is_issued) && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-0.5" title={asset.issued_reason || 'Di-issued untuk operasional'}>
+                            <AlertTriangle className="w-2.5 h-2.5 text-amber-500" /> ISSUED
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1966,7 +1980,14 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                           {getCategoryIcon(asset.category)}
                         </div>
                         <div className="min-w-0">
-                          <div className={`font-bold text-xs truncate max-w-[150px] ${themeClasses.heading}`} title={asset.name}>{asset.name || '-'}</div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <div className={`font-bold text-xs truncate max-w-[140px] ${themeClasses.heading}`} title={asset.name}>{asset.name || '-'}</div>
+                            {Boolean(asset.is_issued) && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-0.5 shrink-0" title={asset.issued_reason || 'Di-issued untuk operasional'}>
+                                <AlertTriangle className="w-2.5 h-2.5 text-amber-500" /> ISSUED
+                              </span>
+                            )}
+                          </div>
                           {asset.brand && (
                             <div className={`text-[9px] truncate max-w-[150px] ${themeClasses.textMuted}`}>
                               {asset.brand}
@@ -2194,9 +2215,27 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                           {editingAsset.budget_type || 'Capex'}
                         </span>
                         {getStatusBadge(editingAsset.status)}
+                        {Boolean(editingAsset.is_issued) && (
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3 text-amber-500" />
+                            ISSUED (OPERASIONAL)
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
+
+                  {Boolean(editingAsset.is_issued) && (
+                    <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-1">
+                      <div className="flex items-center gap-1.5 font-black uppercase text-[10px] tracking-wider text-amber-700 dark:text-amber-400">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                        Status Penugasan Issued Operasional
+                      </div>
+                      <p className="font-semibold text-slate-800 dark:text-slate-200">
+                        {editingAsset.issued_reason || 'Di-issued secara khusus untuk kebutuhan operasional.'}
+                      </p>
+                    </div>
+                  )}
 
                   <div className={`p-4 rounded-2xl grid grid-cols-1 sm:grid-cols-2 gap-4 ${
                     isDark ? 'bg-slate-800/40 border border-slate-800' : 'bg-slate-50 border border-slate-100'
@@ -2597,6 +2636,53 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       <option value="Retired">Pensiun</option>
                       <option value="Lost">Hilang</option>
                     </select>
+                  </div>
+
+                  {/* Checkbox Issued (Fasilitas Khusus Operasional) */}
+                  <div className="sm:col-span-2 p-3.5 rounded-2xl border border-amber-500/30 bg-amber-500/5 space-y-2">
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                      <input 
+                        type="checkbox"
+                        checked={!!formData.is_issued}
+                        onChange={(e) => setFormData({...formData, is_issued: e.target.checked})}
+                        className="w-4 h-4 text-amber-600 rounded border-slate-300 focus:ring-amber-500"
+                      />
+                      <span className="text-xs sm:text-sm font-extrabold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                        Status Issued (Penugasan Khusus Operasional)
+                      </span>
+                    </label>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed pl-6">
+                      Centang jika pengguna/karyawan ini secara standar level tidak berhak atas fasilitas aset, namun dipinjamkan perangkat untuk kebutuhan operasional.
+                    </p>
+                    {formData.is_issued && (
+                      <div className="pt-1 pl-6">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">Alasan Issued / Keterangan Penugasan</label>
+                        <input 
+                          type="text"
+                          placeholder="e.g. Persetujuan Direksi / Project Operasional..."
+                          value={formData.issued_reason || ''}
+                          onChange={(e) => setFormData({...formData, issued_reason: e.target.value})}
+                          className={`w-full mt-1 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold border focus:ring-2 focus:outline-none transition-all ${
+                            isDark ? 'bg-slate-800 border-amber-500/40 text-white focus:ring-amber-500/50' : 'bg-white border-amber-300 text-slate-900 focus:ring-amber-500/30'
+                          }`}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Catatan / Keterangan Tambahan */}
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">Catatan / Keterangan Tambahan</label>
+                    <textarea 
+                      placeholder="e.g. Kondisi fisik mulus, garansi aktif, kelengkapan charger & tas..."
+                      rows={2}
+                      value={formData.notes || ''}
+                      onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                      className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
+                      }`}
+                    />
                   </div>
 
                 </div>
@@ -3453,9 +3539,26 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                                 {qrPreviewAsset.category}
                               </span>
                               {getStatusBadge(qrPreviewAsset.status)}
+                              {Boolean(qrPreviewAsset.is_issued) && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-0.5">
+                                  <AlertTriangle className="w-2.5 h-2.5 text-amber-500" /> ISSUED
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
+
+                        {Boolean(qrPreviewAsset.is_issued) && (
+                          <div className="p-2.5 mb-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs">
+                            <div className="flex items-center gap-1.5 font-black uppercase text-[10px] tracking-wider text-amber-600 dark:text-amber-400">
+                              <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                              Status Issued Operasional
+                            </div>
+                            <p className="font-semibold mt-0.5 text-slate-800 dark:text-slate-200">
+                              {qrPreviewAsset.issued_reason || 'Pinjaman fasilitas khusus untuk operasional.'}
+                            </p>
+                          </div>
+                        )}
 
                         <div className="space-y-0 text-xs">
                           <div className="flex flex-col py-2 border-b border-dashed border-slate-200 dark:border-slate-800 gap-1">

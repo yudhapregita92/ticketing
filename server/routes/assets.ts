@@ -13,7 +13,8 @@ router.get("/", asyncHandler(async (req, res) => {
 router.post("/", asyncHandler(async (req, res) => {
   const { 
     asset_id, name, category, status, assigned_to, department, purchase_date, condition, notes,
-    device_code, brand, specs, serial_number, usage_status, user_index, budget_type 
+    device_code, brand, specs, serial_number, usage_status, user_index, budget_type,
+    is_issued, issued_reason
   } = req.body;
 
   if (!asset_id || !name || !category) {
@@ -23,13 +24,15 @@ router.post("/", asyncHandler(async (req, res) => {
   const info = db.prepare(
     `INSERT INTO assets (
       asset_id, name, category, status, assigned_to, department, purchase_date, condition, notes,
-      device_code, brand, specs, serial_number, usage_status, user_index, budget_type
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      device_code, brand, specs, serial_number, usage_status, user_index, budget_type,
+      is_issued, issued_reason
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     asset_id, name, category, status || 'Active', assigned_to || null, department || null, 
     purchase_date || null, condition || null, notes || null,
     device_code || null, brand || null, specs || null, serial_number || null, usage_status || null,
-    user_index || null, budget_type || 'Capex'
+    user_index || null, budget_type || 'Capex',
+    is_issued ? 1 : 0, issued_reason || null
   );
   
   const newAsset = db.prepare("SELECT * FROM assets WHERE id = ?").get(info.lastInsertRowid);
@@ -40,7 +43,8 @@ router.put("/:id", asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { 
     asset_id, name, category, status, assigned_to, department, purchase_date, condition, notes,
-    device_code, brand, specs, serial_number, usage_status, user_index, budget_type 
+    device_code, brand, specs, serial_number, usage_status, user_index, budget_type,
+    is_issued, issued_reason
   } = req.body;
 
   db.prepare(
@@ -48,13 +52,14 @@ router.put("/:id", asyncHandler(async (req, res) => {
       asset_id = ?, name = ?, category = ?, status = ?, assigned_to = ?, department = ?, 
       purchase_date = ?, condition = ?, notes = ?, updated_at = CURRENT_TIMESTAMP,
       device_code = ?, brand = ?, specs = ?, serial_number = ?, usage_status = ?, user_index = ?,
-      budget_type = ?
+      budget_type = ?, is_issued = ?, issued_reason = ?
     WHERE id = ?`
   ).run(
     asset_id, name, category, status, assigned_to, department, 
     purchase_date, condition, notes,
     device_code, brand, specs, serial_number, usage_status, user_index || null,
     budget_type || 'Capex',
+    is_issued ? 1 : 0, issued_reason || null,
     id
   );
   res.json({ success: true });

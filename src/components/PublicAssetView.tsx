@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Package, Smartphone, Monitor, Printer, Server, Laptop, Activity, Box, Clock, ShieldAlert } from 'lucide-react';
+import { Package, Smartphone, Monitor, Printer, Server, Laptop, Activity, Box, Clock, ShieldAlert, AlertTriangle } from 'lucide-react';
 import { calculateAssetDepreciation } from '../utils/assetUtils';
 
 const getCategoryIcon = (category: string = '') => {
@@ -78,9 +78,26 @@ export const PublicAssetView = ({ assetId, isDark }: { assetId: string, isDark: 
                 {asset.category}
               </span>
               {getStatusBadge(asset.status)}
+              {Boolean(asset.is_issued) && (
+                <span className="px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-full text-xs font-black flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3 text-amber-500" /> ISSUED
+                </span>
+              )}
             </div>
           </div>
         </div>
+
+        {Boolean(asset.is_issued) && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs space-y-1">
+            <div className="flex items-center gap-1.5 font-black uppercase text-[11px] tracking-wider text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+              Status Penugasan Issued (Fasilitas Operasional)
+            </div>
+            <p className="font-semibold text-slate-800 dark:text-slate-200">
+              {asset.issued_reason || 'Di-issued secara khusus untuk kebutuhan operasional.'}
+            </p>
+          </div>
+        )}
 
         <div className="space-y-2">
           <DetailRow label="Kode Perangkat" value={asset.device_code || '-'} isDark={isDark} />

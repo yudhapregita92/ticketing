@@ -159,6 +159,8 @@ export interface IAsset {
   usage_status?: string;
   user_index?: string;
   budget_type?: string;
+  is_issued?: number | boolean;
+  issued_reason?: string;
 }
 
 export interface IBorrowedAsset {
