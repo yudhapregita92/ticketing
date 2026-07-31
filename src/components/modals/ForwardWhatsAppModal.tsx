@@ -277,8 +277,8 @@ export const ForwardWhatsAppModal: React.FC<ForwardWhatsAppModalProps> = ({
                     isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-200 text-slate-800'
                   }`}
                 >
-                  {agentList.map(a => (
-                    <option key={a.username} value={a.username}>
+                  {agentList.map((a, idx) => (
+                    <option key={`${a.type}-${a.username}-${idx}`} value={a.username}>
                       {a.name} ({a.role}) {a.phone ? `— ${a.phone}` : '(No HP Belum Diisi)'}
                     </option>
                   ))}

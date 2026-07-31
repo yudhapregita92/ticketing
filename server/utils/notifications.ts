@@ -25,8 +25,10 @@ async function getTransporter() {
 export async function sendNotificationEmail(ticket: any, emails: string[]) {
   console.log('Attempting to send email notification to:', emails);
   
-  if (!emails || emails.length === 0) {
-    console.log('Skipping email notification: No target emails provided');
+  const validEmails = (emails || []).map(e => String(e || '').trim()).filter(e => e && e.includes('@'));
+
+  if (validEmails.length === 0) {
+    console.log('Skipping email notification: No valid target emails provided');
     return;
   }
 
@@ -37,7 +39,7 @@ export async function sendNotificationEmail(ticket: any, emails: string[]) {
 
   const transporter = await getTransporter();
   
-  for (const email of emails) {
+  for (const email of validEmails) {
     const mailOptions = {
       from: `"${fromName}" <${fromEmail}>`,
       to: email,
@@ -118,16 +120,23 @@ export async function sendTelegramNotification(ticket: any, botToken: string, ch
 
 export async function sendUserNotificationEmail(ticket: any, type: 'submit' | 'done') {
   try {
-    let masterUser: { email: string } | undefined;
-    if (ticket.employee_index) {
-      masterUser = db.prepare("SELECT email FROM master_users WHERE employee_index = ? AND email IS NOT NULL AND email != ''").get(ticket.employee_index) as { email: string } | undefined;
-    }
-    if (!masterUser || !masterUser.email) {
-      masterUser = db.prepare("SELECT email FROM master_users WHERE full_name = ? AND email IS NOT NULL AND email != ''").get(ticket.name) as { email: string } | undefined;
+    let recipientEmail = ticket.email ? String(ticket.email).trim() : '';
+
+    if (!recipientEmail) {
+      let masterUser: { email: string } | undefined;
+      if (ticket.employee_index) {
+        masterUser = db.prepare("SELECT email FROM master_users WHERE employee_index = ? AND email IS NOT NULL AND TRIM(email) != ''").get(ticket.employee_index) as { email: string } | undefined;
+      }
+      if (!masterUser || !masterUser.email) {
+        masterUser = db.prepare("SELECT email FROM master_users WHERE full_name = ? AND email IS NOT NULL AND TRIM(email) != ''").get(ticket.name) as { email: string } | undefined;
+      }
+      if (masterUser && masterUser.email) {
+        recipientEmail = String(masterUser.email).trim();
+      }
     }
 
-    if (!masterUser || !masterUser.email) {
-      console.log(`Skipping user email notification: No email found for user ${ticket.name} (NIK: ${ticket.employee_index || '-'})`);
+    if (!recipientEmail || !recipientEmail.includes('@')) {
+      console.log(`Skipping user email notification: No valid recipient email found for user ${ticket.name} (NIK: ${ticket.employee_index || '-'})`);
       return;
     }
 
@@ -175,13 +184,13 @@ export async function sendUserNotificationEmail(ticket: any, type: 'submit' | 'd
 
     const mailOptions = {
       from: `"${fromName}" <${fromEmail}>`,
-      to: masterUser.email,
+      to: recipientEmail,
       subject,
       html
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`User notification email sent successfully to: ${masterUser.email}`);
+    console.log(`User notification email sent successfully to: ${recipientEmail}`);
   } catch (error) {
     console.error(`Error sending user notification email for ticket ${ticket.ticket_no}:`, error);
   }

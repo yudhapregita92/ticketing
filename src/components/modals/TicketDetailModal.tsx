@@ -87,30 +87,44 @@ export const TicketDetailModal = React.memo(({
   if (!selectedTicket) return null;
 
   const isMyTicket = React.useMemo(() => {
-    if (adminUser) return true;
-    if (currentUser) {
-      const userName = currentUser.full_name?.trim().toLowerCase();
-      const userPhone = currentUser.phone ? currentUser.phone.trim().toLowerCase() : '';
-      const tName = selectedTicket.name?.trim().toLowerCase();
-      const tPhone = selectedTicket.phone ? selectedTicket.phone.trim().toLowerCase() : '';
+    const activeUserObj = currentUser || adminUser;
+    
+    let activeName = activeUserObj?.full_name || activeUserObj?.username || '';
+    let activePhone = activeUserObj?.phone || '';
 
-      if (userName && tName === userName) return true;
-      if (userPhone && tPhone && tPhone === userPhone) return true;
-      return false;
+    if (!activeName && !activePhone) {
+      try {
+        const savedStaff = localStorage.getItem('currentUser');
+        if (savedStaff) {
+          const parsed = JSON.parse(savedStaff);
+          activeName = activeName || parsed.full_name || parsed.username || '';
+          activePhone = activePhone || parsed.phone || '';
+        }
+        const savedAdmin = localStorage.getItem('adminUser');
+        if (savedAdmin) {
+          const parsed = JSON.parse(savedAdmin);
+          activeName = activeName || parsed.full_name || parsed.username || '';
+          activePhone = activePhone || parsed.phone || '';
+        }
+      } catch (e) {}
     }
-    try {
-      const savedUser = localStorage.getItem('currentUser');
-      if (savedUser) {
-        const parsed = JSON.parse(savedUser);
-        const userName = parsed.full_name?.trim().toLowerCase();
-        const userPhone = parsed.phone ? parsed.phone.trim().toLowerCase() : '';
-        const tName = selectedTicket.name?.trim().toLowerCase();
-        const tPhone = selectedTicket.phone ? selectedTicket.phone.trim().toLowerCase() : '';
 
-        if (userName && tName === userName) return true;
-        if (userPhone && tPhone && tPhone === userPhone) return true;
-      }
-    } catch (e) {}
+    const cleanActiveName = activeName.trim().toLowerCase();
+    const cleanActivePhone = activePhone.replace(/\D/g, '');
+    
+    const tName = (selectedTicket.name || '').trim().toLowerCase();
+    const tPhone = (selectedTicket.phone || '').replace(/\D/g, '');
+
+    // Match by Name
+    if (cleanActiveName && tName && cleanActiveName === tName) {
+      return true;
+    }
+
+    // Match by Phone (min 8 digits)
+    if (cleanActivePhone.length >= 8 && tPhone.length >= 8 && (cleanActivePhone.endsWith(tPhone) || tPhone.endsWith(cleanActivePhone))) {
+      return true;
+    }
+
     return false;
   }, [adminUser, currentUser, selectedTicket]);
 

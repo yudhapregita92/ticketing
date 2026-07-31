@@ -61,30 +61,44 @@ export const TicketCard: React.FC<TicketCardProps> = ({
   const customDelayed = ticketCategory?.response_time && ticketCategory.response_time > 0 ? ticketCategory.response_time : undefined;
 
   const isMyTicket = React.useMemo(() => {
-    if (adminUser) return true; // Admins/IT personnel can forward/send WhatsApp for tickets
-    if (currentUser) {
-      const userName = currentUser.full_name?.trim().toLowerCase();
-      const userPhone = currentUser.phone ? currentUser.phone.trim().toLowerCase() : '';
-      const tName = ticket.name?.trim().toLowerCase();
-      const tPhone = ticket.phone ? ticket.phone.trim().toLowerCase() : '';
+    const activeUserObj = currentUser || adminUser;
+    
+    let activeName = activeUserObj?.full_name || activeUserObj?.username || '';
+    let activePhone = activeUserObj?.phone || '';
 
-      if (userName && tName === userName) return true;
-      if (userPhone && tPhone && tPhone === userPhone) return true;
-      return false;
+    if (!activeName && !activePhone) {
+      try {
+        const savedStaff = localStorage.getItem('currentUser');
+        if (savedStaff) {
+          const parsed = JSON.parse(savedStaff);
+          activeName = activeName || parsed.full_name || parsed.username || '';
+          activePhone = activePhone || parsed.phone || '';
+        }
+        const savedAdmin = localStorage.getItem('adminUser');
+        if (savedAdmin) {
+          const parsed = JSON.parse(savedAdmin);
+          activeName = activeName || parsed.full_name || parsed.username || '';
+          activePhone = activePhone || parsed.phone || '';
+        }
+      } catch (e) {}
     }
-    try {
-      const savedUser = localStorage.getItem('currentUser');
-      if (savedUser) {
-        const parsed = JSON.parse(savedUser);
-        const userName = parsed.full_name?.trim().toLowerCase();
-        const userPhone = parsed.phone ? parsed.phone.trim().toLowerCase() : '';
-        const tName = ticket.name?.trim().toLowerCase();
-        const tPhone = ticket.phone ? ticket.phone.trim().toLowerCase() : '';
 
-        if (userName && tName === userName) return true;
-        if (userPhone && tPhone && tPhone === userPhone) return true;
-      }
-    } catch (e) {}
+    const cleanActiveName = activeName.trim().toLowerCase();
+    const cleanActivePhone = activePhone.replace(/\D/g, '');
+    
+    const tName = (ticket.name || '').trim().toLowerCase();
+    const tPhone = (ticket.phone || '').replace(/\D/g, '');
+
+    // Match by Name
+    if (cleanActiveName && tName && cleanActiveName === tName) {
+      return true;
+    }
+
+    // Match by Phone (min 8 digits)
+    if (cleanActivePhone.length >= 8 && tPhone.length >= 8 && (cleanActivePhone.endsWith(tPhone) || tPhone.endsWith(cleanActivePhone))) {
+      return true;
+    }
+
     return false;
   }, [adminUser, currentUser, ticket]);
   
