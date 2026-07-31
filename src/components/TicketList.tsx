@@ -414,7 +414,7 @@ export const TicketList: React.FC<TicketListProps> = ({
                 )}
                 {paginatedTickets.map((ticket, index) => (
                   <TicketCard 
-                    key={ticket.id}
+                    key={`${ticket.id}-${index}`}
                     ticket={ticket}
                     index={index}
                     isDark={isDark}
@@ -478,7 +478,7 @@ export const TicketList: React.FC<TicketListProps> = ({
                     (page === 2 && currentPage > 3) || 
                     (page === totalPages - 1 && currentPage < totalPages - 2)
                   ) {
-                    return <span key={page} className="text-slate-400 px-1">...</span>;
+                    return <span key={`ellipsis-${page}`} className="text-slate-400 px-1">...</span>;
                   }
                   return null;
                 })}

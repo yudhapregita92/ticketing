@@ -14,7 +14,7 @@ export default function(io: Server) {
     console.log('GET /api/tickets', req.query);
     const { username, role } = req.query;
     // Exclude 'photo' from the list to keep payload small
-    const columns = "id, ticket_no, name, department, phone, category, description, assigned_to, admin_reply, status, created_at, updated_at, responded_at, resolved_at, ip_address, user_agent, latitude, longitude, internal_notes, device_type, pc_code";
+    const columns = "id, ticket_no, name, employee_index, department, phone, category, description, assigned_to, admin_reply, status, created_at, updated_at, responded_at, resolved_at, ip_address, user_agent, latitude, longitude, internal_notes, device_type, pc_code, rating, rating_feedback, rating_at, require_rating";
     let tickets;
     if (role === 'Super Admin' || !username) {
       tickets = db.prepare(`SELECT ${columns} FROM tickets ORDER BY created_at DESC`).all() as Ticket[];
@@ -64,9 +64,79 @@ export default function(io: Server) {
 
   router.get("/history/:index", asyncHandler(async (req: any, res: any) => {
     const { index } = req.params;
-    const columns = "id, ticket_no, name, department, phone, category, description, assigned_to, admin_reply, status, created_at, updated_at, responded_at, resolved_at, priority, device_type, pc_code";
+    const columns = "id, ticket_no, name, employee_index, department, phone, category, description, assigned_to, admin_reply, status, created_at, updated_at, responded_at, resolved_at, priority, device_type, pc_code, rating, rating_feedback, rating_at, require_rating";
     const tickets = db.prepare(`SELECT ${columns} FROM tickets WHERE employee_index = ? ORDER BY created_at DESC`).all(index) as Ticket[];
     res.json(tickets);
+  }));
+
+  router.get("/unrated/check", asyncHandler(async (req: any, res: any) => {
+    const { name, employee_index, phone } = req.query;
+    
+    let unrated: any[] = [];
+    const cleanName = (name || '').toString().trim();
+    const cleanIndex = (employee_index || '').toString().trim();
+    const cleanPhone = (phone || '').toString().replace(/\D/g, '');
+
+    if (cleanIndex) {
+      unrated = db.prepare(`
+        SELECT id, ticket_no, name, employee_index, department, phone, category, description, assigned_to, resolved_at, created_at, status, require_rating 
+        FROM tickets 
+        WHERE status = 'Completed' AND require_rating = 1 AND (rating IS NULL OR rating = 0) AND employee_index = ?
+        ORDER BY resolved_at DESC
+      `).all(cleanIndex);
+    } else if (cleanName) {
+      unrated = db.prepare(`
+        SELECT id, ticket_no, name, employee_index, department, phone, category, description, assigned_to, resolved_at, created_at, status, require_rating 
+        FROM tickets 
+        WHERE status = 'Completed' AND require_rating = 1 AND (rating IS NULL OR rating = 0) AND LOWER(TRIM(name)) = LOWER(?)
+        ORDER BY resolved_at DESC
+      `).all(cleanName);
+    } else if (cleanPhone && cleanPhone.length >= 8) {
+      unrated = db.prepare(`
+        SELECT id, ticket_no, name, employee_index, department, phone, category, description, assigned_to, resolved_at, created_at, status, require_rating 
+        FROM tickets 
+        WHERE status = 'Completed' AND require_rating = 1 AND (rating IS NULL OR rating = 0) AND (phone LIKE ? OR phone LIKE ?)
+        ORDER BY resolved_at DESC
+      `).all(`%${cleanPhone}%`, `%${cleanPhone.slice(-8)}%`);
+    }
+
+    res.json(unrated);
+  }));
+
+  router.post("/:id/rate", asyncHandler(async (req: any, res: any) => {
+    const { id } = req.params;
+    const { rating, rating_feedback, user_name } = req.body;
+
+    if (!rating || rating < 1 || rating > 5) {
+      throw new AppError("Rating harus bernilai 1 sampai 5 bintang", 400);
+    }
+
+    const ticket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(id) as Ticket | undefined;
+    if (!ticket) {
+      throw new AppError("Tiket tidak ditemukan", 404);
+    }
+
+    db.prepare(`
+      UPDATE tickets 
+      SET rating = ?, rating_feedback = ?, rating_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = ?
+    `).run(rating, rating_feedback || '', id);
+
+    // Insert log
+    db.prepare(`
+      INSERT INTO ticket_logs (ticket_id, action, note, performed_by) 
+      VALUES (?, ?, ?, ?)
+    `).run(
+      id,
+      'Rating & Ulasan',
+      `Memberikan nilai ${rating}/5 Bintang${rating_feedback ? ': "' + rating_feedback + '"' : ''}`,
+      user_name || ticket.name || 'User'
+    );
+
+    const updatedTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(id) as Ticket;
+    io.emit("ticket_updated", updatedTicket);
+
+    res.json({ success: true, ticket: updatedTicket });
   }));
 
   router.post("/", asyncHandler(async (req: any, res: any) => {
@@ -243,7 +313,7 @@ export default function(io: Server) {
 
 async function handleTicketUpdate(req: any, res: any, io: Server) {
   const { id } = req.params;
-  const { status, assigned_to, admin_reply, internal_notes, takeover_by, reassign_to, performed_by, note, priority, estimated_duration, estimated_start_at, estimated_target_at } = req.body;
+  const { status, assigned_to, admin_reply, internal_notes, takeover_by, reassign_to, performed_by, note, priority, estimated_duration, estimated_start_at, estimated_target_at, require_rating } = req.body;
   
   const currentTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(id) as Ticket | undefined;
   if (!currentTicket) throw new AppError("Ticket not found", 404);
@@ -258,6 +328,7 @@ async function handleTicketUpdate(req: any, res: any, io: Server) {
   let newEstDuration = estimated_duration !== undefined ? estimated_duration : currentTicket.estimated_duration;
   let newEstStart = estimated_start_at !== undefined ? estimated_start_at : currentTicket.estimated_start_at;
   let newEstTarget = estimated_target_at !== undefined ? estimated_target_at : currentTicket.estimated_target_at;
+  let newRequireRating = require_rating !== undefined ? (require_rating ? 1 : 0) : (currentTicket.require_rating || 0);
 
   const logs: any[] = [];
 
@@ -289,6 +360,10 @@ async function handleTicketUpdate(req: any, res: any, io: Server) {
     logs.push({ action: 'Estimasi Pengerjaan', note: `Estimasi waktu: ${estimated_duration || 'Dihapus'}`, performed_by: performed_by || 'System' });
   }
 
+  if (require_rating !== undefined && newRequireRating !== (currentTicket.require_rating || 0)) {
+    logs.push({ action: 'Minta Rating', note: newRequireRating ? 'Permintaan rating layanan diaktifkan' : 'Permintaan rating layanan dinonaktifkan', performed_by: performed_by || 'System' });
+  }
+
   if (!respondedAt && (admin_reply !== undefined || (newStatus !== 'New' && newStatus !== currentTicket.status))) {
     respondedAt = new Date().toISOString();
   }
@@ -299,8 +374,8 @@ async function handleTicketUpdate(req: any, res: any, io: Server) {
     resolvedAt = null;
   }
 
-  db.prepare("UPDATE tickets SET status = ?, assigned_to = ?, admin_reply = ?, internal_notes = ?, priority = ?, responded_at = ?, resolved_at = ?, estimated_duration = ?, estimated_start_at = ?, estimated_target_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
-    .run(newStatus, newAssignedTo, newAdminReply, newInternalNotes, newPriority, respondedAt, resolvedAt, newEstDuration, newEstStart, newEstTarget, id);
+  db.prepare("UPDATE tickets SET status = ?, assigned_to = ?, admin_reply = ?, internal_notes = ?, priority = ?, responded_at = ?, resolved_at = ?, estimated_duration = ?, estimated_start_at = ?, estimated_target_at = ?, require_rating = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+    .run(newStatus, newAssignedTo, newAdminReply, newInternalNotes, newPriority, respondedAt, resolvedAt, newEstDuration, newEstStart, newEstTarget, newRequireRating, id);
   
   const insertLog = db.prepare("INSERT INTO ticket_logs (ticket_id, action, note, performed_by) VALUES (?, ?, ?, ?)");
   logs.forEach(log => {

@@ -28,6 +28,10 @@ export interface ITicket {
   estimated_duration?: string | null;
   estimated_start_at?: string | null;
   estimated_target_at?: string | null;
+  rating?: number | null;
+  rating_feedback?: string | null;
+  rating_at?: string | null;
+  require_rating?: number | null;
 }
 
 export interface IUser {

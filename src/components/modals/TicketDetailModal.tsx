@@ -22,7 +22,8 @@ import {
   Clock,
   CheckCircle2,
   RotateCcw,
-  Send
+  Send,
+  Star
 } from 'lucide-react';
 
 import { ITicket, PRIORITIES } from '../../types';
@@ -53,7 +54,8 @@ interface TicketDetailModalProps {
     priority?: string,
     estimated_duration?: string | null,
     estimated_start_at?: string | null,
-    estimated_target_at?: string | null
+    estimated_target_at?: string | null,
+    require_rating?: number | null
   ) => void;
   handleIntervention: (id: number, type: 'takeover' | 'reassign') => void;
   primaryColor: string;
@@ -234,8 +236,13 @@ export const TicketDetailModal = React.memo(({
     return toLocalISOString(selectedTicket?.estimated_target_at);
   });
 
+  const [requireRating, setRequireRating] = useState<boolean>(() => {
+    return selectedTicket?.require_rating === 1;
+  });
+
   useEffect(() => {
     if (selectedTicket) {
+      setRequireRating(selectedTicket.require_rating === 1);
       if (selectedTicket.estimated_start_at) {
         setEstMode('range');
       } else if (selectedTicket.estimated_duration) {
@@ -374,6 +381,37 @@ export const TicketDetailModal = React.memo(({
                   {selectedTicket.description}
                 </p>
               </div>
+
+              {/* Rating & Ulasan Pelayanan */}
+              {selectedTicket.rating && Number(selectedTicket.rating) > 0 ? (
+                <div className="p-4 rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/80 dark:bg-amber-950/30 space-y-2">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <span className="text-xs font-black uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                      Penilaian & Kepuasan Layanan
+                    </span>
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          className={`w-4 h-4 ${
+                            s <= Number(selectedTicket.rating || 0)
+                              ? 'fill-amber-400 text-amber-400'
+                              : 'text-slate-300 dark:text-slate-700'
+                          }`}
+                        />
+                      ))}
+                      <span className="text-xs font-black text-amber-900 dark:text-amber-200 ml-1">
+                        {selectedTicket.rating}/5 Bintang
+                      </span>
+                    </div>
+                  </div>
+                  {selectedTicket.rating_feedback && (
+                    <p className="text-xs italic text-slate-700 dark:text-slate-300 bg-white/70 dark:bg-slate-900/60 p-3 rounded-xl border border-amber-200/60 dark:border-amber-900/60">
+                      "{selectedTicket.rating_feedback}"
+                    </p>
+                  )}
+                </div>
+              ) : null}
 
               {/* Audit Log (IP / Device / GPS) */}
               {adminUser && (
@@ -833,6 +871,34 @@ export const TicketDetailModal = React.memo(({
                       </div>
                     </div>
 
+                    {/* Toggle Request Rating dari User */}
+                    <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-amber-500/30 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="space-y-0.5 pr-2">
+                          <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5 cursor-pointer" onClick={() => setRequireRating(prev => !prev)}>
+                            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
+                            Minta Rating / Ulasan Layanan
+                          </label>
+                          <p className="text-[10px] text-slate-400 leading-tight">
+                            Aktifkan jika tim IT mewajibkan pengguna mengisi nilai bintang & masukan saat tiket selesai.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setRequireRating(prev => !prev)}
+                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            requireRating ? 'bg-amber-500' : 'bg-slate-700'
+                          }`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                              requireRating ? 'translate-x-5' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+
                     {/* Estimasi Waktu Pengerjaan / SLA Options */}
                     <div className="space-y-2.5 p-3.5 sm:p-4 rounded-2xl bg-slate-800/80 border border-slate-700/80">
                       <div className="flex items-center justify-between">
@@ -1002,7 +1068,8 @@ export const TicketDetailModal = React.memo(({
                           priority,
                           finalEstDuration,
                           finalEstStartAt,
-                          finalEstTargetAt
+                          finalEstTargetAt,
+                          requireRating ? 1 : 0
                         );
                         setSelectedTicket(null);
                         setModalStatus('');

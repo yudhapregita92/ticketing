@@ -82,6 +82,15 @@ export const api = {
     return handleResponse(res);
   },
 
+  rateTicket: async (id: number, rating: number, rating_feedback?: string, user_name?: string) => {
+    const res = await fetch(`/api/tickets/${id}/rate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rating, rating_feedback, user_name })
+    });
+    return handleResponse(res);
+  },
+
   // Management Data
   getManagementData: (): Promise<any> => fetch('/api/master-data/all').then(handleResponse),
   getPublicData: (): Promise<any> => fetch('/api/public-data/all').then(handleResponse),

@@ -38,6 +38,10 @@ export interface Ticket {
   estimated_duration?: string;
   estimated_start_at?: string;
   estimated_target_at?: string;
+  rating?: number;
+  rating_feedback?: string;
+  rating_at?: string;
+  require_rating?: number;
 }
 
 export interface TicketLog {

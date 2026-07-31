@@ -61,6 +61,7 @@ import { hapticFeedback } from './utils/haptics';
 import { MobileAppNav } from './components/MobileAppNav';
 import { TicketList } from './components/TicketList';
 import { ForwardWhatsAppModal } from './components/modals/ForwardWhatsAppModal';
+import { MandatoryRatingModal } from './components/modals/MandatoryRatingModal';
 
 // Lazy Loaded Components
 const TicketDetailModal = lazy(() => import('./components/modals/TicketDetailModal').then(m => ({ default: m.TicketDetailModal })));
@@ -220,6 +221,37 @@ export default function App() {
   const userCanVoucher = useMemo(() => {
     return loggedInMasterUser?.can_request_voucher === 1;
   }, [loggedInMasterUser]);
+
+  const unratedTickets = useMemo(() => {
+    if (!tickets || tickets.length === 0) return [];
+
+    const myIndex = currentUser?.employee_index || safeGetItem('my_employee_index') || '';
+    const myName = currentUser?.full_name || currentUser?.name || safeGetItem('my_user_name') || '';
+    const myPhone = currentUser?.phone || safeGetItem('my_user_phone') || '';
+
+    let storedNos: string[] = [];
+    try {
+      const raw = safeGetItem('my_ticket_numbers');
+      if (raw) storedNos = JSON.parse(raw);
+    } catch (e) {}
+
+    if (!myIndex && !myName && !myPhone && storedNos.length === 0) {
+      return [];
+    }
+
+    return tickets.filter((t: ITicket) => {
+      if (t.status !== 'Completed') return false;
+      if (t.require_rating !== 1) return false;
+      if (t.rating && Number(t.rating) > 0) return false;
+
+      if (myIndex && t.employee_index && t.employee_index === myIndex) return true;
+      if (myName && t.name && t.name.trim().toLowerCase() === myName.trim().toLowerCase()) return true;
+      if (myPhone && t.phone && (t.phone === myPhone || t.phone.replace(/\D/g, '') === myPhone.replace(/\D/g, ''))) return true;
+      if (storedNos.length > 0 && storedNos.includes(t.ticket_no)) return true;
+
+      return false;
+    });
+  }, [tickets, currentUser]);
 
   const createTicketMutation = useCreateTicket();
   const updateTicketMutation = useUpdateTicket();
@@ -1135,7 +1167,8 @@ export default function App() {
     priority?: string,
     estimated_duration?: string | null,
     estimated_start_at?: string | null,
-    estimated_target_at?: string | null
+    estimated_target_at?: string | null,
+    require_rating?: number | null
   ) => {
     if (!assigned_to) {
       toast.error('Silakan pilih IT yang menangani terlebih dahulu.');
@@ -1150,7 +1183,8 @@ export default function App() {
       priority,
       estimated_duration,
       estimated_start_at,
-      estimated_target_at
+      estimated_target_at,
+      require_rating
     } as any);
   };
 
@@ -1170,6 +1204,7 @@ export default function App() {
         estimated_duration: (pendingUpdate as any).estimated_duration,
         estimated_start_at: (pendingUpdate as any).estimated_start_at,
         estimated_target_at: (pendingUpdate as any).estimated_target_at,
+        require_rating: (pendingUpdate as any).require_rating,
         performed_by: adminUser.username
       }
     }, {
@@ -2395,6 +2430,16 @@ export default function App() {
                 } else {
                   toast.error(`Tiket #${ticketNo} tidak ditemukan atau telah dihapus.`);
                 }
+              }}
+              isDark={isDark}
+            />
+          )}
+
+          {unratedTickets.length > 0 && (
+            <MandatoryRatingModal
+              unratedTickets={unratedTickets}
+              onRatingSubmitted={() => {
+                queryClient.invalidateQueries({ queryKey: ['tickets'] });
               }}
               isDark={isDark}
             />

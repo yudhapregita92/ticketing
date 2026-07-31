@@ -529,6 +529,18 @@ export function initDb() {
       if (!columns.find(c => c.name === 'estimated_target_at')) {
         db.prepare("ALTER TABLE tickets ADD COLUMN estimated_target_at TEXT").run();
       }
+      if (!columns.find(c => c.name === 'rating')) {
+        db.prepare("ALTER TABLE tickets ADD COLUMN rating INTEGER").run();
+      }
+      if (!columns.find(c => c.name === 'rating_feedback')) {
+        db.prepare("ALTER TABLE tickets ADD COLUMN rating_feedback TEXT").run();
+      }
+      if (!columns.find(c => c.name === 'rating_at')) {
+        db.prepare("ALTER TABLE tickets ADD COLUMN rating_at DATETIME").run();
+      }
+      if (!columns.find(c => c.name === 'require_rating')) {
+        db.prepare("ALTER TABLE tickets ADD COLUMN require_rating INTEGER DEFAULT 0").run();
+      }
     }
     
     if (table === 'users') {

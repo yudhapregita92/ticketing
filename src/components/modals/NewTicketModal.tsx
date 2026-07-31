@@ -959,8 +959,8 @@ export const NewTicketModal = React.memo(({
                 onChange={e => setNewTicket({...newTicket, jenis_masalah: e.target.value, category: ''})}
               >
                 <option value="">Pilih Jenis Masalah...</option>
-                {availableJenisMasalah.map(jm => (
-                  <option key={jm} value={jm}>{jm}</option>
+                {availableJenisMasalah.map((jm, idx) => (
+                  <option key={`${jm}-${idx}`} value={jm}>{jm}</option>
                 ))}
               </select>
             </div>
@@ -976,7 +976,7 @@ export const NewTicketModal = React.memo(({
                 onChange={e => setNewTicket({...newTicket, category: e.target.value})}
               >
                 <option value="">{newTicket.jenis_masalah ? 'Pilih Kategori...' : 'Pilih Jenis Masalah Dulu'}</option>
-                {filteredCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                {filteredCategories.map((cat, idx) => <option key={`${cat}-${idx}`} value={cat}>{cat}</option>)}
               </select>
             </div>
 
