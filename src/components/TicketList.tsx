@@ -420,6 +420,7 @@ export const TicketList: React.FC<TicketListProps> = ({
                     isDark={isDark}
                     themeClasses={themeClasses}
                     adminUser={adminUser}
+                    currentUser={currentUser}
                     selectedTickets={selectedTickets}
                     setSelectedTickets={setSelectedTickets}
                     handleSelectTicket={handleSelectTicket}

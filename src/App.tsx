@@ -2166,6 +2166,7 @@ export default function App() {
               isDark={isDark}
               themeClasses={themeClasses}
               adminUser={adminUser}
+              currentUser={currentUser}
               users={users}
               ticketLogs={ticketLogs}
               modalStatus={modalStatus}

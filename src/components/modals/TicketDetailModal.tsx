@@ -36,6 +36,7 @@ interface TicketDetailModalProps {
   formatDate: (date: string) => string;
   getDeviceInfo: (ua: string) => string;
   adminUser: any;
+  currentUser?: any;
   ticketLogs: any[];
   users: any[];
   STATUSES: string[];
@@ -69,6 +70,7 @@ export const TicketDetailModal = React.memo(({
   formatDate,
   getDeviceInfo,
   adminUser,
+  currentUser,
   ticketLogs,
   users,
   STATUSES,
@@ -83,6 +85,34 @@ export const TicketDetailModal = React.memo(({
   onForwardWhatsApp
 }: TicketDetailModalProps) => {
   if (!selectedTicket) return null;
+
+  const isMyTicket = React.useMemo(() => {
+    if (adminUser) return true;
+    if (currentUser) {
+      const userName = currentUser.full_name?.trim().toLowerCase();
+      const userPhone = currentUser.phone ? currentUser.phone.trim().toLowerCase() : '';
+      const tName = selectedTicket.name?.trim().toLowerCase();
+      const tPhone = selectedTicket.phone ? selectedTicket.phone.trim().toLowerCase() : '';
+
+      if (userName && tName === userName) return true;
+      if (userPhone && tPhone && tPhone === userPhone) return true;
+      return false;
+    }
+    try {
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        const userName = parsed.full_name?.trim().toLowerCase();
+        const userPhone = parsed.phone ? parsed.phone.trim().toLowerCase() : '';
+        const tName = selectedTicket.name?.trim().toLowerCase();
+        const tPhone = selectedTicket.phone ? selectedTicket.phone.trim().toLowerCase() : '';
+
+        if (userName && tName === userName) return true;
+        if (userPhone && tPhone && tPhone === userPhone) return true;
+      }
+    } catch (e) {}
+    return false;
+  }, [adminUser, currentUser, selectedTicket]);
 
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
   const [showReopenForm, setShowReopenForm] = useState(false);
@@ -972,10 +1002,23 @@ export const TicketDetailModal = React.memo(({
                   </div>
                 </div>
               ) : (
-                <div className={`p-5 rounded-3xl border ${themeClasses.bgSecondary} ${themeClasses.border} text-center space-y-2`}>
+                <div className={`p-5 rounded-3xl border ${themeClasses.bgSecondary} ${themeClasses.border} text-center space-y-3`}>
                   <ShieldCheck className="w-8 h-8 text-emerald-500 mx-auto" />
                   <p className={`text-xs font-bold ${themeClasses.text}`}>Sistem Penanganan Tiket IT</p>
                   <p className={`text-[11px] ${themeClasses.textMuted}`}>Hanya admin dan tim IT bertugas yang dapat mengubah status tiket.</p>
+                  
+                  {isMyTicket && onForwardWhatsApp && (
+                    <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => onForwardWhatsApp(selectedTicket)}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-2.5 px-4 rounded-xl transition-all text-xs tracking-wider uppercase shadow-lg shadow-emerald-600/20 active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        <span>Kirim / Hubungi IT via WhatsApp</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

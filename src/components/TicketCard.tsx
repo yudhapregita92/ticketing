@@ -21,6 +21,7 @@ interface TicketCardProps {
   isDark: boolean;
   themeClasses: any;
   adminUser: IAdminUser | null;
+  currentUser?: any;
   selectedTickets: number[];
   setSelectedTickets: React.Dispatch<React.SetStateAction<number[]>>;
   handleSelectTicket: (ticket: ITicket) => void;
@@ -41,6 +42,7 @@ export const TicketCard: React.FC<TicketCardProps> = ({
   isDark,
   themeClasses,
   adminUser,
+  currentUser,
   selectedTickets,
   setSelectedTickets,
   handleSelectTicket,
@@ -57,6 +59,34 @@ export const TicketCard: React.FC<TicketCardProps> = ({
   const cardRadius = appSettings?.ui_card_radius ?? 24;
   const ticketCategory = categories?.find(c => c.name === ticket.category);
   const customDelayed = ticketCategory?.response_time && ticketCategory.response_time > 0 ? ticketCategory.response_time : undefined;
+
+  const isMyTicket = React.useMemo(() => {
+    if (adminUser) return true; // Admins/IT personnel can forward/send WhatsApp for tickets
+    if (currentUser) {
+      const userName = currentUser.full_name?.trim().toLowerCase();
+      const userPhone = currentUser.phone ? currentUser.phone.trim().toLowerCase() : '';
+      const tName = ticket.name?.trim().toLowerCase();
+      const tPhone = ticket.phone ? ticket.phone.trim().toLowerCase() : '';
+
+      if (userName && tName === userName) return true;
+      if (userPhone && tPhone && tPhone === userPhone) return true;
+      return false;
+    }
+    try {
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        const userName = parsed.full_name?.trim().toLowerCase();
+        const userPhone = parsed.phone ? parsed.phone.trim().toLowerCase() : '';
+        const tName = ticket.name?.trim().toLowerCase();
+        const tPhone = ticket.phone ? ticket.phone.trim().toLowerCase() : '';
+
+        if (userName && tName === userName) return true;
+        if (userPhone && tPhone && tPhone === userPhone) return true;
+      }
+    } catch (e) {}
+    return false;
+  }, [adminUser, currentUser, ticket]);
   
   let customCritical: number | undefined = undefined;
   if (customDelayed) {
@@ -229,25 +259,25 @@ export const TicketCard: React.FC<TicketCardProps> = ({
         </div>
       </div>
 
-      {/* Admin Action Bar if Super Admin or Admin */}
-      {adminUser && (
+      {/* Action Bar */}
+      {(adminUser || (isMyTicket && onForwardWhatsApp)) && (
         <div className="mt-3 pt-2 border-t border-dashed border-slate-200 dark:border-slate-800/80 flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
           <div className="text-[10px] font-mono text-slate-400">
             {ticket.pc_code ? `PC: ${ticket.pc_code}` : `ID: ${ticket.id}`}
           </div>
           <div className="flex items-center gap-1.5">
-            {onForwardWhatsApp && (
+            {onForwardWhatsApp && isMyTicket && (
               <button 
                 type="button"
                 onClick={() => onForwardWhatsApp(ticket)}
-                className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold rounded-md transition-all shadow-sm flex items-center gap-1 active:scale-95"
-                title="Teruskan Tiket ke WhatsApp Agen"
+                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold rounded-md transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                title="Kirim Tiket ke WhatsApp IT Support"
               >
-                <MessageSquare className="w-2.5 h-2.5" />
-                <span>WA</span>
+                <MessageSquare className="w-3 h-3" />
+                <span>WA IT</span>
               </button>
             )}
-            {adminUser.role === 'Super Admin' && (
+            {adminUser?.role === 'Super Admin' && (
               <>
                 <button 
                   type="button"
@@ -265,13 +295,15 @@ export const TicketCard: React.FC<TicketCardProps> = ({
                 </button>
               </>
             )}
-            <button 
-              type="button"
-              onClick={() => handleDeleteTicket(ticket.id)}
-              className="px-2 py-0.5 bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold rounded-md transition-colors"
-            >
-              Hapus
-            </button>
+            {adminUser && (
+              <button 
+                type="button"
+                onClick={() => handleDeleteTicket(ticket.id)}
+                className="px-2 py-0.5 bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold rounded-md transition-colors"
+              >
+                Hapus
+              </button>
+            )}
           </div>
         </div>
       )}
