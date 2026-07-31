@@ -57,6 +57,7 @@ interface TicketDetailModalProps {
   handleIntervention: (id: number, type: 'takeover' | 'reassign') => void;
   primaryColor: string;
   onRefreshTickets?: () => void;
+  onForwardWhatsApp?: (ticket: ITicket) => void;
 }
 
 export const TicketDetailModal = React.memo(({
@@ -78,7 +79,8 @@ export const TicketDetailModal = React.memo(({
   handleUpdateClick,
   handleIntervention,
   primaryColor,
-  onRefreshTickets
+  onRefreshTickets,
+  onForwardWhatsApp
 }: TicketDetailModalProps) => {
   if (!selectedTicket) return null;
 
@@ -681,6 +683,18 @@ export const TicketDetailModal = React.memo(({
                   </div>
 
                   <div className="space-y-4">
+                    {/* Forward to WhatsApp */}
+                    {onForwardWhatsApp && (
+                      <button
+                        type="button"
+                        onClick={() => onForwardWhatsApp(selectedTicket)}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-2.5 px-4 rounded-xl transition-all text-xs tracking-wider uppercase shadow-lg shadow-emerald-950/40 active:scale-[0.98] flex items-center justify-center gap-2"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        <span>Teruskan ke WhatsApp Agen</span>
+                      </button>
+                    )}
+
                     {/* Ambil Alih Tiket (Super Admin) */}
                     {adminUser.role === 'Super Admin' && selectedTicket.assigned_to && selectedTicket.assigned_to !== adminUser.username && (
                       <button

@@ -56,6 +56,7 @@ interface TicketListProps {
   setShowForm: (show: boolean) => void;
   handleBulkAction: (status: string) => Promise<void>;
   appSettings?: any;
+  onForwardWhatsApp?: (ticket: ITicket) => void;
 }
 
 export const TicketList: React.FC<TicketListProps> = ({
@@ -97,7 +98,8 @@ export const TicketList: React.FC<TicketListProps> = ({
   CurrentLogo,
   setShowForm,
   handleBulkAction,
-  appSettings
+  appSettings,
+  onForwardWhatsApp
 }) => {
   const cardRadius = appSettings?.ui_card_radius ?? 24;
 
@@ -429,6 +431,7 @@ export const TicketList: React.FC<TicketListProps> = ({
                     searchQuery={searchQuery}
                     categories={categories}
                     appSettings={appSettings}
+                    onForwardWhatsApp={onForwardWhatsApp}
                   />
                 ))}
               </div>

@@ -60,6 +60,7 @@ import { SplashScreen } from './components/SplashScreen';
 import { hapticFeedback } from './utils/haptics';
 import { MobileAppNav } from './components/MobileAppNav';
 import { TicketList } from './components/TicketList';
+import { ForwardWhatsAppModal } from './components/modals/ForwardWhatsAppModal';
 
 // Lazy Loaded Components
 const TicketDetailModal = lazy(() => import('./components/modals/TicketDetailModal').then(m => ({ default: m.TicketDetailModal })));
@@ -288,6 +289,7 @@ export default function App() {
   };
 
   const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [whatsappModalTicket, setWhatsappModalTicket] = useState<ITicket | null>(null);
   const [notifications, setNotifications] = useState<INotification[]>([]);
 
   const playNotificationSound = useCallback(() => {
@@ -2103,6 +2105,7 @@ export default function App() {
                   setShowForm={setShowForm}
                   handleBulkAction={handleBulkAction}
                   appSettings={appSettings}
+                  onForwardWhatsApp={(t) => setWhatsappModalTicket(t)}
                 />
               )}
             </Suspense>
@@ -2177,8 +2180,20 @@ export default function App() {
               STATUSES={STATUSES}
               primaryColor={primaryColor}
               onRefreshTickets={() => queryClient.invalidateQueries({ queryKey: ['tickets'] })}
+              onForwardWhatsApp={(t) => setWhatsappModalTicket(t)}
             />
           )}
+
+          {/* --- MODAL: FORWARD TO WHATSAPP --- */}
+          <ForwardWhatsAppModal
+            isOpen={!!whatsappModalTicket}
+            onClose={() => setWhatsappModalTicket(null)}
+            ticket={whatsappModalTicket}
+            adminUsers={adminUsers}
+            teamMembers={itPersonnel}
+            masterUsers={masterUsers}
+            isDark={isDark}
+          />
 
           {/* --- MODAL: NEW TICKET FORM --- */}
           {showForm && (

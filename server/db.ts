@@ -541,6 +541,9 @@ export function initDb() {
       if (!columns.find(c => c.name === 'is_on_duty')) {
         db.prepare("ALTER TABLE users ADD COLUMN is_on_duty INTEGER DEFAULT 1").run();
       }
+      if (!columns.find(c => c.name === 'phone')) {
+        db.prepare("ALTER TABLE users ADD COLUMN phone TEXT").run();
+      }
     }
 
     if (table === 'categories') {

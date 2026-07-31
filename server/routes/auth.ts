@@ -41,30 +41,30 @@ router.post("/login", asyncHandler(async (req, res) => {
 }));
 
 router.get("/admin-users", asyncHandler(async (req, res) => {
-  const users = db.prepare("SELECT id, username, full_name, role, is_on_duty FROM users ORDER BY id ASC").all() as User[];
+  const users = db.prepare("SELECT id, username, full_name, role, is_on_duty, phone FROM users ORDER BY id ASC").all() as User[];
   res.json(users);
 }));
 
 router.post("/admin-users", asyncHandler(async (req, res) => {
-  const { username, password, full_name, role } = req.body;
+  const { username, password, full_name, role, phone } = req.body;
   if (!username || !password || !role) {
     throw new AppError("Missing required fields", 400);
   }
   
   const hashedPassword = await bcrypt.hash(password, 10);
-  db.prepare("INSERT INTO users (username, password, full_name, role) VALUES (?, ?, ?, ?)").run(username, hashedPassword, full_name, role);
+  db.prepare("INSERT INTO users (username, password, full_name, role, phone) VALUES (?, ?, ?, ?, ?)").run(username, hashedPassword, full_name, role, phone || null);
   res.json({ success: true });
 }));
 
 router.put("/admin-users/:id", asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { username, password, full_name, role } = req.body;
+  const { username, password, full_name, role, phone } = req.body;
   
   if (password) {
     const hashedPassword = await bcrypt.hash(password, 10);
-    db.prepare("UPDATE users SET username = ?, password = ?, full_name = ?, role = ? WHERE id = ?").run(username, hashedPassword, full_name, role, id);
+    db.prepare("UPDATE users SET username = ?, password = ?, full_name = ?, role = ?, phone = ? WHERE id = ?").run(username, hashedPassword, full_name, role, phone || null, id);
   } else {
-    db.prepare("UPDATE users SET username = ?, full_name = ?, role = ? WHERE id = ?").run(username, full_name, role, id);
+    db.prepare("UPDATE users SET username = ?, full_name = ?, role = ?, phone = ? WHERE id = ?").run(username, full_name, role, phone || null, id);
   }
   res.json({ success: true });
 }));

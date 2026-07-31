@@ -21,6 +21,7 @@ import {
   History,
   BookOpen,
   Edit3,
+  Phone,
   Search,
   Printer,
   Key,
@@ -145,7 +146,9 @@ export const SettingsModal = React.memo(({
   const [adminUserPassword, setAdminUserPassword] = React.useState('');
   const [adminUserFullName, setAdminUserFullName] = React.useState('');
   const [adminUserRole, setAdminUserRole] = React.useState('Staff IT Support');
+  const [adminUserPhone, setAdminUserPhone] = React.useState('');
   const [editingAdminUser, setEditingAdminUser] = React.useState<any | null>(null);
+  const [editingAdminPhone, setEditingAdminPhone] = React.useState('');
   const [adminUserNewPassword, setAdminUserNewPassword] = React.useState('');
   const [myNewPassword, setMyNewPassword] = React.useState('');
   
@@ -335,12 +338,14 @@ export const SettingsModal = React.memo(({
         username: adminUserUsername, 
         password: adminUserPassword, 
         full_name: adminUserFullName,
-        role: adminUserRole
+        role: adminUserRole,
+        phone: adminUserPhone
       });
       setAddingType(null);
       setAdminUserUsername('');
       setAdminUserPassword('');
       setAdminUserFullName('');
+      setAdminUserPhone('');
       setAdminUserRole('Staff IT Support');
       handleManagementAction('admin-user', 'add');
     } catch (err: any) {
@@ -359,23 +364,22 @@ export const SettingsModal = React.memo(({
   };
 
   const handleUpdateAdminPassword = async () => {
-    if (!editingAdminUser || !adminUserNewPassword.trim()) {
-      alert('Password baru wajib diisi');
-      return;
-    }
+    if (!editingAdminUser) return;
     try {
       await api.updateAdminUser(editingAdminUser.id, {
         username: editingAdminUser.username,
         full_name: editingAdminUser.full_name,
         role: editingAdminUser.role,
-        password: adminUserNewPassword.trim()
+        phone: editingAdminPhone,
+        ...(adminUserNewPassword.trim() ? { password: adminUserNewPassword.trim() } : {})
       });
       setEditingAdminUser(null);
       setAdminUserNewPassword('');
-      alert('Password berhasil diperbarui');
+      setEditingAdminPhone('');
+      toast.success('Data Admin & No WhatsApp berhasil diperbarui');
       handleManagementAction('admin-user', 'refresh');
     } catch (err: any) {
-      alert(err.message || 'Gagal mengubah password');
+      alert(err.message || 'Gagal mengubah data admin');
     }
   };
 
@@ -2954,6 +2958,15 @@ export const SettingsModal = React.memo(({
                             value={adminUserFullName}
                             onChange={e => setAdminUserFullName(e.target.value)}
                           />
+                          <input 
+                            type="text"
+                            placeholder="No. WhatsApp (cth: 08123456789)"
+                            className={`w-full px-3 py-2 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                            value={adminUserPhone}
+                            onChange={e => setAdminUserPhone(e.target.value)}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
                           <select 
                             className={`w-full px-3 py-2 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                             value={adminUserRole}
@@ -2989,7 +3002,14 @@ export const SettingsModal = React.memo(({
                           <div className="flex items-center justify-between">
                             <div className="flex flex-col">
                               <span className="text-[11px] font-bold">{user.full_name} ({user.username})</span>
-                              <span className="text-[9px] text-slate-400 capitalize font-black">{user.role}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[9px] text-slate-400 capitalize font-black">{user.role}</span>
+                                {user.phone && (
+                                  <span className="text-[9px] text-emerald-600 font-bold flex items-center gap-0.5">
+                                    <Phone className="w-2.5 h-2.5" /> {user.phone}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             <div className="flex items-center gap-1.5">
                               {(() => {
@@ -3029,14 +3049,15 @@ export const SettingsModal = React.memo(({
                                     setEditingAdminUser(null);
                                   } else {
                                     setEditingAdminUser(user);
+                                    setEditingAdminPhone(user.phone || '');
                                     setAdminUserNewPassword('');
                                   }
                                 }}
                                 className="p-1 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg transition-colors flex items-center gap-1 text-[9px] font-black uppercase tracking-wider"
-                                title="Ganti Password"
+                                title="Edit Admin & Phone"
                               >
-                                <Key className="w-3 h-3" />
-                                <span className="hidden sm:inline">Password</span>
+                                <Edit3 className="w-3 h-3" />
+                                <span className="hidden sm:inline">Edit</span>
                               </button>
                               
                               {user.role !== 'Super Admin' && (
@@ -3053,28 +3074,39 @@ export const SettingsModal = React.memo(({
                           </div>
 
                           {editingAdminUser?.id === user.id && (
-                            <div className="flex gap-2 items-center pt-2 border-t border-slate-100 dark:border-slate-800/60 animate-in fade-in slide-in-from-top-1 duration-200">
-                              <input 
-                                type="password"
-                                placeholder="Password baru"
-                                className={`flex-1 px-3 py-1.5 rounded-lg border text-[10px] outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
-                                value={adminUserNewPassword}
-                                onChange={e => setAdminUserNewPassword(e.target.value)}
-                              />
-                              <button 
-                                type="button"
-                                onClick={handleUpdateAdminPassword}
-                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[9px] font-black uppercase tracking-wider whitespace-nowrap cursor-pointer"
-                              >
-                                Update
-                              </button>
-                              <button 
-                                type="button"
-                                onClick={() => setEditingAdminUser(null)}
-                                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider border ${themeClasses.border} ${themeClasses.textMuted} cursor-pointer`}
-                              >
-                                Batal
-                              </button>
+                            <div className="flex flex-col gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/60 animate-in fade-in slide-in-from-top-1 duration-200">
+                              <div className="grid grid-cols-2 gap-2">
+                                <input 
+                                  type="text"
+                                  placeholder="No. WhatsApp / HP"
+                                  className={`px-3 py-1.5 rounded-lg border text-[10px] outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                                  value={editingAdminPhone}
+                                  onChange={e => setEditingAdminPhone(e.target.value)}
+                                />
+                                <input 
+                                  type="password"
+                                  placeholder="Password baru (opsional)"
+                                  className={`px-3 py-1.5 rounded-lg border text-[10px] outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                                  value={adminUserNewPassword}
+                                  onChange={e => setAdminUserNewPassword(e.target.value)}
+                                />
+                              </div>
+                              <div className="flex gap-2 justify-end">
+                                <button 
+                                  type="button"
+                                  onClick={handleUpdateAdminPassword}
+                                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[9px] font-black uppercase tracking-wider whitespace-nowrap cursor-pointer"
+                                >
+                                  Simpan Perubahan
+                                </button>
+                                <button 
+                                  type="button"
+                                  onClick={() => setEditingAdminUser(null)}
+                                  className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider border ${themeClasses.border} ${themeClasses.textMuted} cursor-pointer`}
+                                >
+                                  Batal
+                                </button>
+                              </div>
                             </div>
                           )}
                         </div>

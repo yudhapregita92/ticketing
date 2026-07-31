@@ -36,6 +36,7 @@ export interface IUser {
   full_name: string;
   role: string;
   is_on_duty?: number;
+  phone?: string | null;
 }
 
 export interface IDepartment {

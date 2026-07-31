@@ -8,7 +8,8 @@ import {
   Eye,
   Trash2,
   Clock,
-  Calendar
+  Calendar,
+  MessageSquare
 } from 'lucide-react';
 import { ITicket, IAdminUser, ICategory } from '../types';
 import { getSLAColor, getSLALabel } from '../utils/ticketUtils';
@@ -31,6 +32,7 @@ interface TicketCardProps {
   searchQuery: string;
   categories?: ICategory[];
   appSettings?: any;
+  onForwardWhatsApp?: (ticket: ITicket) => void;
 }
 
 export const TicketCard: React.FC<TicketCardProps> = ({
@@ -49,7 +51,8 @@ export const TicketCard: React.FC<TicketCardProps> = ({
   formatDate,
   searchQuery,
   categories = [],
-  appSettings
+  appSettings,
+  onForwardWhatsApp
 }) => {
   const cardRadius = appSettings?.ui_card_radius ?? 24;
   const ticketCategory = categories?.find(c => c.name === ticket.category);
@@ -233,6 +236,17 @@ export const TicketCard: React.FC<TicketCardProps> = ({
             {ticket.pc_code ? `PC: ${ticket.pc_code}` : `ID: ${ticket.id}`}
           </div>
           <div className="flex items-center gap-1.5">
+            {onForwardWhatsApp && (
+              <button 
+                type="button"
+                onClick={() => onForwardWhatsApp(ticket)}
+                className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold rounded-md transition-all shadow-sm flex items-center gap-1 active:scale-95"
+                title="Teruskan Tiket ke WhatsApp Agen"
+              >
+                <MessageSquare className="w-2.5 h-2.5" />
+                <span>WA</span>
+              </button>
+            )}
             {adminUser.role === 'Super Admin' && (
               <>
                 <button 
