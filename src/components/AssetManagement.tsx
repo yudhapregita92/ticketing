@@ -668,7 +668,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
               return `
               <div class="label-box">
                 <div class="label-content">
-                  <div class="title">${asset.name || asset.category}</div>
+                  <div class="title">${asset.category || asset.name}</div>
                   <div class="jabatan">${jabatan}</div>
                   <div class="departemen">${departemen}</div>
                   <div class="kode">${asset.device_code || asset.asset_id || '-'}</div>
