@@ -3466,28 +3466,36 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                             </span>
                           </div>
 
-                          {/* Section Penyusutan Aset 4 Tahun */}
+                          {/* Section Penyusutan Aset (Standar 4 Tahun) */}
                           {(() => {
                             const dep = calculateAssetDepreciation(qrPreviewAsset.purchase_date);
                             return (
-                              <div className={`mt-3 p-3 rounded-xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2">
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="w-3.5 h-3.5 text-emerald-500" />
-                                    <span className="text-[10px] font-black uppercase text-slate-400">Penyusutan (4 Tahun)</span>
+                              <div className={`mt-3 p-3.5 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50/80 border-slate-200/80'} shadow-2xs space-y-2.5`}>
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <Clock className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                    <span className={`text-[10px] sm:text-[11px] font-black uppercase tracking-wider truncate ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
+                                      ESTIMASI PENYUSUTAN (STANDAR 4 TAHUN)
+                                    </span>
                                   </div>
-                                  <span className={`w-fit px-2 py-0.5 rounded-full text-[9px] font-extrabold border ${dep.badgeClass}`}>
+                                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border shrink-0 ${dep.badgeClass}`}>
                                     {dep.status}
                                   </span>
                                 </div>
-                                <div className="flex justify-between text-[11px] font-bold mb-1">
-                                  <span>Usia: {dep.ageText}</span>
-                                  <span className={dep.isReplaceReady ? 'text-rose-500' : ''}>{dep.percentage}% Depresiasi</span>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  <div>
+                                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-0.5">USIA PEMAKAIAN</span>
+                                    <span className={`text-xs sm:text-sm font-extrabold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{dep.ageText}</span>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-0.5">AKUMULASI DEPRESIASI</span>
+                                    <span className={`text-xs sm:text-sm font-extrabold ${dep.isReplaceReady ? 'text-rose-500' : isDark ? 'text-slate-200' : 'text-slate-700'}`}>{dep.percentage}%</span>
+                                  </div>
                                 </div>
-                                <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                                <div className="w-full bg-slate-200/80 dark:bg-slate-700/80 h-2 rounded-full overflow-hidden">
                                   <div 
                                     className={`h-full ${dep.percentage >= 100 ? 'bg-rose-500' : dep.percentage >= 85 ? 'bg-amber-500' : 'bg-emerald-500'}`} 
-                                    style={{ width: `${dep.percentage}%` }}
+                                    style={{ width: `${Math.min(dep.percentage, 100)}%` }}
                                   />
                                 </div>
                               </div>

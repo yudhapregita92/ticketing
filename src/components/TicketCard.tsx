@@ -114,7 +114,7 @@ export const TicketCard: React.FC<TicketCardProps> = ({
       className={`relative border ${
         selectedTickets.includes(ticket.id) 
           ? 'ring-2 ring-emerald-500 border-emerald-500' 
-          : isDark ? 'border-slate-800 bg-slate-900/95 text-slate-100' : 'border-slate-200/90 bg-white text-slate-900'
+          : isDark ? 'border-slate-800 bg-slate-900/95 text-slate-100' : 'border-slate-200/90 bg-white text-slate-700'
       } p-4 sm:p-5 shadow-xs transition-all group cursor-pointer overflow-hidden ${
         getSLAColor(ticket.created_at, ticket.status, customCritical, customDelayed) || ''
       }`}
@@ -141,7 +141,7 @@ export const TicketCard: React.FC<TicketCardProps> = ({
           )}
 
           {/* Ticket ID */}
-          <span className="text-sm sm:text-base font-black text-slate-900 dark:text-slate-100 tracking-tight">
+          <span className="text-sm sm:text-base font-extrabold text-slate-700 dark:text-slate-200 tracking-tight">
             #<HighlightText text={ticket.ticket_no || `TKT-${ticket.id.toString().padStart(4, '0')}`} highlight={searchQuery} isDark={isDark} />
           </span>
 
@@ -168,13 +168,13 @@ export const TicketCard: React.FC<TicketCardProps> = ({
           className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-slate-200 dark:border-slate-700/80 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
           title="Lihat Detail Tiket"
         >
-          <RotateCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-700 dark:text-slate-300" />
+          <RotateCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-600 dark:text-slate-300" />
         </button>
       </div>
 
       {/* Second Row: Category Title (Left) + Date & Time (Right) */}
       <div className="flex items-baseline justify-between gap-2 mb-3 sm:mb-4">
-        <h3 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1">
+        <h3 className="text-base sm:text-lg font-extrabold text-slate-700 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1">
           <HighlightText text={ticket.category ? `${ticket.category} Request` : 'Hardware Request'} highlight={searchQuery} isDark={isDark} />
         </h3>
         <span className="text-xs sm:text-sm text-slate-400 dark:text-slate-400 font-normal shrink-0">
@@ -198,7 +198,7 @@ export const TicketCard: React.FC<TicketCardProps> = ({
             <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate">PELAPOR</span>
           </div>
-          <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 truncate">
+          <p className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
             <HighlightText text={ticket.name} highlight={searchQuery} isDark={isDark} />
           </p>
         </div>
@@ -209,7 +209,7 @@ export const TicketCard: React.FC<TicketCardProps> = ({
             <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate">DEPARTEMEN</span>
           </div>
-          <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 truncate">
+          <p className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
             {ticket.department || '-'}
           </p>
         </div>
@@ -220,7 +220,7 @@ export const TicketCard: React.FC<TicketCardProps> = ({
             <UserCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate">PETUGAS IT</span>
           </div>
-          <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 truncate">
+          <p className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
             {ticket.assigned_to ? `@${ticket.assigned_to}` : '-'}
           </p>
         </div>
