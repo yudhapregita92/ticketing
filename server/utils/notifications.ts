@@ -118,9 +118,16 @@ export async function sendTelegramNotification(ticket: any, botToken: string, ch
 
 export async function sendUserNotificationEmail(ticket: any, type: 'submit' | 'done') {
   try {
-    const masterUser = db.prepare("SELECT email FROM master_users WHERE full_name = ?").get(ticket.name) as { email: string } | undefined;
+    let masterUser: { email: string } | undefined;
+    if (ticket.employee_index) {
+      masterUser = db.prepare("SELECT email FROM master_users WHERE employee_index = ? AND email IS NOT NULL AND email != ''").get(ticket.employee_index) as { email: string } | undefined;
+    }
     if (!masterUser || !masterUser.email) {
-      console.log(`Skipping user email notification: No email found for user ${ticket.name}`);
+      masterUser = db.prepare("SELECT email FROM master_users WHERE full_name = ? AND email IS NOT NULL AND email != ''").get(ticket.name) as { email: string } | undefined;
+    }
+
+    if (!masterUser || !masterUser.email) {
+      console.log(`Skipping user email notification: No email found for user ${ticket.name} (NIK: ${ticket.employee_index || '-'})`);
       return;
     }
 
