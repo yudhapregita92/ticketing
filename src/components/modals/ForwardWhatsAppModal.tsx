@@ -132,18 +132,33 @@ export const ForwardWhatsAppModal: React.FC<ForwardWhatsAppModalProps> = ({
   const [selectedAgentKey, setSelectedAgentKey] = useState<string>('');
   const [customPhone, setCustomPhone] = useState<string>('');
 
+  // State for locking/unlocking agent selection
+  const [isLocked, setIsLocked] = useState<boolean>(true);
+
   useEffect(() => {
     if (detectedAgent) {
       setSelectedAgentKey(detectedAgent.username);
       const agentPhone = detectedAgent.phone || findAgentPhoneNumber(detectedAgent.name, adminUsers, teamMembers, masterUsers)?.phone || '';
       setCustomPhone(agentPhone);
+      setIsLocked(true);
+    } else if (ticket.assigned_to) {
+      const foundInfo = findAgentPhoneNumber(ticket.assigned_to, adminUsers, teamMembers, masterUsers);
+      if (foundInfo) {
+        setSelectedAgentKey(foundInfo.name);
+        setCustomPhone(foundInfo.phone || '');
+        setIsLocked(true);
+      } else {
+        setIsLocked(false);
+      }
     } else if (agentList.length > 0) {
       const agentWithPhone = agentList.find(a => !!a.phone) || agentList[0];
       setSelectedAgentKey(agentWithPhone.username);
       setCustomPhone(agentWithPhone.phone);
+      setIsLocked(false);
     } else {
       setSelectedAgentKey('');
       setCustomPhone('');
+      setIsLocked(false);
     }
   }, [ticket, detectedAgent, agentList, adminUsers, teamMembers, masterUsers]);
 
@@ -205,48 +220,95 @@ export const ForwardWhatsAppModal: React.FC<ForwardWhatsAppModalProps> = ({
 
           {/* Body */}
           <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto custom-scrollbar">
-            {/* Agent Selector */}
+            {/* Agent Target Display / Selector */}
             <div>
-              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
-                <UserCheck className="w-4 h-4 text-emerald-500" />
-                Pilih Agen / Petugas IT Target:
-              </label>
-              <select
-                value={selectedAgentKey}
-                onChange={e => handleAgentChange(e.target.value)}
-                className={`w-full px-3 py-2 rounded-xl text-xs font-semibold border outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${
-                  isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-200 text-slate-800'
-                }`}
-              >
-                {agentList.map(a => (
-                  <option key={a.username} value={a.username}>
-                    {a.name} ({a.role}) {a.phone ? `— ${a.phone}` : '(No HP Belum Diisi)'}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                  <UserCheck className="w-4 h-4 text-emerald-500" />
+                  Petugas IT Tujuan:
+                </label>
+                {isLocked ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsLocked(false)}
+                    className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                  >
+                    Ganti Agen
+                  </button>
+                ) : (
+                  agentList.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsLocked(true)}
+                      className="text-[10px] font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      Kunci ke Default
+                    </button>
+                  )
+                )}
+              </div>
+
+              {isLocked ? (
+                <div className={`p-3 rounded-xl border flex items-center justify-between gap-3 ${
+                  isDark ? 'bg-emerald-950/20 border-emerald-800/50' : 'bg-emerald-50/70 border-emerald-200'
+                }`}>
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-emerald-600 text-white rounded-lg shadow-sm">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-extrabold text-emerald-800 dark:text-emerald-300">
+                        {detectedAgent?.name || ticket.assigned_to || selectedAgentKey || 'Petugas IT'}
+                      </p>
+                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                        {detectedAgent?.role || 'Tim IT Support'} • {customPhone || 'Nomor HP Otomatis'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white rounded-md">
+                    Terhubung
+                  </span>
+                </div>
+              ) : (
+                <select
+                  value={selectedAgentKey}
+                  onChange={e => handleAgentChange(e.target.value)}
+                  className={`w-full px-3 py-2 rounded-xl text-xs font-semibold border outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${
+                    isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-200 text-slate-800'
+                  }`}
+                >
+                  {agentList.map(a => (
+                    <option key={a.username} value={a.username}>
+                      {a.name} ({a.role}) {a.phone ? `— ${a.phone}` : '(No HP Belum Diisi)'}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Custom Phone Number Input */}
-            <div>
-              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
-                <Phone className="w-4 h-4 text-emerald-500" />
-                No. WhatsApp Agen:
-              </label>
-              <input
-                type="text"
-                placeholder="Contoh: 081234567890"
-                value={customPhone}
-                onChange={e => setCustomPhone(e.target.value)}
-                className={`w-full px-3 py-2 rounded-xl text-xs font-semibold border outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${
-                  isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-200 text-slate-800'
-                }`}
-              />
-              {!customPhone && (
-                <p className="text-[10px] text-amber-500 font-medium mt-1 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" /> Agen ini belum memiliki nomor HP. Silakan masukkan nomor WhatsApp secara manual.
-                </p>
-              )}
-            </div>
+            {(!isLocked || !customPhone) && (
+              <div>
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                  <Phone className="w-4 h-4 text-emerald-500" />
+                  No. WhatsApp Agen:
+                </label>
+                <input
+                  type="text"
+                  placeholder="Contoh: 081234567890"
+                  value={customPhone}
+                  onChange={e => setCustomPhone(e.target.value)}
+                  className={`w-full px-3 py-2 rounded-xl text-xs font-semibold border outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${
+                    isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-200 text-slate-800'
+                  }`}
+                />
+                {!customPhone && (
+                  <p className="text-[10px] text-amber-500 font-medium mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> Nomor WhatsApp belum terisi. Silakan masukkan nomor WhatsApp secara manual.
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Message Preview */}
             <div>
