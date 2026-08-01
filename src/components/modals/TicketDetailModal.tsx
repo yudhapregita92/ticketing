@@ -261,7 +261,7 @@ export const TicketDetailModal = React.memo(({
   }, [selectedTicket]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -270,37 +270,37 @@ export const TicketDetailModal = React.memo(({
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
       />
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className={`relative rounded-3xl shadow-2xl w-full max-w-4xl sm:max-w-5xl lg:max-w-6xl overflow-hidden flex flex-col max-h-[92vh] transition-colors ${themeClasses.card} ${themeClasses.text}`}
+        exit={{ opacity: 0, scale: 0.95, y: 15 }}
+        className={`relative rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-4xl sm:max-w-5xl lg:max-w-6xl overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[92vh] transition-colors ${themeClasses.card} ${themeClasses.text}`}
       >
         {/* Header Modal */}
-        <div className={`px-5 py-4 sm:px-7 sm:py-5 border-b shrink-0 ${themeClasses.border}`}>
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-100 dark:bg-emerald-950/60 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 shadow-sm border border-emerald-200/50 dark:border-emerald-800/50">
-                <Ticket className="w-5 h-5 sm:w-6 sm:h-6" />
+        <div className={`px-4 py-3.5 sm:px-7 sm:py-5 border-b shrink-0 ${themeClasses.border}`}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-2.5 sm:gap-4">
+              <div className="w-9 h-9 sm:w-12 sm:h-12 bg-emerald-100 dark:bg-emerald-950/60 rounded-xl sm:rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 shadow-sm border border-emerald-200/50 dark:border-emerald-800/50 mt-0.5">
+                <Ticket className="w-4 h-4 sm:w-6 sm:h-6" />
               </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                   <span className={`text-xs font-bold font-mono ${themeClasses.textMuted}`}>#{selectedTicket.ticket_no || selectedTicket.id.toString().padStart(4, '0')}</span>
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-extrabold capitalize tracking-wider border text-center ${getStatusColor(selectedTicket.status)}`}>
+                  <span className={`px-2 py-0.5 rounded-md sm:rounded-full text-[10px] sm:text-xs font-extrabold capitalize tracking-wider border text-center ${getStatusColor(selectedTicket.status)}`}>
                     {selectedTicket.status === 'In Progress' ? 'Progres' : 
                      selectedTicket.status === 'Completed' ? 'Selesai' : 
                      selectedTicket.status === 'Cancelled' ? 'Batal' : 
                      selectedTicket.status === 'New' ? 'Baru' : selectedTicket.status}
                   </span>
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-extrabold capitalize tracking-wider text-center border border-transparent text-white ${priorityInfo.color}`}>
+                  <span className={`px-2 py-0.5 rounded-md sm:rounded-full text-[10px] sm:text-xs font-extrabold capitalize tracking-wider text-center border border-transparent text-white ${priorityInfo.color}`}>
                     Prioritas {priorityInfo.label}
                   </span>
                 </div>
-                <h2 className={`text-base sm:text-xl font-black tracking-tight mt-0.5 ${themeClasses.text}`}>{selectedTicket.category} Request</h2>
+                <h2 className={`text-sm sm:text-xl font-black tracking-tight leading-snug ${themeClasses.text}`}>{selectedTicket.category} Request</h2>
               </div>
             </div>
             <button 
               onClick={() => setSelectedTicket(null)}
-              className={`p-2 rounded-full transition-all ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+              className={`p-1.5 sm:p-2 rounded-full transition-all shrink-0 ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
               title="Tutup Modal"
             >
               <X className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -309,73 +309,73 @@ export const TicketDetailModal = React.memo(({
         </div>
 
         {/* Content Body */}
-        <div className="p-5 sm:p-7 overflow-y-auto custom-scrollbar">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-7 items-start">
+        <div className="p-3.5 sm:p-7 overflow-y-auto custom-scrollbar">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-7 items-start">
             
             {/* Left Column: Info & Detail Request */}
-            <div className="lg:col-span-7 space-y-5">
+            <div className="lg:col-span-7 space-y-4 sm:space-y-5">
               {/* User & Request Info Grid */}
               {adminUser ? (
-                <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
-                  <div className={`p-3 sm:p-3.5 rounded-2xl border flex items-center gap-3 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
-                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
-                      <User className="w-4 h-4 text-slate-500" />
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                  <div className={`p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl border flex items-center gap-2.5 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
+                      <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider`}>Pengguna</p>
+                      <p className={`text-[9px] sm:text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider truncate`}>Pengguna</p>
                       <p className={`text-xs sm:text-sm font-extrabold ${themeClasses.text} truncate`}>{selectedTicket.name}</p>
                     </div>
                   </div>
 
-                  <div className={`p-3 sm:p-3.5 rounded-2xl border flex items-center gap-3 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
-                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
-                      <Building2 className="w-4 h-4 text-slate-500" />
+                  <div className={`p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl border flex items-center gap-2.5 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
+                      <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider`}>Bagian / Dept</p>
+                      <p className={`text-[9px] sm:text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider truncate`}>Bagian / Dept</p>
                       <p className={`text-xs sm:text-sm font-extrabold ${themeClasses.text} truncate`}>{selectedTicket.department}</p>
                     </div>
                   </div>
 
-                  <div className={`p-3 sm:p-3.5 rounded-2xl border flex items-center gap-3 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
-                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
-                      <Phone className="w-4 h-4 text-slate-500" />
+                  <div className={`p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl border flex items-center gap-2.5 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
+                      <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider`}>Nomor Telepon</p>
+                      <p className={`text-[9px] sm:text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider truncate`}>Nomor Telepon</p>
                       <p className={`text-xs sm:text-sm font-bold ${themeClasses.text} font-mono truncate`}>
                         {selectedTicket.phone || '••••••••'}
                       </p>
                     </div>
                   </div>
 
-                  <div className={`p-3 sm:p-3.5 rounded-2xl border flex items-center gap-3 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
-                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
-                      <Layers className="w-4 h-4 text-slate-500" />
+                  <div className={`p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl border flex items-center gap-2.5 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
+                      <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider`}>Kategori</p>
+                      <p className={`text-[9px] sm:text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider truncate`}>Kategori</p>
                       <p className={`text-xs sm:text-sm font-extrabold ${themeClasses.text} truncate`}>{selectedTicket.category}</p>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className={`p-3.5 sm:p-4 rounded-2xl border flex items-center gap-3.5 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
-                  <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
-                    <User className="w-5 h-5 text-slate-500" />
+                <div className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border flex items-center gap-3 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 shrink-0">
+                    <User className="w-4 h-4 sm:w-5 sm:h-5 text-slate-500" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider`}>Nama Pengguna</p>
-                    <p className={`text-sm sm:text-base font-black ${themeClasses.text} truncate`}>{selectedTicket.name}</p>
+                    <p className={`text-[9px] sm:text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider truncate`}>Nama Pengguna</p>
+                    <p className={`text-xs sm:text-base font-black ${themeClasses.text} truncate`}>{selectedTicket.name}</p>
                   </div>
                 </div>
               )}
 
               {/* Deskripsi Masalah */}
-              <div className={`p-4 sm:p-5 rounded-2xl border ${themeClasses.bgSecondary} ${themeClasses.border} space-y-2`}>
+              <div className={`p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border ${themeClasses.bgSecondary} ${themeClasses.border} space-y-1.5 sm:space-y-2`}>
                 <div className="flex items-center gap-2 text-slate-400">
-                  <MessageSquare className="w-4 h-4" />
-                  <span className="text-xs font-bold uppercase tracking-wider">Detail Permasalahan</span>
+                  <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Detail Permasalahan</span>
                 </div>
                 <p className={`text-xs sm:text-sm whitespace-pre-wrap leading-relaxed ${themeClasses.text}`}>
                   {selectedTicket.description}
@@ -415,26 +415,26 @@ export const TicketDetailModal = React.memo(({
 
               {/* Audit Log (IP / Device / GPS) */}
               {adminUser && (
-                <div className={`p-4 rounded-2xl border ${themeClasses.bgSecondary} ${themeClasses.border} space-y-2`}>
+                <div className={`p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border ${themeClasses.bgSecondary} ${themeClasses.border} space-y-2`}>
                   <div className="flex items-center gap-2 text-slate-400">
-                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Audit Log & Perangkat</span>
+                    <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
+                    <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Audit Log & Perangkat</span>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 pt-0.5">
                     <div>
-                      <p className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider`}>IP Address</p>
+                      <p className={`text-[9px] sm:text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider`}>IP Address</p>
                       <p className={`text-xs font-mono font-bold ${themeClasses.text}`}>
                         {selectedTicket.ip_address || 'Unknown'}
                       </p>
                     </div>
                     <div>
-                      <p className={`text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider`}>Perangkat</p>
+                      <p className={`text-[9px] sm:text-[10px] font-bold ${themeClasses.textMuted} uppercase tracking-wider`}>Perangkat</p>
                       <p className={`text-xs font-mono font-bold ${themeClasses.text} truncate`}>
                         {getDeviceInfo(selectedTicket.user_agent || '')}
                       </p>
                     </div>
-                    <div className="col-span-2 sm:col-span-1">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lokasi GPS</p>
+                    <div>
+                      <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lokasi GPS</p>
                       {selectedTicket.latitude ? (
                         <a 
                           href={`https://www.google.com/maps?q=${selectedTicket.latitude},${selectedTicket.longitude}`}
@@ -455,15 +455,15 @@ export const TicketDetailModal = React.memo(({
 
               {/* Konfirmasi Penanganan Tiket (User) / Re-Open Section */}
               {(selectedTicket.status === 'Completed' || selectedTicket.status === 'Done' || selectedTicket.status === 'Solved' || selectedTicket.status === 'Selesai') && (
-                <div className="p-4 sm:p-5 rounded-3xl border-2 border-emerald-500/50 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-slate-900/40 space-y-3.5 shadow-xl">
+                <div className="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border-2 border-emerald-500/50 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-slate-900/40 space-y-3 shadow-xl">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                      <CheckCircle2 className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-emerald-500 shrink-0" />
                       <span className="text-xs sm:text-sm font-black uppercase tracking-wider">
                         Konfirmasi Penanganan Tiket (User)
                       </span>
                     </div>
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 animate-pulse">
+                    <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 animate-pulse">
                       Menunggu Konfirmasi Anda
                     </span>
                   </div>
@@ -473,21 +473,21 @@ export const TicketDetailModal = React.memo(({
                   </p>
 
                   {selectedTicket.admin_reply && (
-                    <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-emerald-200 dark:border-emerald-800 space-y-1">
-                      <p className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">Solusi / Catatan dari IT:</p>
+                    <div className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-emerald-200 dark:border-emerald-800 space-y-1">
+                      <p className="text-[9px] sm:text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">Solusi / Catatan dari IT:</p>
                       <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 italic">"{selectedTicket.admin_reply}"</p>
                     </div>
                   )}
 
                   {!showReopenForm ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
                       <button
                         type="button"
                         disabled={isSubmittingAction}
                         onClick={handleConfirmClose}
-                        className="px-4 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-black flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                        className="px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-black flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
                       >
-                        <CheckCircle2 className="w-4.5 h-4.5" />
+                        <CheckCircle2 className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                         <span>Ya, Masalah Tuntas (Close Tiket)</span>
                       </button>
 
@@ -495,17 +495,17 @@ export const TicketDetailModal = React.memo(({
                         type="button"
                         disabled={isSubmittingAction}
                         onClick={() => setShowReopenForm(true)}
-                        className="px-4 py-3 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white text-xs sm:text-sm font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-600/30 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                        className="px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl bg-amber-600 hover:bg-amber-500 text-white text-xs sm:text-sm font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-600/30 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
                       >
-                        <RotateCcw className="w-4.5 h-4.5" />
+                        <RotateCcw className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                         <span>Belum Tuntas (Ajukan Re-Open)</span>
                       </button>
                     </div>
                   ) : (
-                    <div className="p-3.5 rounded-2xl bg-slate-900/95 border border-amber-500/50 space-y-3">
+                    <div className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-slate-900/95 border border-amber-500/50 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                          <RotateCcw className="w-4 h-4 text-amber-400" />
+                          <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
                           Jelaskan Alasan Re-Open Tiket
                         </label>
                         <button

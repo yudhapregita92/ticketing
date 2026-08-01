@@ -585,7 +585,7 @@ export const NewTicketModal = React.memo(({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -594,10 +594,10 @@ export const NewTicketModal = React.memo(({
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
       />
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className={`relative rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] transition-colors ${themeClasses.card} ${themeClasses.text}`}
+        exit={{ opacity: 0, scale: 0.95, y: 15 }}
+        className={`relative rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[90vh] transition-colors ${themeClasses.card} ${themeClasses.text}`}
       >
         <AnimatePresence>
           {isScanning && (
