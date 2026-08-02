@@ -41,7 +41,8 @@ import {
   Users,
   MonitorSmartphone,
   Timer,
-  Bell
+  Bell,
+  Compass
 } from 'lucide-react';
 
 // Import modular components
@@ -85,6 +86,9 @@ const MasterTeam = lazy(() => import('./components/MasterTeam').then(m => ({ def
 const ReportSLA = lazy(() => import('./components/ReportSLA').then(m => ({ default: m.ReportSLA })));
 const ReportPerangkat = lazy(() => import('./components/ReportPerangkat').then(m => ({ default: m.ReportPerangkat })));
 const PublicAssetView = lazy(() => import('./components/PublicAssetView').then(m => ({ default: m.PublicAssetView })));
+const TeamLocationTracker = lazy(() => import('./components/TeamLocationTracker').then(m => ({ default: m.TeamLocationTracker })));
+
+import { useAutoLocationSync } from './hooks/useAutoLocationSync';
 
 // Types, Constants, and Utils
 import { ITicket, IUser, IDepartment, ICategory, IMasterUser, ISettings, ViewMode, INotification } from './types';
@@ -171,6 +175,9 @@ export default function App() {
   const { data: managementData } = useManagementData(!!adminUser);
   const { data: publicData } = usePublicData();
   const { pendingCount, isSyncing, sync } = useSyncOffline();
+
+  // Auto GPS Location background sync for IT team
+  useAutoLocationSync(adminUser || currentUser);
 
   useEffect(() => {
     if (settingsData) {
@@ -409,7 +416,7 @@ export default function App() {
     let view = p === '' ? (hasAdmin ? 'dashboard' : 'today') : p;
 
     // Admin only routes fallback
-    if (!hasAdmin && ['dashboard', 'assets', 'network', 'membership', 'evaluasi_project', 'voucher', 'master_user', 'master_perangkat', 'master_team', 'report_sla', 'report_perangkat'].includes(view)) {
+    if (!hasAdmin && ['dashboard', 'assets', 'network', 'membership', 'evaluasi_project', 'voucher', 'master_user', 'master_perangkat', 'master_team', 'report_sla', 'report_perangkat', 'team_location'].includes(view)) {
       if (view === 'voucher' && userCanVoucher) {
         // Allowed
       } else {
@@ -417,7 +424,7 @@ export default function App() {
       }
     }
 
-    if (['today', 'all', 'my_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership', 'evaluasi_project', 'jurnal', 'voucher', 'master_user', 'master_perangkat', 'master_team', 'report_sla', 'report_perangkat'].includes(view)) {
+    if (['today', 'all', 'my_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership', 'evaluasi_project', 'jurnal', 'voucher', 'master_user', 'master_perangkat', 'master_team', 'report_sla', 'report_perangkat', 'team_location'].includes(view)) {
       return view as ViewMode;
     }
     return hasAdmin ? 'dashboard' : 'today';
@@ -1910,6 +1917,20 @@ export default function App() {
                   </>
                 )}
 
+                {adminUser && (
+                  <button
+                    onClick={() => setViewMode('team_location')}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
+                      viewMode === 'team_location'
+                        ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20 font-black'
+                        : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <Compass className="w-4 h-4 text-blue-500" />
+                    <span>Lokasi Team (GPS)</span>
+                  </button>
+                )}
+
                 {adminUser.role === 'Super Admin' && (
                   <button
                     onClick={() => setViewMode('ba')}
@@ -2085,6 +2106,13 @@ export default function App() {
                   handleUploadExcel={handleUploadExcel}
                   adminThemeLayout={adminThemeLayout}
                   setAdminThemeLayout={setAdminThemeLayout}
+                />
+              ) : viewMode === 'team_location' ? (
+                <TeamLocationTracker
+                  isDark={isDark}
+                  currentUser={adminUser || currentUser}
+                  adminThemeColor={appSettings?.admin_primary_color || 'blue'}
+                  adminThemeLayout={adminThemeLayout}
                 />
               ) : viewMode === 'testing' ? (
                 <TestingView 

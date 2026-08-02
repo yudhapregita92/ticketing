@@ -442,4 +442,25 @@ export const api = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, all, employee_index: employeeIndex, name })
   }).then(handleResponse),
+
+  // Team Location Tracking API
+  getTeamLocations: (): Promise<any[]> => fetch('/api/team-location').then(handleResponse),
+  updateTeamLocation: (data: {
+    username: string;
+    full_name?: string;
+    role?: string;
+    latitude: number;
+    longitude: number;
+    accuracy?: number;
+    battery_level?: number;
+    speed?: number;
+    address?: string;
+    provider?: string;
+    note?: string;
+  }): Promise<any> => fetch('/api/team-location/update', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(handleResponse),
+  getTeamLocationLogs: (username?: string): Promise<any[]> => fetch(`/api/team-location/logs${username ? `?username=${encodeURIComponent(username)}` : ''}`).then(handleResponse),
 };

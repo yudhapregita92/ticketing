@@ -232,17 +232,31 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
                       </button>
                     </>
                   )}
-                  {adminUser.role === 'Super Admin' && (
-                    <button 
-                      onClick={() => handleMenuClick('ba')}
-                      className={`text-left w-full py-2.5 px-3 rounded-md text-xs font-bold transition-all ${
-                        viewMode === 'ba' 
-                          ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
-                          : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      Surat Rekomendasi
-                    </button>
+                  {adminUser && (
+                    <>
+                      <button 
+                        onClick={() => handleMenuClick('team_location')}
+                        className={`text-left w-full py-2.5 px-3 rounded-md text-xs font-bold transition-all ${
+                          viewMode === 'team_location' 
+                            ? 'bg-blue-600/10 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 font-black' 
+                            : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        📍 Lokasi Team (GPS)
+                      </button>
+                      {adminUser.role === 'Super Admin' && (
+                        <button 
+                          onClick={() => handleMenuClick('ba')}
+                          className={`text-left w-full py-2.5 px-3 rounded-md text-xs font-bold transition-all ${
+                            viewMode === 'ba' 
+                              ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
+                              : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          Surat Rekomendasi
+                        </button>
+                      )}
+                    </>
                   )}
                 </>
               )}

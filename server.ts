@@ -19,6 +19,7 @@ import networkRouter from "./server/routes/network.ts";
 import membershipsRouter from "./server/routes/memberships.ts";
 import evalProjectsRouter from "./server/routes/evalProjects.ts";
 import notificationsRouter from "./server/routes/notifications.ts";
+import teamLocationRouter from "./server/routes/teamLocation.ts";
 
 async function startServer() {
   console.log("Starting server initialization...");
@@ -82,6 +83,7 @@ async function startServer() {
   app.use("/api/memberships", membershipsRouter);
   app.use("/api/eval-projects", evalProjectsRouter);
   app.use("/api/notifications", notificationsRouter(io));
+  app.use("/api/team-location", teamLocationRouter(io));
   app.use("/", settingsRouter);
 
   // Catch-all for API routes

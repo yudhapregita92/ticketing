@@ -26,7 +26,9 @@ import {
   Building2,
   Layers,
   ClipboardList,
-  Ticket
+  Ticket,
+  Compass,
+  MapPin
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -505,17 +507,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </>
               )}
 
-              {adminUser.role === 'Super Admin' && (
-                <button
-                  onClick={() => setViewMode('ba')}
-                  title="Surat Rekomendasi / BA"
-                  className={getMenuItemClass(viewMode === 'ba')}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <FileText className="w-4 h-4" />
-                    {adminThemeLayout !== 'compact' && <span>Surat Rekomendasi / BA</span>}
-                  </div>
-                </button>
+              {adminUser && (
+                <>
+                  <button
+                    onClick={() => setViewMode('team_location')}
+                    title="Lokasi Team (Tracking GPS)"
+                    className={getMenuItemClass(viewMode === 'team_location')}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Compass className="w-4 h-4 text-blue-500" />
+                      {adminThemeLayout !== 'compact' && <span>Lokasi Team (GPS)</span>}
+                    </div>
+                  </button>
+
+                  {adminUser.role === 'Super Admin' && (
+                    <button
+                      onClick={() => setViewMode('ba')}
+                      title="Surat Rekomendasi / BA"
+                      className={getMenuItemClass(viewMode === 'ba')}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <FileText className="w-4 h-4" />
+                        {adminThemeLayout !== 'compact' && <span>Surat Rekomendasi / BA</span>}
+                      </div>
+                    </button>
+                  )}
+                </>
               )}
             </>
           )}

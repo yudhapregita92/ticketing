@@ -202,6 +202,38 @@ export function initDb() {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS team_locations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      full_name TEXT NOT NULL,
+      role TEXT,
+      latitude REAL NOT NULL,
+      longitude REAL NOT NULL,
+      accuracy REAL DEFAULT 10,
+      battery_level REAL DEFAULT 85,
+      speed REAL DEFAULT 0,
+      address TEXT,
+      provider TEXT DEFAULT 'web',
+      note TEXT,
+      is_on_duty INTEGER DEFAULT 1,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS team_location_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL,
+      full_name TEXT NOT NULL,
+      latitude REAL NOT NULL,
+      longitude REAL NOT NULL,
+      accuracy REAL,
+      battery_level REAL,
+      speed REAL,
+      provider TEXT DEFAULT 'web',
+      address TEXT,
+      note TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   db.exec(`
@@ -713,6 +745,34 @@ export function initDb() {
       console.log("Migration: Added jenis_masalah column to categories table.");
     } catch (colErr) {
       // Column already exists, ignore
+    }
+
+    // Seed initial team locations if empty
+    try {
+      const locationCount = db.prepare("SELECT COUNT(*) as count FROM team_locations").get() as { count: number };
+      if (locationCount && locationCount.count === 0) {
+        const insertLoc = db.prepare(`
+          INSERT INTO team_locations 
+          (username, full_name, role, latitude, longitude, accuracy, battery_level, speed, address, provider, note)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        const initialTeam = [
+          ['yudha', 'Yudha', 'Super Admin', -6.175392, 106.827153, 5, 92, 0, 'Kantor Pusat / Headquarters (Monas, Jakarta Pusat)', 'web', 'Online - Standby di Ruang Server Utama'],
+          ['bayu', 'Bayu', 'Staff IT Support', -6.208800, 106.845600, 12, 78, 5, 'Gedung Operasional / Store Retail (Manggarai, Jakarta)', 'checkin', 'Sedang Maintenance Jaringan & Router'],
+          ['dita', 'Dita', 'Staff App Support', -6.180000, 106.830000, 8, 85, 0, 'Gedung IT Helpdesk / OSS Office (Menteng, Jakarta)', 'traccar', 'Standby System Support & M365']
+        ];
+        initialTeam.forEach(t => insertLoc.run(...t));
+
+        // Log initial entries
+        const insertLog = db.prepare(`
+          INSERT INTO team_location_logs 
+          (username, full_name, latitude, longitude, accuracy, battery_level, speed, provider, address, note)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        initialTeam.forEach(t => insertLog.run(t[0], t[1], t[3], t[4], t[5], t[6], t[7], t[9], t[8], t[10]));
+      }
+    } catch (locErr) {
+      console.error("Error seeding team_locations:", locErr);
     }
 
     console.log("Database data initialized.");
