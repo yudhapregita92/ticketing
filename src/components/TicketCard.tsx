@@ -123,19 +123,19 @@ export const TicketCard: React.FC<TicketCardProps> = ({
   const getStatusDisplay = (status: string) => {
     switch (status) {
       case 'In Progress': 
-        return { label: 'Progres', bg: 'bg-blue-600 text-white' };
+        return { label: 'Progres', bg: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/80' };
       case 'Completed': 
-        return { label: 'Selesai', bg: 'bg-emerald-600 text-white' };
+        return { label: 'Selesai', bg: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80' };
       case 'Closed': 
-        return { label: 'Closed', bg: 'bg-slate-600 text-white' };
+        return { label: 'Closed', bg: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700' };
       case 'Re-opened': 
-        return { label: 'Re-Open', bg: 'bg-amber-600 text-white' };
+        return { label: 'Re-Open', bg: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/80' };
       case 'Cancelled': 
-        return { label: 'Batal', bg: 'bg-rose-600 text-white' };
+        return { label: 'Batal', bg: 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/80' };
       case 'New': 
-        return { label: 'Baru', bg: 'bg-indigo-600 text-white' };
+        return { label: 'Baru', bg: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/80' };
       default: 
-        return { label: status, bg: 'bg-blue-600 text-white' };
+        return { label: status, bg: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/80' };
     }
   };
 
@@ -144,32 +144,32 @@ export const TicketCard: React.FC<TicketCardProps> = ({
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       whileHover={{ 
-        y: -2, 
-        boxShadow: isDark ? "0 10px 25px -5px rgba(0,0,0,0.4)" : "0 10px 25px -5px rgba(0,0,0,0.06)"
+        y: -1, 
+        boxShadow: isDark ? "0 8px 20px -4px rgba(0,0,0,0.4)" : "0 8px 20px -4px rgba(0,0,0,0.06)"
       }}
       transition={{ 
-        delay: index * 0.03,
+        delay: index * 0.02,
         type: "spring",
         stiffness: 300,
         damping: 24
       }}
-      style={{ borderRadius: `${cardRadius}px` }}
+      style={{ borderRadius: adminUser ? '0px' : `${cardRadius}px` }}
       className={`relative border ${
         selectedTickets.includes(ticket.id) 
           ? 'ring-2 ring-emerald-500 border-emerald-500' 
           : isDark ? 'border-slate-800 bg-slate-900/95 text-slate-100' : 'border-slate-200/90 bg-white text-slate-700'
-      } p-3.5 sm:p-5 shadow-xs transition-all group cursor-pointer overflow-hidden ${
+      } p-3 sm:p-4 shadow-xs transition-all group cursor-pointer overflow-hidden ${adminUser ? 'rounded-none' : ''} ${
         getSLAColor(ticket.created_at, ticket.status, customCritical, customDelayed) || ''
       }`}
       onClick={() => handleSelectTicket(ticket)}
     >
-      {/* Top Header Row: Ticket ID + Status Badge + Refresh Circular Button */}
-      <div className="flex items-start justify-between gap-2 mb-1.5">
-        <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-wrap">
+      {/* Baris 1 (Header): Checkbox, Ticket No, Status Badge, ID, Date & Refresh */}
+      <div className="flex items-center justify-between gap-1.5 mb-1 flex-wrap">
+        <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
           {adminUser && (
             <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
               <input 
@@ -182,145 +182,162 @@ export const TicketCard: React.FC<TicketCardProps> = ({
                     setSelectedTickets(prev => prev.filter(id => id !== ticket.id));
                   }
                 }}
-                className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                className="w-3.5 h-3.5 rounded-none border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
               />
             </div>
           )}
 
-          {/* Ticket ID */}
-          <span className="text-xs sm:text-sm font-extrabold text-slate-700 dark:text-slate-200 tracking-tight">
+          {/* Ticket ID No */}
+          <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 tracking-tight shrink-0">
             #<HighlightText text={ticket.ticket_no || `TKT-${ticket.id.toString().padStart(4, '0')}`} highlight={searchQuery} isDark={isDark} />
           </span>
 
           {/* Status Badge Pill */}
-          <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold tracking-wide shadow-xs ${statusInfo.bg}`}>
+          <span className={`inline-flex items-center justify-center h-5 w-[62px] px-1.5 ${adminUser ? 'rounded-none' : 'rounded-full'} text-[10px] font-extrabold tracking-wide shadow-2xs whitespace-nowrap text-center shrink-0 ${statusInfo.bg}`}>
             {statusInfo.label}
           </span>
 
+          {/* Priority Pill (Always show with fallback to Medium) */}
+          {(() => {
+            const prio = ticket.priority || 'Medium';
+            return (
+              <span className={`inline-flex items-center justify-center h-5 px-2 ${adminUser ? 'rounded-none' : 'rounded-full'} text-[9.5px] font-bold uppercase whitespace-nowrap shrink-0 border ${
+                prio === 'High' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-200 dark:border-orange-800' :
+                prio === 'Urgent' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300 border-rose-200 dark:border-rose-800' :
+                prio === 'Low' ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700' :
+                'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+              }`}>
+                {prio}
+              </span>
+            );
+          })()}
+
           {/* SLA Badge if active */}
           {getSLALabel(ticket.created_at, ticket.status, customCritical, customDelayed) && (
-            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-rose-500 text-white leading-none whitespace-nowrap shadow-xs">
+            <span className={`inline-flex items-center justify-center h-5 px-2 text-[9.5px] font-bold ${adminUser ? 'rounded-none' : 'rounded-full'} bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/80 leading-none whitespace-nowrap shadow-xs shrink-0`}>
               {getSLALabel(ticket.created_at, ticket.status, customCritical, customDelayed)}
             </span>
           )}
+
+          {/* Ticket DB ID */}
+          <span className="text-[11px] text-slate-400 font-medium font-mono shrink-0">
+            ID:{ticket.id}
+          </span>
         </div>
 
-        {/* Circular Action Button */}
-        <button 
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleSelectTicket(ticket);
-          }}
-          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-slate-200 dark:border-slate-700/80 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
-          title="Lihat Detail Tiket"
-        >
-          <RotateCw className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
-        </button>
+        {/* Kanan: Date & Refresh Icon */}
+        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+          <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium">
+            {formatDate(ticket.created_at)}
+          </span>
+          <button 
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSelectTicket(ticket);
+            }}
+            className="w-5 h-5 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
+            title="Lihat Detail Tiket"
+          >
+            <RotateCw className="w-3 h-3 text-slate-600 dark:text-slate-300" />
+          </button>
+        </div>
       </div>
 
-      {/* Second Row: Category Title (Left) + Date & Time (Right) */}
-      <div className="flex items-baseline justify-between gap-2 mb-2.5 sm:mb-3">
-        <h3 className="text-sm sm:text-base font-extrabold text-emerald-900 dark:text-emerald-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1">
+      {/* Baris 2 (Body): Category / Title Request */}
+      <div className="mb-1">
+        <h3 className="text-sm sm:text-base font-bold text-emerald-800 dark:text-emerald-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1 leading-tight">
           <HighlightText text={ticket.category ? `${ticket.category} Request` : 'Hardware Request'} highlight={searchQuery} isDark={isDark} />
         </h3>
-        <span className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-400 font-normal shrink-0">
-          {formatDate(ticket.created_at)}
-        </span>
       </div>
 
-      {/* Estimated Duration if specified */}
+      {/* Estimasi Waktu jika ada */}
       {ticket.estimated_duration && (
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 mb-3 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-200/60 dark:border-emerald-800/60 w-fit">
+        <div className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 mb-1 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-200/60 dark:border-emerald-800/60">
           <Clock className="w-3 h-3 text-emerald-600 shrink-0" />
           <span>Estimasi: <strong>{ticket.estimated_duration}</strong></span>
         </div>
       )}
 
-      {/* Fourth Row: Footer Info Grid (Pelapor, Departemen, Petugas IT) */}
-      <div className="border-t border-slate-100 dark:border-slate-800/80 pt-3 grid grid-cols-3 gap-1 sm:gap-2 text-left">
-        {/* Column 1: Pelapor */}
-        <div className="pr-1">
-          <div className="flex items-center gap-1 mb-0.5">
+      {/* Baris 3 (Footer Gambar 2): Info User | Dept | IT (Kiri) & Tombol Aksi (Kanan) */}
+      <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800/80 flex-wrap">
+        {/* Kiri: User | Dept | Assigned IT */}
+        <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-200 min-w-0 flex-wrap">
+          <div className="flex items-center gap-1">
             <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate">PELAPOR</span>
+            <span className="truncate">
+              <HighlightText text={ticket.name} highlight={searchQuery} isDark={isDark} />
+            </span>
           </div>
-          <p className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
-            <HighlightText text={ticket.name} highlight={searchQuery} isDark={isDark} />
-          </p>
-        </div>
-
-        {/* Column 2: Departemen */}
-        <div className="border-x border-slate-100 dark:border-slate-800/80 px-2 sm:px-3">
-          <div className="flex items-center gap-1 mb-0.5">
+          <span className="text-slate-300 dark:text-slate-700 font-normal">|</span>
+          <div className="flex items-center gap-1">
             <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate">DEPARTEMEN</span>
+            <span className="truncate">{ticket.department || '-'}</span>
           </div>
-          <p className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
-            {ticket.department || '-'}
-          </p>
+          <span className="text-slate-300 dark:text-slate-700 font-normal">|</span>
+          <div className="flex items-center gap-1">
+            <UserCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <span className="truncate">{ticket.assigned_to ? `@${ticket.assigned_to}` : '-'}</span>
+          </div>
         </div>
 
-        {/* Column 3: Petugas IT */}
-        <div className="pl-1">
-          <div className="flex items-center gap-1 mb-0.5">
-            <UserCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate">PETUGAS IT</span>
-          </div>
-          <p className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 truncate">
-            {ticket.assigned_to ? `@${ticket.assigned_to}` : '-'}
-          </p>
+        {/* Kanan: Tombol Aksi (Ambil, Pindah, Hapus, etc) */}
+        <div className="flex items-center gap-1 shrink-0 ml-auto" onClick={(e) => e.stopPropagation()}>
+          {onForwardWhatsApp && isMyTicket && (
+            <button 
+              type="button"
+              onClick={() => onForwardWhatsApp(ticket)}
+              className={`px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold ${adminUser ? 'rounded-none' : 'rounded-lg'} transition-all shadow-xs flex items-center gap-1 cursor-pointer`}
+              title="Hubungi via WA"
+            >
+              <MessageSquare className="w-3 h-3" />
+              <span>WA</span>
+            </button>
+          )}
+
+          {adminUser?.role === 'Super Admin' && (
+            <>
+              <button 
+                type="button"
+                onClick={() => handleIntervention(ticket.id, 'takeover')}
+                className={`px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold ${adminUser ? 'rounded-none' : 'rounded-lg'} transition-all shadow-xs flex items-center gap-1 cursor-pointer`}
+              >
+                <span>🖐️</span>
+                <span>Ambil</span>
+              </button>
+              <button 
+                type="button"
+                onClick={() => handleIntervention(ticket.id, 'reassign')}
+                className={`px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-extrabold ${adminUser ? 'rounded-none' : 'rounded-lg'} transition-all shadow-xs flex items-center gap-1 cursor-pointer`}
+              >
+                <span>➡️</span>
+                <span>Pindah</span>
+              </button>
+            </>
+          )}
+
+          {adminUser && (
+            <button 
+              type="button"
+              onClick={() => handleDeleteTicket(ticket.id)}
+              className={`px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-extrabold ${adminUser ? 'rounded-none' : 'rounded-lg'} transition-all shadow-xs flex items-center gap-1 cursor-pointer`}
+              title="Hapus Tiket"
+            >
+              <Trash2 className="w-3 h-3" />
+              <span>H</span>
+            </button>
+          )}
+
+          <button 
+            type="button"
+            onClick={() => handleSelectTicket(ticket)}
+            className={`w-7 h-7 ${adminUser ? 'rounded-none' : 'rounded-lg'} bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-xs transition-colors cursor-pointer`}
+            title="Menu & Detail"
+          >
+            •••
+          </button>
         </div>
       </div>
-
-      {/* Action Bar */}
-      {(adminUser || (isMyTicket && onForwardWhatsApp)) && (
-        <div className="mt-3 pt-2 border-t border-dashed border-slate-200 dark:border-slate-800/80 flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
-          <div className="text-[10px] font-mono text-slate-400">
-            {ticket.pc_code ? `PC: ${ticket.pc_code}` : `ID: ${ticket.id}`}
-          </div>
-          <div className="flex items-center gap-1.5">
-            {onForwardWhatsApp && isMyTicket && (
-              <button 
-                type="button"
-                onClick={() => onForwardWhatsApp(ticket)}
-                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold rounded-md transition-all shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer"
-                title="Kirim Tiket ke WhatsApp IT Support"
-              >
-                <MessageSquare className="w-3 h-3" />
-                <span>WA IT</span>
-              </button>
-            )}
-            {adminUser?.role === 'Super Admin' && (
-              <>
-                <button 
-                  type="button"
-                  onClick={() => handleIntervention(ticket.id, 'takeover')}
-                  className="px-2 py-0.5 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold rounded-md transition-colors"
-                >
-                  Ambil
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => handleIntervention(ticket.id, 'reassign')}
-                  className="px-2 py-0.5 bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold rounded-md transition-colors"
-                >
-                  Pindah
-                </button>
-              </>
-            )}
-            {adminUser && (
-              <button 
-                type="button"
-                onClick={() => handleDeleteTicket(ticket.id)}
-                className="px-2 py-0.5 bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold rounded-md transition-colors"
-              >
-                Hapus
-              </button>
-            )}
-          </div>
-        </div>
-      )}
     </motion.div>
   );
 };

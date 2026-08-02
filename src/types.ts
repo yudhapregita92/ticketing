@@ -66,11 +66,13 @@ export interface IMasterUser {
   id: number;
   full_name: string;
   department: string;
+  sub_department?: string;
   phone: string;
   employee_index?: string;
   email?: string;
   jenis_piranti?: string;
   kode_piranti?: string;
+  jabatan?: string;
 }
 
 export interface IJenisMasalahRule {
@@ -226,8 +228,8 @@ export interface INotification {
 
 export const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 export const PRIORITIES = [
-  { id: 'Low', label: 'Low', color: 'bg-emerald-500' },
-  { id: 'Medium', label: 'Medium', color: 'bg-amber-500' },
-  { id: 'High', label: 'High', color: 'bg-orange-500' },
-  { id: 'Urgent', label: 'Urgent', color: 'bg-rose-500' }
+  { id: 'Low', label: 'Low', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700' },
+  { id: 'Medium', label: 'Medium', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 border-amber-200 dark:border-amber-800' },
+  { id: 'High', label: 'High', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-200 dark:border-orange-800' },
+  { id: 'Urgent', label: 'Urgent', color: 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300 border-rose-200 dark:border-rose-800' }
 ];

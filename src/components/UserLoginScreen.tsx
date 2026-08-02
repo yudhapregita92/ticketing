@@ -258,7 +258,7 @@ export const UserLoginScreen = React.memo(({
       <motion.div 
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`w-full max-w-[340px] relative z-10 ${themeClasses.card} rounded-2xl p-5 shadow-xl border ${themeClasses.border}`}
+        className={`w-full max-w-[340px] sm:max-w-[380px] relative z-10 ${themeClasses.card} rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl border ${themeClasses.border}`}
       >
         <div className="text-center mb-5 flex flex-col items-center">
           <div 
@@ -344,7 +344,7 @@ export const UserLoginScreen = React.memo(({
                     {nameLabel}
                   </label>
                   <div 
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border cursor-pointer transition-all ${
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 sm:py-2 rounded-xl border cursor-pointer transition-all ${
                       showUserDropdown ? 'border-indigo-500 ring-2 ring-indigo-500/20' : themeClasses.input
                     } ${selectedUser ? themeClasses.bg : themeClasses.bgSecondary}`}
                     onClick={() => setShowUserDropdown(!showUserDropdown)}
@@ -394,7 +394,9 @@ export const UserLoginScreen = React.memo(({
                               >
                                 <div className="truncate pr-2">
                                   <div className={`font-medium text-xs ${themeClasses.text} truncate`}>{u.full_name}</div>
-                                  <div className={`text-[10px] opacity-70 ${themeClasses.textMuted} truncate`}>{u.department}</div>
+                                  <div className={`text-[10px] opacity-70 ${themeClasses.textMuted} truncate`}>
+                                    {u.department || '-'}{u.sub_department && u.sub_department !== '-' ? ` (${u.sub_department})` : ''}
+                                  </div>
                                 </div>
                                 {selectedUser?.id === u.id && (
                                   <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
@@ -422,7 +424,7 @@ export const UserLoginScreen = React.memo(({
                   <label className={`block text-[10px] font-bold uppercase tracking-wider mb-1 ${themeClasses.textMuted}`}>
                     {indexLabel}
                   </label>
-                  <div className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border transition-all ${
+                  <div className={`flex items-center gap-2.5 px-3 py-2.5 sm:py-2 rounded-xl border transition-all ${
                     lockoutTimeLeft > 0 
                       ? 'bg-rose-500/10 border-rose-500/30 cursor-not-allowed opacity-75' 
                       : 'focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 ' + themeClasses.input
@@ -479,7 +481,7 @@ export const UserLoginScreen = React.memo(({
                   ? { backgroundColor: '#e11d48' }
                   : (appSettings?.login_button_color ? { backgroundColor: appSettings.login_button_color } : {})
             }
-            className={`w-full py-2.5 ${!isAdminMode && lockoutTimeLeft <= 0 && !appSettings?.login_button_color ? 'bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/10' : ''} text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] ${isAdminMode ? 'shadow-md shadow-emerald-900/10' : ''} ${!isAdminMode && lockoutTimeLeft > 0 ? 'opacity-80 cursor-not-allowed' : ''}`}
+            className={`w-full py-3 sm:py-2.5 min-h-[44px] ${!isAdminMode && lockoutTimeLeft <= 0 && !appSettings?.login_button_color ? 'bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/10' : ''} text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] ${isAdminMode ? 'shadow-md shadow-emerald-900/10' : ''} ${!isAdminMode && lockoutTimeLeft > 0 ? 'opacity-80 cursor-not-allowed' : ''}`}
           >
             {isAdminMode ? (
               <>

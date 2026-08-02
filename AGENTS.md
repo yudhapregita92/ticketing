@@ -36,6 +36,14 @@ Aplikasi ini mendukung beberapa variasi tata letak (layout) dan tema khusus untu
 
 ---
 
-## 4. Komitmen Konsistensi
+## 4. Pemisahan Desain & Fitur User vs Admin
+* **Skema Warna Navigasi & Tema**:
+  * **Halaman Admin**: Menggunakan tema warna aksen **Biru (Blue/Sky)** untuk item aktif dan tombol navigasi utama. Menu "Tiket" di Admin menggunakan format dropdown/grouping.
+  * **Halaman User (Public)**: Menggunakan tema warna aksen **Hijau (Emerald/Green)** untuk item aktif dan tombol navigasi utama. Menu "Tiket" di halaman User ditampilkan langsung (tanpa dropdown/toggle) agar mudah diakses langsung.
+* **Prinsip**: Desain dan pembeda visual antara halaman User dan Admin harus selalu konsisten dan dapat dibedakan dengan jelas.
+
+---
+
+## 5. Komitmen Konsistensi
 * Jaga kebersihan kode (clean code) dan gunakan **TypeScript** yang aman.
 * Lakukan verifikasi build (`npm run build`) dan linting (`npm run lint`) setiap setelah melakukan perubahan guna memastikan aplikasi selalu siap dirilis tanpa error.

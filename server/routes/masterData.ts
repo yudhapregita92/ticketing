@@ -173,11 +173,12 @@ router.get("/master-users", asyncHandler(async (req, res) => {
 }));
 
 router.post("/master-users", asyncHandler(async (req, res) => {
-  const { full_name, department, phone, employee_index, email, jenis_piranti, kode_piranti, jabatan } = req.body;
+  const { full_name, department, sub_department, phone, employee_index, email, jenis_piranti, kode_piranti, jabatan } = req.body;
   const normalizedPiranti = normalizeJenisPiranti(jenis_piranti);
-  db.prepare("INSERT INTO master_users (full_name, department, phone, employee_index, email, jenis_piranti, kode_piranti, jabatan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run(
+  db.prepare("INSERT INTO master_users (full_name, department, sub_department, phone, employee_index, email, jenis_piranti, kode_piranti, jabatan) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
     full_name ? String(full_name).trim() : '',
     department ? String(department).trim() : '-',
+    sub_department ? String(sub_department).trim() : '-',
     phone ? String(phone).trim() : '-',
     employee_index ? String(employee_index).trim() : '-',
     email ? String(email).trim() : '-',
@@ -191,11 +192,12 @@ router.post("/master-users", asyncHandler(async (req, res) => {
  
  router.put("/master-users/:id", asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { full_name, department, phone, employee_index, email, jenis_piranti, kode_piranti, jabatan } = req.body;
+  const { full_name, department, sub_department, phone, employee_index, email, jenis_piranti, kode_piranti, jabatan } = req.body;
   const normalizedPiranti = normalizeJenisPiranti(jenis_piranti);
-  db.prepare("UPDATE master_users SET full_name = ?, department = ?, phone = ?, employee_index = ?, email = ?, jenis_piranti = ?, kode_piranti = ?, jabatan = ? WHERE id = ?").run(
+  db.prepare("UPDATE master_users SET full_name = ?, department = ?, sub_department = ?, phone = ?, employee_index = ?, email = ?, jenis_piranti = ?, kode_piranti = ?, jabatan = ? WHERE id = ?").run(
     full_name ? String(full_name).trim() : '',
     department ? String(department).trim() : '-',
+    sub_department ? String(sub_department).trim() : '-',
     phone ? String(phone).trim() : '-',
     employee_index ? String(employee_index).trim() : '-',
     email ? String(email).trim() : '-',
@@ -224,7 +226,7 @@ router.post("/master-users", asyncHandler(async (req, res) => {
    const sheet = workbook.Sheets[sheetName];
    const data = xlsx.utils.sheet_to_json(sheet);
    
-   const insert = db.prepare("INSERT OR REPLACE INTO master_users (full_name, department, phone, employee_index, email, jenis_piranti, kode_piranti, jabatan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+   const insert = db.prepare("INSERT OR REPLACE INTO master_users (full_name, department, sub_department, phone, employee_index, email, jenis_piranti, kode_piranti, jabatan) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
    
    let count = 0;
    
@@ -236,11 +238,12 @@ router.post("/master-users", asyncHandler(async (req, res) => {
      });
      return matchedKey ? row[matchedKey] : null;
    };
- 
+
    db.transaction(() => {
      for (const row of data as any[]) {
        const fullName = findValue(row, ['Nama Lengkap', 'Nama', 'full_name', 'name', 'Nama User']);
-       const department = findValue(row, ['Bagian / Departemen', 'Bagian', 'Departemen', 'department', 'dept', 'Unit']);
+       const department = findValue(row, ['Bagian / Departemen', 'Bagian Utama', 'Bagian', 'Departemen', 'department', 'dept', 'Unit']);
+       const subDepartment = findValue(row, ['Sub Bagian', 'Sub Departemen', 'Sub Dept', 'sub_department', 'Sub-Bagian', 'SubBagian']);
        const phone = findValue(row, ['No. Telepon', 'No Telepon', 'No HP', 'Telepon', 'phone', 'no_hp', 'Handphone']);
        const employeeIndex = findValue(row, ['Index Karyawan', 'Index', 'Indek', 'Indeks', 'employee_index', 'NIK']);
        const email = findValue(row, ['Email', 'email', 'Alamat Email']);
@@ -254,6 +257,7 @@ router.post("/master-users", asyncHandler(async (req, res) => {
          insert.run(
            String(fullName).trim(), 
            department ? String(department).trim() : '-', 
+           subDepartment ? String(subDepartment).trim() : '-', 
            phone ? String(phone).trim() : '-', 
            employeeIndex ? String(employeeIndex).trim() : '-', 
            email ? String(email).trim() : '-', 

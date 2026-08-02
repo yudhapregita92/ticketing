@@ -96,6 +96,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [reportOpen, setReportOpen] = React.useState(viewMode === 'report_sla' || viewMode === 'report_perangkat');
   const [assetMenuOpen, setAssetMenuOpen] = React.useState(viewMode === 'assets');
 
+  const getMenuItemClass = (isActive: boolean) => {
+    const base = `w-full flex items-center ${
+      adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'
+    } rounded-none transition-all text-xs font-semibold `;
+    
+    if (isActive) {
+      if (adminUser) {
+        return (
+          base +
+          (isDark
+            ? 'bg-[#1d2b3e] text-[#60a5fa] border border-[#3b82f6]/70 shadow-xs font-bold'
+            : 'bg-[#ebf3ff] text-[#1d4ed8] border border-[#3b82f6]/60 shadow-xs font-bold')
+        );
+      } else {
+        return (
+          base +
+          (isDark
+            ? 'bg-emerald-950/70 text-emerald-400 border border-emerald-600/70 shadow-xs font-bold'
+            : 'bg-emerald-50 text-emerald-700 border border-emerald-500/60 shadow-xs font-bold')
+        );
+      }
+    }
+    return (
+      base +
+      (isDark
+        ? 'text-slate-300 hover:bg-slate-800/60 hover:text-slate-100 border border-transparent'
+        : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-800 border border-transparent')
+    );
+  };
+
   React.useEffect(() => {
     if (viewMode === 'today' || viewMode === 'all' || viewMode === 'my_tickets') {
       setTicketMenuOpen(true);
@@ -111,13 +141,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div className="lg:col-span-1 space-y-3 lg:space-y-4">
       {/* Sidebar Menu - Desktop Only */}
-      <section className={`hidden lg:block ${themeClasses.card} rounded-[1.5rem] border ${adminThemeLayout === 'compact' ? 'p-1.5' : 'p-3'} shadow-sm`}>
+      <section className={`hidden lg:block ${themeClasses.card} ${adminUser ? 'rounded-none border-t-0 -mt-2 lg:-mt-4' : 'rounded-[1.5rem]'} border ${adminThemeLayout === 'compact' ? 'p-1.5' : 'p-3'} shadow-sm`}>
         {adminThemeLayout !== 'compact' && (
           <div className="flex items-center gap-2 mb-2 px-2">
-            <div className={`w-6 h-6 rounded-lg flex items-center justify-center border ${isDark ? 'bg-indigo-900/30 text-indigo-400 border-indigo-800' : 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}>
+            <div className={`w-6 h-6 rounded-lg flex items-center justify-center border ${
+              adminUser 
+                ? (isDark ? 'bg-sky-900/30 text-sky-400 border-sky-800' : 'bg-sky-50 text-sky-600 border-sky-200')
+                : (isDark ? 'bg-emerald-900/30 text-emerald-400 border-emerald-800' : 'bg-emerald-50 text-emerald-600 border-emerald-200')
+            }`}>
               <Send className="w-3 h-3" />
             </div>
-            <h2 className={`text-xs font-bold capitalize tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Menu Navigasi</h2>
+            <h2 className={`text-xs font-bold capitalize tracking-tight ${isDark ? 'text-white' : 'text-slate-700'}`}>Menu Navigasi</h2>
           </div>
         )}
         
@@ -126,11 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               onClick={() => setViewMode('dashboard')}
               title="Dashboard"
-              className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                viewMode === 'dashboard' 
-                  ? 'bg-emerald-500/10 text-emerald-600' 
-                  : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-              }`}
+              className={getMenuItemClass(viewMode === 'dashboard')}
             >
               <div className="flex items-center gap-2.5">
                 <BarChart3 className="w-4 h-4" />
@@ -140,96 +170,123 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
           
           {/* Menu Group: Tiket */}
-          <div className="space-y-1">
-            <button
-              onClick={() => {
-                setTicketMenuOpen(!ticketMenuOpen);
-              }}
-              title="Tiket"
-              className={`w-full flex items-center justify-between ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                (viewMode === 'today' || viewMode === 'all' || viewMode === 'my_tickets' || ticketMenuOpen)
-                  ? 'bg-emerald-500/10 text-emerald-600' 
-                  : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Ticket className="w-4 h-4" />
-                {adminThemeLayout !== 'compact' && <span>Tiket</span>}
-              </div>
-              {adminThemeLayout !== 'compact' && (
-                ticketMenuOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
-              )}
-            </button>
+          {adminUser ? (
+            <div className="space-y-1">
+              <button
+                onClick={() => {
+                  setTicketMenuOpen(!ticketMenuOpen);
+                }}
+                title="Tiket"
+                className={getMenuItemClass(viewMode === 'today' || viewMode === 'all' || viewMode === 'my_tickets' || ticketMenuOpen)}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Ticket className="w-4 h-4" />
+                  {adminThemeLayout !== 'compact' && <span>Tiket</span>}
+                </div>
+                {adminThemeLayout !== 'compact' && (
+                  ticketMenuOpen ? <ChevronUp className="w-3.5 h-3.5 opacity-80" /> : <ChevronDown className="w-3.5 h-3.5 opacity-80" />
+                )}
+              </button>
 
-            {ticketMenuOpen && (
-              <div className={`space-y-1 ${adminThemeLayout !== 'compact' ? 'pl-9' : ''}`}>
-                <button
-                  onClick={() => setViewMode('today')}
-                  title="Antrian Hari Ini"
-                  className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                    viewMode === 'today' 
-                      ? 'bg-emerald-500/10 text-emerald-600' 
-                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 relative">
-                    <Zap className="w-3.5 h-3.5" />
-                    {adminThemeLayout !== 'compact' && <span>Antrian Hari Ini</span>}
-                    {adminThemeLayout === 'compact' && tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 px-1 py-0.5 bg-rose-500 text-white text-[7px] font-bold rounded-full scale-90">
+              {ticketMenuOpen && (
+                <div className={`space-y-1 ${adminThemeLayout !== 'compact' ? 'pl-9' : ''}`}>
+                  <button
+                    onClick={() => setViewMode('today')}
+                    title="Antrian Hari Ini"
+                    className={getMenuItemClass(viewMode === 'today')}
+                  >
+                    <div className="flex items-center gap-2.5 relative">
+                      <Zap className="w-3.5 h-3.5" />
+                      {adminThemeLayout !== 'compact' && <span>Antrian Hari Ini</span>}
+                      {adminThemeLayout === 'compact' && tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 px-1 py-0.5 bg-rose-500 text-white text-[7px] font-bold rounded-full scale-90">
+                          {tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length}
+                        </span>
+                      )}
+                    </div>
+                    {adminThemeLayout !== 'compact' && tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length > 0 && (
+                      <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[9px] font-black rounded-full">
                         {tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length}
                       </span>
                     )}
-                  </div>
-                  {adminThemeLayout !== 'compact' && tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length > 0 && (
-                    <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[9px] font-black rounded-full">
+                  </button>
+                  
+                  <button
+                    onClick={() => setViewMode('all')}
+                    title="Semua Antrian"
+                    className={getMenuItemClass(viewMode === 'all')}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      {adminThemeLayout !== 'compact' && <span>Semua Antrian</span>}
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => setViewMode('my_tickets')}
+                    title="Tiket Saya"
+                    className={getMenuItemClass(viewMode === 'my_tickets')}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      {adminThemeLayout !== 'compact' && <span>Tiket Saya</span>}
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <button
+                onClick={() => setViewMode('today')}
+                title="Antrian Hari Ini"
+                className={getMenuItemClass(viewMode === 'today')}
+              >
+                <div className="flex items-center gap-2.5 relative">
+                  <Zap className="w-4 h-4" />
+                  {adminThemeLayout !== 'compact' && <span>Antrian Hari Ini</span>}
+                  {adminThemeLayout === 'compact' && tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 px-1 py-0.5 bg-rose-500 text-white text-[7px] font-bold rounded-full scale-90">
                       {tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length}
                     </span>
                   )}
-                </button>
-                
-                <button
-                  onClick={() => setViewMode('all')}
-                  title="Semua Antrian"
-                  className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                    viewMode === 'all' 
-                      ? 'bg-emerald-500/10 text-emerald-600' 
-                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    {adminThemeLayout !== 'compact' && <span>Semua Antrian</span>}
-                  </div>
-                </button>
-                
-                <button
-                  onClick={() => setViewMode('my_tickets')}
-                  title={adminUser ? 'Tiket Saya' : 'Riwayat Tiket Saya'}
-                  className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                    viewMode === 'my_tickets' 
-                      ? 'bg-emerald-500/10 text-emerald-600' 
-                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    {adminThemeLayout !== 'compact' && <span>{adminUser ? 'Tiket Saya' : 'Riwayat Tiket Saya'}</span>}
-                  </div>
-                </button>
-              </div>
-            )}
-          </div>
+                </div>
+                {adminThemeLayout !== 'compact' && tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length > 0 && (
+                  <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[9px] font-black rounded-full">
+                    {tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length}
+                  </span>
+                )}
+              </button>
+              
+              <button
+                onClick={() => setViewMode('all')}
+                title="Semua Antrian"
+                className={getMenuItemClass(viewMode === 'all')}
+              >
+                <div className="flex items-center gap-2.5">
+                  <AlertCircle className="w-4 h-4" />
+                  {adminThemeLayout !== 'compact' && <span>Semua Antrian</span>}
+                </div>
+              </button>
+              
+              <button
+                onClick={() => setViewMode('my_tickets')}
+                title="Riwayat Tiket Saya"
+                className={getMenuItemClass(viewMode === 'my_tickets')}
+              >
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="w-4 h-4" />
+                  {adminThemeLayout !== 'compact' && <span>Riwayat Tiket Saya</span>}
+                </div>
+              </button>
+            </div>
+          )}
           
           {(adminUser || userCanVoucher) && (
             <button
               onClick={() => setViewMode('voucher')}
               title={adminUser ? 'Cetak Voucher' : 'Buat Voucher'}
-              className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                viewMode === 'voucher' 
-                  ? 'bg-emerald-500/10 text-emerald-600' 
-                  : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-              }`}
+              className={getMenuItemClass(viewMode === 'voucher')}
             >
               <div className="flex items-center gap-2.5">
                 <Printer className="w-4 h-4" />
@@ -247,18 +304,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     setAssetMenuOpen(!assetMenuOpen);
                   }}
                   title="Manajemen Aset"
-                  className={`w-full flex items-center justify-between ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                    (viewMode === 'assets' || assetMenuOpen)
-                      ? 'bg-emerald-500/10 text-emerald-600' 
-                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
+                  className={getMenuItemClass(viewMode === 'assets' || assetMenuOpen)}
                 >
                   <div className="flex items-center gap-2.5">
                     <Package className="w-4 h-4" />
                     {adminThemeLayout !== 'compact' && <span>Manajemen Aset</span>}
                   </div>
                   {adminThemeLayout !== 'compact' && (
-                    assetMenuOpen || viewMode === 'assets' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                    assetMenuOpen || viewMode === 'assets' ? <ChevronUp className="w-3.5 h-3.5 opacity-80" /> : <ChevronDown className="w-3.5 h-3.5 opacity-80" />
                   )}
                 </button>
 
@@ -270,11 +323,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         if (setAssetSubTab) setAssetSubTab('all');
                       }}
                       title="Semua Aset"
-                      className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                        viewMode === 'assets' && (assetSubTab === 'all' || !assetSubTab)
-                          ? 'bg-emerald-500/10 text-emerald-600' 
-                          : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                      }`}
+                      className={getMenuItemClass(viewMode === 'assets' && (assetSubTab === 'all' || !assetSubTab))}
                     >
                       <div className="flex items-center gap-2.5">
                         <Package className="w-3 h-3" />
@@ -288,11 +337,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         if (setAssetSubTab) setAssetSubTab('Capex');
                       }}
                       title="Capex (Capital Expenditure)"
-                      className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                        viewMode === 'assets' && assetSubTab === 'Capex'
-                          ? 'bg-blue-500/10 text-blue-600' 
-                          : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                      }`}
+                      className={getMenuItemClass(viewMode === 'assets' && assetSubTab === 'Capex')}
                     >
                       <div className="flex items-center gap-2.5">
                         <Building2 className="w-3 h-3" />
@@ -306,11 +351,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         if (setAssetSubTab) setAssetSubTab('Opex');
                       }}
                       title="Opex (Operational Expenditure)"
-                      className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                        viewMode === 'assets' && assetSubTab === 'Opex'
-                          ? 'bg-purple-500/10 text-purple-600' 
-                          : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                      }`}
+                      className={getMenuItemClass(viewMode === 'assets' && assetSubTab === 'Opex')}
                     >
                       <div className="flex items-center gap-2.5">
                         <Layers className="w-3 h-3" />
@@ -324,11 +365,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         if (setAssetSubTab) setAssetSubTab('borrowed');
                       }}
                       title="Perangkat Dipinjam (IT Loan)"
-                      className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                        viewMode === 'assets' && assetSubTab === 'borrowed'
-                          ? 'bg-amber-500/10 text-amber-600' 
-                          : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                      }`}
+                      className={getMenuItemClass(viewMode === 'assets' && assetSubTab === 'borrowed')}
                     >
                       <div className="flex items-center gap-2.5">
                         <ClipboardList className="w-3 h-3" />
@@ -342,11 +379,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 onClick={() => setViewMode('membership')}
                 title="Membership"
-                className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                  viewMode === 'membership' 
-                    ? 'bg-emerald-500/10 text-emerald-600' 
-                    : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                }`}
+                className={getMenuItemClass(viewMode === 'membership')}
               >
                 <div className="flex items-center gap-2.5">
                   <UserPlus className="w-4 h-4" />
@@ -357,11 +390,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 onClick={() => setViewMode('evaluasi_project')}
                 title="Evaluasi Project"
-                className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                  viewMode === 'evaluasi_project' 
-                    ? 'bg-emerald-500/10 text-emerald-600' 
-                    : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                }`}
+                className={getMenuItemClass(viewMode === 'evaluasi_project')}
               >
                 <div className="flex items-center gap-2.5">
                   <TrendingUp className="w-4 h-4" />
@@ -373,18 +402,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   onClick={() => setReportOpen(!reportOpen)}
                   title="Report"
-                  className={`w-full flex items-center justify-between ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                    (viewMode === 'report_sla' || viewMode === 'report_perangkat' || reportOpen)
-                      ? 'bg-emerald-500/10 text-emerald-600' 
-                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
+                  className={getMenuItemClass(viewMode === 'report_sla' || viewMode === 'report_perangkat' || reportOpen)}
                 >
                   <div className="flex items-center gap-2.5">
                     <Timer className="w-4 h-4" />
                     {adminThemeLayout !== 'compact' && <span>Report</span>}
                   </div>
                   {adminThemeLayout !== 'compact' && (
-                    reportOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                    reportOpen ? <ChevronUp className="w-3.5 h-3.5 opacity-80" /> : <ChevronDown className="w-3.5 h-3.5 opacity-80" />
                   )}
                 </button>
 
@@ -393,11 +418,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <button
                       onClick={() => setViewMode('report_sla')}
                       title="Report SLA"
-                      className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                        viewMode === 'report_sla' 
-                          ? 'bg-emerald-500/10 text-emerald-600' 
-                          : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                      }`}
+                      className={getMenuItemClass(viewMode === 'report_sla')}
                     >
                       <div className="flex items-center gap-2.5">
                         <Timer className="w-3 h-3" />
@@ -407,11 +428,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <button
                       onClick={() => setViewMode('report_perangkat')}
                       title="Report Perangkat"
-                      className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                        viewMode === 'report_perangkat' 
-                          ? 'bg-emerald-500/10 text-emerald-600' 
-                          : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                      }`}
+                      className={getMenuItemClass(viewMode === 'report_perangkat')}
                     >
                       <div className="flex items-center gap-2.5">
                         <Activity className="w-3 h-3" />
@@ -428,18 +445,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <button
                       onClick={() => setMasterDataOpen(!masterDataOpen)}
                       title="Master Data"
-                      className={`w-full flex items-center justify-between ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                        (viewMode === 'master_user' || viewMode === 'master_perangkat' || viewMode === 'master_team' || masterDataOpen)
-                          ? 'bg-emerald-500/10 text-emerald-600' 
-                          : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                      }`}
+                      className={getMenuItemClass(viewMode === 'master_user' || viewMode === 'master_perangkat' || viewMode === 'master_team' || masterDataOpen)}
                     >
                       <div className="flex items-center gap-2.5">
                         <Database className="w-4 h-4" />
                         {adminThemeLayout !== 'compact' && <span>Master Data</span>}
                       </div>
                       {adminThemeLayout !== 'compact' && (
-                        masterDataOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                        masterDataOpen ? <ChevronUp className="w-3.5 h-3.5 opacity-80" /> : <ChevronDown className="w-3.5 h-3.5 opacity-80" />
                       )}
                     </button>
 
@@ -448,11 +461,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <button
                           onClick={() => setViewMode('master_user')}
                           title="Master Data (User)"
-                          className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                            viewMode === 'master_user' 
-                              ? 'bg-emerald-500/10 text-emerald-600' 
-                              : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                          }`}
+                          className={getMenuItemClass(viewMode === 'master_user')}
                         >
                           <div className="flex items-center gap-2.5">
                             <Users className="w-3 h-3" />
@@ -462,11 +471,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <button
                           onClick={() => setViewMode('master_perangkat')}
                           title="Perangkat"
-                          className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                            viewMode === 'master_perangkat' 
-                              ? 'bg-emerald-500/10 text-emerald-600' 
-                              : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                          }`}
+                          className={getMenuItemClass(viewMode === 'master_perangkat')}
                         >
                           <div className="flex items-center gap-2.5">
                             <MonitorSmartphone className="w-3 h-3" />
@@ -476,11 +481,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <button
                           onClick={() => setViewMode('master_team')}
                           title="Tim IT Support & Topologi"
-                          className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                            viewMode === 'master_team' 
-                              ? 'bg-emerald-500/10 text-emerald-600' 
-                              : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                          }`}
+                          className={getMenuItemClass(viewMode === 'master_team')}
                         >
                           <div className="flex items-center gap-2.5">
                             <ShieldCheck className="w-3 h-3" />
@@ -494,11 +495,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <button
                   onClick={() => setViewMode('network')}
                   title="Monitoring Jaringan"
-                  className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                    viewMode === 'network' 
-                      ? 'bg-emerald-500/10 text-emerald-600' 
-                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
+                  className={getMenuItemClass(viewMode === 'network')}
                 >
                   <div className="flex items-center gap-2.5">
                     <Activity className="w-4 h-4" />
@@ -512,11 +509,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   onClick={() => setViewMode('ba')}
                   title="Surat Rekomendasi / BA"
-                  className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                    viewMode === 'ba' 
-                      ? 'bg-emerald-500/10 text-emerald-600' 
-                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
+                  className={getMenuItemClass(viewMode === 'ba')}
                 >
                   <div className="flex items-center gap-2.5">
                     <FileText className="w-4 h-4" />
@@ -530,11 +523,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             onClick={() => setViewMode('panduan')}
             title="Panduan"
-            className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-              viewMode === 'panduan' 
-                ? 'bg-emerald-500/10 text-emerald-600' 
-                : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-            }`}
+            className={getMenuItemClass(viewMode === 'panduan')}
           >
             <div className="flex items-center gap-2.5">
               <BookOpen className="w-4 h-4" />
@@ -547,11 +536,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 onClick={() => setViewMode('settings')}
                 title="Pengaturan Sistem"
-                className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                  viewMode === 'settings' 
-                    ? 'bg-emerald-500/10 text-emerald-600' 
-                    : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                }`}
+                className={getMenuItemClass(viewMode === 'settings')}
               >
                 <div className="flex items-center gap-2.5">
                   <Settings2 className="w-4 h-4" />
@@ -562,14 +547,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 onClick={() => setViewMode('testing')}
                 title="Menu Testing"
-                className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-bold ${
-                  viewMode === 'testing' 
-                    ? 'bg-emerald-500/10 text-emerald-600' 
-                    : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                }`}
+                className={getMenuItemClass(viewMode === 'testing')}
               >
                 <div className="flex items-center gap-2.5">
-                  <Activity className="w-4 h-4 text-emerald-500" />
+                  <Activity className="w-4 h-4" />
                   {adminThemeLayout !== 'compact' && <span>Menu Testing</span>}
                 </div>
               </button>
@@ -581,7 +562,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 onClick={handleLogout}
                 title="Keluar"
-                className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-xl transition-all text-xs font-black capitalize tracking-wider border border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`}
+                className={`w-full flex items-center ${adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'} rounded-none transition-all text-xs font-black capitalize tracking-wider border border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`}
               >
                 <LogOut className="w-4 h-4" />
                 {adminThemeLayout !== 'compact' && <span>Keluar</span>}
@@ -597,14 +578,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           whileHover={{ y: -4, boxShadow: isDark ? "0 20px 40px -10px rgba(0,0,0,0.5)" : "0 20px 40px -10px rgba(0,0,0,0.05)" }}
-          className={`${themeClasses.card} rounded-3xl border p-3 sm:p-4 shadow-sm overflow-hidden relative`}
+          className={`${themeClasses.card} rounded-none border p-3 sm:p-4 shadow-sm overflow-hidden relative`}
         >
           <div className="absolute top-0 right-0 p-4 opacity-5">
             <Bell className={`w-20 h-20 ${isDark ? 'text-white' : 'text-slate-900'}`} />
           </div>
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <div className="flex items-center gap-2">
-              <div className={`w-8 h-8 rounded-xl flex items-center justify-center border ${isDark ? 'bg-rose-900/30 text-rose-400 border-rose-800' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+              <div className={`w-8 h-8 rounded-none flex items-center justify-center border ${isDark ? 'bg-rose-900/30 text-rose-400 border-rose-800' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
                 <Bell className="w-4 h-4" />
               </div>
               <div>
@@ -617,7 +598,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => Notification.requestPermission().then(() => fetchTickets())}
-                className="p-2 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-all group"
+                className="p-2 rounded-none bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-all group"
                 title="Aktifkan Notifikasi Browser"
               >
                 <Bell className="w-4 h-4 animate-bounce group-hover:animate-none" />
@@ -627,7 +608,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           
           <div className="space-y-3">
             {tickets.filter(t => t.status === 'New').length > 0 ? (
-              <div className="p-3 bg-rose-50/50 rounded-2xl border border-rose-100 group hover:bg-rose-50 transition-all">
+              <div className="p-3 bg-rose-50/50 rounded-none border border-rose-100 group hover:bg-rose-50 transition-all">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="flex items-center gap-1.5 text-[9px] font-bold text-rose-600 capitalize tracking-wider whitespace-nowrap">
                     <motion.div
@@ -638,14 +619,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </motion.div>
                     Action Required
                   </span>
-                  <span className="px-1.5 py-0.5 bg-rose-600 text-white text-[9px] font-bold rounded-full animate-pulse shadow-sm shadow-rose-200">
+                  <span className="px-1.5 py-0.5 bg-rose-600 text-white text-[9px] font-bold rounded-none animate-pulse shadow-sm shadow-rose-200">
                     {tickets.filter(t => t.status === 'New').length}
                   </span>
                 </div>
                 <p className="text-[10px] text-rose-700 font-semibold leading-tight">Ada tiket yang menunggu respon Anda segera.</p>
               </div>
             ) : (
-              <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100">
+              <div className="p-4 bg-emerald-50/50 rounded-none border border-emerald-100">
                 <p className="text-xs text-emerald-700 font-semibold flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4" /> Inbox Zero! Semua tiket telah direspon.
                 </p>
@@ -657,12 +638,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               const newToday = tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === today).length;
               if (newToday > 0) {
                 return (
-                  <div className="p-3 bg-blue-50/50 rounded-2xl border border-blue-100 group hover:bg-blue-50 transition-all">
+                  <div className="p-3 bg-blue-50/50 rounded-none border border-blue-100 group hover:bg-blue-50 transition-all">
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="flex items-center gap-1.5 text-[9px] font-bold text-blue-600 capitalize tracking-wider whitespace-nowrap">
                         <TrendingUp className="w-3 h-3" /> Traffic Update
                       </span>
-                      <span className="px-1.5 py-0.5 bg-blue-600 text-white text-[9px] font-bold rounded-full shadow-sm shadow-blue-200">
+                      <span className="px-1.5 py-0.5 bg-blue-600 text-white text-[9px] font-bold rounded-none shadow-sm shadow-blue-200">
                         {newToday}
                       </span>
                     </div>
@@ -678,7 +659,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Queue Statistics */}
       {adminThemeLayout !== 'compact' && (
-        <section className={`${themeClasses.card} rounded-[1.5rem] border p-3 shadow-sm`}>
+        <section className={`${themeClasses.card} rounded-none border p-3 shadow-sm`}>
           <div className="flex items-center justify-between mb-2">
             <h2 className={`text-sm font-bold ${themeClasses.text}`}>Status Antrian</h2>
             <BarChart3 className="w-4 h-4 text-slate-300" />
@@ -687,7 +668,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <motion.div 
               whileHover={{ y: -2, scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className={`${themeClasses.card} ${themeClasses.border} border rounded-xl p-1.5 flex flex-col items-center justify-center text-center`}
+              className={`${themeClasses.card} ${themeClasses.border} border rounded-none p-1.5 flex flex-col items-center justify-center text-center`}
             >
               <Counter value={filteredTickets.length} className={`text-sm font-black leading-none mb-0.5 ${themeClasses.text}`} />
               <span className="text-[8px] font-bold text-slate-400 capitalize tracking-tight whitespace-nowrap">Total</span>
@@ -695,7 +676,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <motion.div 
               whileHover={{ y: -2, scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className={`${isDark ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-indigo-50 border-indigo-100'} border rounded-xl p-1.5 flex flex-col items-center justify-center text-center`}
+              className={`${isDark ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-indigo-50 border-indigo-100'} border rounded-none p-1.5 flex flex-col items-center justify-center text-center`}
             >
               <Counter value={tickets.filter(t => t.status === 'New').length} className="text-sm font-black text-indigo-500 leading-none mb-0.5" />
               <span className="text-[8px] font-bold text-indigo-500 capitalize tracking-tight whitespace-nowrap">Baru</span>
@@ -703,7 +684,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <motion.div 
               whileHover={{ y: -2, scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className={`${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'} border rounded-xl p-1.5 flex flex-col items-center justify-center text-center`}
+              className={`${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'} border rounded-none p-1.5 flex flex-col items-center justify-center text-center`}
             >
               <Counter value={tickets.filter(t => t.status === 'In Progress').length} className="text-sm font-black text-blue-500 leading-none mb-0.5" />
               <span className="text-[8px] font-bold text-blue-500 capitalize tracking-tight whitespace-nowrap">Progres</span>
@@ -711,7 +692,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <motion.div 
               whileHover={{ y: -2, scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className={`${isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100'} border rounded-xl p-1.5 flex flex-col items-center justify-center text-center`}
+              className={`${isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100'} border rounded-none p-1.5 flex flex-col items-center justify-center text-center`}
             >
               <Counter value={tickets.filter(t => t.status === 'Completed').length} className="text-sm font-black text-emerald-500 leading-none mb-0.5" />
               <span className="text-[8px] font-bold text-emerald-500 capitalize tracking-tight whitespace-nowrap">Selesai</span>
@@ -725,13 +706,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <motion.section 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`${themeClasses.card} rounded-3xl border p-3 sm:p-4 shadow-sm`}
+          className={`${themeClasses.card} rounded-none border p-3 sm:p-4 shadow-sm`}
         >
           <div className="flex items-center justify-between mb-2 sm:mb-3">
             <h2 className={`text-sm font-bold capitalize tracking-wider ${themeClasses.text}`}>Distribusi Masalah</h2>
             <button 
               onClick={() => setShowDistribution(!showDistribution)}
-              className={`p-1.5 rounded-xl transition-all ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}
+              className={`p-1.5 rounded-none transition-all ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}
             >
               {showDistribution ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
@@ -782,23 +763,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Help CTA */}
       <section 
-        className="hidden lg:block rounded-3xl p-8 text-white shadow-xl relative overflow-hidden group transition-all"
+        className={`hidden lg:block ${adminUser ? 'rounded-none' : 'rounded-3xl'} p-6 text-white shadow-xl relative overflow-hidden group transition-all`}
         style={{ backgroundColor: primaryColor, boxShadow: `0 20px 25px -5px ${primaryColor}30` }}
       >
         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
           <Zap className="w-20 h-20" />
         </div>
-        <h3 className="font-black text-xl mb-3">Butuh Bantuan?</h3>
-        <p className="text-white/80 text-sm leading-relaxed mb-6 font-medium">
+        <h3 className="font-black text-lg mb-2">Butuh Bantuan?</h3>
+        <p className="text-white/80 text-xs leading-relaxed mb-4 font-medium">
           Kirim tiket untuk masalah teknis. Tim IT kami akan memproses permintaan Anda sesegera mungkin.
         </p>
         <button 
           onClick={() => setShowForm(true)}
-          className={`w-full font-bold py-3.5 rounded-2xl text-sm transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 ${
+          className={`w-full font-bold py-3 px-2 ${adminUser ? 'rounded-none' : 'rounded-2xl'} text-xs transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 ${
             isDark ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-white text-slate-900 hover:bg-slate-50'
           }`}
         >
           <motion.div
+            className="shrink-0"
             animate={{ 
               scale: [1, 1.2, 1],
               opacity: [1, 0.8, 1]
@@ -807,7 +789,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <Send className="w-4 h-4 text-emerald-500" />
           </motion.div>
-          Buat Tiket Sekarang
+          <span className="whitespace-nowrap">Buat Tiket Sekarang</span>
         </button>
       </section>
 

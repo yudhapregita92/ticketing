@@ -423,15 +423,53 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Active':
-        return <span className="px-2 py-1 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-700">Aktif</span>;
+        return <span className="px-2 py-1 text-[10px] font-bold rounded-none bg-emerald-100 text-emerald-700">Aktif</span>;
       case 'In Repair':
-        return <span className="px-2 py-1 text-[10px] font-bold rounded-full bg-amber-100 text-amber-700">Diperbaiki</span>;
+        return <span className="px-2 py-1 text-[10px] font-bold rounded-none bg-amber-100 text-amber-700">Diperbaiki</span>;
       case 'Retired':
-        return <span className="px-2 py-1 text-[10px] font-bold rounded-full bg-slate-100 text-slate-700">Pensiun</span>;
+        return <span className="px-2 py-1 text-[10px] font-bold rounded-none bg-slate-100 text-slate-700">Pensiun</span>;
       default:
-        return <span className="px-2 py-1 text-[10px] font-bold rounded-full bg-slate-100 text-slate-700">{status}</span>;
+        return <span className="px-2 py-1 text-[10px] font-bold rounded-none bg-slate-100 text-slate-700">{status}</span>;
     }
   };
+
+  // Extract department and sub-department options for a given user
+  const getUserDepartmentOptions = (userName: string) => {
+    if (!userName) return [];
+    const userRecords = masterUsers.filter(u => u.full_name?.toLowerCase().trim() === userName.toLowerCase().trim());
+    if (userRecords.length === 0) return [];
+
+    const opts = new Set<string>();
+    
+    userRecords.forEach(u => {
+      if (u.department?.trim()) {
+        opts.add(u.department.trim());
+      }
+      if (u.sub_department?.trim()) {
+        const subList = u.sub_department.split(/[,/]/).map((s: string) => s.trim()).filter(Boolean);
+        subList.forEach((s: string) => {
+          opts.add(s);
+        });
+      }
+    });
+
+    const primaryDept = userRecords[0]?.department?.trim();
+    if (primaryDept) {
+      masterUsers.forEach(u => {
+        if (u.department?.toLowerCase().trim() === primaryDept.toLowerCase() && u.sub_department?.trim()) {
+          const subList = u.sub_department.split(/[,/]/).map((s: string) => s.trim()).filter(Boolean);
+          subList.forEach((s: string) => {
+            opts.add(s);
+          });
+        }
+      });
+    }
+
+    return Array.from(opts);
+  };
+
+  const activeUserDeptOptions = getUserDepartmentOptions(formData.assigned_to);
+  const isDepartmentLocked = Boolean(formData.assigned_to) && activeUserDeptOptions.length <= 1;
 
   const filteredAssets = assets.filter(asset => {
     const q = searchQuery.trim().toLowerCase();
@@ -454,7 +492,51 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
     ].some(field => field && String(field).toLowerCase().includes(q));
 
     const matchesCategory = filterCategory ? asset.category === filterCategory : true;
-    const matchesDepartment = filterDepartment ? asset.department === filterDepartment : true;
+    
+    const matchesDepartment = filterDepartment ? (() => {
+      if (!filterDepartment) return true;
+      const filterClean = filterDepartment.trim().toLowerCase();
+      const assetDept = (asset.department || '').trim().toLowerCase();
+      
+      if (!assetDept) return false;
+
+      // 1. Exact match (seperti jika difilter HR dan asetnya HR)
+      if (assetDept === filterClean) return true;
+
+      // 2. Jika filter yang dipilih adalah Departemen Utama Induk (misal "HRGA", "HR & GA", "HR,GA")
+      // Cek apakah di masterUsers departemen ini memiliki sub-department (seperti "HR", "GA")
+      const parentUserMatch = masterUsers.filter(u => {
+        const uDept = (u.department || '').trim().toLowerCase();
+        return uDept === filterClean || uDept.replace(/[^a-z0-9]/g, '') === filterClean.replace(/[^a-z0-9]/g, '');
+      });
+
+      if (parentUserMatch.length > 0) {
+        // Kumpulkan seluruh sub-department dari induk tersebut
+        const subDepts = new Set<string>();
+        parentUserMatch.forEach(u => {
+          if (u.sub_department) {
+            u.sub_department.split(/[,/]/).forEach(s => {
+              const trimmed = s.trim().toLowerCase();
+              if (trimmed) subDepts.add(trimmed);
+            });
+          }
+        });
+
+        // Jika departemen aset cocok dengan salah satu sub-department induk tersebut
+        if (subDepts.has(assetDept) || Array.from(subDepts).some(sd => assetDept.includes(sd) || sd.includes(assetDept))) {
+          return true;
+        }
+      }
+
+      // 3. Jika nama departemen aset ber-format gabungan misal "HRGA - HR" atau "HRGA/HR"
+      if (assetDept.includes('-') || assetDept.includes('/')) {
+        const parts = assetDept.split(/[-/]/).map(p => p.trim().toLowerCase());
+        if (parts.includes(filterClean)) return true;
+      }
+
+      return false;
+    })() : true;
+
     const matchesUsageStatus = filterUsageStatus ? (asset.usage_status || '').toLowerCase() === filterUsageStatus.toLowerCase() : true;
     const matchesAssetStatus = filterAssetStatus ? (asset.status || '').toLowerCase() === filterAssetStatus.toLowerCase() : true;
     const matchesSubTab = activeSubTab === 'all' ? true : (asset.budget_type || 'Capex') === activeSubTab;
@@ -472,8 +554,14 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
   const totalPages = Math.ceil(filteredAssets.length / itemsPerPage) || 1;
   const paginatedAssets = filteredAssets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  // Extract unique departments from master users
-  const masterDepartments = Array.from(new Set(masterUsers.map(u => u.department).filter(Boolean))).sort();
+  // Extract unique departments and sub-departments from master users & assets
+  const masterDepartments = Array.from(
+    new Set([
+      ...masterUsers.map(u => u.department),
+      ...masterUsers.map(u => u.sub_department),
+      ...assets.map(a => a.department)
+    ].filter(Boolean))
+  ).sort();
 
   const handleDownloadTemplate = () => {
     const templateData = [
@@ -873,7 +961,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveSubTab('all')}
-                className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-all flex items-center gap-1 text-xs font-bold"
+                className="p-1.5 rounded-none border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-all flex items-center gap-1 text-xs font-bold"
                 title="Kembali ke Dashboard Overview"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -886,7 +974,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
               {activeSubTab === 'Opex' && 'Manajemen Aset Opex (Belanja Operasional)'}
               {activeSubTab === 'borrowed' && 'Perangkat Dipinjam (IT Device Loans)'}
             </h2>
-            <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+            <span className={`px-2.5 py-0.5 rounded-none text-[10px] font-black uppercase tracking-wider ${
               activeSubTab === 'all' 
                 ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' 
                 : activeSubTab === 'Capex' 
@@ -908,15 +996,15 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
 
         {/* Submenu Navigation Capex, Opex & Borrowed (Hanya tampil di Dashboard Overview) */}
         {activeSubTab === 'all' && (
-          <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 w-full md:w-fit overflow-x-auto flex-shrink-0">
+          <div className="flex items-center gap-1.5 p-1.5 rounded-none bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 w-full md:w-fit overflow-x-auto flex-shrink-0">
             <button
               type="button"
               onClick={() => setActiveSubTab('all')}
-              className="px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap bg-emerald-600 text-white shadow-md"
+              className="px-3.5 py-2 rounded-none text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap bg-emerald-600 text-white shadow-md"
             >
               <Package className="w-4 h-4" />
               <span>Dashboard Overview</span>
-              <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-700 text-white">
+              <span className="px-2 py-0.5 rounded-none text-[10px] font-black bg-emerald-700 text-white">
                 {assets.length}
               </span>
             </button>
@@ -924,11 +1012,11 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
             <button
               type="button"
               onClick={() => setActiveSubTab('Capex')}
-              className="px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
+              className="px-3.5 py-2 rounded-none text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
             >
               <Building2 className="w-4 h-4" />
               <span>Aset Capex</span>
-              <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+              <span className="px-2 py-0.5 rounded-none text-[10px] font-black bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                 {assets.filter(a => (a.budget_type || 'Capex') === 'Capex').length}
               </span>
             </button>
@@ -936,11 +1024,11 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
             <button
               type="button"
               onClick={() => setActiveSubTab('Opex')}
-              className="px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
+              className="px-3.5 py-2 rounded-none text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
             >
               <Layers className="w-4 h-4" />
               <span>Aset Opex</span>
-              <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+              <span className="px-2 py-0.5 rounded-none text-[10px] font-black bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                 {assets.filter(a => a.budget_type === 'Opex').length}
               </span>
             </button>
@@ -948,11 +1036,11 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
             <button
               type="button"
               onClick={() => setActiveSubTab('borrowed')}
-              className="px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
+              className="px-3.5 py-2 rounded-none text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
             >
               <ClipboardList className="w-4 h-4" />
               <span>Perangkat Dipinjam</span>
-              <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-500 text-white">
+              <span className="px-2 py-0.5 rounded-none text-[10px] font-black bg-amber-500 text-white">
                 {borrowedAssets.filter(b => b.status === 'Dipinjam').length}
               </span>
             </button>
@@ -965,7 +1053,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
         <div className="space-y-6">
           {/* Card Informasi Stats Overview Dashboard */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-            <div className={`p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <div className={`p-4 rounded-none border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Keseluruhan Aset</p>
                 <h3 className="text-2xl sm:text-3xl font-black mt-1 text-emerald-600 dark:text-emerald-400">{totalAssetsCount}</h3>
@@ -973,12 +1061,12 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   Capex: {assets.filter(a => (a.budget_type || 'Capex') === 'Capex').length} | Opex: {assets.filter(a => a.budget_type === 'Opex').length}
                 </p>
               </div>
-              <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-500">
+              <div className="p-3 rounded-none bg-emerald-500/10 text-emerald-500">
                 <Package className="w-6 h-6" />
               </div>
             </div>
 
-            <div className={`p-4 rounded-2xl border shadow-sm flex flex-col justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <div className={`p-4 rounded-none border shadow-sm flex flex-col justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Aset Capex</p>
@@ -986,7 +1074,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     {assets.filter(a => (a.budget_type || 'Capex') === 'Capex').length}
                   </h3>
                 </div>
-                <div className="p-3 rounded-2xl bg-blue-500/10 text-blue-500">
+                <div className="p-3 rounded-none bg-blue-500/10 text-blue-500">
                   <Building2 className="w-6 h-6" />
                 </div>
               </div>
@@ -1000,7 +1088,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
               </button>
             </div>
 
-            <div className={`p-4 rounded-2xl border shadow-sm flex flex-col justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <div className={`p-4 rounded-none border shadow-sm flex flex-col justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Aset Opex</p>
@@ -1008,7 +1096,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     {assets.filter(a => a.budget_type === 'Opex').length}
                   </h3>
                 </div>
-                <div className="p-3 rounded-2xl bg-purple-500/10 text-purple-500">
+                <div className="p-3 rounded-none bg-purple-500/10 text-purple-500">
                   <Layers className="w-6 h-6" />
                 </div>
               </div>
@@ -1022,13 +1110,13 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
               </button>
             </div>
 
-            <div className={`p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <div className={`p-4 rounded-none border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Kategori & Dept</p>
                 <h3 className="text-2xl sm:text-3xl font-black mt-1 text-amber-600 dark:text-amber-400">{totalCategoriesCount}</h3>
                 <p className="text-[10px] font-bold text-slate-400 mt-1">{totalDepartmentsCount} Departemen Terdaftar</p>
               </div>
-              <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500">
+              <div className="p-3 rounded-none bg-amber-500/10 text-amber-500">
                 <Users className="w-6 h-6" />
               </div>
             </div>
@@ -1037,13 +1125,13 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
           {/* Grid Cards Analisis Dashboard */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Card 1: Distribusi Anggaran Capex vs Opex */}
-            <div className={`p-5 rounded-3xl border shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <div className={`p-5 rounded-none border shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-sm font-black text-slate-800 dark:text-white">Sebaran Anggaran Aset</h3>
                   <p className="text-xs text-slate-400 font-medium">Perbandingan unit Capex (Modal) dan Opex (Operasional)</p>
                 </div>
-                <span className="p-2 rounded-xl bg-blue-500/10 text-blue-500">
+                <span className="p-2 rounded-none bg-blue-500/10 text-blue-500">
                   <Building2 className="w-5 h-5" />
                 </span>
               </div>
@@ -1058,7 +1146,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
 
                 return (
                   <div className="space-y-4">
-                    <div className="w-full h-4 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden flex">
+                    <div className="w-full h-4 rounded-none bg-slate-100 dark:bg-slate-800 overflow-hidden flex">
                       <div style={{ width: `${capexPct}%` }} className="bg-blue-600 h-full transition-all" title={`Capex: ${capexPct}%`} />
                       <div style={{ width: `${opexPct}%` }} className="bg-purple-600 h-full transition-all" title={`Opex: ${opexPct}%`} />
                     </div>
@@ -1067,7 +1155,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       <button
                         type="button"
                         onClick={() => setActiveSubTab('Capex')}
-                        className="p-3 rounded-2xl bg-blue-500/5 border border-blue-500/20 text-left hover:bg-blue-500/10 transition-all group"
+                        className="p-3 rounded-none bg-blue-500/5 border border-blue-500/20 text-left hover:bg-blue-500/10 transition-all group"
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400">Capex</span>
@@ -1083,7 +1171,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       <button
                         type="button"
                         onClick={() => setActiveSubTab('Opex')}
-                        className="p-3 rounded-2xl bg-purple-500/5 border border-purple-500/20 text-left hover:bg-purple-500/10 transition-all group"
+                        className="p-3 rounded-none bg-purple-500/5 border border-purple-500/20 text-left hover:bg-purple-500/10 transition-all group"
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-black uppercase text-purple-600 dark:text-purple-400">Opex</span>
@@ -1102,19 +1190,19 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
             </div>
 
             {/* Card 2: Ringkasan Kondisi & Status Aset */}
-            <div className={`p-5 rounded-3xl border shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <div className={`p-5 rounded-none border shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-sm font-black text-slate-800 dark:text-white">Status Operational Aset</h3>
                   <p className="text-xs text-slate-400 font-medium">Kondisi siap pakai vs perbaikan/pensiun</p>
                 </div>
-                <span className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500">
+                <span className="p-2 rounded-none bg-emerald-500/10 text-emerald-500">
                   <CheckCircle2 className="w-5 h-5" />
                 </span>
               </div>
 
               <div className="grid grid-cols-3 gap-2.5">
-                <div className="p-3 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 text-center">
+                <div className="p-3 rounded-none bg-emerald-500/5 border border-emerald-500/20 text-center">
                   <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400">Aktif</span>
                   <div className="text-xl font-black mt-1 text-emerald-600 dark:text-emerald-400">
                     {assets.filter(a => a.status === 'Active').length}
@@ -1122,7 +1210,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   <span className="text-[9px] font-bold text-slate-400">Siap Digunakan</span>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-amber-500/5 border border-amber-500/20 text-center">
+                <div className="p-3 rounded-none bg-amber-500/5 border border-amber-500/20 text-center">
                   <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400">Diperbaiki</span>
                   <div className="text-xl font-black mt-1 text-amber-600 dark:text-amber-400">
                     {assets.filter(a => a.status === 'In Repair').length}
@@ -1130,7 +1218,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   <span className="text-[9px] font-bold text-slate-400">Proses Perbaikan</span>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-slate-500/5 border border-slate-500/20 text-center">
+                <div className="p-3 rounded-none bg-slate-500/5 border border-slate-500/20 text-center">
                   <span className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">Pensiun/Rusak</span>
                   <div className="text-xl font-black mt-1 text-slate-600 dark:text-slate-300">
                     {assets.filter(a => a.status === 'Retired' || a.status === 'Broken' || a.status === 'Lost').length}
@@ -1142,7 +1230,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
           </div>
 
           {/* Pratinjau Tabel Aset Terbaru */}
-          <div className={`p-5 rounded-3xl border shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <div className={`p-5 rounded-none border shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <div>
                 <h3 className="text-base font-black text-slate-800 dark:text-white">Aset Terbaru Didata</h3>
@@ -1152,14 +1240,14 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveSubTab('Capex')}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-all"
+                  className="px-3 py-1.5 rounded-none text-xs font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-all"
                 >
                   Lihat Semua Capex →
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveSubTab('Opex')}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 transition-all"
+                  className="px-3 py-1.5 rounded-none text-xs font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 transition-all"
                 >
                   Lihat Semua Opex →
                 </button>
@@ -1188,7 +1276,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                         {asset.device_code || asset.asset_id}
                       </td>
                       <td className="py-2.5 px-3">
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-none border ${
                           (asset.budget_type || 'Capex') === 'Opex'
                             ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
                             : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
@@ -1214,7 +1302,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
         <div className="space-y-6">
           {/* Information Cards Summary */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-            <div className={`p-4 sm:p-5 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <div className={`p-4 sm:p-5 rounded-none border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Sedang Dipinjam</p>
                 <h3 className="text-2xl sm:text-3xl font-black mt-1 text-amber-600 dark:text-amber-400">
@@ -1222,12 +1310,12 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                 </h3>
                 <p className="text-[10px] font-bold text-slate-400 mt-1">Status Perangkat Aktif Dipinjam</p>
               </div>
-              <div className="p-3.5 rounded-2xl bg-amber-500/10 text-amber-500">
+              <div className="p-3.5 rounded-none bg-amber-500/10 text-amber-500">
                 <ClipboardList className="w-7 h-7" />
               </div>
             </div>
 
-            <div className={`p-4 sm:p-5 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <div className={`p-4 sm:p-5 rounded-none border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Sudah Dikembalikan</p>
                 <h3 className="text-2xl sm:text-3xl font-black mt-1 text-emerald-600 dark:text-emerald-400">
@@ -1235,12 +1323,12 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                 </h3>
                 <p className="text-[10px] font-bold text-slate-400 mt-1">Perangkat Telah Kembali ke IT</p>
               </div>
-              <div className="p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-500">
+              <div className="p-3.5 rounded-none bg-emerald-500/10 text-emerald-500">
                 <CheckCircle2 className="w-7 h-7" />
               </div>
             </div>
 
-            <div className={`p-4 sm:p-5 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <div className={`p-4 sm:p-5 rounded-none border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Riwayat Peminjaman</p>
                 <h3 className="text-2xl sm:text-3xl font-black mt-1 text-blue-600 dark:text-blue-400">
@@ -1248,14 +1336,14 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                 </h3>
                 <p className="text-[10px] font-bold text-slate-400 mt-1">Keseluruhan Catatan Transaksi</p>
               </div>
-              <div className="p-3.5 rounded-2xl bg-blue-500/10 text-blue-500">
+              <div className="p-3.5 rounded-none bg-blue-500/10 text-blue-500">
                 <FileSignature className="w-7 h-7" />
               </div>
             </div>
           </div>
 
           {/* Search, Filter, and Action Bar */}
-          <div className={`p-4 rounded-2xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3`}>
+          <div className={`p-4 rounded-none border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3`}>
             <div className="relative w-full sm:w-80">
               <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -1263,7 +1351,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                 placeholder="Cari peminjam, perangkat, kode..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className={`w-full pl-10 pr-4 py-2 rounded-xl text-xs sm:text-sm font-medium border focus:ring-2 focus:outline-none transition-all ${
+                className={`w-full pl-10 pr-4 py-2 rounded-none text-xs sm:text-sm font-medium border focus:ring-2 focus:outline-none transition-all ${
                   isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-amber-500/20'
                 }`}
               />
@@ -1287,7 +1375,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                 setIsDeviceDropdownOpen(false);
                 setShowBorrowModal(true);
               }}
-              className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold rounded-xl text-xs shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold rounded-none text-xs shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Pinjamkan Perangkat</span>
@@ -1305,7 +1393,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                 item.borrower_department?.toLowerCase().includes(query) ||
                 item.notes?.toLowerCase().includes(query);
             }).length === 0 ? (
-              <div className={`p-8 rounded-2xl border text-center text-slate-400 text-xs font-semibold ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+              <div className={`p-8 rounded-none border text-center text-slate-400 text-xs font-semibold ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
                 Belum ada data peminjaman perangkat.
               </div>
             ) : (
@@ -1320,7 +1408,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
               }).map((item) => (
                 <div
                   key={item.id}
-                  className={`p-4 rounded-2xl border shadow-sm space-y-3 transition-all ${
+                  className={`p-4 rounded-none border shadow-sm space-y-3 transition-all ${
                     isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'
                   }`}
                 >
@@ -1330,7 +1418,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       <div className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-1.5 flex-wrap">
                         <span>{item.device_name}</span>
                         {item.budget_type && (
-                          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${
+                          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-none border ${
                             item.budget_type === 'Opex'
                               ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
                               : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
@@ -1345,7 +1433,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                         </div>
                       )}
                     </div>
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold border shrink-0 ${
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-none text-[10px] font-extrabold border shrink-0 ${
                       item.status === 'Dipinjam'
                         ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
                         : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
@@ -1357,13 +1445,13 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
 
                   {/* Card Details Grid */}
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80">
+                    <div className="p-2.5 rounded-none bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80">
                       <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-0.5">Peminjam</span>
                       <span className="font-bold text-slate-800 dark:text-slate-100 block">{item.borrower_name}</span>
                       <span className="text-[10px] text-slate-400 block">{item.borrower_department || '-'}</span>
                     </div>
 
-                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80">
+                    <div className="p-2.5 rounded-none bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80">
                       <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-0.5">
                         {item.status === 'Dikembalikan' ? 'Pengembalian' : 'Tgl Dipinjam'}
                       </span>
@@ -1383,7 +1471,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   </div>
 
                   {item.notes && (
-                    <div className="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <div className="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-none border border-slate-100 dark:border-slate-800">
                       <span className="font-bold text-[10px] text-slate-400 uppercase block mb-0.5">Keterangan:</span>
                       {item.notes}
                     </div>
@@ -1395,7 +1483,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       {item.signature ? (
                         <button
                           onClick={() => setShowSignaturePreview(item.signature!)}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 text-xs font-bold transition-all cursor-pointer min-h-[38px]"
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-none bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 text-xs font-bold transition-all cursor-pointer min-h-[38px]"
                         >
                           <PenTool className="w-3.5 h-3.5" />
                           <span>Lihat TTD</span>
@@ -1409,7 +1497,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       {item.status === 'Dipinjam' && (
                         <button
                           onClick={() => handleOpenReturnModal(item)}
-                          className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer min-h-[38px]"
+                          className="px-3.5 py-2 rounded-none bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer min-h-[38px]"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
                           <span>Kembalikan</span>
@@ -1417,7 +1505,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       )}
                       <button
                         onClick={() => handleDeleteBorrow(item.id)}
-                        className="p-2 rounded-xl text-rose-500 hover:bg-rose-500/10 active:scale-95 transition-all cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center border border-rose-500/20"
+                        className="p-2 rounded-none text-rose-500 hover:bg-rose-500/10 active:scale-95 transition-all cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center border border-rose-500/20"
                         title="Hapus Record"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -1430,7 +1518,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
           </div>
 
           {/* Desktop Table View (Visible on medium screens & larger) */}
-          <div className={`hidden md:block rounded-2xl border shadow-sm overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <div className={`hidden md:block rounded-none border shadow-sm overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -1475,7 +1563,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                           <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
                             <span>{item.device_name}</span>
                             {item.budget_type && (
-                              <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${
+                              <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-none border ${
                                 item.budget_type === 'Opex'
                                   ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
                                   : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
@@ -1520,7 +1608,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                           {item.signature ? (
                             <button
                               onClick={() => setShowSignaturePreview(item.signature!)}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 text-[10px] font-bold transition-all cursor-pointer"
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-none bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 text-[10px] font-bold transition-all cursor-pointer"
                             >
                               <PenTool className="w-3 h-3" />
                               <span>Lihat TTD</span>
@@ -1530,7 +1618,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                           )}
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-none text-[10px] font-extrabold border ${
                             item.status === 'Dipinjam'
                               ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
                               : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
@@ -1544,7 +1632,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                             {item.status === 'Dipinjam' && (
                               <button
                                 onClick={() => handleOpenReturnModal(item)}
-                                className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer"
+                                className="p-1.5 rounded-none bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer"
                                 title="Kembalikan Perangkat"
                               >
                                 <RotateCcw className="w-3.5 h-3.5" />
@@ -1553,7 +1641,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                             )}
                             <button
                               onClick={() => handleDeleteBorrow(item.id)}
-                              className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer"
+                              className="p-1.5 rounded-none text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer"
                               title="Hapus Record"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -1573,50 +1661,50 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
         <div className="space-y-6">
           {/* Top Summary Cards specific to Capex / Opex */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-            <div className={`p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <div className={`p-4 rounded-none border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Aset {activeSubTab}</p>
                 <h3 className={`text-2xl sm:text-3xl font-black mt-1 ${activeSubTab === 'Capex' ? 'text-blue-600 dark:text-blue-400' : 'text-purple-600 dark:text-purple-400'}`}>
                   {filteredAssets.length}
                 </h3>
               </div>
-              <div className={`p-3 rounded-2xl ${activeSubTab === 'Capex' ? 'bg-blue-500/10 text-blue-500' : 'bg-purple-500/10 text-purple-500'}`}>
+              <div className={`p-3 rounded-none ${activeSubTab === 'Capex' ? 'bg-blue-500/10 text-blue-500' : 'bg-purple-500/10 text-purple-500'}`}>
                 {activeSubTab === 'Capex' ? <Building2 className="w-6 h-6" /> : <Layers className="w-6 h-6" />}
               </div>
             </div>
 
-            <div className={`p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <div className={`p-4 rounded-none border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Aset Aktif</p>
                 <h3 className="text-2xl sm:text-3xl font-black mt-1 text-emerald-600 dark:text-emerald-400">
                   {filteredAssets.filter(a => a.status === 'Active').length}
                 </h3>
               </div>
-              <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-500">
+              <div className="p-3 rounded-none bg-emerald-500/10 text-emerald-500">
                 <CheckCircle2 className="w-6 h-6" />
               </div>
             </div>
 
-            <div className={`p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <div className={`p-4 rounded-none border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Proses Perbaikan</p>
                 <h3 className="text-2xl sm:text-3xl font-black mt-1 text-amber-600 dark:text-amber-400">
                   {filteredAssets.filter(a => a.status === 'In Repair').length}
                 </h3>
               </div>
-              <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500">
+              <div className="p-3 rounded-none bg-amber-500/10 text-amber-500">
                 <Filter className="w-6 h-6" />
               </div>
             </div>
 
-            <div className={`p-4 rounded-2xl border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <div className={`p-4 rounded-none border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Pengguna Terkait</p>
                 <h3 className="text-2xl sm:text-3xl font-black mt-1 text-violet-600 dark:text-violet-400">
                   {new Set(filteredAssets.map(a => a.assigned_to).filter(Boolean)).size}
                 </h3>
               </div>
-              <div className="p-3 rounded-2xl bg-violet-500/10 text-violet-500">
+              <div className="p-3 rounded-none bg-violet-500/10 text-violet-500">
                 <Users className="w-6 h-6" />
               </div>
             </div>
@@ -1633,7 +1721,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   placeholder={`Cari aset ${activeSubTab} (Kode, Nama, Pengguna)...`}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`w-full pl-10 pr-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium border focus:ring-2 focus:outline-none transition-all ${
+                  className={`w-full pl-10 pr-4 py-1.5 sm:py-2 rounded-none sm:rounded-none text-xs sm:text-sm font-medium border focus:ring-2 focus:outline-none transition-all ${
                     isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                   }`}
                 />
@@ -1645,7 +1733,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   <select
                     value={filterCategory}
                     onChange={(e) => setFilterCategory(e.target.value)}
-                    className={`w-full pl-9 pr-7 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
+                    className={`w-full pl-9 pr-7 py-1.5 sm:py-2 rounded-none sm:rounded-none text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
                       isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                     }`}
                   >
@@ -1661,7 +1749,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   <select
                     value={filterDepartment}
                     onChange={(e) => setFilterDepartment(e.target.value)}
-                    className={`w-full pl-9 pr-7 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
+                    className={`w-full pl-9 pr-7 py-1.5 sm:py-2 rounded-none sm:rounded-none text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
                       isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                     }`}
                   >
@@ -1677,7 +1765,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   <select
                     value={filterUsageStatus}
                     onChange={(e) => setFilterUsageStatus(e.target.value)}
-                    className={`w-full pl-9 pr-7 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
+                    className={`w-full pl-9 pr-7 py-1.5 sm:py-2 rounded-none sm:rounded-none text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
                       isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                     }`}
                   >
@@ -1692,7 +1780,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   <select
                     value={filterAssetStatus}
                     onChange={(e) => setFilterAssetStatus(e.target.value)}
-                    className={`w-full pl-9 pr-7 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
+                    className={`w-full pl-9 pr-7 py-1.5 sm:py-2 rounded-none sm:rounded-none text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
                       isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                     }`}
                   >
@@ -1715,7 +1803,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       setFilterUsageStatus('');
                       setFilterAssetStatus('');
                     }}
-                    className="px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs font-extrabold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition-all whitespace-nowrap"
+                    className="px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-none text-xs font-extrabold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition-all whitespace-nowrap"
                   >
                     Reset Filter
                   </button>
@@ -1728,7 +1816,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
               <button
                 onClick={handleDownloadTemplate}
                 title="Download Template XLS"
-                className={`px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-none text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all ${
                   isDark 
                     ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' 
                     : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
@@ -1741,7 +1829,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
               <button
                 onClick={() => document.getElementById('import-asset-excel')?.click()}
                 title="Import File XLS"
-                className={`px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-none text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all ${
                   isDark 
                     ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' 
                     : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
@@ -1754,7 +1842,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
               <button
                 onClick={handleExportExcel}
                 title="Export ke XLS"
-                className={`px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-none text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all ${
                   isDark 
                     ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' 
                     : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
@@ -1767,7 +1855,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
               <button
                 onClick={handlePrintAllLabels}
                 title="Cetak Label Aset"
-                className={`px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-none text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all ${
                   isDark 
                     ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white' 
                     : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900'
@@ -1786,7 +1874,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   }
                 }}
                 title="Preview Hasil Halaman Scan QR Code"
-                className={`px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-none text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all ${
                   isDark 
                     ? 'bg-slate-800 border-slate-700 text-blue-400 hover:bg-slate-700 hover:text-white' 
                     : 'bg-white border-slate-200 text-blue-600 hover:bg-blue-50'
@@ -1802,7 +1890,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   setShowDeleteAllModal(true);
                 }}
                 title="Hapus Semua Data Aset"
-                className="px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all bg-rose-500/10 border-rose-500/30 text-rose-600 hover:bg-rose-500 hover:text-white dark:text-rose-400"
+                className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-none text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 whitespace-nowrap transition-all bg-rose-500/10 border-rose-500/30 text-rose-600 hover:bg-rose-500 hover:text-white dark:text-rose-400"
               >
                 <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span>Hapus Semua</span>
@@ -1818,7 +1906,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   setShowModal(true);
                 }}
                 style={{ backgroundColor: primaryColor }}
-                className="hidden sm:flex ml-auto px-4 py-2.5 rounded-2xl text-white text-xs sm:text-sm font-bold items-center gap-2 transition-all hover:brightness-110 shadow-lg whitespace-nowrap"
+                className="hidden sm:flex ml-auto px-3 py-1.5 sm:py-2 rounded-xl text-white text-xs sm:text-sm font-bold items-center gap-2 transition-all hover:brightness-110 shadow-lg whitespace-nowrap"
               >
                 <Plus className="w-4 h-4" />
                 <span>Tambah Aset {activeSubTab}</span>
@@ -1832,13 +1920,13 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
           <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : filteredAssets.length === 0 ? (
-        <div className={`text-center py-16 sm:py-20 rounded-3xl border ${themeClasses.bgCard}`}>
+        <div className={`text-center py-16 sm:py-20 rounded-none border ${themeClasses.bgCard}`}>
           <Package className="w-12 h-12 sm:w-16 sm:h-16 text-slate-400 mx-auto mb-3 sm:mb-4 opacity-50" />
           <h3 className={`text-base sm:text-lg font-bold mb-1.5 ${themeClasses.heading}`}>Tidak Ada Aset</h3>
           <p className={`text-xs sm:text-sm ${themeClasses.textMuted}`}>Belum ada data aset yang tersimpan atau sesuai dengan filter.</p>
         </div>
       ) : (
-        <div className={`rounded-2xl border shadow-sm overflow-hidden ${themeClasses.card}`}>
+        <div className={`rounded-none border shadow-sm overflow-hidden ${themeClasses.card}`}>
           {/* Mobile Card Layout (md:hidden) */}
           <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
             {paginatedAssets.map((asset) => (
@@ -1846,18 +1934,18 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                 {/* Header Row */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-2.5 min-w-0">
-                    <div className={`p-2 rounded-xl flex-shrink-0 mt-0.5 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                    <div className={`p-2 rounded-none flex-shrink-0 mt-0.5 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
                       {getCategoryIcon(asset.category)}
                     </div>
                     <div className="min-w-0">
                       <div className={`font-bold text-xs sm:text-sm truncate ${themeClasses.heading}`}>{asset.name || asset.category}</div>
                       <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                        <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                           {asset.category}
                         </span>
                         {getStatusBadge(asset.status)}
                         {Boolean(asset.is_issued) && (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-0.5" title={asset.issued_reason || 'Di-issued untuk operasional'}>
+                          <span className="px-1.5 py-0.5 rounded-none text-[9px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-0.5" title={asset.issued_reason || 'Di-issued untuk operasional'}>
                             <AlertTriangle className="w-2.5 h-2.5 text-amber-500" /> ISSUED
                           </span>
                         )}
@@ -1869,28 +1957,28 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button 
                       onClick={() => setQrPreviewAsset(asset)}
-                      className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors"
+                      className="p-1.5 rounded-none text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors"
                       title="Preview Scan QR"
                     >
                       <QrCode className="w-4 h-4" />
                     </button>
                     <button 
                       onClick={() => handlePrintSingleLabel(asset)}
-                      className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 dark:hover:bg-slate-800 transition-colors"
+                      className="p-1.5 rounded-none text-amber-600 hover:bg-amber-50 dark:hover:bg-slate-800 transition-colors"
                       title="Cetak Label"
                     >
                       <Printer className="w-4 h-4" />
                     </button>
                     <button 
                       onClick={() => openEditModal(asset, true)}
-                      className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
+                      className="p-1.5 rounded-none text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
                       title="Lihat Aset"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
                     <button 
                       onClick={() => handleDelete(asset.id)}
-                      className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 transition-colors"
+                      className="p-1.5 rounded-none text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 transition-colors"
                       title="Hapus Aset"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -1899,7 +1987,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                 </div>
 
                 {/* Details Grid */}
-                <div className={`p-2.5 rounded-xl grid grid-cols-2 gap-2 text-[11px] ${isDark ? 'bg-slate-800/40 border border-slate-800' : 'bg-slate-50 border border-slate-100'}`}>
+                <div className={`p-2.5 rounded-none grid grid-cols-2 gap-2 text-[11px] ${isDark ? 'bg-slate-800/40 border border-slate-800' : 'bg-slate-50 border border-slate-100'}`}>
                   <div>
                     <span className="text-[9px] font-black uppercase text-slate-400 block">Kode Perangkat</span>
                     <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{asset.device_code || '-'}</span>
@@ -1929,7 +2017,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       return (
                         <div className="text-right">
                           <span className="text-[9px] font-black uppercase text-slate-400 block">Penyusutan (4 Thn)</span>
-                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold border ${dep.badgeClass}`}>
+                          <span className={`px-1.5 py-0.5 rounded-none text-[9px] font-extrabold border ${dep.badgeClass}`}>
                             {dep.status} ({dep.percentage}%)
                           </span>
                         </div>
@@ -1976,14 +2064,14 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   >
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2">
-                        <div className={`p-1.5 rounded-lg flex-shrink-0 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                        <div className={`p-1.5 rounded-none flex-shrink-0 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
                           {getCategoryIcon(asset.category)}
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <div className={`font-bold text-xs truncate max-w-[140px] ${themeClasses.heading}`} title={asset.name}>{asset.name || '-'}</div>
                             {Boolean(asset.is_issued) && (
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-0.5 shrink-0" title={asset.issued_reason || 'Di-issued untuk operasional'}>
+                              <span className="px-1.5 py-0.5 rounded-none text-[9px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-0.5 shrink-0" title={asset.issued_reason || 'Di-issued untuk operasional'}>
                                 <AlertTriangle className="w-2.5 h-2.5 text-amber-500" /> ISSUED
                               </span>
                             )}
@@ -1997,7 +2085,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       </div>
                     </td>
                     <td className="px-3 py-2.5">
-                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 whitespace-nowrap`}>
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-none bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 whitespace-nowrap`}>
                         {asset.category}
                       </span>
                     </td>
@@ -2021,7 +2109,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                         const dep = calculateAssetDepreciation(asset.purchase_date);
                         return (
                           <div className="flex flex-col gap-0.5">
-                            <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-md border inline-block w-fit ${dep.badgeClass}`}>
+                            <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-none border inline-block w-fit ${dep.badgeClass}`}>
                               {dep.status}
                             </span>
                             <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
@@ -2044,7 +2132,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       </span>
                     </td>
                     <td className="px-3 py-2.5">
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-none border ${
                         (asset.budget_type || 'Capex') === 'Opex'
                           ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
                           : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
@@ -2053,7 +2141,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       </span>
                     </td>
                     <td className="px-3 py-2.5">
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 whitespace-nowrap">
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-none bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 whitespace-nowrap">
                         {asset.usage_status === 'shared department' ? 'Shared Dept' : 'Karyawan'}
                       </span>
                     </td>
@@ -2066,28 +2154,28 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       <div className="flex items-center justify-end gap-1">
                         <button 
                           onClick={() => setQrPreviewAsset(asset)}
-                          className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors"
+                          className="p-1.5 rounded-none text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors"
                           title="Preview Hasil Halaman Scan QR"
                         >
                           <QrCode className="w-3.5 h-3.5" />
                         </button>
                         <button 
                           onClick={() => handlePrintSingleLabel(asset)}
-                          className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 dark:hover:bg-slate-800 transition-colors"
+                          className="p-1.5 rounded-none text-amber-600 hover:bg-amber-50 dark:hover:bg-slate-800 transition-colors"
                           title="Cetak Label"
                         >
                           <Printer className="w-3.5 h-3.5" />
                         </button>
                         <button 
                           onClick={() => openEditModal(asset, true)}
-                          className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
+                          className="p-1.5 rounded-none text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
                           title="Lihat Aset"
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </button>
                         <button 
                           onClick={() => handleDelete(asset.id)}
-                          className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 transition-colors"
+                          className="p-1.5 rounded-none text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 transition-colors"
                           title="Hapus Aset"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -2114,7 +2202,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   type="button"
                   onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
                   disabled={currentPage === 1}
-                  className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 font-bold text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                  className={`px-3 py-1.5 rounded-none border flex items-center gap-1 font-bold text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                     isDark 
                       ? 'border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200' 
                       : 'border-slate-200 bg-white hover:bg-slate-100 text-slate-700'
@@ -2124,7 +2212,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   <span>Sebelumnya</span>
                 </button>
 
-                <div className={`px-3 py-1.5 rounded-xl border text-xs font-bold ${
+                <div className={`px-3 py-1.5 rounded-none border text-xs font-bold ${
                   isDark ? 'border-slate-700 bg-slate-800 text-slate-200' : 'border-slate-200 bg-white text-slate-700'
                 }`}>
                   Halaman {currentPage} dari {totalPages}
@@ -2134,7 +2222,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   type="button"
                   onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
                   disabled={currentPage >= totalPages}
-                  className={`px-3 py-1.5 rounded-xl border flex items-center gap-1 font-bold text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                  className={`px-3 py-1.5 rounded-none border flex items-center gap-1 font-bold text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                     isDark 
                       ? 'border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200' 
                       : 'border-slate-200 bg-white hover:bg-slate-100 text-slate-700'
@@ -2161,7 +2249,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className={`w-full max-w-2xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col ${
+              className={`w-full max-w-2xl rounded-none sm:rounded-none shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col ${
                 isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white border border-slate-200'
               }`}
             >
@@ -2179,7 +2267,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   {isViewMode && (
                     <button 
                       onClick={() => setIsViewMode(false)}
-                      className="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 text-xs font-bold transition-colors flex items-center gap-1.5"
+                      className="px-3 py-1.5 rounded-none bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 text-xs font-bold transition-colors flex items-center gap-1.5"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                       <span className="hidden sm:inline">Edit</span>
@@ -2187,7 +2275,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   )}
                   <button 
                     onClick={() => setShowModal(false)}
-                    className="p-1.5 sm:p-2 rounded-xl hover:bg-slate-200/50 transition-colors"
+                    className="p-1.5 sm:p-2 rounded-none hover:bg-slate-200/50 transition-colors"
                   >
                     <X className="w-5 h-5 text-slate-400" />
                   </button>
@@ -2198,16 +2286,16 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
               {isViewMode && editingAsset ? (
                 <div className="p-4 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5 text-sm">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className={`p-3 rounded-2xl flex-shrink-0 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                    <div className={`p-3 rounded-none flex-shrink-0 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
                       {getCategoryIcon(editingAsset.category)}
                     </div>
                     <div>
                       <h3 className="font-bold text-lg">{editingAsset.name || editingAsset.category}</h3>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                        <span className="px-2 py-0.5 rounded-none text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                           {editingAsset.category}
                         </span>
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${
+                        <span className={`px-2 py-0.5 rounded-none text-[10px] font-black border ${
                           (editingAsset.budget_type || 'Capex') === 'Opex'
                             ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
                             : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
@@ -2216,7 +2304,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                         </span>
                         {getStatusBadge(editingAsset.status)}
                         {Boolean(editingAsset.is_issued) && (
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-none text-[10px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
                             <AlertTriangle className="w-3 h-3 text-amber-500" />
                             ISSUED (OPERASIONAL)
                           </span>
@@ -2226,7 +2314,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   </div>
 
                   {Boolean(editingAsset.is_issued) && (
-                    <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-1">
+                    <div className="p-3.5 rounded-none bg-amber-500/10 border border-amber-500/30 text-xs space-y-1">
                       <div className="flex items-center gap-1.5 font-black uppercase text-[10px] tracking-wider text-amber-700 dark:text-amber-400">
                         <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                         Status Penugasan Issued Operasional
@@ -2237,7 +2325,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     </div>
                   )}
 
-                  <div className={`p-4 rounded-2xl grid grid-cols-1 sm:grid-cols-2 gap-4 ${
+                  <div className={`p-4 rounded-none grid grid-cols-1 sm:grid-cols-2 gap-4 ${
                     isDark ? 'bg-slate-800/40 border border-slate-800' : 'bg-slate-50 border border-slate-100'
                   }`}>
                     <div>
@@ -2262,7 +2350,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     </div>
                   </div>
 
-                  <div className={`p-4 rounded-2xl grid grid-cols-1 sm:grid-cols-2 gap-4 ${
+                  <div className={`p-4 rounded-none grid grid-cols-1 sm:grid-cols-2 gap-4 ${
                     isDark ? 'bg-slate-800/40 border border-slate-800' : 'bg-slate-50 border border-slate-100'
                   }`}>
                     <div>
@@ -2284,7 +2372,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   </div>
 
                   {(editingAsset.notes || editingAsset.condition) && (
-                    <div className={`p-4 rounded-2xl space-y-3 ${
+                    <div className={`p-4 rounded-none space-y-3 ${
                       isDark ? 'bg-slate-800/40 border border-slate-800' : 'bg-slate-50 border border-slate-100'
                     }`}>
                       {editingAsset.condition && (
@@ -2322,7 +2410,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                           device_code: editingAsset ? prev.device_code : autoDeviceCode
                         }));
                       }}
-                      className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full px-3.5 py-1.5 sm:py-2 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                       }`}
                     >
@@ -2348,7 +2436,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                             }));
                             toast.success(`Kode dibuat: ${newCode}`);
                           }}
-                          className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold hover:bg-emerald-500/20 transition-all cursor-pointer"
+                          className="text-[9px] px-1.5 py-0.5 rounded-none bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold hover:bg-emerald-500/20 transition-all cursor-pointer"
                           title="Generate Ulang Kode Otomatis dengan KDK"
                         >
                           ⚡ Otomatis
@@ -2362,7 +2450,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       placeholder="e.g. PCKDK-001"
                       value={formData.device_code}
                       onChange={(e) => setFormData({...formData, device_code: e.target.value})}
-                      className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full px-3.5 py-1.5 sm:py-2 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                       }`}
                     />
@@ -2379,7 +2467,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       placeholder="e.g. AST-PCKDK-001 (opsional)"
                       value={formData.asset_id}
                       onChange={(e) => setFormData({...formData, asset_id: e.target.value})}
-                      className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full px-3.5 py-1.5 sm:py-2 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                       }`}
                     />
@@ -2396,7 +2484,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       placeholder="e.g. Laptop Lenovo Thinkpad (opsional)"
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full px-3.5 py-1.5 sm:py-2 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                       }`}
                     />
@@ -2410,7 +2498,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       placeholder="e.g. Lenovo, Epson"
                       value={formData.brand}
                       onChange={(e) => setFormData({...formData, brand: e.target.value})}
-                      className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full px-3.5 py-1.5 sm:py-2 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                       }`}
                     />
@@ -2424,7 +2512,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       placeholder="e.g. SN123456789"
                       value={formData.serial_number}
                       onChange={(e) => setFormData({...formData, serial_number: e.target.value})}
-                      className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full px-3.5 py-1.5 sm:py-2 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                       }`}
                     />
@@ -2438,7 +2526,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       rows={2}
                       value={formData.specs}
                       onChange={(e) => setFormData({...formData, specs: e.target.value})}
-                      className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full px-3.5 py-1.5 sm:py-2 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                       }`}
                     />
@@ -2461,7 +2549,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                             user_index: selectedUser && selectedUser.employee_index ? selectedUser.employee_index : (userName ? prev.user_index : '')
                           }));
                         }}
-                        className={`w-full pl-9 pr-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                        className={`w-full pl-9 pr-3.5 py-1.5 sm:py-2 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                           isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                         }`}
                       >
@@ -2489,7 +2577,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       placeholder="e.g. 1001"
                       value={formData.user_index}
                       onChange={(e) => setFormData({...formData, user_index: e.target.value})}
-                      className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full px-3.5 py-1.5 sm:py-2 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         formData.assigned_to ? 'opacity-70 cursor-not-allowed bg-slate-200/50 dark:bg-slate-800/50' : ''
                       } ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
@@ -2502,28 +2590,40 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     <div className="flex items-center justify-between">
                       <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">Departemen</label>
                       {Boolean(formData.assigned_to) && (
-                        <span className="text-[9px] font-bold text-amber-500 uppercase tracking-wider flex items-center gap-1">
-                          🔒 Terkunci
-                        </span>
+                        isDepartmentLocked ? (
+                          <span className="text-[9px] font-bold text-amber-500 uppercase tracking-wider flex items-center gap-1">
+                            🔒 Terkunci
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                            🔓 Dapat Dipilih ({activeUserDeptOptions.length} Bagian)
+                          </span>
+                        )
                       )}
                     </div>
                     <div className="relative">
                       <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <select 
-                        disabled={Boolean(formData.assigned_to)}
+                        disabled={isDepartmentLocked}
                         value={formData.department}
                         onChange={(e) => setFormData({...formData, department: e.target.value})}
-                        className={`w-full pl-9 pr-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
-                          formData.assigned_to ? 'opacity-70 cursor-not-allowed bg-slate-200/50 dark:bg-slate-800/50' : ''
+                        className={`w-full pl-9 pr-3.5 py-1.5 sm:py-2 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                          isDepartmentLocked ? 'opacity-70 cursor-not-allowed bg-slate-200/50 dark:bg-slate-800/50' : ''
                         } ${
                           isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                         }`}
                       >
                         <option value="">Pilih Departemen...</option>
-                        {masterDepartments.map(dept => (
-                          <option key={dept} value={dept}>{dept}</option>
-                        ))}
-                        {formData.department && !masterDepartments.includes(formData.department) && (
+                        {formData.assigned_to ? (
+                          activeUserDeptOptions.map(opt => (
+                            <option key={`user-opt-${opt}`} value={opt}>{opt}</option>
+                          ))
+                        ) : (
+                          masterDepartments.map(dept => (
+                            <option key={`master-dept-${dept}`} value={dept}>{dept}</option>
+                          ))
+                        )}
+                        {formData.department && !activeUserDeptOptions.includes(formData.department) && !masterDepartments.includes(formData.department) && (
                           <option value={formData.department}>{formData.department}</option>
                         )}
                       </select>
@@ -2536,7 +2636,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     <select 
                       value={formData.usage_status}
                       onChange={(e) => setFormData({...formData, usage_status: e.target.value})}
-                      className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full px-3.5 py-1.5 sm:py-2 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                       }`}
                     >
@@ -2551,7 +2651,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     <select 
                       value={formData.budget_type}
                       onChange={(e) => setFormData({...formData, budget_type: e.target.value})}
-                      className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full px-3.5 py-1.5 sm:py-2 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                       }`}
                     >
@@ -2567,7 +2667,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       type="date" 
                       value={formData.purchase_date}
                       onChange={(e) => setFormData({...formData, purchase_date: e.target.value})}
-                      className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full px-3.5 py-1.5 sm:py-2 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                       }`}
                     />
@@ -2578,7 +2678,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     {(() => {
                       const dep = calculateAssetDepreciation(formData.purchase_date);
                       return (
-                        <div className={`p-3.5 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                        <div className={`p-3.5 rounded-none border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-1.5">
                               <Clock className="w-4 h-4 text-emerald-500" />
@@ -2586,7 +2686,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                                 Estimasi Penyusutan (Standar 4 Tahun)
                               </span>
                             </div>
-                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${dep.badgeClass}`}>
+                            <span className={`px-2.5 py-0.5 rounded-none text-[10px] font-extrabold border ${dep.badgeClass}`}>
                               {dep.status}
                             </span>
                           </div>
@@ -2627,7 +2727,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     <select 
                       value={formData.status}
                       onChange={(e) => setFormData({...formData, status: e.target.value})}
-                      className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full px-3.5 py-1.5 sm:py-2 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                       }`}
                     >
@@ -2639,13 +2739,13 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   </div>
 
                   {/* Checkbox Issued (Fasilitas Khusus Operasional) */}
-                  <div className="sm:col-span-2 p-3.5 rounded-2xl border border-amber-500/30 bg-amber-500/5 space-y-2">
+                  <div className="sm:col-span-2 p-3.5 rounded-none border border-amber-500/30 bg-amber-500/5 space-y-2">
                     <label className="flex items-center gap-2.5 cursor-pointer select-none">
                       <input 
                         type="checkbox"
                         checked={!!formData.is_issued}
                         onChange={(e) => setFormData({...formData, is_issued: e.target.checked})}
-                        className="w-4 h-4 text-amber-600 rounded border-slate-300 focus:ring-amber-500"
+                        className="w-4 h-4 text-amber-600 rounded-none border-slate-300 focus:ring-amber-500"
                       />
                       <span className="text-xs sm:text-sm font-extrabold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
                         <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
@@ -2663,7 +2763,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                           placeholder="e.g. Persetujuan Direksi / Project Operasional..."
                           value={formData.issued_reason || ''}
                           onChange={(e) => setFormData({...formData, issued_reason: e.target.value})}
-                          className={`w-full mt-1 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold border focus:ring-2 focus:outline-none transition-all ${
+                          className={`w-full mt-1 px-3 py-2 rounded-none text-xs sm:text-sm font-semibold border focus:ring-2 focus:outline-none transition-all ${
                             isDark ? 'bg-slate-800 border-amber-500/40 text-white focus:ring-amber-500/50' : 'bg-white border-amber-300 text-slate-900 focus:ring-amber-500/30'
                           }`}
                         />
@@ -2679,7 +2779,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       rows={2}
                       value={formData.notes || ''}
                       onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                      className={`w-full px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full px-3.5 py-1.5 sm:py-2 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                       }`}
                     />
@@ -2691,7 +2791,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className={`flex-1 py-2.5 sm:py-3 rounded-xl font-bold text-xs sm:text-sm transition-all ${
+                    className={`flex-1 py-2.5 sm:py-3 rounded-none font-bold text-xs sm:text-sm transition-all ${
                       isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
@@ -2699,7 +2799,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-2.5 sm:py-3 rounded-xl text-white font-bold text-xs sm:text-sm transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2.5 sm:py-3 rounded-none text-white font-bold text-xs sm:text-sm transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-1.5"
                     style={{ backgroundColor: primaryColor }}
                   >
                     <Save className="w-4 h-4" />
@@ -2721,7 +2821,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className={`w-full max-w-xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col ${
+              className={`w-full max-w-xl rounded-none sm:rounded-none shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col ${
                 isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white border border-slate-200'
               }`}
             >
@@ -2729,7 +2829,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                 isDark ? 'border-slate-800 bg-slate-900/95 backdrop-blur-md' : 'border-slate-100 bg-white/95 backdrop-blur-md'
               }`}>
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 sm:p-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                  <div className="p-2 sm:p-2.5 rounded-none bg-amber-500/10 text-amber-600 dark:text-amber-400">
                     <ClipboardList className="w-5 h-5" />
                   </div>
                   <div>
@@ -2742,7 +2842,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowBorrowModal(false)}
-                  className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer"
+                  className="p-2 rounded-none hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -2750,7 +2850,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
 
               <form onSubmit={handleSaveBorrow} className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1">
                 {/* Integrated Searchable Device Combobox */}
-                <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-2.5">
+                <div className="p-3.5 sm:p-4 rounded-none bg-amber-500/5 border border-amber-500/20 space-y-2.5">
                   <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
                     <label className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
                       <Search className="w-3.5 h-3.5 text-amber-500" />
@@ -2762,7 +2862,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                         type="checkbox"
                         checked={onlyITDepartment}
                         onChange={(e) => setOnlyITDepartment(e.target.checked)}
-                        className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500"
+                        className="w-4 h-4 rounded-none text-amber-600 focus:ring-amber-500"
                       />
                       <span>Hanya Dept IT</span>
                     </label>
@@ -2781,7 +2881,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                         setDeviceSearchQuery(e.target.value);
                         setIsDeviceDropdownOpen(true);
                       }}
-                      className={`w-full pl-10 pr-9 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full pl-10 pr-9 py-2.5 sm:py-3 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         isDark ? 'bg-slate-900 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-amber-500/20'
                       }`}
                     />
@@ -2801,7 +2901,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
 
                     {/* Results Dropdown List */}
                     {isDeviceDropdownOpen && (
-                      <div className={`absolute left-0 right-0 z-30 mt-1.5 max-h-56 overflow-y-auto rounded-2xl border shadow-2xl ${
+                      <div className={`absolute left-0 right-0 z-30 mt-1.5 max-h-56 overflow-y-auto rounded-none border shadow-2xl ${
                         isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'
                       }`}>
                         {assets.filter(a => {
@@ -2879,7 +2979,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                                   Dept: {a.department || 'General'}
                                 </div>
                               </div>
-                              <span className={`text-[9px] font-black px-2 py-0.5 rounded border ${
+                              <span className={`text-[9px] font-black px-2 py-0.5 rounded-none border ${
                                 a.budget_type === 'Opex'
                                   ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
                                   : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
@@ -2933,7 +3033,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       placeholder="e.g. Laptop Lenovo ThinkPad"
                       value={borrowFormData.device_name}
                       onChange={(e) => setBorrowFormData({ ...borrowFormData, device_name: e.target.value })}
-                      className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full px-3.5 py-2.5 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-amber-500/20'
                       }`}
                     />
@@ -2948,7 +3048,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       placeholder="e.g. LPKDK-001"
                       value={borrowFormData.device_code}
                       onChange={(e) => setBorrowFormData({ ...borrowFormData, device_code: e.target.value })}
-                      className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full px-3.5 py-2.5 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-amber-500/20'
                       }`}
                     />
@@ -2973,7 +3073,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                         setBorrowerSearchQuery(e.target.value);
                         setIsBorrowerDropdownOpen(true);
                       }}
-                      className={`w-full pl-10 pr-9 py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full pl-10 pr-9 py-2.5 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-amber-500/20'
                       }`}
                     />
@@ -2991,7 +3091,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       </button>
                     )}
                     {isBorrowerDropdownOpen && (
-                      <div className={`absolute left-0 right-0 z-30 mt-1.5 max-h-56 overflow-y-auto rounded-2xl border shadow-2xl ${
+                      <div className={`absolute left-0 right-0 z-30 mt-1.5 max-h-56 overflow-y-auto rounded-none border shadow-2xl ${
                         isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'
                       }`}>
                         {masterUsers.filter(u => {
@@ -3059,7 +3159,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       placeholder="e.g. Budi Santoso"
                       value={borrowFormData.borrower_name}
                       onChange={(e) => setBorrowFormData({ ...borrowFormData, borrower_name: e.target.value })}
-                      className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full px-3.5 py-2.5 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-amber-500/20'
                       }`}
                     />
@@ -3074,7 +3174,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       placeholder="e.g. Marketing"
                       value={borrowFormData.borrower_department}
                       onChange={(e) => setBorrowFormData({ ...borrowFormData, borrower_department: e.target.value })}
-                      className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full px-3.5 py-2.5 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-amber-500/20'
                       }`}
                     />
@@ -3091,7 +3191,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       required
                       value={borrowFormData.borrow_date}
                       onChange={(e) => setBorrowFormData({ ...borrowFormData, borrow_date: e.target.value })}
-                      className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full px-3.5 py-2.5 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-amber-500/20'
                       }`}
                     />
@@ -3105,7 +3205,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       type="date"
                       value={borrowFormData.expected_return_date}
                       onChange={(e) => setBorrowFormData({ ...borrowFormData, expected_return_date: e.target.value })}
-                      className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                      className={`w-full px-3.5 py-2.5 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                         isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-amber-500/20'
                       }`}
                     />
@@ -3121,7 +3221,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     placeholder="e.g. Dipinjam sementara untuk presentasi client & dinas luar kota"
                     value={borrowFormData.notes}
                     onChange={(e) => setBorrowFormData({ ...borrowFormData, notes: e.target.value })}
-                    className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium border focus:ring-2 focus:outline-none transition-all ${
+                    className={`w-full px-3.5 py-2.5 rounded-none text-xs sm:text-sm font-medium border focus:ring-2 focus:outline-none transition-all ${
                       isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-amber-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-amber-500/20'
                     }`}
                   />
@@ -3144,7 +3244,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     </button>
                   </div>
 
-                  <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-1 bg-white dark:bg-slate-950 touch-none flex justify-center">
+                  <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-none p-1 bg-white dark:bg-slate-950 touch-none flex justify-center">
                     <canvas
                       ref={canvasRef}
                       width={480}
@@ -3156,7 +3256,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       onTouchStart={startDrawing}
                       onTouchMove={draw}
                       onTouchEnd={stopDrawing}
-                      className="w-full h-32 cursor-crosshair rounded-xl bg-slate-50 dark:bg-slate-900/80"
+                      className="w-full h-32 cursor-crosshair rounded-none bg-slate-50 dark:bg-slate-900/80"
                     />
                   </div>
                   <p className="text-[10px] text-slate-400 italic">
@@ -3168,7 +3268,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowBorrowModal(false)}
-                    className={`flex-1 py-3 rounded-xl text-xs sm:text-sm font-extrabold border transition-all min-h-[44px] cursor-pointer ${
+                    className={`flex-1 py-3 rounded-none text-xs sm:text-sm font-extrabold border transition-all min-h-[44px] cursor-pointer ${
                       isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
@@ -3176,7 +3276,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs sm:text-sm font-black transition-all shadow-md shadow-amber-500/20 cursor-pointer min-h-[44px]"
+                    className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-none text-xs sm:text-sm font-black transition-all shadow-md shadow-amber-500/20 cursor-pointer min-h-[44px]"
                   >
                     Simpan Peminjaman
                   </button>
@@ -3195,7 +3295,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
               initial={{ opacity: 0, scale: 0.9, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 10 }}
-              className="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl sm:rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 text-center space-y-4"
+              className="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-none sm:rounded-none max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 text-center space-y-4"
             >
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
@@ -3204,19 +3304,19 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                 </h3>
                 <button
                   onClick={() => setShowSignaturePreview(null)}
-                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all min-h-[38px] min-w-[38px] flex items-center justify-center cursor-pointer"
+                  className="p-1.5 rounded-none text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all min-h-[38px] min-w-[38px] flex items-center justify-center cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 flex justify-center">
+              <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-none border border-slate-200 dark:border-slate-800 flex justify-center">
                 <img src={showSignaturePreview} alt="Tanda Tangan" className="max-h-48 object-contain" />
               </div>
 
               <button
                 onClick={() => setShowSignaturePreview(null)}
-                className="w-full py-3 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-xs sm:text-sm font-extrabold transition-all min-h-[44px] cursor-pointer"
+                className="w-full py-3 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-none text-xs sm:text-sm font-extrabold transition-all min-h-[44px] cursor-pointer"
               >
                 Tutup
               </button>
@@ -3232,13 +3332,13 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
               initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              className={`w-full max-w-md rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl border max-h-[90vh] overflow-y-auto ${
+              className={`w-full max-w-md rounded-none sm:rounded-none p-5 sm:p-6 shadow-2xl border max-h-[90vh] overflow-y-auto ${
                 isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-900'
               }`}
             >
               <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 mb-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 sm:p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                  <div className="p-2 sm:p-2.5 rounded-none bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                     <RotateCcw className="w-5 h-5" />
                   </div>
                   <div>
@@ -3249,14 +3349,14 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowReturnModal(false)}
-                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all min-h-[38px] min-w-[38px] flex items-center justify-center cursor-pointer"
+                  className="p-1.5 rounded-none text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all min-h-[38px] min-w-[38px] flex items-center justify-center cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Info Card */}
-              <div className={`p-4 rounded-2xl border mb-4 space-y-2.5 text-xs ${
+              <div className={`p-4 rounded-none border mb-4 space-y-2.5 text-xs ${
                 isDark ? 'bg-slate-800/50 border-slate-700/60' : 'bg-slate-50 border-slate-200'
               }`}>
                 <div className="flex justify-between items-start gap-2">
@@ -3270,7 +3370,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     )}
                   </div>
                   {returnItem.budget_type && (
-                    <span className={`text-[9px] font-black px-2 py-0.5 rounded border shrink-0 ${
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-none border shrink-0 ${
                       returnItem.budget_type === 'Opex'
                         ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
                         : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
@@ -3309,7 +3409,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                         key={person}
                         type="button"
                         onClick={() => setReceivedBy(person)}
-                        className={`py-2 px-2.5 rounded-xl text-xs font-black capitalize transition-all border text-center min-h-[40px] flex items-center justify-center cursor-pointer ${
+                        className={`py-2 px-2.5 rounded-none text-xs font-black capitalize transition-all border text-center min-h-[40px] flex items-center justify-center cursor-pointer ${
                           receivedBy.toLowerCase() === person
                             ? 'bg-emerald-500 text-white border-emerald-600 shadow-md shadow-emerald-500/20 scale-[1.02]'
                             : isDark
@@ -3329,7 +3429,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     value={receivedBy}
                     onChange={(e) => setReceivedBy(e.target.value)}
                     required
-                    className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                    className={`w-full px-3.5 py-2.5 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                       isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                     }`}
                   />
@@ -3345,7 +3445,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     value={returnDate}
                     onChange={(e) => setReturnDate(e.target.value)}
                     required
-                    className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                    className={`w-full px-3.5 py-2.5 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
                       isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                     }`}
                   />
@@ -3355,7 +3455,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowReturnModal(false)}
-                    className={`flex-1 py-3 rounded-xl text-xs sm:text-sm font-bold border transition-all min-h-[44px] cursor-pointer ${
+                    className={`flex-1 py-3 rounded-none text-xs sm:text-sm font-bold border transition-all min-h-[44px] cursor-pointer ${
                       isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
@@ -3363,7 +3463,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-extrabold rounded-xl text-xs sm:text-sm shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 transition-all min-h-[44px] cursor-pointer"
+                    className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-extrabold rounded-none text-xs sm:text-sm shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 transition-all min-h-[44px] cursor-pointer"
                   >
                     <RotateCcw className="w-4 h-4" />
                     <span>Konfirmasi Kembali</span>
@@ -3382,7 +3482,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl ${
+              className={`w-full max-w-md p-6 rounded-none border shadow-2xl ${
                 isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
               }`}
             >
@@ -3394,7 +3494,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowDeleteAllModal(false)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  className="p-1 rounded-none text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -3414,7 +3514,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     placeholder="Masukkan password root"
                     value={deleteAllPassword}
                     onChange={(e) => setDeleteAllPassword(e.target.value)}
-                    className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold border focus:ring-2 focus:outline-none transition-all ${
+                    className={`w-full px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold border focus:ring-2 focus:outline-none transition-all ${
                       isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-rose-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-rose-500/20'
                     }`}
                     autoFocus
@@ -3425,7 +3525,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowDeleteAllModal(false)}
-                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold border ${
+                    className={`flex-1 py-2.5 rounded-none text-xs font-bold border ${
                       isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
@@ -3434,7 +3534,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   <button
                     type="submit"
                     disabled={isDeletingAll}
-                    className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-rose-500/20 disabled:opacity-50"
+                    className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-none text-xs font-bold transition-all shadow-md shadow-rose-500/20 disabled:opacity-50"
                   >
                     {isDeletingAll ? 'Menghapus...' : 'Ya, Hapus Semua'}
                   </button>
@@ -3499,7 +3599,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
 
               {/* Display QR Image and Live Scan Page Card */}
               <div className="overflow-y-auto flex-1 pr-1 space-y-4">
-                <div className={`p-4 rounded-2xl border text-center flex flex-col items-center justify-center gap-2 ${
+                <div className={`p-4 rounded-xl border text-center flex flex-col items-center justify-center gap-2 ${
                   isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'
                 }`}>
                   <span className="text-[10px] font-black uppercase text-slate-400">QR Code Label</span>
@@ -3508,7 +3608,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       window.location.origin + '/?asset=' + (qrPreviewAsset.device_code || qrPreviewAsset.asset_id)
                     )}`}
                     alt="QR Code"
-                    className="w-28 h-28 p-1.5 bg-white rounded-xl shadow-md border"
+                    className="w-28 h-28 p-1.5 bg-white rounded-2xl shadow-md border"
                   />
                   <span className="font-mono text-xs font-extrabold text-blue-600 dark:text-blue-400">
                     {window.location.origin}/?asset={qrPreviewAsset.device_code || qrPreviewAsset.asset_id}
@@ -3527,7 +3627,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
 
                   <div className="max-h-[350px] overflow-y-auto">
                     <div className="p-4 scale-95 transform-gpu">
-                      <div className={`p-4 sm:p-5 rounded-2xl border shadow-lg ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                      <div className={`p-4 sm:p-5 rounded-xl border shadow-lg ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
                         <div className="flex items-center gap-3 mb-4">
                           <div className={`p-3 rounded-xl ${isDark ? 'bg-slate-800 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
                             {getCategoryIcon(qrPreviewAsset.category)}
@@ -3535,12 +3635,12 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                           <div>
                             <h4 className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{qrPreviewAsset.name || qrPreviewAsset.category}</h4>
                             <div className="flex items-center gap-2 mt-1">
-                              <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
+                              <span className={`px-2 py-0.5 rounded-xl text-[9px] font-bold ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
                                 {qrPreviewAsset.category}
                               </span>
                               {getStatusBadge(qrPreviewAsset.status)}
                               {Boolean(qrPreviewAsset.is_issued) && (
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-0.5">
+                                <span className="px-1.5 py-0.5 rounded-xl text-[9px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-0.5">
                                   <AlertTriangle className="w-2.5 h-2.5 text-amber-500" /> ISSUED
                                 </span>
                               )}
@@ -3596,7 +3696,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                           {(() => {
                             const dep = calculateAssetDepreciation(qrPreviewAsset.purchase_date);
                             return (
-                              <div className={`mt-3 p-3.5 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50/80 border-slate-200/80'} shadow-2xs space-y-2.5`}>
+                              <div className={`mt-3 p-3.5 rounded-xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50/80 border-slate-200/80'} shadow-2xs space-y-2.5`}>
                                 <div className="flex items-center justify-between gap-2">
                                   <div className="flex items-center gap-1.5 min-w-0">
                                     <Clock className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
@@ -3604,7 +3704,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                                       ESTIMASI PENYUSUTAN (STANDAR 4 TAHUN)
                                     </span>
                                   </div>
-                                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border shrink-0 ${dep.badgeClass}`}>
+                                  <span className={`px-2 py-0.5 rounded-xl text-[9px] font-bold border shrink-0 ${dep.badgeClass}`}>
                                     {dep.status}
                                   </span>
                                 </div>
@@ -3655,7 +3755,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     const url = `/?asset=${encodeURIComponent(qrPreviewAsset.device_code || qrPreviewAsset.asset_id)}`;
                     window.open(url, '_blank');
                   }}
-                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-none text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5"
                 >
                   <ExternalLink className="w-4 h-4" />
                   <span>Buka Tab Baru</span>

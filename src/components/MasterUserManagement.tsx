@@ -42,11 +42,12 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
 }) => {
   const [masterUserName, setMasterUserName] = React.useState('');
   const [masterUserDept, setMasterUserDept] = React.useState('');
+  const [masterUserSubDept, setMasterUserSubDept] = React.useState('');
   const [masterUserPhone, setMasterUserPhone] = React.useState('');
   const [masterUserIndex, setMasterUserIndex] = React.useState('');
   const [masterUserEmail, setMasterUserEmail] = React.useState('');
   const [masterUserJenisPiranti, setMasterUserJenisPiranti] = React.useState('(Tidak Ada)');
-    const [masterUserJabatan, setMasterUserJabatan] = React.useState('');
+  const [masterUserJabatan, setMasterUserJabatan] = React.useState('');
   const [editingMasterUser, setEditingMasterUser] = React.useState<any | null>(null);
   const [masterUserSearch, setMasterUserSearch] = React.useState('');
   const [addingType, setAddingType] = React.useState<'master-user' | null>(null);
@@ -70,6 +71,7 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
     return masterUsers.filter(user => 
       (user.full_name || '').toLowerCase().includes(term) ||
       (user.department || '').toLowerCase().includes(term) ||
+      (user.sub_department || '').toLowerCase().includes(term) ||
       (user.employee_index || '').toLowerCase().includes(term) ||
       (user.jenis_piranti || '').toLowerCase().includes(term) 
     );
@@ -87,24 +89,27 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
       {
         'Nama Lengkap': 'Budi Santoso',
         'Bagian / Departemen': 'HRGA',
+        'Sub Bagian': 'HR',
         'No. Telepon': '081234567890',
         'Index Karyawan': '12345',
         'Jenis Piranti': 'Komputer',
         'Email': 'budi@example.com',
-        'Jabatan': 'Staff GA'
+        'Jabatan': 'Staff HR'
       },
       {
         'Nama Lengkap': 'Siti Aminah',
-        'Bagian / Departemen': 'CE Business',
+        'Bagian / Departemen': 'HRGA',
+        'Sub Bagian': 'GA',
         'No. Telepon': '081234567891',
         'Index Karyawan': '67890',
         'Jenis Piranti': 'Laptop',
         'Email': 'siti@example.com',
-        'Jabatan': 'Supervisor CE'
+        'Jabatan': 'Supervisor GA'
       },
       {
         'Nama Lengkap': 'Andi Wijaya',
         'Bagian / Departemen': 'Fleet Business',
+        'Sub Bagian': '-',
         'No. Telepon': '081234567892',
         'Index Karyawan': '11223',
         'Jenis Piranti': '(Tidak Ada)',
@@ -306,6 +311,7 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
     const exportData = masterUsers.map(user => ({
       'Nama Lengkap': user.full_name || '',
       'Bagian / Departemen': user.department || '',
+      'Sub Bagian': user.sub_department || '-',
       'No. Telepon': user.phone || '',
       'Index Karyawan': user.employee_index || '',
       'Jenis Piranti': user.jenis_piranti || '(Tidak Ada)',
@@ -332,11 +338,11 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
         await api.updateMasterUser(editingMasterUser.id, {
           full_name: masterUserName,
           department: masterUserDept,
+          sub_department: masterUserSubDept,
           phone: masterUserPhone,
           employee_index: masterUserIndex,
           email: masterUserEmail || null,
           jenis_piranti: masterUserJenisPiranti,
-          
           jabatan: masterUserJabatan
         });
         setAddingType(null);
@@ -348,11 +354,11 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
         await api.addMasterUser({ 
           full_name: masterUserName, 
           department: masterUserDept, 
+          sub_department: masterUserSubDept,
           phone: masterUserPhone,
           employee_index: masterUserIndex,
           email: masterUserEmail || null,
           jenis_piranti: masterUserJenisPiranti,
-          
           jabatan: masterUserJabatan
         });
         setAddingType(null);
@@ -368,11 +374,12 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
   const clearForm = () => {
     setMasterUserName('');
     setMasterUserDept('');
+    setMasterUserSubDept('');
     setMasterUserPhone('');
     setMasterUserIndex('');
     setMasterUserEmail('');
     setMasterUserJenisPiranti('(Tidak Ada)');
-        setMasterUserJabatan('');
+    setMasterUserJabatan('');
   };
 
   const handleOpenAddMasterUser = () => {
@@ -394,11 +401,12 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
     setEditingMasterUser(user);
     setMasterUserName(user.full_name || '');
     setMasterUserDept(user.department || '');
+    setMasterUserSubDept(user.sub_department || '');
     setMasterUserPhone(user.phone || '');
     setMasterUserIndex(user.employee_index || '');
     setMasterUserEmail(user.email || '');
     setMasterUserJenisPiranti(normalizeJenisPiranti(user.jenis_piranti));
-        setMasterUserJabatan(user.jabatan || '');
+    setMasterUserJabatan(user.jabatan || '');
     setAddingType('master-user');
   };
 
@@ -558,7 +566,7 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Bagian / Departemen (Opsional)</label>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Bagian Utama (Opsional)</label>
                     <select 
                       className={`w-full px-3 py-2.5 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                       value={masterUserDept}
@@ -571,6 +579,19 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
                     </select>
                   </div>
                   <div>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Sub Bagian / Sub Dept (Opsional)</label>
+                    <input 
+                      type="text"
+                      placeholder="Contoh: HR, GA..."
+                      className={`w-full px-3 py-2.5 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                      value={masterUserSubDept}
+                      onChange={e => setMasterUserSubDept(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
                     <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">No. Telepon (Opsional)</label>
                     <input 
                       type="tel"
@@ -580,9 +601,6 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
                       onChange={e => setMasterUserPhone(e.target.value)}
                     />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Index Karyawan (Opsional)</label>
                     <input 
@@ -593,6 +611,9 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
                       onChange={e => setMasterUserIndex(e.target.value)}
                     />
                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Jenis Piranti (Opsional)</label>
                     <select 
@@ -606,21 +627,6 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
                       ))}
                     </select>
                   </div>
-                </div>
-                
-                <div className="grid grid-cols-1 gap-3">
-                  <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Email (Opsional)</label>
-                    <input 
-                      type="email"
-                      placeholder="Alamat Email (opsional)"
-                      className={`w-full px-3 py-2.5 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
-                      value={masterUserEmail}
-                      onChange={e => setMasterUserEmail(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-4">
                   <div>
                     <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Jabatan (Opsional)</label>
                     <select 
@@ -638,6 +644,19 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
                         <option value={masterUserJabatan}>{masterUserJabatan}</option>
                       )}
                     </select>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Email (Opsional)</label>
+                    <input 
+                      type="email"
+                      placeholder="Alamat Email (opsional)"
+                      className={`w-full px-3 py-2.5 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                      value={masterUserEmail}
+                      onChange={e => setMasterUserEmail(e.target.value)}
+                    />
                   </div>
                 </div>
                 
@@ -711,7 +730,14 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
                       </div>
                     </td>
                     <td className="px-4 py-3 text-xs font-medium text-slate-600 dark:text-slate-300">
-                      {user.department || '-'}
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-semibold">{user.department || '-'}</span>
+                        {user.sub_department && user.sub_department !== '-' && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-100/70 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold w-fit">
+                            Sub: {user.sub_department}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-xs font-medium text-slate-600 dark:text-slate-300">
                       {user.phone || '-'}

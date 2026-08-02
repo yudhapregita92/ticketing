@@ -109,7 +109,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   }, [tickets]);
 
   // Using specific colors from the screenshot
-  const cardClass = `${isDark ? 'bg-[#1e2330] border-[#2a3142]' : 'bg-white border-slate-200'} border rounded-md p-5 shadow-sm`;
+  const cardClass = `${isDark ? 'bg-[#1e2330] border-[#2a3142]' : 'bg-white border-slate-200'} border rounded-none p-5 shadow-sm`;
   const textMuted = isDark ? 'text-slate-400' : 'text-slate-500';
   const textMain = isDark ? 'text-white' : 'text-slate-900';
 
@@ -126,7 +126,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: Semua Tiket */}
-        <div className={`p-4 sm:p-5 rounded-md sm:rounded-md border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+        <div className={`p-4 sm:p-5 rounded-none border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
           <div className="flex flex-col h-full justify-between gap-3 sm:gap-4">
             <p className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>
               Semua Tiket
@@ -135,13 +135,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               {stats.total}
             </h3>
           </div>
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-none bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
             <Ticket className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
         </div>
 
         {/* Card 2: Baru */}
-        <div className={`p-4 sm:p-5 rounded-md sm:rounded-md border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+        <div className={`p-4 sm:p-5 rounded-none border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
           <div className="flex flex-col h-full justify-between gap-3 sm:gap-4">
             <p className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>
               Tiket Baru
@@ -150,13 +150,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               {stats.baru}
             </h3>
           </div>
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-none bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
             <CheckCircle2 className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
         </div>
 
         {/* Card 3: Progres */}
-        <div className={`p-4 sm:p-5 rounded-md sm:rounded-md border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+        <div className={`p-4 sm:p-5 rounded-none border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
           <div className="flex flex-col h-full justify-between gap-3 sm:gap-4">
             <p className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>
               Tiket Progres
@@ -165,13 +165,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               {stats.progres}
             </h3>
           </div>
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-md bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center flex-shrink-0">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-none bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center flex-shrink-0">
             <Activity className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
         </div>
 
         {/* Card 4: Reopen */}
-        <div className={`p-4 sm:p-5 rounded-md sm:rounded-md border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+        <div className={`p-4 sm:p-5 rounded-none border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
           <div className="flex flex-col h-full justify-between gap-3 sm:gap-4">
             <p className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>
               Tiket Reopen
@@ -180,7 +180,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               {stats.reopen}
             </h3>
           </div>
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-none bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0">
             <AlertCircle className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
         </div>
@@ -304,7 +304,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {recentTickets.map(ticket => (
               <div key={ticket.id} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                  <div className={`w-8 h-8 rounded-none flex items-center justify-center text-[10px] font-bold ${
                     ticket.status === 'New' ? 'bg-indigo-500/10 text-indigo-500' :
                     ticket.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' :
                     ticket.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-500' :
@@ -317,7 +317,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <div className={`text-[10px] ${textMuted}`}>{ticket.name}</div>
                   </div>
                 </div>
-                <div className={`px-2 py-0.5 rounded text-[9px] font-bold ${
+                <div className={`px-2 py-0.5 rounded-none text-[9px] font-bold ${
                   ticket.status === 'New' ? 'bg-indigo-500/10 text-indigo-500' :
                   ticket.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' :
                   ticket.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-500' :

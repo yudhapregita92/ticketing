@@ -1269,13 +1269,13 @@ export default function App() {
    */
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'New': return 'bg-indigo-500 text-white border-indigo-600';
-      case 'In Progress': return 'bg-blue-500 text-white border-blue-600';
-      case 'Completed': return 'bg-emerald-600 text-white border-emerald-700';
-      case 'Closed': return 'bg-slate-700 text-white border-slate-600';
-      case 'Re-opened': return 'bg-amber-600 text-white border-amber-700';
-      case 'Cancelled': return 'bg-rose-500 text-white border-rose-600';
-      default: return 'bg-slate-500 text-white border-slate-600';
+      case 'New': return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800';
+      case 'In Progress': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-800';
+      case 'Completed': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
+      case 'Closed': return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700';
+      case 'Re-opened': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 border-amber-200 dark:border-amber-800';
+      case 'Cancelled': return 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300 border-rose-200 dark:border-rose-800';
+      default: return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700';
     }
   };
 
@@ -1734,7 +1734,7 @@ export default function App() {
               />
             )}
             {adminThemeLayout === 'executive' && adminUser && (
-              <div className={`hidden lg:flex items-center gap-1.5 p-2 ${themeClasses.card} rounded-md border ${themeClasses.border} overflow-x-auto shadow-sm no-scrollbar`}>
+              <div className={`hidden lg:flex items-center gap-1.5 p-2 ${themeClasses.card} rounded-none border-t-0 -mt-2 lg:-mt-3 border ${themeClasses.border} overflow-x-auto shadow-sm no-scrollbar`}>
                 <button
                   onClick={() => setViewMode('dashboard')}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
@@ -2162,11 +2162,12 @@ export default function App() {
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowForm(true)}
-                className={`w-full font-bold py-3 rounded-md text-xs transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 ${
+                className={`w-full font-bold py-3 px-2 rounded-md text-xs transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 ${
                   isDark ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-white text-slate-900 hover:bg-slate-50'
                 }`}
               >
                 <motion.div
+                  className="shrink-0"
                   animate={{ 
                     scale: [1, 1.2, 1],
                     opacity: [1, 0.8, 1]
@@ -2175,7 +2176,7 @@ export default function App() {
                 >
                   <Send className="w-4 h-4 text-emerald-500" />
                 </motion.div>
-                Buat Tiket Sekarang
+                <span className="whitespace-nowrap">Buat Tiket Sekarang</span>
               </motion.button>
             </section>
             
