@@ -206,6 +206,23 @@ export const NewTicketModal = React.memo(({
         ctx.fillText(text2, padding + 8, canvas.height - bgHeight + fontSize * 3 + padding);
       }
       
+      // Draw watermark on canvas for face photo attachment
+      if (cameraTarget === 'face_photo') {
+        const padding = 10;
+        const fontSize = Math.max(14, Math.floor(canvas.width / 25));
+        ctx.font = `bold ${fontSize}px sans-serif`;
+        const text = `IT Helpdesk K3DK`;
+        const metrics = ctx.measureText(text);
+        const bgWidth = metrics.width + padding * 2;
+        const bgHeight = fontSize + padding * 2;
+        
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.fillRect(canvas.width - bgWidth - 8, canvas.height - bgHeight - 8, bgWidth, bgHeight);
+        
+        ctx.fillStyle = 'white';
+        ctx.fillText(text, canvas.width - bgWidth - 8 + padding, canvas.height - bgHeight - 8 + fontSize + padding / 2);
+      }
+
       // Compress to stay under 40KB
       let quality = 0.6;
       let base64 = canvas.toDataURL('image/jpeg', quality);
@@ -752,6 +769,13 @@ export const NewTicketModal = React.memo(({
                         : (scanComplete ? 'Foto anda telah tersimpan di sistem' : 'Mohon hadap ke kamera dan paskan dengan garis')
                       }
                     </p>
+                    
+                    {!scanComplete && cameraTarget === 'face_photo' && (
+                      <div className="mt-2 mb-2 text-[10px] text-slate-300 bg-slate-900/60 p-2 rounded-lg text-center font-medium leading-relaxed max-w-[280px] mx-auto backdrop-blur-sm border border-slate-700">
+                        <span className="text-emerald-400 font-bold block mb-0.5">Watermark Otomatis: "IT Helpdesk K3DK"</span>
+                        Akan ditambahkan pada foto untuk melindungi privasi agar tidak disalahgunakan.
+                      </div>
+                    )}
                     
                     {!scanComplete && (
                       <div className="flex flex-col sm:flex-row justify-center items-center gap-3 mt-4 w-full px-4 max-w-[360px] mx-auto">

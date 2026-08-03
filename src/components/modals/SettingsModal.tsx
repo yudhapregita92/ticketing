@@ -3220,6 +3220,31 @@ export const SettingsModal = React.memo(({
                     </div>
                   </div>
 
+                  {/* GPS Tracking Settings */}
+                  <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <h3 className="text-xs font-black capitalize tracking-widest text-slate-400">Jam Kerja GPS Tracker Tim IT</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Jam Mulai</label>
+                        <input 
+                          type="time"
+                          className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                          value={appSettings.gps_working_hours_start || '07:45'}
+                          onChange={e => setAppSettings({...appSettings, gps_working_hours_start: e.target.value})}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Jam Selesai</label>
+                        <input 
+                          type="time"
+                          className={`w-full px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                          value={appSettings.gps_working_hours_end || '16:00'}
+                          onChange={e => setAppSettings({...appSettings, gps_working_hours_end: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   {/* System Maintenance */}
                   <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                     <h3 className="text-xs font-black capitalize tracking-widest text-slate-400">Pemeliharaan Sistem</h3>

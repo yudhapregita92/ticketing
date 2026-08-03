@@ -115,6 +115,8 @@ export interface ISettings {
   card_layout?: string;
   sla_critical_hours?: number;
   sla_delayed_hours?: number;
+  gps_working_hours_start?: string;
+  gps_working_hours_end?: string;
   yudha_auto_respond_enabled?: boolean | string;
   yudha_auto_respond_categories?: string | string[];
   yudha_auto_respond_delay?: number;

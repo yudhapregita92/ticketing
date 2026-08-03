@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { api } from '../services/api';
 
-export function useAutoLocationSync(currentUser: any) {
+export function useAutoLocationSync(currentUser: any, appSettings?: any) {
   useEffect(() => {
     if (!currentUser || !currentUser.username) return;
 
@@ -9,10 +9,39 @@ export function useAutoLocationSync(currentUser: any) {
     const allowedRoles = ['Super Admin', 'Staff IT Support', 'Staff App Support', 'IT Support', 'IT Staff'];
     const userRole = currentUser.role || '';
     const isAllowed = allowedRoles.some(r => userRole.toLowerCase().includes(r.toLowerCase())) || ['yudha', 'bayu', 'dita'].includes(currentUser.username.toLowerCase());
-
+    
     if (!isAllowed) return;
 
+    const checkIsWorkingHours = () => {
+      const startStr = appSettings?.gps_working_hours_start || '07:45';
+      const endStr = appSettings?.gps_working_hours_end || '16:00';
+      
+      const now = new Date();
+      const currentHours = now.getHours();
+      const currentMinutes = now.getMinutes();
+      const currentTotalMinutes = currentHours * 60 + currentMinutes;
+
+      const [startH, startM] = startStr.split(':').map(Number);
+      const startTotalMinutes = (startH * 60) + (startM || 0);
+
+      const [endH, endM] = endStr.split(':').map(Number);
+      const endTotalMinutes = (endH * 60) + (endM || 0);
+
+      // We might want to ignore weekends (Sunday=0, Saturday=6)
+      const day = now.getDay();
+      if (day === 0 || day === 6) {
+        return false;
+      }
+
+      if (currentTotalMinutes >= startTotalMinutes && currentTotalMinutes <= endTotalMinutes) {
+        return true;
+      }
+      return false;
+    };
+
     const syncLocation = async () => {
+      if (!checkIsWorkingHours()) return;
+      
       if (!navigator.geolocation) return;
 
       navigator.geolocation.getCurrentPosition(
@@ -22,8 +51,8 @@ export function useAutoLocationSync(currentUser: any) {
             const lng = pos.coords.longitude;
             const accuracy = pos.coords.accuracy;
             const speed = pos.coords.speed || 0;
-
             let battLevel = 85;
+
             if ('getBattery' in navigator) {
               try {
                 const batt: any = await (navigator as any).getBattery();
@@ -63,5 +92,5 @@ export function useAutoLocationSync(currentUser: any) {
     const interval = setInterval(syncLocation, 3 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [currentUser]);
+  }, [currentUser, appSettings]);
 }

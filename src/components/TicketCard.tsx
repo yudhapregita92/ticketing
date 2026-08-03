@@ -36,7 +36,7 @@ interface TicketCardProps {
   onForwardWhatsApp?: (ticket: ITicket) => void;
 }
 
-export const TicketCard: React.FC<TicketCardProps> = ({
+export const TicketCard: React.FC<TicketCardProps> = React.memo(({
   ticket,
   index,
   isDark,
@@ -340,4 +340,4 @@ export const TicketCard: React.FC<TicketCardProps> = ({
       </div>
     </motion.div>
   );
-};
+});

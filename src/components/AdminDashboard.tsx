@@ -143,14 +143,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {/* Card 2: Baru */}
         <div className={`p-4 sm:p-5 rounded-none border shadow-sm flex items-center justify-between ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
           <div className="flex flex-col h-full justify-between gap-3 sm:gap-4">
-            <p className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>
+            <p className={`text-[10px] font-black uppercase tracking-wider flex items-center gap-2 ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>
               Tiket Baru
+              {stats.baru > 0 && (
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+              )}
             </p>
             <h3 className="text-2xl sm:text-3xl font-black leading-none text-emerald-600 dark:text-emerald-400">
               {stats.baru}
             </h3>
           </div>
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-none bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-none bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 relative">
+            {stats.baru > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+              </span>
+            )}
             <CheckCircle2 className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
         </div>

@@ -215,20 +215,24 @@ export const TeamLocationTracker: React.FC<TeamLocationTrackerProps> = ({
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                width: 44px;
-                height: 44px;
+                width: 42px;
+                height: 42px;
                 border-radius: 50%;
-                background: ${isSelected ? '#3b82f6' : '#0f172a'};
+                background: ${isSelected ? '#2563eb' : '#ffffff'};
                 border: 3px solid ${markerColor};
-                box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-                color: white;
-                font-weight: 900;
-                font-size: 13px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.25);
                 cursor: pointer;
                 transition: transform 0.2s ease;
-                transform: ${isSelected ? 'scale(1.25)' : 'scale(1)'};
+                transform: ${isSelected ? 'scale(1.2)' : 'scale(1)'};
               ">
-                ${initials}
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M4 20C4 16.8 6.8 15 12 15C17.2 15 20 16.8 20 20" fill="${isSelected ? '#ffffff' : '#3b82f6'}"/>
+                  <path d="M9 20V16.5M15 20V16.5" stroke="#f59e0b" strokeWidth="1.5"/>
+                  <circle cx="12" cy="11.5" r="3.2" fill="#fdba74"/>
+                  <path d="M6.5 10.2C6.5 6.8 8.8 4.5 12 4.5C15.2 4.5 17.5 6.8 17.5 10.2H6.5Z" fill="#ffffff" stroke="#0f172a" strokeWidth="1.2"/>
+                  <rect x="5" y="9.5" width="14" height="2.2" rx="1" fill="#ffffff" stroke="#0f172a" strokeWidth="1"/>
+                  <path d="M11 4.8V7M13 4.8V7" stroke="#94a3b8" strokeWidth="1" strokeLinecap="round"/>
+                </svg>
                 <span style="
                   position: absolute;
                   top: -2px;
@@ -238,11 +242,12 @@ export const TeamLocationTracker: React.FC<TeamLocationTrackerProps> = ({
                   border-radius: 50%;
                   background: ${markerColor};
                   border: 2px solid white;
+                  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
                 "></span>
               </div>
             `,
-            iconSize: [44, 44],
-            iconAnchor: [22, 22],
+            iconSize: [42, 42],
+            iconAnchor: [21, 21],
           });
 
           const marker = L.marker([loc.latitude, loc.longitude], { icon: customIcon }).addTo(map);
@@ -701,8 +706,15 @@ export const TeamLocationTracker: React.FC<TeamLocationTrackerProps> = ({
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2.5 min-w-0">
                           <div className="relative">
-                            <div className="w-9 h-9 rounded-full bg-slate-900 dark:bg-slate-700 text-white font-extrabold flex items-center justify-center text-xs shrink-0 border border-slate-700">
-                              {loc.full_name ? loc.full_name.slice(0, 2).toUpperCase() : loc.username.slice(0, 2).toUpperCase()}
+                            <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 overflow-hidden relative shadow-sm">
+                              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 20C4 16.8 6.8 15 12 15C17.2 15 20 16.8 20 20" fill="#3b82f6"/>
+                                <path d="M9 20V16.5M15 20V16.5" stroke="#f59e0b" strokeWidth="1.5"/>
+                                <circle cx="12" cy="11.5" r="3.2" fill="#fdba74"/>
+                                <path d="M6.5 10.2C6.5 6.8 8.8 4.5 12 4.5C15.2 4.5 17.5 6.8 17.5 10.2H6.5Z" fill="#ffffff" stroke="#0f172a" strokeWidth="1.2"/>
+                                <rect x="5" y="9.5" width="14" height="2.2" rx="1" fill="#ffffff" stroke="#0f172a" strokeWidth="1"/>
+                                <path d="M11 4.8V7M13 4.8V7" stroke="#94a3b8" strokeWidth="1" strokeLinecap="round"/>
+                              </svg>
                             </div>
                             <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 ${st.colorClass}`} />
                           </div>

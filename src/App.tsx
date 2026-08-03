@@ -49,21 +49,22 @@ import {
 import { Counter, Shimmer, HighlightText, SkeletonTicket } from './components/Common';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
-import { LoginModal } from './components/modals/LoginModal';
-import { ConfirmModal } from './components/modals/ConfirmModal';
 import { UserLoginScreen } from './components/UserLoginScreen';
 import { BottomNav } from './components/BottomNav';
-import { TakeoverModal } from './components/modals/TakeoverModal';
-import { SuccessModal } from './components/modals/SuccessModal';
-import { MobileFilterModal } from './components/modals/MobileFilterModal';
-import { NotificationModal } from './components/modals/NotificationModal';
 import { SplashScreen } from './components/SplashScreen';
 import { hapticFeedback } from './utils/haptics';
 import { MobileAppNav } from './components/MobileAppNav';
 import { AdminLocationEnforcer } from './components/AdminLocationEnforcer';
 import { TicketList } from './components/TicketList';
-import { ForwardWhatsAppModal } from './components/modals/ForwardWhatsAppModal';
-import { MandatoryRatingModal } from './components/modals/MandatoryRatingModal';
+
+const LoginModal = lazy(() => import('./components/modals/LoginModal').then(m => ({ default: m.LoginModal })));
+const ConfirmModal = lazy(() => import('./components/modals/ConfirmModal').then(m => ({ default: m.ConfirmModal })));
+const TakeoverModal = lazy(() => import('./components/modals/TakeoverModal').then(m => ({ default: m.TakeoverModal })));
+const SuccessModal = lazy(() => import('./components/modals/SuccessModal').then(m => ({ default: m.SuccessModal })));
+const MobileFilterModal = lazy(() => import('./components/modals/MobileFilterModal').then(m => ({ default: m.MobileFilterModal })));
+const NotificationModal = lazy(() => import('./components/modals/NotificationModal').then(m => ({ default: m.NotificationModal })));
+const ForwardWhatsAppModal = lazy(() => import('./components/modals/ForwardWhatsAppModal').then(m => ({ default: m.ForwardWhatsAppModal })));
+const MandatoryRatingModal = lazy(() => import('./components/modals/MandatoryRatingModal').then(m => ({ default: m.MandatoryRatingModal })));
 
 // Lazy Loaded Components
 const TicketDetailModal = lazy(() => import('./components/modals/TicketDetailModal').then(m => ({ default: m.TicketDetailModal })));
@@ -161,6 +162,8 @@ export default function App() {
       smtp_pass: '',
       smtp_from: '',
       photo_cleanup_duration: '24',
+      gps_working_hours_start: '07:45',
+      gps_working_hours_end: '16:00',
       login_guide_enabled: true,
       login_guide_content: 'Langkah-langkah Login:\n1. Pilih nama Anda pada pilihan "Nama Anda".\n2. Ketik Index KDK Anda dengan benar.\n3. Tekan tombol "Masuk" untuk masuk ke dashboard.\n\nJika nama Anda belum terdaftar, silakan hubungi tim Admin IT.',
       sla_critical_hours: 5,
@@ -178,7 +181,7 @@ export default function App() {
   const { pendingCount, isSyncing, sync } = useSyncOffline();
 
   // Auto GPS Location background sync for IT team
-  useAutoLocationSync(adminUser || currentUser);
+  useAutoLocationSync(adminUser || currentUser, appSettings);
 
   useEffect(() => {
     if (settingsData) {
@@ -892,7 +895,7 @@ export default function App() {
         safeSetItem('adminUser', JSON.stringify(data.user));
         setShowLogin(false);
         setLoginData({ username: '', password: '' });
-        setViewMode('all');
+        setViewMode('dashboard');
         
         // Request Notification Permission
         if (typeof window !== 'undefined' && "Notification" in window && Notification.permission === "default") {
