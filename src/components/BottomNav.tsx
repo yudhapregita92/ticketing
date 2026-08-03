@@ -161,49 +161,51 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           </div>
 
           {/* Floating Action Button */}
-          <div 
-            className="absolute left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center transition-all"
-            style={{ top: `${fabTopOffset}px` }}
-          >
-            {/* Pulsing Outer Ring */}
-            <motion.span 
-              animate={{ scale: [1, 1.35, 1], opacity: [0.5, 0, 0.5] }}
-              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-              className="absolute inset-0 rounded-full pointer-events-none"
-              style={{ backgroundColor: fabBgColor }}
-            />
-
-            <motion.button 
-              animate={{ scale: [1, 1.06, 1] }}
-              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setShowForm(true)}
-              className="rounded-full flex items-center justify-center relative z-10 shadow-lg transition-all cursor-pointer"
-              style={{ 
-                width: `${fabSize}px`, 
-                height: `${fabSize}px`,
-                backgroundColor: fabBgColor,
-                borderColor: fabBorderColor,
-                borderWidth: `${fabBorderWidth}px`,
-                borderStyle: 'solid'
-              }}
+          {(!adminUser || adminUser.role === 'Super Admin') && (
+            <div 
+              className="absolute left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center transition-all"
+              style={{ top: `${fabTopOffset}px` }}
             >
-              <motion.div
-                animate={{ scale: [1, 1.22, 1], rotate: [0, -6, 6, 0] }}
-                transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+              {/* Pulsing Outer Ring */}
+              <motion.span 
+                animate={{ scale: [1, 1.35, 1], opacity: [0.5, 0, 0.5] }}
+                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                className="absolute inset-0 rounded-full pointer-events-none"
+                style={{ backgroundColor: fabBgColor }}
+              />
+
+              <motion.button 
+                animate={{ scale: [1, 1.06, 1] }}
+                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setShowForm(true)}
+                className="rounded-full flex items-center justify-center relative z-10 shadow-lg transition-all cursor-pointer"
+                style={{ 
+                  width: `${fabSize}px`, 
+                  height: `${fabSize}px`,
+                  backgroundColor: fabBgColor,
+                  borderColor: fabBorderColor,
+                  borderWidth: `${fabBorderWidth}px`,
+                  borderStyle: 'solid'
+                }}
               >
-                <Send 
-                  className="ml-[-1px] mt-[1px]" 
-                  strokeWidth={2.2} 
-                  style={{ 
-                    width: `${fabIconSize}px`, 
-                    height: `${fabIconSize}px`,
-                    color: fabIconColor
-                  }} 
-                />
-              </motion.div>
-            </motion.button>
-          </div>
+                <motion.div
+                  animate={{ scale: [1, 1.22, 1], rotate: [0, -6, 6, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+                >
+                  <Send 
+                    className="ml-[-1px] mt-[1px]" 
+                    strokeWidth={2.2} 
+                    style={{ 
+                      width: `${fabIconSize}px`, 
+                      height: `${fabIconSize}px`,
+                      color: fabIconColor
+                    }} 
+                  />
+                </motion.div>
+              </motion.button>
+            </div>
+          )}
         </div>
       </div>
     );

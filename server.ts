@@ -2,6 +2,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { initDb } from "./server/db.ts";
@@ -28,6 +29,7 @@ async function startServer() {
   initDb();
 
   const app = express();
+  app.set('trust proxy', 1);
   const httpServer = createServer(app);
   const io = new Server(httpServer, {
     cors: {
@@ -62,6 +64,18 @@ async function startServer() {
     }
     next();
   });
+
+  // Basic API Rate Limiter
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 200, // Limit each IP to 200 requests per `window` (here, per 15 minutes)
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    message: { error: "Too many requests from this IP, please try again after 15 minutes" }
+  });
+  
+  // Apply rate limiter to all API routes
+  app.use('/api', apiLimiter);
 
   // Health check
   app.get("/api/health", (req, res) => {

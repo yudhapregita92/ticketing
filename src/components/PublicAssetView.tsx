@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Package, Smartphone, Monitor, Printer, Server, Laptop, Activity, Box, Clock, ShieldAlert, AlertTriangle } from 'lucide-react';
+import { Package, Smartphone, Monitor, Printer, Server, Laptop, Activity, Box, Clock, ShieldAlert, AlertTriangle, ArrowRightLeft } from 'lucide-react';
 import { calculateAssetDepreciation } from '../utils/assetUtils';
 
 const getCategoryIcon = (category: string = '') => {
@@ -95,6 +95,19 @@ export const PublicAssetView = ({ assetId, isDark }: { assetId: string, isDark: 
             </div>
             <p className="font-semibold text-slate-800 dark:text-slate-200">
               {asset.issued_reason || 'Di-issued secara khusus untuk kebutuhan operasional.'}
+            </p>
+          </div>
+        )}
+
+        {/* Status Replacement / Prosedur Tukar Unit */}
+        {Boolean(asset.notes && (asset.notes.includes('[Unit Baru]') || asset.notes.includes('[Tukar Perangkat]') || asset.notes.includes('Pengganti') || asset.notes.includes('Replace'))) && (
+          <div className="mb-6 p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-700 dark:text-indigo-300 text-xs space-y-1">
+            <div className="flex items-center gap-1.5 font-black uppercase text-[11px] tracking-wider text-indigo-600 dark:text-indigo-400">
+              <ArrowRightLeft className="w-4 h-4 text-indigo-500 shrink-0" />
+              Riwayat / Informasi Replacement Perangkat
+            </div>
+            <p className="font-semibold text-slate-800 dark:text-slate-200">
+              {asset.notes}
             </p>
           </div>
         )}

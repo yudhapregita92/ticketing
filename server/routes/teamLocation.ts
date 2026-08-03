@@ -257,5 +257,18 @@ export default function teamLocationRouter(io?: Server) {
     }
   });
 
+  // DELETE /api/team-location/:username - Delete a team location
+  router.delete("/:username", (req, res) => {
+    try {
+      const username = String(req.params.username).toLowerCase().trim();
+      db.prepare("DELETE FROM team_locations WHERE LOWER(username) = ?").run(username);
+      db.prepare("DELETE FROM team_location_logs WHERE LOWER(username) = ?").run(username);
+      res.json({ success: true, message: "Lokasi tim berhasil dihapus." });
+    } catch (err: any) {
+      console.error("Error deleting team location:", err);
+      res.status(500).json({ error: "Gagal menghapus lokasi tim." });
+    }
+  });
+
   return router;
 }

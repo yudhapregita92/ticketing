@@ -60,6 +60,7 @@ import { NotificationModal } from './components/modals/NotificationModal';
 import { SplashScreen } from './components/SplashScreen';
 import { hapticFeedback } from './utils/haptics';
 import { MobileAppNav } from './components/MobileAppNav';
+import { AdminLocationEnforcer } from './components/AdminLocationEnforcer';
 import { TicketList } from './components/TicketList';
 import { ForwardWhatsAppModal } from './components/modals/ForwardWhatsAppModal';
 import { MandatoryRatingModal } from './components/modals/MandatoryRatingModal';
@@ -1611,13 +1612,14 @@ export default function App() {
         {loading ? (
           <SplashScreen key="splash" appName={appSettings.app_name} primaryColor={primaryColor} />
         ) : (
-          <motion.div 
-            key="content"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="flex flex-col min-h-screen"
-          >
+          <AdminLocationEnforcer adminUser={adminUser}>
+            <motion.div 
+              key="content"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="flex flex-col min-h-screen"
+            >
             <Toaster position="top-center" reverseOrder={false} />
             
             {/* --- OFFLINE SYNC BANNER --- */}
@@ -2175,6 +2177,7 @@ export default function App() {
           </div>
 
                 {/* Help CTA - Visible on mobile at the bottom */}
+            {(!adminUser || adminUser.role === 'Super Admin') && (
             <section 
               className="lg:hidden rounded-md p-4 sm:p-5 text-white shadow-xl relative overflow-hidden group transition-all mt-4 sm:mt-6"
               style={{ backgroundColor: primaryColor, boxShadow: `0 20px 25px -5px ${primaryColor}30` }}
@@ -2207,6 +2210,7 @@ export default function App() {
                 <span className="whitespace-nowrap">Buat Tiket Sekarang</span>
               </motion.button>
             </section>
+            )}
             
             {/* App Version Info - Mobile Only */}
             <div className="lg:hidden flex flex-col items-center justify-center py-4 opacity-30">
@@ -2501,6 +2505,7 @@ export default function App() {
         }
       `}</style>
           </motion.div>
+          </AdminLocationEnforcer>
         )}
       </AnimatePresence>
     </div>

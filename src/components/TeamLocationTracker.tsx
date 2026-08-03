@@ -26,7 +26,8 @@ import {
   Layers,
   Sliders,
   CheckCircle2,
-  Phone
+  Phone,
+  UserPlus
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../services/api';
@@ -82,8 +83,14 @@ export const TeamLocationTracker: React.FC<TeamLocationTrackerProps> = ({
   const [showTraccarModal, setShowTraccarModal] = useState<boolean>(false);
   const [showCheckinModal, setShowCheckinModal] = useState<boolean>(false);
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
+  const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [historyLogs, setHistoryLogs] = useState<ITeamLocationLog[]>([]);
   const [historyUser, setHistoryUser] = useState<string>('');
+  
+  // Add Member State
+  const [addUsername, setAddUsername] = useState<string>('');
+  const [addFullName, setAddFullName] = useState<string>('');
+  const [addRole, setAddRole] = useState<string>('IT Support');
   const [copiedUrl, setCopiedUrl] = useState<boolean>(false);
   const [copiedCoords, setCopiedCoords] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -366,6 +373,47 @@ export const TeamLocationTracker: React.FC<TeamLocationTrackerProps> = ({
     }
   };
 
+  const handleDeleteUser = async (username: string) => {
+    if (!window.confirm(`Hapus lokasi tim untuk user ${username}?`)) return;
+    try {
+      await api.deleteTeamLocation(username);
+      toast.success('Lokasi tim berhasil dihapus');
+      if (selectedUser?.username === username) setSelectedUser(null);
+      fetchLocations(true);
+    } catch (err) {
+      toast.error('Gagal menghapus lokasi tim');
+    }
+  };
+
+  const handleAddUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addUsername.trim() || !addFullName.trim()) {
+      toast.error('Username (Device ID) dan Nama Lengkap wajib diisi');
+      return;
+    }
+    try {
+      // Create with a default location (e.g., Jakarta center) so they appear on the map
+      await api.updateTeamLocation({
+        username: addUsername.trim(),
+        full_name: addFullName.trim(),
+        role: addRole,
+        latitude: -6.175392,
+        longitude: 106.827153,
+        accuracy: 100,
+        provider: 'manual',
+        note: 'Pendaftaran Manual'
+      });
+      toast.success('Anggota berhasil ditambahkan');
+      setShowAddModal(false);
+      setAddUsername('');
+      setAddFullName('');
+      setAddRole('IT Support');
+      fetchLocations(true);
+    } catch (err) {
+      toast.error('Gagal menambahkan anggota');
+    }
+  };
+
   // Copy coordinates
   const handleCopyCoords = (lat: number, lng: number, key: string) => {
     const text = `${lat}, ${lng}`;
@@ -429,19 +477,27 @@ export const TeamLocationTracker: React.FC<TeamLocationTrackerProps> = ({
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           <button
+            onClick={() => setShowAddModal(true)}
+            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all flex items-center gap-1.5 active:scale-95"
+          >
+            <UserPlus className="w-4 h-4 shrink-0" />
+            <span className="truncate">Tambah Manual</span>
+          </button>
+
+          <button
             onClick={() => handlePerformCheckin()}
             className="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition-all flex items-center gap-1.5 active:scale-95"
           >
-            <MapPin className="w-4 h-4" />
-            <span>Check-In Lokasi Saya</span>
+            <MapPin className="w-4 h-4 shrink-0" />
+            <span className="truncate">Check-In Saya</span>
           </button>
 
           <button
             onClick={() => setShowTraccarModal(true)}
             className="px-3.5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md transition-all flex items-center gap-1.5 active:scale-95"
           >
-            <Smartphone className="w-4 h-4" />
-            <span>Setup Traccar Client</span>
+            <Smartphone className="w-4 h-4 shrink-0" />
+            <span className="truncate">Setup Traccar</span>
           </button>
 
           <button
@@ -458,41 +514,41 @@ export const TeamLocationTracker: React.FC<TeamLocationTrackerProps> = ({
       </div>
 
       {/* Summary KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        <div className={`p-4 rounded-2xl border shadow-sm ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <div className="flex items-center justify-between text-slate-400 text-[10px] font-black uppercase tracking-wider">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <div className={`p-3 md:p-4 rounded-2xl border shadow-sm ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <div className="flex items-center justify-between text-slate-400 text-[9px] md:text-[10px] font-black uppercase tracking-wider">
             <span>Total Anggota</span>
-            <User className="w-4 h-4 text-blue-500" />
+            <User className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-500" />
           </div>
-          <div className="text-2xl font-black mt-1 text-slate-800 dark:text-slate-100">{totalCount}</div>
-          <span className="text-[10px] text-slate-400 font-bold">Tim IT Terdaftar</span>
+          <div className="text-xl md:text-2xl font-black mt-1 text-slate-800 dark:text-slate-100">{totalCount}</div>
+          <span className="text-[9px] md:text-[10px] text-slate-400 font-bold">Tim IT Terdaftar</span>
         </div>
 
-        <div className={`p-4 rounded-2xl border shadow-sm ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <div className="flex items-center justify-between text-emerald-500 text-[10px] font-black uppercase tracking-wider">
-            <span>Aktif Live (&lt;15m)</span>
-            <Radio className="w-4 h-4 text-emerald-500 animate-pulse" />
+        <div className={`p-3 md:p-4 rounded-2xl border shadow-sm ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <div className="flex items-center justify-between text-emerald-500 text-[9px] md:text-[10px] font-black uppercase tracking-wider">
+            <span className="truncate pr-1">Aktif Live (&lt;15m)</span>
+            <Radio className="w-3.5 h-3.5 md:w-4 md:h-4 text-emerald-500 animate-pulse shrink-0" />
           </div>
-          <div className="text-2xl font-black mt-1 text-emerald-600 dark:text-emerald-400">{onlineCount}</div>
-          <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-bold">Sinyal GPS Aktif</span>
+          <div className="text-xl md:text-2xl font-black mt-1 text-emerald-600 dark:text-emerald-400">{onlineCount}</div>
+          <span className="text-[9px] md:text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-bold">Sinyal GPS Aktif</span>
         </div>
 
-        <div className={`p-4 rounded-2xl border shadow-sm ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <div className="flex items-center justify-between text-amber-500 text-[10px] font-black uppercase tracking-wider">
-            <span>Baru Saja (&lt;2j)</span>
-            <Clock className="w-4 h-4 text-amber-500" />
+        <div className={`p-3 md:p-4 rounded-2xl border shadow-sm ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <div className="flex items-center justify-between text-amber-500 text-[9px] md:text-[10px] font-black uppercase tracking-wider">
+            <span className="truncate pr-1">Baru Saja (&lt;2j)</span>
+            <Clock className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-500 shrink-0" />
           </div>
-          <div className="text-2xl font-black mt-1 text-amber-600 dark:text-amber-400">{awayCount}</div>
-          <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70 font-bold">Standby / Bergerak</span>
+          <div className="text-xl md:text-2xl font-black mt-1 text-amber-600 dark:text-amber-400">{awayCount}</div>
+          <span className="text-[9px] md:text-[10px] text-amber-600/70 dark:text-amber-400/70 font-bold">Standby / Bergerak</span>
         </div>
 
-        <div className={`p-4 rounded-2xl border shadow-sm ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <div className="flex items-center justify-between text-slate-400 text-[10px] font-black uppercase tracking-wider">
-            <span>Inaktif / Offline</span>
-            <Wifi className="w-4 h-4 text-slate-400" />
+        <div className={`p-3 md:p-4 rounded-2xl border shadow-sm ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <div className="flex items-center justify-between text-slate-400 text-[9px] md:text-[10px] font-black uppercase tracking-wider">
+            <span className="truncate pr-1">Inaktif / Offline</span>
+            <Wifi className="w-3.5 h-3.5 md:w-4 md:h-4 text-slate-400 shrink-0" />
           </div>
-          <div className="text-2xl font-black mt-1 text-slate-500">{offlineCount}</div>
-          <span className="text-[10px] text-slate-400 font-bold">Terakhir Aktif</span>
+          <div className="text-xl md:text-2xl font-black mt-1 text-slate-500">{offlineCount}</div>
+          <span className="text-[9px] md:text-[10px] text-slate-400 font-bold">Terakhir Aktif</span>
         </div>
       </div>
 
@@ -704,13 +760,13 @@ export const TeamLocationTracker: React.FC<TeamLocationTrackerProps> = ({
                       </div>
 
                       {/* Card Action Bar */}
-                      <div className="pt-2 border-t border-slate-200 dark:border-slate-700/80 flex items-center justify-between gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      <div className="pt-2 border-t border-slate-200 dark:border-slate-700/80 flex flex-wrap items-center justify-between gap-1.5" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => handleFocusUser(loc)}
-                          className="flex-1 py-1.5 rounded-xl text-[10px] font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all flex items-center justify-center gap-1"
+                          className="flex-1 min-w-[80px] py-1.5 rounded-xl text-[10px] font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all flex items-center justify-center gap-1"
                         >
                           <Navigation className="w-3 h-3" />
-                          <span>Fokus Peta</span>
+                          <span>Fokus</span>
                         </button>
 
                         <button
@@ -734,6 +790,16 @@ export const TeamLocationTracker: React.FC<TeamLocationTrackerProps> = ({
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
                         </a>
+
+                        <button
+                          onClick={() => handleDeleteUser(loc.username)}
+                          className={`p-1.5 rounded-xl border text-slate-500 hover:text-red-500 transition-all ${
+                            isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'
+                          }`}
+                          title="Hapus Data Ini"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   );
@@ -978,6 +1044,99 @@ export const TeamLocationTracker: React.FC<TeamLocationTrackerProps> = ({
                 Tutup
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Manual User Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className={`w-full max-w-md rounded-3xl shadow-2xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                  <UserPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-lg">Tambah Tim Manual</h3>
+                  <p className="text-[11px] text-slate-500">Mendaftarkan data ID untuk Traccar</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddUser} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">
+                  Device ID (Username) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={addUsername}
+                  onChange={(e) => setAddUsername(e.target.value)}
+                  placeholder="Contoh: it-jkt-01"
+                  className={`w-full px-3.5 py-2.5 rounded-xl text-sm border font-medium focus:outline-none focus:border-blue-500 transition-all ${
+                    isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                  }`}
+                />
+                <p className="text-[10px] text-slate-500 mt-1">ID ini harus sama dengan Device ID yang disetting di aplikasi Traccar Client (HP user).</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">
+                  Nama Lengkap <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={addFullName}
+                  onChange={(e) => setAddFullName(e.target.value)}
+                  placeholder="Contoh: Budi Santoso"
+                  className={`w-full px-3.5 py-2.5 rounded-xl text-sm border font-medium focus:outline-none focus:border-blue-500 transition-all ${
+                    isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">
+                  Role (Opsional)
+                </label>
+                <input
+                  type="text"
+                  value={addRole}
+                  onChange={(e) => setAddRole(e.target.value)}
+                  placeholder="Contoh: IT Support"
+                  className={`w-full px-3.5 py-2.5 rounded-xl text-sm border font-medium focus:outline-none focus:border-blue-500 transition-all ${
+                    isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                  }`}
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                    isDark ? 'border-slate-700 hover:bg-slate-800' : 'border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-md"
+                >
+                  Simpan & Daftarkan
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

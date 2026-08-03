@@ -779,6 +779,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       {/* Help CTA */}
+      {(!adminUser || adminUser.role === 'Super Admin') && (
       <section 
         className={`hidden lg:block ${adminUser ? 'rounded-none' : 'rounded-3xl'} p-6 text-white shadow-xl relative overflow-hidden group transition-all`}
         style={{ backgroundColor: primaryColor, boxShadow: `0 20px 25px -5px ${primaryColor}30` }}
@@ -809,6 +810,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span className="whitespace-nowrap">Buat Tiket Sekarang</span>
         </button>
       </section>
+      )}
 
       {/* App Version Info - Desktop Only */}
       <div className="hidden lg:flex flex-col items-center justify-center py-2 opacity-30">

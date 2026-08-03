@@ -463,4 +463,7 @@ export const api = {
     body: JSON.stringify(data)
   }).then(handleResponse),
   getTeamLocationLogs: (username?: string): Promise<any[]> => fetch(`/api/team-location/logs${username ? `?username=${encodeURIComponent(username)}` : ''}`).then(handleResponse),
+  deleteTeamLocation: (username: string): Promise<any> => fetch(`/api/team-location/${encodeURIComponent(username)}`, {
+    method: 'DELETE',
+  }).then(handleResponse),
 };

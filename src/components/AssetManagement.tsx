@@ -5,7 +5,7 @@ import {
   Monitor, Smartphone, Printer, Server, Laptop, X, Save,
   User, Building2, Download, Upload, FileSpreadsheet,
   ChevronLeft, ChevronRight, Users, Layers, Eye, CheckCircle2, PieChart,
-  ClipboardList, RotateCcw, PenTool, Calendar, Check, AlertCircle, AlertTriangle, FileSignature, QrCode, Clock, ExternalLink
+  ClipboardList, RotateCcw, PenTool, Calendar, Check, AlertCircle, AlertTriangle, FileSignature, QrCode, Clock, ExternalLink, ArrowRightLeft, RefreshCw
 } from 'lucide-react';
 import * as xlsx from 'xlsx';
 import toast from 'react-hot-toast';
@@ -109,6 +109,22 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
   const [deleteAllPassword, setDeleteAllPassword] = useState('');
   const [isDeletingAll, setIsDeletingAll] = useState(false);
+
+  // Replacement / Tukar Perangkat Modal State
+  const [showReplacementModal, setShowReplacementModal] = useState(false);
+  const [replacementAsset, setReplacementAsset] = useState<IAsset | null>(null);
+  const [replacementForm, setReplacementForm] = useState({
+    oldUnitAction: 'reassign_it' as 'reassign_it' | 'scrap_fada',
+    itTargetUser: 'yudha',
+    createNewUnit: true,
+    newUnitName: '',
+    newUnitBrand: '',
+    newUnitSpecs: '',
+    newUnitSerial: '',
+    newUnitBudgetType: 'Capex' as 'Capex' | 'Opex',
+    newUnitPurchaseDate: new Date().toISOString().split('T')[0],
+    notes: ''
+  });
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -408,6 +424,103 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
     });
     setIsViewMode(view);
     setShowModal(true);
+  };
+
+  const openReplacementModal = (asset: IAsset) => {
+    setReplacementAsset(asset);
+    
+    // Find default IT user or yudha
+    const defaultItUser = masterUsers.find(u => 
+      (u.department && u.department.toLowerCase().includes('it')) || 
+      (u.full_name && u.full_name.toLowerCase().includes('yudha'))
+    )?.full_name || 'yudha';
+
+    setReplacementForm({
+      oldUnitAction: 'reassign_it',
+      itTargetUser: defaultItUser,
+      createNewUnit: true,
+      newUnitName: `${asset.category || 'Perangkat'} Baru`,
+      newUnitBrand: asset.brand || '',
+      newUnitSpecs: '',
+      newUnitSerial: '',
+      newUnitBudgetType: (asset.budget_type as 'Capex' | 'Opex') || 'Capex',
+      newUnitPurchaseDate: new Date().toISOString().split('T')[0],
+      notes: ''
+    });
+    setShowReplacementModal(true);
+  };
+
+  const handleConfirmReplacement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!replacementAsset) return;
+
+    try {
+      const oldUser = replacementAsset.assigned_to || 'User';
+      const oldCode = replacementAsset.device_code || replacementAsset.asset_id;
+
+      // 1. Process Old Asset update
+      const updatedOldAsset: Partial<IAsset> = { ...replacementAsset };
+      let actionLog = '';
+
+      if (replacementForm.oldUnitAction === 'reassign_it') {
+        updatedOldAsset.assigned_to = replacementForm.itTargetUser;
+        updatedOldAsset.usage_status = 'it_cadangan';
+        updatedOldAsset.status = 'In Repair';
+        updatedOldAsset.condition = 'Fair';
+        actionLog = `[Tukar Perangkat] Re-assign ke ${replacementForm.itTargetUser} (Cadangan IT). Bekas pengguna: ${oldUser}.${replacementForm.notes ? ` Catatan: ${replacementForm.notes}` : ''}`;
+      } else {
+        updatedOldAsset.assigned_to = '';
+        updatedOldAsset.user_index = '';
+        updatedOldAsset.usage_status = 'fada_afkir';
+        updatedOldAsset.status = 'Retired';
+        updatedOldAsset.condition = 'Broken';
+        actionLog = `[Tukar Perangkat] Afkir / Fada (Rusak Total). Bekas pengguna: ${oldUser}.${replacementForm.notes ? ` Catatan: ${replacementForm.notes}` : ''}`;
+      }
+
+      const existingNotes = replacementAsset.notes ? `${replacementAsset.notes}\n` : '';
+      updatedOldAsset.notes = `${existingNotes}${actionLog}`.trim();
+
+      await api.updateAsset(replacementAsset.id, updatedOldAsset);
+
+      // 2. Process New Asset registration if checked
+      let newDeviceCode = '';
+      if (replacementForm.createNewUnit) {
+        newDeviceCode = generateNextDeviceCode(replacementAsset.category, assets);
+        const newAssetPayload = {
+          asset_id: `AST-${newDeviceCode}`,
+          device_code: newDeviceCode,
+          name: replacementForm.newUnitName || `${replacementAsset.category} Baru`,
+          category: replacementAsset.category,
+          brand: replacementForm.newUnitBrand || '',
+          specs: replacementForm.newUnitSpecs || '',
+          serial_number: replacementForm.newUnitSerial || '',
+          department: replacementAsset.department || '',
+          assigned_to: oldUser,
+          user_index: replacementAsset.user_index || '',
+          usage_status: replacementAsset.usage_status || 'karyawan',
+          budget_type: replacementForm.newUnitBudgetType || 'Capex',
+          status: 'Active',
+          condition: 'Good',
+          purchase_date: replacementForm.newUnitPurchaseDate || new Date().toISOString().split('T')[0],
+          notes: `[Unit Baru] Pengganti perangkat lama ${oldCode}`
+        };
+
+        await api.addAsset(newAssetPayload);
+      }
+
+      toast.success(
+        replacementForm.createNewUnit
+          ? `Pergantian unit berhasil! Unit lama (${oldCode}) ${replacementForm.oldUnitAction === 'reassign_it' ? `di-reassign ke IT (${replacementForm.itTargetUser})` : 'di-afkir (Fada)'} & unit baru (${newDeviceCode}) telah di-assign ke ${oldUser}.`
+          : `Unit lama (${oldCode}) berhasil diperbarui.`
+      );
+
+      setShowReplacementModal(false);
+      setReplacementAsset(null);
+      fetchData();
+    } catch (err: any) {
+      console.error('Error in asset replacement:', err);
+      toast.error(err?.message || 'Gagal memproses pergantian unit perangkat');
+    }
   };
 
   const getCategoryIcon = (category: string) => {
@@ -1956,6 +2069,13 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   {/* Actions */}
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button 
+                      onClick={() => openReplacementModal(asset)}
+                      className="p-1.5 rounded-none text-indigo-600 hover:bg-indigo-50 dark:hover:bg-slate-800 transition-colors"
+                      title="Prosedur Tukar / Pergantian Unit"
+                    >
+                      <ArrowRightLeft className="w-4 h-4" />
+                    </button>
+                    <button 
                       onClick={() => setQrPreviewAsset(asset)}
                       className="p-1.5 rounded-none text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors"
                       title="Preview Scan QR"
@@ -2153,6 +2273,13 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     <td className="px-3 py-2.5 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button 
+                          onClick={() => openReplacementModal(asset)}
+                          className="p-1.5 rounded-none text-indigo-600 hover:bg-indigo-50 dark:hover:bg-slate-800 transition-colors"
+                          title="Prosedur Tukar / Pergantian Unit"
+                        >
+                          <ArrowRightLeft className="w-3.5 h-3.5" />
+                        </button>
+                        <button 
                           onClick={() => setQrPreviewAsset(asset)}
                           className="p-1.5 rounded-none text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors"
                           title="Preview Hasil Halaman Scan QR"
@@ -2265,13 +2392,28 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                 </h2>
                 <div className="flex items-center gap-2">
                   {isViewMode && (
-                    <button 
-                      onClick={() => setIsViewMode(false)}
-                      className="px-3 py-1.5 rounded-none bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 text-xs font-bold transition-colors flex items-center gap-1.5"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Edit</span>
-                    </button>
+                    <>
+                      {editingAsset && (
+                        <button 
+                          onClick={() => {
+                            setShowModal(false);
+                            openReplacementModal(editingAsset);
+                          }}
+                          className="px-3 py-1.5 rounded-none bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 text-xs font-bold transition-colors flex items-center gap-1.5"
+                          title="Prosedur Tukar / Pergantian Unit"
+                        >
+                          <ArrowRightLeft className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Tukar Unit</span>
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => setIsViewMode(false)}
+                        className="px-3 py-1.5 rounded-none bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 text-xs font-bold transition-colors flex items-center gap-1.5"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Edit</span>
+                      </button>
+                    </>
                   )}
                   <button 
                     onClick={() => setShowModal(false)}
@@ -3660,6 +3802,18 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                           </div>
                         )}
 
+                        {Boolean(qrPreviewAsset.notes && (qrPreviewAsset.notes.includes('[Unit Baru]') || qrPreviewAsset.notes.includes('[Tukar Perangkat]') || qrPreviewAsset.notes.includes('Pengganti') || qrPreviewAsset.notes.includes('Replace'))) && (
+                          <div className="p-2.5 mb-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-700 dark:text-indigo-400 text-xs">
+                            <div className="flex items-center gap-1.5 font-black uppercase text-[10px] tracking-wider text-indigo-600 dark:text-indigo-400">
+                              <ArrowRightLeft className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                              Riwayat / Status Replacement (Tukar Unit)
+                            </div>
+                            <p className="font-semibold mt-0.5 text-slate-800 dark:text-slate-200">
+                              {qrPreviewAsset.notes}
+                            </p>
+                          </div>
+                        )}
+
                         <div className="space-y-0 text-xs">
                           <div className="flex flex-col py-2 border-b border-dashed border-slate-200 dark:border-slate-800 gap-1">
                             <span className="text-slate-400 font-bold uppercase text-[10px]">Kode Perangkat</span>
@@ -3761,6 +3915,278 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   <span>Buka Tab Baru</span>
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Asset Replacement / Tukar Unit Modal */}
+      <AnimatePresence>
+        {showReplacementModal && replacementAsset && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto py-6 sm:py-10">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className={`w-full max-w-2xl rounded-none shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col ${
+                isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white border border-slate-200'
+              }`}
+            >
+              <div className={`px-4 sm:px-6 py-3.5 sm:py-4 border-b flex items-center justify-between sticky top-0 z-10 flex-shrink-0 ${
+                isDark ? 'border-slate-800 bg-slate-900' : 'border-slate-100 bg-white'
+              }`}>
+                <h2 className={`text-base sm:text-lg font-black flex items-center gap-2 ${themeClasses.heading}`}>
+                  <ArrowRightLeft className="w-5 h-5 text-indigo-500" />
+                  <span>Prosedur Tukar & Pergantian Unit Aset</span>
+                </h2>
+                <button 
+                  onClick={() => setShowReplacementModal(false)}
+                  className="p-1.5 sm:p-2 rounded-none hover:bg-slate-200/50 transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-400" />
+                </button>
+              </div>
+
+              <form onSubmit={handleConfirmReplacement} className="p-4 sm:p-6 overflow-y-auto space-y-5 text-xs sm:text-sm">
+                
+                {/* Info Card Unit Lama */}
+                <div className={`p-3.5 sm:p-4 rounded-none border ${isDark ? 'bg-slate-800/60 border-slate-700' : 'bg-indigo-50/60 border-indigo-200'}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                      <Laptop className="w-3.5 h-3.5" /> Unit Lama Yang Akan Digantikan
+                    </span>
+                    <span className="px-2 py-0.5 rounded-none text-[10px] font-mono font-bold bg-indigo-100 dark:bg-slate-800 text-indigo-700 dark:text-indigo-300">
+                      {replacementAsset.device_code || replacementAsset.asset_id}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs font-semibold">
+                    <div>
+                      <span className="text-[9px] text-slate-400 block uppercase font-bold">Nama / Jenis</span>
+                      <span className={isDark ? 'text-white' : 'text-slate-900'}>{replacementAsset.name || replacementAsset.category}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-slate-400 block uppercase font-bold">Pengguna Saat Ini</span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">{replacementAsset.assigned_to || 'Tidak Ada'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-slate-400 block uppercase font-bold">Usia Pemakaian</span>
+                      <span className="text-amber-600 dark:text-amber-400 font-bold">{calculateAssetDepreciation(replacementAsset.purchase_date).ageText}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Langkah 1: Tindakan Terhadap Unit Lama */}
+                <div className="space-y-3">
+                  <label className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <span className="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">1</span>
+                    Status & Penanganan Unit Lama
+                  </label>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label className={`p-3 rounded-none border cursor-pointer transition-all flex flex-col justify-between ${
+                      replacementForm.oldUnitAction === 'reassign_it'
+                        ? 'border-indigo-500 bg-indigo-500/10 ring-2 ring-indigo-500/30'
+                        : isDark ? 'border-slate-800 bg-slate-800/40' : 'border-slate-200 bg-slate-50'
+                    }`}>
+                      <div className="flex items-start gap-2.5">
+                        <input 
+                          type="radio" 
+                          name="oldUnitAction"
+                          checked={replacementForm.oldUnitAction === 'reassign_it'}
+                          onChange={() => setReplacementForm(p => ({ ...p, oldUnitAction: 'reassign_it' }))}
+                          className="mt-0.5 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <div>
+                          <span className="font-extrabold text-xs block text-slate-900 dark:text-white">
+                            Re-Assign ke User IT (Cadangan / Perbaikan)
+                          </span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug block mt-1">
+                            Unit dipindahkan penguasaannya ke User IT untuk unit cadangan (backup) atau servis perbaikan ringan.
+                          </span>
+                        </div>
+                      </div>
+                    </label>
+
+                    <label className={`p-3 rounded-none border cursor-pointer transition-all flex flex-col justify-between ${
+                      replacementForm.oldUnitAction === 'scrap_fada'
+                        ? 'border-rose-500 bg-rose-500/10 ring-2 ring-rose-500/30'
+                        : isDark ? 'border-slate-800 bg-slate-800/40' : 'border-slate-200 bg-slate-50'
+                    }`}>
+                      <div className="flex items-start gap-2.5">
+                        <input 
+                          type="radio" 
+                          name="oldUnitAction"
+                          checked={replacementForm.oldUnitAction === 'scrap_fada'}
+                          onChange={() => setReplacementForm(p => ({ ...p, oldUnitAction: 'scrap_fada' }))}
+                          className="mt-0.5 text-rose-600 focus:ring-rose-500"
+                        />
+                        <div>
+                          <span className="font-extrabold text-xs block text-rose-600 dark:text-rose-400">
+                            Afkir / Fada (Rusak Total / Scrap)
+                          </span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug block mt-1">
+                            Unit diubah menjadi status Pensiun (Retired) & Rusak Total. Lepas penguasaan dari user.
+                          </span>
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+
+                  {replacementForm.oldUnitAction === 'reassign_it' && (
+                    <div className="p-3 border border-indigo-500/30 bg-indigo-500/5 space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                        Pilih Target User IT (Penerima Unit Cadangan)
+                      </label>
+                      <select
+                        value={replacementForm.itTargetUser}
+                        onChange={(e) => setReplacementForm(p => ({ ...p, itTargetUser: e.target.value }))}
+                        className={`w-full px-3 py-2 rounded-none font-bold border focus:ring-2 focus:outline-none ${
+                          isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
+                        }`}
+                      >
+                        {masterUsers.map(u => (
+                          <option key={u.id} value={u.full_name}>
+                            {u.full_name} ({u.department || 'Staff'})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Catatan / Alasan Pergantian Unit</label>
+                    <input 
+                      type="text"
+                      placeholder="e.g. Unit lama keyboard rusak & melambat, digantikan laptop baru spek tinggi..."
+                      value={replacementForm.notes}
+                      onChange={(e) => setReplacementForm(p => ({ ...p, notes: e.target.value }))}
+                      className={`w-full px-3 py-2 rounded-none border font-semibold focus:ring-2 focus:outline-none ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                {/* Langkah 2: Registrasi Unit Baru */}
+                <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                      <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-black">2</span>
+                      Penugasan & Registrasi Unit Baru
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="checkbox"
+                        checked={replacementForm.createNewUnit}
+                        onChange={(e) => setReplacementForm(p => ({ ...p, createNewUnit: e.target.checked }))}
+                        className="w-4 h-4 text-emerald-600 rounded-none border-slate-300 focus:ring-emerald-500"
+                      />
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                        Daftarkan Unit Baru untuk {replacementAsset.assigned_to || 'User Ini'}
+                      </span>
+                    </label>
+                  </div>
+
+                  {replacementForm.createNewUnit && (
+                    <div className="p-3.5 border border-emerald-500/30 bg-emerald-500/5 space-y-3">
+                      <div className="flex items-center justify-between text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                        <span>Form Aset Baru untuk {replacementAsset.assigned_to || 'User'}</span>
+                        <span className="px-2 py-0.5 rounded-none font-mono text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
+                          Kode Otomatis: {generateNextDeviceCode(replacementAsset.category, assets)}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black uppercase text-slate-400">Nama Perangkat Baru</label>
+                          <input 
+                            type="text"
+                            value={replacementForm.newUnitName}
+                            onChange={(e) => setReplacementForm(p => ({ ...p, newUnitName: e.target.value }))}
+                            className={`w-full px-3 py-1.5 rounded-none border font-bold ${
+                              isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
+                            }`}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black uppercase text-slate-400">Merk / Brand</label>
+                          <input 
+                            type="text"
+                            placeholder="e.g. Dell / Lenovo / HP"
+                            value={replacementForm.newUnitBrand}
+                            onChange={(e) => setReplacementForm(p => ({ ...p, newUnitBrand: e.target.value }))}
+                            className={`w-full px-3 py-1.5 rounded-none border font-bold ${
+                              isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
+                            }`}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black uppercase text-slate-400">Serial Number</label>
+                          <input 
+                            type="text"
+                            placeholder="e.g. SN123456789"
+                            value={replacementForm.newUnitSerial}
+                            onChange={(e) => setReplacementForm(p => ({ ...p, newUnitSerial: e.target.value }))}
+                            className={`w-full px-3 py-1.5 rounded-none border font-mono font-bold ${
+                              isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
+                            }`}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black uppercase text-slate-400">Tipe Anggaran</label>
+                          <select
+                            value={replacementForm.newUnitBudgetType}
+                            onChange={(e) => setReplacementForm(p => ({ ...p, newUnitBudgetType: e.target.value as 'Capex' | 'Opex' }))}
+                            className={`w-full px-3 py-1.5 rounded-none border font-bold ${
+                              isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
+                            }`}
+                          >
+                            <option value="Capex">Capex (Capital Expenditure)</option>
+                            <option value="Opex">Opex (Operational Expenditure)</option>
+                          </select>
+                        </div>
+
+                        <div className="sm:col-span-2 space-y-1">
+                          <label className="text-[10px] font-black uppercase text-slate-400">Spesifikasi Unit Baru</label>
+                          <input 
+                            type="text"
+                            placeholder="e.g. Core i7 Gen 13, 16GB RAM, 512GB SSD"
+                            value={replacementForm.newUnitSpecs}
+                            onChange={(e) => setReplacementForm(p => ({ ...p, newUnitSpecs: e.target.value }))}
+                            className={`w-full px-3 py-1.5 rounded-none border font-medium ${
+                              isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="pt-3 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowReplacementModal(false)}
+                    className={`flex-1 py-2.5 rounded-none font-bold transition-all ${
+                      isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-none font-bold transition-all shadow-lg flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Prosedur Tukar & Simpan</span>
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}
