@@ -1488,7 +1488,7 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                             const isCurrent = idx === 6; // July 2026
                             return (
                               <div 
-                                key={m} 
+                                key={`gantt-m-${m}-${idx}`} 
                                 className={`py-2 rounded-xl transition-all ${
                                   isCurrent 
                                     ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/15' 
@@ -1554,7 +1554,7 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                               const finishText = formatDateStrShort(item.target_date);
 
                               return (
-                                <div key={item.id} className="grid grid-cols-12 gap-2 h-16 items-center relative group">
+                                <div key={`gantt-bar-${item.id}-${idx}`} className="grid grid-cols-12 gap-2 h-16 items-center relative group">
                                   {/* Bar element spanning columns */}
                                   <div 
                                     style={{ gridColumn: `${colStart} / span ${colSpan}` }}
@@ -1640,7 +1640,7 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                     {/* Center continuous line */}
                     <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-slate-200 dark:bg-slate-800" />
 
-                    {filteredOverallTimelines.map((item) => {
+                    {filteredOverallTimelines.map((item, idx) => {
                       const isCompleted = item.status === 'completed';
                       const isOnProgress = item.status === 'on_progress';
                       const formatDateStr = (dateStr: string) => {
@@ -1655,7 +1655,7 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                       };
 
                       return (
-                        <div key={item.id} className="relative group flex flex-col md:flex-row md:items-start gap-4">
+                        <div key={`timeline-${item.id}-${idx}`} className="relative group flex flex-col md:flex-row md:items-start gap-4">
                           {/* Dot indicator */}
                           <div className={`absolute -left-6 top-1.5 w-5 h-5 rounded-full flex items-center justify-center transition-all z-10 border ${
                             isCompleted 
@@ -1725,7 +1725,7 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                 ) : (
                   /* GROUP BY PROJECT MILESTONE TRACKS */
                   <div className="space-y-4">
-                    {projects.map((proj) => {
+                    {projects.map((proj, projIdx) => {
                       const projTimelines = filteredOverallTimelines.filter(t => t.project_id === proj.id);
                       if (projTimelines.length === 0) return null;
 
@@ -1733,7 +1733,7 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                       const percentComp = Math.round((completedCount / projTimelines.length) * 100);
 
                       return (
-                        <div key={proj.id} className={`p-4 rounded-2xl border ${isDark ? 'bg-[#151922] border-slate-800' : 'bg-slate-50 border-slate-200'} space-y-3`}>
+                        <div key={`proj-group-${proj.id}-${projIdx}`} className={`p-4 rounded-2xl border ${isDark ? 'bg-[#151922] border-slate-800' : 'bg-slate-50 border-slate-200'} space-y-3`}>
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="space-y-0.5">
                               <h4 className={`text-sm font-black ${textMain}`}>{proj.name}</h4>
@@ -1760,12 +1760,12 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
 
                           {/* Horizontal steps flow */}
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
-                            {projTimelines.map(t => {
+                            {projTimelines.map((t, tIdx) => {
                               const isCompleted = t.status === 'completed';
                               const isOnProgress = t.status === 'on_progress';
 
                               return (
-                                <div key={t.id} className={`p-2.5 rounded-xl border text-xs flex items-start gap-2.5 ${
+                                <div key={`t-step-${t.id}-${tIdx}`} className={`p-2.5 rounded-xl border text-xs flex items-start gap-2.5 ${
                                   isCompleted 
                                     ? 'bg-emerald-500/5 border-emerald-500/20' 
                                     : isOnProgress 
@@ -2446,7 +2446,7 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                               {/* Connector line */}
                               <div className="absolute left-4 top-3 bottom-3 w-0.5 bg-slate-200 dark:bg-slate-800" />
 
-                              {timeline.map((item) => {
+                              {timeline.map((item, idx) => {
                                 const isCompleted = item.status === 'completed';
                                 const isOnProgress = item.status === 'on_progress';
                                 const formatDateStr = (dateStr: string) => {
@@ -2461,7 +2461,7 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                                 };
 
                                 return (
-                                  <div key={item.id} className="relative group">
+                                  <div key={`m-timeline-${item.id}-${idx}`} className="relative group">
                                     {/* Indicator Dot */}
                                     <div className={`absolute -left-8 top-1.5 w-8 h-8 rounded-full flex items-center justify-center transition-all z-10 border-2 ${
                                       isCompleted 
@@ -2723,10 +2723,10 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                                 }`}
                               >
                                 <option value="all">Semua Periode ({dashboardData?.m365Records?.length || 0} Anggota)</option>
-                                {uniqueMonths.map((month: string) => {
+                                {uniqueMonths.map((month: string, idx: number) => {
                                   const count = dashboardData.m365Records.filter((r: any) => r.periode_bulan === month).length;
                                   return (
-                                    <option key={month} value={month}>
+                                    <option key={`opt-m-${month}-${idx}`} value={month}>
                                       {month} ({count} Anggota)
                                     </option>
                                   );
@@ -2753,10 +2753,10 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                                 }`}
                               >
                                 <option value="all">Semua Bagian ({dashboardData?.m365Records?.length || 0} Anggota)</option>
-                                {uniqueDepartments.map((dept: string) => {
+                                {uniqueDepartments.map((dept: string, idx: number) => {
                                   const count = dashboardData.m365Records.filter((r: any) => r.department === dept).length;
                                   return (
-                                    <option key={dept} value={dept}>
+                                    <option key={`opt-dept-${dept}-${idx}`} value={dept}>
                                       {dept} ({count} Anggota)
                                     </option>
                                   );
@@ -2782,8 +2782,8 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                                 }`}
                               >
                                 <option value="all">Semua Anggota ({uniqueMembers.length} Pilihan)</option>
-                                {uniqueMembers.map((member: string) => (
-                                  <option key={member} value={member}>
+                                {uniqueMembers.map((member: string, idx: number) => (
+                                  <option key={`opt-mem-${member}-${idx}`} value={member}>
                                     {member}
                                   </option>
                                 ))}
@@ -2974,7 +2974,7 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                         </div>
                         <div className="max-h-[100px] overflow-y-auto space-y-1 px-1">
                           {(activeDashboardData?.activityDistribution || []).slice(0, 4).map((entry: any, index: number) => (
-                            <div key={entry.type} className="flex items-center justify-between text-[11px]">
+                            <div key={`act-dist-${entry.type}-${index}`} className="flex items-center justify-between text-[11px]">
                               <div className="flex items-center gap-1.5 truncate">
                                 <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS_PALETTE[index % COLORS_PALETTE.length] }} />
                                 <span className={`truncate font-bold ${textMain}`}>{entry.type}</span>
@@ -3306,7 +3306,7 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                                   {filteredRawRecords
                                     .slice((currentPage - 1) * (dashboardData?.project?.name?.toLowerCase().includes('m365') ? 20 : 10), currentPage * (dashboardData?.project?.name?.toLowerCase().includes('m365') ? 20 : 10))
                                     .map((row: any, idx: number) => (
-                                      <tr key={idx} className={`border-b ${isDark ? 'border-slate-800/50 hover:bg-slate-800/20' : 'border-slate-100 hover:bg-slate-50/50'} transition-colors`}>
+                                      <tr key={`raw-m365-${row.id || row.user_principal_name || 'row'}-${idx}`} className={`border-b ${isDark ? 'border-slate-800/50 hover:bg-slate-800/20' : 'border-slate-100 hover:bg-slate-50/50'} transition-colors`}>
                                         <td className={`py-3 px-3 font-medium ${textMain}`}>{row.periode_bulan}</td>
                                         <td className="py-3 px-3 text-slate-400 font-mono">{row.user_principal_name}</td>
                                         <td className={`py-3 px-3 font-bold ${textMain}`}>{row.display_name}</td>
@@ -3395,7 +3395,7 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                                     .filter((r: any) => r.user_name.toLowerCase().includes(searchQuery.toLowerCase()))
                                     .slice((currentPage - 1) * (dashboardData?.project?.name?.toLowerCase().includes('m365') ? 20 : 10), currentPage * (dashboardData?.project?.name?.toLowerCase().includes('m365') ? 20 : 10))
                                     .map((row: any, idx: number) => (
-                                      <tr key={idx} className={`border-b ${isDark ? 'border-slate-800/50 hover:bg-slate-800/20' : 'border-slate-100 hover:bg-slate-50/50'} transition-colors`}>
+                                      <tr key={`raw-rec-${row.id || row.user_name || 'row'}-${idx}`} className={`border-b ${isDark ? 'border-slate-800/50 hover:bg-slate-800/20' : 'border-slate-100 hover:bg-slate-50/50'} transition-colors`}>
                                         <td className={`py-3 font-bold ${textMain}`}>{row.user_name}</td>
                                         <td className="py-3 text-slate-400">{row.department}</td>
                                         <td className="py-3 font-mono font-black text-right text-purple-500">{row.count}</td>

@@ -573,8 +573,8 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
                       onChange={e => setMasterUserDept(e.target.value)}
                     >
                       <option value="">(Tidak Ada)</option>
-                      {departments.map(d => (
-                        <option key={d.id} value={d.name}>{d.name}</option>
+                      {departments.map((d, idx) => (
+                        <option key={`${d.id || d.name}-${idx}`} value={d.name}>{d.name}</option>
                       ))}
                     </select>
                   </div>
@@ -622,8 +622,8 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
                       onChange={e => setMasterUserJenisPiranti(e.target.value)}
                     >
                       <option value="(Tidak Ada)">(Tidak Ada)</option>
-                      {assetCategories.map(cat => (
-                        <option key={cat.id} value={cat.name}>{cat.name}</option>
+                      {assetCategories.map((cat, idx) => (
+                        <option key={`${cat.id || cat.name}-${idx}`} value={cat.name}>{cat.name}</option>
                       ))}
                     </select>
                   </div>
@@ -705,8 +705,8 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
                   </td>
                 </tr>
               ) : (
-                paginatedMasterUsers.map(user => (
-                  <tr key={user.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                paginatedMasterUsers.map((user, idx) => (
+                  <tr key={`${user.id}-${idx}`} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex flex-col">
                         <div className="flex items-center gap-1.5 flex-wrap">

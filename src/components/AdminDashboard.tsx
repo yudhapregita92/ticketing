@@ -268,7 +268,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
             <div className="flex-1 space-y-2">
               {categoryData.map((cat, idx) => (
-                <div key={cat.name} className="flex items-center justify-between text-[10px]">
+                <div key={`${cat.name}-${idx}`} className="flex items-center justify-between text-[10px]">
                   <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
                     <span className={textMuted}>{cat.name}</span>
@@ -286,8 +286,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <div className={cardClass}>
           <h3 className={`text-sm font-bold mb-6 ${textMain}`}>SLA Performance</h3>
           <div className="space-y-5">
-            {slaData.map(sla => (
-              <div key={sla.name}>
+            {slaData.map((sla, idx) => (
+              <div key={`${sla.name}-${idx}`}>
                 <div className="flex items-center justify-between mb-1.5">
                   <span className={`text-xs font-medium ${textMuted}`}>{sla.name} {sla.name === 'Critical' ? '(4h)' : sla.name === 'High' ? '(8h)' : ''}</span>
                   <span className={`text-[10px] font-bold ${sla.value < 80 ? 'text-rose-500' : 'text-emerald-500'}`}>{sla.value}%</span>
@@ -313,8 +313,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </button>
           </div>
           <div className="space-y-3">
-            {recentTickets.map(ticket => (
-              <div key={ticket.id} className="flex items-center justify-between">
+            {recentTickets.map((ticket, idx) => (
+              <div key={`${ticket.id}-${idx}`} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-none flex items-center justify-center text-[10px] font-bold ${
                     ticket.status === 'New' ? 'bg-indigo-500/10 text-indigo-500' :

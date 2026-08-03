@@ -1274,8 +1274,8 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                     Data tidak ditemukan
                   </td>
                 </tr>
-              ) : paginatedMemberships.map(member => (
-                <tr key={member.id} className={`hover:${themeClasses.bgSecondary} transition-colors`}>
+              ) : paginatedMemberships.map((member, idx) => (
+                <tr key={`${member.id}-${idx}`} className={`hover:${themeClasses.bgSecondary} transition-colors`}>
                   <td className="py-3 px-4">
                     {member.foto ? (
                       <img src={member.foto} alt={member.nama} className="w-10 h-10 rounded-full object-cover border min-w-[40px]" />
@@ -1459,8 +1459,8 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                         (j.bagian && j.bagian.toLowerCase().includes(journalSearch.toLowerCase())) ||
                         (j.keterangan && j.keterangan.toLowerCase().includes(journalSearch.toLowerCase()))
                       )
-                      .map(journal => (
-                        <tr key={journal.id} className={`hover:${themeClasses.bgSecondary} transition-colors`}>
+                      .map((journal, idx) => (
+                        <tr key={`${journal.id}-${idx}`} className={`hover:${themeClasses.bgSecondary} transition-colors`}>
                           <td className="py-3 px-4 text-xs font-semibold">
                             {new Date(journal.created_at).toLocaleString('id-ID', {
                               day: 'numeric',
@@ -1671,9 +1671,9 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                                 (m.indek_ggf && m.indek_ggf.toLowerCase().includes(journalSearchMemberQuery.toLowerCase()))
                               )
                               .slice(0, 5)
-                              .map(member => (
+                              .map((member, idx) => (
                                 <button
-                                  key={member.id}
+                                  key={`${member.id}-${idx}`}
                                   type="button"
                                   onClick={() => selectMemberForJournal(member)}
                                   className="w-full text-left px-4 py-2.5 hover:bg-indigo-500/10 dark:hover:bg-indigo-500/5 text-sm transition-colors flex items-center justify-between cursor-pointer"

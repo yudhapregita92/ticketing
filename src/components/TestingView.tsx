@@ -105,34 +105,9 @@ export const TestingView: React.FC<TestingViewProps> = ({ isDark, themeClasses }
           <form onSubmit={handleTestConnection} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className={`text-[10px] font-black ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>
-                    IP Address Host / Target PC
-                  </label>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setHost('192.168.1.5')}
-                      className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-all cursor-pointer"
-                    >
-                      192.168.1.5
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setHost('192.168.1.2')}
-                      className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 transition-all cursor-pointer"
-                    >
-                      192.168.1.2
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setHost('localhost')}
-                      className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-500/10 text-slate-600 hover:bg-slate-500/20 transition-all cursor-pointer"
-                    >
-                      localhost
-                    </button>
-                  </div>
-                </div>
+                <label className={`text-[10px] font-black ${themeClasses.textMuted} uppercase tracking-wider ml-1`}>
+                  IP Address Host / Target PC
+                </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
                     <Server className="w-4 h-4" />
@@ -142,7 +117,7 @@ export const TestingView: React.FC<TestingViewProps> = ({ isDark, themeClasses }
                     required
                     value={host}
                     onChange={(e) => setHost(e.target.value)}
-                    placeholder="Contoh: 192.168.1.5 atau 192.168.1.2"
+                    placeholder="Contoh: 192.168.1.2"
                     className={`w-full pl-9 pr-3 py-2.5 rounded-xl border text-xs outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.input} ${themeClasses.border} ${themeClasses.text}`}
                   />
                 </div>
@@ -301,12 +276,11 @@ export const TestingView: React.FC<TestingViewProps> = ({ isDark, themeClasses }
 
             {/* Info help */}
             <div className={`mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 text-[10px] ${themeClasses.textMuted} leading-relaxed`}>
-              <p className="font-bold mb-1">💡 Tips Pemecahan Masalah & Integrasi:</p>
+              <p className="font-bold mb-1">💡 Tips Pemecahan Masalah:</p>
               <ul className="list-disc pl-3.5 space-y-1 text-[9px]">
-                <li>Pilih preset IP <span className="font-bold text-emerald-600 dark:text-emerald-400">192.168.1.5</span> (PC Server lokal) atau <span className="font-bold text-blue-600 dark:text-blue-400">192.168.1.2</span> (PC Server Windows) sesuai target MySQL.</li>
-                <li>Untuk lokasi file database aplikasi lama di <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded text-amber-600 dark:text-amber-400">D:\data\datacenter</span>, pastikan service MySQL terkonfigurasi menggunakan datadir lokasi tersebut.</li>
-                <li>Pastikan MySQL di PC Server diizinkan menerima koneksi remote (bind-address = 0.0.0.0).</li>
-                <li>Periksa Windows Defender Firewall, pastikan port <span className="font-bold text-slate-500 dark:text-slate-400">3306</span> telah dibuka (Inbound Rule ALLOW).</li>
+                <li>Pastikan MySQL di PC Server Windows (192.168.1.2) diizinkan menerima koneksi remote (bind-address = 0.0.0.0).</li>
+                <li>Periksa Windows Defender Firewall di PC 192.168.1.2, pastikan port <span className="font-bold text-slate-500 dark:text-slate-400">3306</span> telah di-allow.</li>
+                <li>Verifikasi user <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">root</span> diizinkan login dari IP host remote (root@%).</li>
               </ul>
             </div>
           </div>

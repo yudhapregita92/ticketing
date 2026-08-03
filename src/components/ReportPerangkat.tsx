@@ -197,7 +197,7 @@ export const ReportPerangkat: React.FC<ReportPerangkatProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {deviceStats.slice(0, 4).map((stat, idx) => (
-          <div key={stat.id} className={`${themeClasses.card} rounded-[1.5rem] p-4 border shadow-sm relative overflow-hidden group`}>
+          <div key={`${stat.id}-${idx}`} className={`${themeClasses.card} rounded-[1.5rem] p-4 border shadow-sm relative overflow-hidden group`}>
             {idx === 0 && (
               <div className="absolute top-0 right-0 p-2">
                 <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-rose-500 bg-rose-500/10 px-2 py-1 rounded-lg">
@@ -266,7 +266,7 @@ export const ReportPerangkat: React.FC<ReportPerangkatProps> = ({
                 deviceStats.map((stat, idx) => {
                   const topCat = (Object.entries(stat.categories) as [string, number][]).sort((a, b) => b[1] - a[1])[0];
                   return (
-                    <tr key={stat.id} className={`transition-colors ${isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}>
+                    <tr key={`${stat.id}-${idx}`} className={`transition-colors ${isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}>
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${

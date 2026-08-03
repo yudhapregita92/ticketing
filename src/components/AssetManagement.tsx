@@ -1379,8 +1379,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                  {assets.slice(0, 5).map(asset => (
-                    <tr key={asset.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                  {assets.slice(0, 5).map((asset, idx) => (
+                    <tr key={`dash-asset-${asset.id}-${idx}`} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
                       <td className="py-2.5 px-3">
                         <div className="font-bold text-slate-800 dark:text-white">{asset.name || asset.category}</div>
                         <div className="text-[10px] text-slate-400">{asset.category}</div>
@@ -1518,9 +1518,9 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   item.borrower_name?.toLowerCase().includes(query) ||
                   item.borrower_department?.toLowerCase().includes(query) ||
                   item.notes?.toLowerCase().includes(query);
-              }).map((item) => (
+              }).map((item, idx) => (
                 <div
-                  key={item.id}
+                  key={`borrow-card-${item.id}-${idx}`}
                   className={`p-4 rounded-none border shadow-sm space-y-3 transition-all ${
                     isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'
                   }`}
@@ -1670,8 +1670,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                         item.borrower_name?.toLowerCase().includes(query) ||
                         item.borrower_department?.toLowerCase().includes(query) ||
                         item.notes?.toLowerCase().includes(query);
-                    }).map((item) => (
-                      <tr key={item.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors text-xs`}>
+                    }).map((item, idx) => (
+                      <tr key={`borrow-tr-${item.id}-${idx}`} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors text-xs`}>
                         <td className="px-4 py-3">
                           <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
                             <span>{item.device_name}</span>
@@ -1851,8 +1851,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     }`}
                   >
                     <option value="">Semua Kategori</option>
-                    {assetCategories.map(c => (
-                      <option key={c.id} value={c.name}>{c.name}</option>
+                    {assetCategories.map((c, idx) => (
+                      <option key={`opt-cat-${c.id || c.name}-${idx}`} value={c.name}>{c.name}</option>
                     ))}
                   </select>
                 </div>
@@ -1867,8 +1867,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     }`}
                   >
                     <option value="">Semua Departemen</option>
-                    {Array.from(new Set(assets.map(a => a.department).filter(Boolean))).sort().map(d => (
-                      <option key={d} value={d}>{d}</option>
+                    {Array.from(new Set(assets.map(a => a.department).filter(Boolean))).sort().map((d, idx) => (
+                      <option key={`opt-d-${d}-${idx}`} value={d}>{d}</option>
                     ))}
                   </select>
                 </div>
@@ -2042,8 +2042,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
         <div className={`rounded-none border shadow-sm overflow-hidden ${themeClasses.card}`}>
           {/* Mobile Card Layout (md:hidden) */}
           <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
-            {paginatedAssets.map((asset) => (
-              <div key={asset.id} className="p-3.5 space-y-2.5">
+            {paginatedAssets.map((asset, idx) => (
+              <div key={`asset-mob-${asset.id}-${idx}`} className="p-3.5 space-y-2.5">
                 {/* Header Row */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-2.5 min-w-0">
@@ -2177,9 +2177,9 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                 </tr>
               </thead>
               <tbody className={`divide-y ${isDark ? 'divide-slate-800' : 'divide-slate-100'}`}>
-                {paginatedAssets.map((asset) => (
+                {paginatedAssets.map((asset, idx) => (
                   <tr 
-                    key={asset.id} 
+                    key={`asset-dt-${asset.id}-${idx}`} 
                     className={`transition-colors ${isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}
                   >
                     <td className="px-3 py-2.5">

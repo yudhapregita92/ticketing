@@ -769,7 +769,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
           <div className="grid grid-cols-2 gap-y-2 mt-4">
             {categoryStats.map((stat, idx) => (
-              <div key={stat.name} className="flex items-center gap-2">
+              <div key={`${stat.name}-${idx}`} className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
                 <span className={`text-[10px] font-bold capitalize truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{stat.name}</span>
               </div>

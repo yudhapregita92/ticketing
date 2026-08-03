@@ -1010,9 +1010,9 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
       {activeTab === 'jobdesk' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {teamMembers.map((member) => (
+            {teamMembers.map((member, idx) => (
               <div 
-                key={member.id}
+                key={`${member.id}-${idx}`}
                 className={`p-4 sm:p-6 rounded-2xl sm:rounded-3xl border shadow-lg flex flex-col justify-between ${themeClasses.bgCard}`}
               >
                 <div>
@@ -1104,8 +1104,8 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200/10">
-                {filteredMembers.map((member) => (
-                  <tr key={member.id} className="hover:bg-slate-500/5 transition-all">
+                {filteredMembers.map((member, idx) => (
+                  <tr key={`${member.id}-${idx}`} className="hover:bg-slate-500/5 transition-all">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
                         <img 

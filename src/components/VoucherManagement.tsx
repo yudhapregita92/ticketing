@@ -2451,9 +2451,9 @@ export const VoucherManagement: React.FC<{
                 </div>
               ) : (
                 <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                  {myRequests.map((req) => (
+                  {myRequests.map((req, idx) => (
                     <div 
-                      key={req.id}
+                      key={`${req.id}-${idx}`}
                       className="p-4 border rounded-2xl bg-slate-50/50 dark:bg-slate-900/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-indigo-500/30 transition-all text-left"
                     >
                       <div className="space-y-1">
@@ -2529,8 +2529,8 @@ export const VoucherManagement: React.FC<{
             onChange={(e) => setActiveTemplateId(e.target.value)}
             className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold shadow-sm"
           >
-            {templates.map(t => (
-              <option key={t.id} value={t.id}>{t.name}</option>
+            {templates.map((t, idx) => (
+              <option key={`${t.id || t.name}-${idx}`} value={t.id}>{t.name}</option>
             ))}
           </select>
 
@@ -4054,9 +4054,9 @@ export const VoucherManagement: React.FC<{
                   </div>
                 ) : (
                   <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-                    {voucherRequests.map((req) => (
+                    {voucherRequests.map((req, idx) => (
                       <div 
-                        key={req.id}
+                        key={`${req.id}-${idx}`}
                         className="p-3 border rounded-xl bg-slate-50/50 dark:bg-slate-900/20 space-y-2 hover:border-slate-300 dark:hover:border-slate-700 transition-all text-left"
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -4360,9 +4360,9 @@ export const VoucherManagement: React.FC<{
                 </thead>
                 <tbody className="divide-y font-semibold text-slate-700 dark:text-slate-300">
                   <AnimatePresence>
-                    {filteredRecords.map(rec => (
+                    {filteredRecords.map((rec, idx) => (
                       <tr 
-                        key={rec.id} 
+                        key={`${rec.id}-${idx}`} 
                         className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all ${
                           selectedRecordIds.includes(rec.id) ? 'bg-indigo-500/5 dark:bg-indigo-500/10' : ''
                         }`}

@@ -999,7 +999,7 @@ Catatan: Mohon pastikan GPS aktif karena kami memerlukan lokasi Anda untuk penan
               <div className="space-y-6">
                 {editableGuides.map((guide, index) => (
                   <div 
-                    key={guide.id || index} 
+                    key={`${guide.id || 'guide'}-${index}`} 
                     className={`p-5 rounded-2xl border ${isDark ? 'bg-zinc-950/40 border-zinc-800' : 'bg-slate-50/50 border-slate-200'}`}
                   >
                     <div className="space-y-4">
@@ -1066,7 +1066,7 @@ Catatan: Mohon pastikan GPS aktif karena kami memerlukan lokasi Anda untuk penan
                 const isOpen = openSections.includes(guide.id);
                 return (
                   <div 
-                    key={guide.id || idx}
+                    key={`${guide.id || 'guide'}-${idx}`}
                     className={`rounded-2xl border overflow-hidden transition-all duration-300 ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-slate-50 border-slate-200'}`}
                   >
                     <button

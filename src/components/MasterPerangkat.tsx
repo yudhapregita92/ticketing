@@ -113,8 +113,8 @@ export const MasterPerangkat = ({ isDark, primaryColor }: { isDark: boolean, pri
                 <tr>
                   <td colSpan={3} className="px-6 py-8 text-center text-slate-500">Belum ada data kategori.</td>
                 </tr>
-              ) : categories.map(cat => (
-                <tr key={cat.id} className={`transition-colors ${isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}>
+              ) : categories.map((cat, idx) => (
+                <tr key={`${cat.id || cat.name}-${idx}`} className={`transition-colors ${isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}>
                   <td className={`px-6 py-4 font-mono font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{cat.kode_kategori || '-'}</td>
                   <td className={`px-6 py-4 font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{cat.name}</td>
                   <td className="px-6 py-4 flex items-center justify-end gap-2">

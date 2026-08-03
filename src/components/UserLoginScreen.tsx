@@ -380,9 +380,9 @@ export const UserLoginScreen = React.memo(({
                         </div>
                         <div className="max-h-48 overflow-y-auto p-1.5 space-y-1">
                           {filteredUsers.length > 0 ? (
-                            filteredUsers.map(u => (
+                            filteredUsers.map((u, idx) => (
                               <div 
-                                key={u.id}
+                                key={`${u.id}-${idx}`}
                                 onClick={() => {
                                   setSelectedUser(u);
                                   setShowUserDropdown(false);

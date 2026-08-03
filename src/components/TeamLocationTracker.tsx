@@ -1013,9 +1013,9 @@ export const TeamLocationTracker: React.FC<TeamLocationTrackerProps> = ({
                   Belum ada log riwayat lokasi tercatat.
                 </div>
               ) : (
-                historyLogs.map((log) => (
+                historyLogs.map((log, idx) => (
                   <div
-                    key={log.id}
+                    key={`${log.id}-${idx}`}
                     className={`p-3 rounded-2xl border text-xs space-y-1 ${
                       isDark ? 'bg-slate-800/60 border-slate-700' : 'bg-slate-50 border-slate-200'
                     }`}
