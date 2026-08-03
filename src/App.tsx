@@ -1987,195 +1987,217 @@ export default function App() {
                 </button>
               </div>
             )}
+            {/* Lightweight Menu Switch Top Progress Line */}
+            <AnimatePresence mode="popLayout">
+              <motion.div 
+                key={`top-bar-${viewMode}`}
+                initial={{ scaleX: 0, opacity: 1 }}
+                animate={{ scaleX: 1, opacity: 0 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
+                style={{ transformOrigin: "left" }}
+                className="h-0.5 w-full bg-gradient-to-r from-emerald-500 via-blue-500 to-amber-500 rounded-full"
+              />
+            </AnimatePresence>
+
             <Suspense fallback={
               <div className="p-8 text-center flex flex-col items-center justify-center min-h-[300px]">
                 <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-3" />
                 <p className="text-xs text-slate-500 font-bold">Memuat halaman...</p>
               </div>
             }>
-              {viewMode === 'dashboard' ? (
-                <AdminDashboard 
-                  tickets={tickets}
-                  adminUser={adminUser}
-                  isDark={isDark}
-                  themeClasses={themeClasses}
-                  setViewMode={setViewMode}
-                />
-              ) : viewMode === 'assets' ? (
-                <AssetManagement 
-                  isDark={isDark}
-                  themeClasses={themeClasses}
-                  primaryColor={primaryColor}
-                  activeSubTab={assetSubTab}
-                  setActiveSubTab={setAssetSubTab}
-                />
-              ) : viewMode === 'network' ? (
-                <NetworkMonitor 
-                  isDark={isDark}
-                  themeClasses={themeClasses}
-                  primaryColor={primaryColor}
-                  adminUser={adminUser}
-                />
-              ) : viewMode === 'master_user' ? (
-                <MasterUserManagement 
-                  isDark={isDark}
-                  themeClasses={themeClasses}
-                  masterUsers={masterUsers}
-                  departments={departments}
-                  handleManagementAction={handleManagementAction}
-                  adminUser={adminUser}
-                />
-              ) : viewMode === 'master_perangkat' ? (
-                <MasterPerangkat isDark={isDark} primaryColor={primaryColor} />
-              ) : viewMode === 'master_team' ? (
-                <MasterTeam isDark={isDark} primaryColor={primaryColor} />
-              ) : viewMode === 'ba' ? (
-                <BeritaAcara 
-                  isDark={isDark}
-                  themeClasses={themeClasses}
-                  primaryColor={primaryColor}
-                  adminUser={adminUser}
-                />
-              ) : viewMode === 'membership' ? (
-                <MembershipManagement
-                  isDark={isDark}
-                  themeClasses={themeClasses}
-                  primaryColor={primaryColor}
-                />
-              ) : viewMode === 'voucher' ? (
-                <VoucherManagement
-                  isDark={isDark}
-                  themeClasses={themeClasses}
-                  primaryColor={primaryColor}
-                  adminUser={adminUser}
-                  currentUser={currentUser}
-                  loggedInMasterUser={loggedInMasterUser}
-                />
-              ) : viewMode === 'evaluasi_project' ? (
-                <ProjectEvaluation 
-                  isDark={isDark}
-                  themeClasses={themeClasses}
-                  primaryColor={primaryColor}
-                />
-              ) : viewMode === 'report_sla' ? (
-                <ReportSLA 
-                  tickets={tickets}
-                  isDark={isDark}
-                  themeClasses={themeClasses}
-                  adminUser={adminUser}
-                  masterUsers={masterUsers}
-                  onSelectTicket={(ticket) => setSelectedTicket(ticket)}
-                />
-              ) : viewMode === 'report_perangkat' ? (
-                <ReportPerangkat 
-                  tickets={tickets}
-                  isDark={isDark}
-                  themeClasses={themeClasses}
-                  adminUser={adminUser}
-                  masterUsers={masterUsers}
-                  categories={categories}
-                />
-              ) : viewMode === 'settings' ? (
-                <SettingsModal 
-                  inline={true}
-                  isDark={isDark}
-                  themeClasses={themeClasses}
-                  settingsTab={settingsTab}
-                  setSettingsTab={setSettingsTab}
-                  appSettings={appSettings}
-                  setAppSettings={setAppSettings}
-                  LOGO_OPTIONS={LOGO_OPTIONS}
-                  newEmailInput={newEmailInput}
-                  setNewEmailInput={setNewEmailInput}
-                  showEmailInput={showEmailInput}
-                  setShowEmailInput={setShowEmailInput}
-                  handleUpdateSettings={handleUpdateSettings}
-                  primaryColor={primaryColor}
-                  adminUser={adminUser}
-                  itPersonnel={itPersonnel}
-                  departments={departments}
-                  categories={categories}
-                  addingType={addingType}
-                  setAddingType={setAddingType}
-                  newItemName={newItemName}
-                  setNewItemName={setNewItemName}
-                  newItemAssignedTo={newItemAssignedTo}
-                  setNewItemAssignedTo={setNewItemAssignedTo}
-                  newItemResponseTime={newItemResponseTime}
-                  setNewItemResponseTime={setNewItemResponseTime}
-                  newItemJenisMasalah={newItemJenisMasalah}
-                  setNewItemJenisMasalah={setNewItemJenisMasalah}
-                  handleManagementAction={handleManagementAction}
-                  masterUsers={masterUsers}
-                  adminUsers={adminUsers}
-                  handleUploadExcel={handleUploadExcel}
-                  adminThemeLayout={adminThemeLayout}
-                  setAdminThemeLayout={setAdminThemeLayout}
-                />
-              ) : viewMode === 'team_location' ? (
-                <TeamLocationTracker
-                  isDark={isDark}
-                  currentUser={adminUser || currentUser}
-                  adminThemeColor={appSettings?.admin_primary_color || 'blue'}
-                  adminThemeLayout={adminThemeLayout}
-                />
-              ) : viewMode === 'testing' ? (
-                <TestingView 
-                  isDark={isDark}
-                  themeClasses={themeClasses}
-                />
-              ) : viewMode === 'panduan' ? (
-                <Panduan 
-                  isDark={isDark} 
-                  primaryColor={primaryColor} 
-                  appSettings={appSettings} 
-                  setAppSettings={setAppSettings}
-                  adminUser={adminUser}
-                />
-              ) : (
-                <TicketList 
-                  adminUser={adminUser}
-                  currentUser={currentUser}
-                  isDark={isDark}
-                  themeClasses={themeClasses}
-                  categories={categories}
-                  viewMode={viewMode as any}
-                  setViewMode={setViewMode as any}
-                  filterDept={filterDept}
-                  setFilterDept={setFilterDept}
-                  filterStatus={filterStatus}
-                  setFilterStatus={setFilterStatus}
-                  filterDate={filterDate}
-                  setFilterDate={setFilterDate}
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  loading={loading}
-                  tickets={tickets}
-                  filteredTickets={filteredTickets}
-                  paginatedTickets={paginatedTickets}
-                  currentPage={currentPage}
-                  setCurrentPage={setCurrentPage}
-                  totalPages={totalPages}
-                  itemsPerPage={itemsPerPage}
-                  handleSelectTicket={handleSelectTicket}
-                  handleDeleteTicket={handleDeleteTicket}
-                  handleIntervention={handleIntervention}
-                  getStatusIcon={getStatusIcon}
-                  getStatusColor={getStatusColor}
-                  formatDate={formatDate}
-                  fetchTickets={fetchTickets}
-                  setShowMobileFilter={setShowMobileFilter}
-                  setTempFilters={setTempFilters}
-                  selectedTickets={selectedTickets}
-                  setSelectedTickets={setSelectedTickets}
-                  primaryColor={primaryColor}
-                  CurrentLogo={CurrentLogo}
-                  setShowForm={setShowForm}
-                  handleBulkAction={handleBulkAction}
-                  appSettings={appSettings}
-                  onForwardWhatsApp={(t) => setWhatsappModalTicket(t)}
-                />
-              )}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={viewMode}
+                  initial={{ opacity: 0.88, y: 3 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0.88, y: -3 }}
+                  transition={{ duration: 0.12 }}
+                >
+                  {viewMode === 'dashboard' ? (
+                    <AdminDashboard 
+                      tickets={tickets}
+                      adminUser={adminUser}
+                      isDark={isDark}
+                      themeClasses={themeClasses}
+                      setViewMode={setViewMode}
+                    />
+                  ) : viewMode === 'assets' ? (
+                    <AssetManagement 
+                      isDark={isDark}
+                      themeClasses={themeClasses}
+                      primaryColor={primaryColor}
+                      activeSubTab={assetSubTab}
+                      setActiveSubTab={setAssetSubTab}
+                    />
+                  ) : viewMode === 'network' ? (
+                    <NetworkMonitor 
+                      isDark={isDark}
+                      themeClasses={themeClasses}
+                      primaryColor={primaryColor}
+                      adminUser={adminUser}
+                    />
+                  ) : viewMode === 'master_user' ? (
+                    <MasterUserManagement 
+                      isDark={isDark}
+                      themeClasses={themeClasses}
+                      masterUsers={masterUsers}
+                      departments={departments}
+                      handleManagementAction={handleManagementAction}
+                      adminUser={adminUser}
+                    />
+                  ) : viewMode === 'master_perangkat' ? (
+                    <MasterPerangkat isDark={isDark} primaryColor={primaryColor} />
+                  ) : viewMode === 'master_team' ? (
+                    <MasterTeam isDark={isDark} primaryColor={primaryColor} />
+                  ) : viewMode === 'ba' ? (
+                    <BeritaAcara 
+                      isDark={isDark}
+                      themeClasses={themeClasses}
+                      primaryColor={primaryColor}
+                      adminUser={adminUser}
+                    />
+                  ) : viewMode === 'membership' ? (
+                    <MembershipManagement
+                      isDark={isDark}
+                      themeClasses={themeClasses}
+                      primaryColor={primaryColor}
+                    />
+                  ) : viewMode === 'voucher' ? (
+                    <VoucherManagement
+                      isDark={isDark}
+                      themeClasses={themeClasses}
+                      primaryColor={primaryColor}
+                      adminUser={adminUser}
+                      currentUser={currentUser}
+                      loggedInMasterUser={loggedInMasterUser}
+                    />
+                  ) : viewMode === 'evaluasi_project' ? (
+                    <ProjectEvaluation 
+                      isDark={isDark}
+                      themeClasses={themeClasses}
+                      primaryColor={primaryColor}
+                    />
+                  ) : viewMode === 'report_sla' ? (
+                    <ReportSLA 
+                      tickets={tickets}
+                      isDark={isDark}
+                      themeClasses={themeClasses}
+                      adminUser={adminUser}
+                      masterUsers={masterUsers}
+                      onSelectTicket={(ticket) => setSelectedTicket(ticket)}
+                    />
+                  ) : viewMode === 'report_perangkat' ? (
+                    <ReportPerangkat 
+                      tickets={tickets}
+                      isDark={isDark}
+                      themeClasses={themeClasses}
+                      adminUser={adminUser}
+                      masterUsers={masterUsers}
+                      categories={categories}
+                    />
+                  ) : viewMode === 'settings' ? (
+                    <SettingsModal 
+                      inline={true}
+                      isDark={isDark}
+                      themeClasses={themeClasses}
+                      settingsTab={settingsTab}
+                      setSettingsTab={setSettingsTab}
+                      appSettings={appSettings}
+                      setAppSettings={setAppSettings}
+                      LOGO_OPTIONS={LOGO_OPTIONS}
+                      newEmailInput={newEmailInput}
+                      setNewEmailInput={setNewEmailInput}
+                      showEmailInput={showEmailInput}
+                      setShowEmailInput={setShowEmailInput}
+                      handleUpdateSettings={handleUpdateSettings}
+                      primaryColor={primaryColor}
+                      adminUser={adminUser}
+                      itPersonnel={itPersonnel}
+                      departments={departments}
+                      categories={categories}
+                      addingType={addingType}
+                      setAddingType={setAddingType}
+                      newItemName={newItemName}
+                      setNewItemName={setNewItemName}
+                      newItemAssignedTo={newItemAssignedTo}
+                      setNewItemAssignedTo={setNewItemAssignedTo}
+                      newItemResponseTime={newItemResponseTime}
+                      setNewItemResponseTime={setNewItemResponseTime}
+                      newItemJenisMasalah={newItemJenisMasalah}
+                      setNewItemJenisMasalah={setNewItemJenisMasalah}
+                      handleManagementAction={handleManagementAction}
+                      masterUsers={masterUsers}
+                      adminUsers={adminUsers}
+                      handleUploadExcel={handleUploadExcel}
+                      adminThemeLayout={adminThemeLayout}
+                      setAdminThemeLayout={setAdminThemeLayout}
+                    />
+                  ) : viewMode === 'team_location' ? (
+                    <TeamLocationTracker
+                      isDark={isDark}
+                      currentUser={adminUser || currentUser}
+                      adminThemeColor={appSettings?.admin_primary_color || 'blue'}
+                      adminThemeLayout={adminThemeLayout}
+                    />
+                  ) : viewMode === 'testing' ? (
+                    <TestingView 
+                      isDark={isDark}
+                      themeClasses={themeClasses}
+                    />
+                  ) : viewMode === 'panduan' ? (
+                    <Panduan 
+                      isDark={isDark} 
+                      primaryColor={primaryColor} 
+                      appSettings={appSettings} 
+                      setAppSettings={setAppSettings}
+                      adminUser={adminUser}
+                    />
+                  ) : (
+                    <TicketList 
+                      adminUser={adminUser}
+                      currentUser={currentUser}
+                      isDark={isDark}
+                      themeClasses={themeClasses}
+                      categories={categories}
+                      viewMode={viewMode as any}
+                      setViewMode={setViewMode as any}
+                      filterDept={filterDept}
+                      setFilterDept={setFilterDept}
+                      filterStatus={filterStatus}
+                      setFilterStatus={setFilterStatus}
+                      filterDate={filterDate}
+                      setFilterDate={setFilterDate}
+                      searchQuery={searchQuery}
+                      setSearchQuery={setSearchQuery}
+                      loading={loading}
+                      tickets={tickets}
+                      filteredTickets={filteredTickets}
+                      paginatedTickets={paginatedTickets}
+                      currentPage={currentPage}
+                      setCurrentPage={setCurrentPage}
+                      totalPages={totalPages}
+                      itemsPerPage={itemsPerPage}
+                      handleSelectTicket={handleSelectTicket}
+                      handleDeleteTicket={handleDeleteTicket}
+                      handleIntervention={handleIntervention}
+                      getStatusIcon={getStatusIcon}
+                      getStatusColor={getStatusColor}
+                      formatDate={formatDate}
+                      fetchTickets={fetchTickets}
+                      setShowMobileFilter={setShowMobileFilter}
+                      setTempFilters={setTempFilters}
+                      selectedTickets={selectedTickets}
+                      setSelectedTickets={setSelectedTickets}
+                      primaryColor={primaryColor}
+                      CurrentLogo={CurrentLogo}
+                      setShowForm={setShowForm}
+                      handleBulkAction={handleBulkAction}
+                      appSettings={appSettings}
+                      onForwardWhatsApp={(t) => setWhatsappModalTicket(t)}
+                    />
+                  )}
+                </motion.div>
+              </AnimatePresence>
             </Suspense>
           </div>
 
