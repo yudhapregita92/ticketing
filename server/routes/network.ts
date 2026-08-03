@@ -209,8 +209,7 @@ router.post("/test-db-connection", async (req, res) => {
       user,
       password: password || '',
       database: database || undefined,
-      connectTimeout: 3000, // 3 seconds timeout
-      allowPublicKeyRetrieval: true, // Sangat penting untuk MySQL 8+ dengan caching_sha2_password / sha256_password
+      connectTimeout: 5000, // 5 seconds timeout
       authPlugins: {
         '': caching_sha2_password,
         'caching_sha2_password': caching_sha2_password,
@@ -227,9 +226,15 @@ router.post("/test-db-connection", async (req, res) => {
     res.json({ success: true, message: `Terhubung sukses ke database MySQL di ${host}:${port || 3306}` });
   } catch (error: any) {
     console.error("[DB TEST] Gagal terhubung:", error);
+    let errMsg = error.message || "Gagal menghubungkan ke database MySQL.";
+    if (error.code === 'ETIMEDOUT') {
+      errMsg = `Koneksi Timeout (ETIMEDOUT) ke ${host}:${port || 3306}. IP private (${host}) tidak dapat dijangkau langsung dari cloud container. Jika MySQL berada di LAN lokal, gunakan tunnel (Ngrok/FRP) atau publikasikan port 3306.`;
+    } else if (error.code === 'ECONNREFUSED') {
+      errMsg = `Koneksi Ditolak (ECONNREFUSED) di ${host}:${port || 3306}. Pastikan service MySQL berjalan dan bind-address = 0.0.0.0.`;
+    }
     res.json({ 
       success: false, 
-      error: error.message || "Gagal menghubungkan ke database MySQL. Periksa IP, Port, Username, atau Password Anda." 
+      error: errMsg 
     });
   }
 });
