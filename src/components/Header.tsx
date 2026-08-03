@@ -153,7 +153,7 @@ export const Header: React.FC<HeaderProps> = ({
         ? 'bg-[#337AB7] border-b border-blue-600/50 text-white shadow-xs'
         : 'bg-transparent border-none'
     }`}>
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 h-10 sm:h-11 flex items-center justify-between gap-2">
+      <div className="w-full px-3 sm:px-6 lg:px-8 h-10 sm:h-11 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           {adminUser ? (
             <div className="min-w-0 flex items-center gap-2">
