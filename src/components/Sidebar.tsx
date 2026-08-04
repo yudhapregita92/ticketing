@@ -749,7 +749,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     dataKey="value"
                   >
                     {categoryStats.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-sb-pie-${entry.name || 'cat'}-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <RechartsTooltip 

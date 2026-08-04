@@ -461,7 +461,7 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
                 }`}
               >
                 <option value="">Semua Tipe</option>
-                {uniqueTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                {uniqueTypes.map((t, idx) => <option key={`${t}-${idx}`} value={t}>{t}</option>)}
               </select>
               <select
                 value={locationFilter}
@@ -473,7 +473,7 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
                 }`}
               >
                 <option value="">Semua Lokasi</option>
-                {uniqueLocations.map(l => <option key={l} value={l}>{l}</option>)}
+                {uniqueLocations.map((l, idx) => <option key={`${l}-${idx}`} value={l}>{l}</option>)}
               </select>
             </div>
           </div>
@@ -504,7 +504,7 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
                 {topologyOrder.map((type, index) => (
                   <motion.div 
                     layout
-                    key={type} 
+                    key={`${type}-${index}`} 
                     className={`flex items-center justify-between p-3 rounded-xl border ${isDark ? 'bg-zinc-800/50 border-zinc-700' : 'bg-white border-slate-200 shadow-sm'}`}
                   >
                     <div className="flex items-center gap-3">
@@ -552,7 +552,7 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
                     if (typeDevices.length === 0) return null;
                     
                     return (
-                      <div key={type} className="flex flex-col items-center relative w-full pt-8 pb-4">
+                      <div key={`${type}-${tIndex}`} className="flex flex-col items-center relative w-full pt-8 pb-4">
                         {/* Vertical line from previous tier */}
                         <motion.div 
                           initial={{ height: 0 }} animate={{ height: '2rem' }} transition={{ delay: tIndex * 0.1 }}
@@ -578,7 +578,7 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
                           )}
 
                           {typeDevices.map((device, dIndex) => (
-                            <div key={device.id} className="relative pt-4 flex flex-col items-center w-[140px] sm:w-[160px]">
+                            <div key={`${device.id}-${dIndex}`} className="relative pt-4 flex flex-col items-center w-[140px] sm:w-[160px]">
                               {/* vertical line down to device */}
                               {typeDevices.length > 1 && (
                                 <motion.div 
@@ -706,8 +706,8 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
                       isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
                     }`}
                   >
-                    {uniqueTypes.map(t => (
-                      <option key={t} value={t}>{t}</option>
+                    {uniqueTypes.map((t, idx) => (
+                      <option key={`${t}-${idx}`} value={t}>{t}</option>
                     ))}
                     <option value="new">+ Tambah Baru...</option>
                   </select>
@@ -756,12 +756,12 @@ const NetworkMonitor: React.FC<NetworkMonitorProps> = ({ isDark, themeClasses, p
       ) : viewType === 'list' ? (
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
-            {paginatedDevices.map((device) => (
+            {paginatedDevices.map((device, idx) => (
               <motion.div
                 layout
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                key={device.id}
+                key={`${device.id}-${idx}`}
                 className={`p-4 rounded-2xl border flex flex-col gap-3 relative overflow-hidden transition-shadow hover:shadow-md w-full ${
                   isDark ? 'bg-zinc-900/40 border-zinc-800' : 'bg-white border-slate-100 shadow-sm'
                 }`}

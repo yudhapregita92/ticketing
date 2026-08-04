@@ -853,7 +853,7 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
 
                   return (
                     <button
-                      key={pageNum}
+                      key={`usr-page-${pageNum}`}
                       type="button"
                       onClick={() => setCurrentPage(pageNum)}
                       className={`w-7 h-7 rounded-lg text-xs font-bold transition-colors cursor-pointer ${

@@ -1149,8 +1149,8 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
             }`}
           >
             <option value="all">Semua</option>
-            {opts.map((opt) => (
-              <option key={opt} value={opt}>
+            {opts.map((opt, idx) => (
+              <option key={`opt-filter-${opt}-${idx}`} value={opt}>
                 {opt}
               </option>
             ))}
@@ -1232,14 +1232,14 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {projects.map((project) => {
+                {projects.map((project, idx) => {
                   const adoptionRate = project.target_users > 0 
                     ? Math.round(((project.user_count || 0) / project.target_users) * 100) 
                     : 0;
 
                   return (
                     <div 
-                      key={project.id}
+                      key={`proj-card-${project.id || project.name}-${idx}`}
                       className={`${cardClass} hover:border-purple-500/50 group flex flex-col justify-between`}
                     >
                       <div>
@@ -2877,7 +2877,7 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                                   >
                                     {(activeDashboardData?.activityDistribution || []).map((entry: any, index: number) => (
                                       <Cell 
-                                        key={`cell-${index}`} 
+                                        key={`cell-eval-bar-${entry.type || 'act'}-${index}`} 
                                         fill={COLORS_PALETTE[index % COLORS_PALETTE.length]} 
                                       />
                                     ))}
@@ -2958,7 +2958,7 @@ export const ProjectEvaluation: React.FC<ProjectEvaluationProps> = ({
                                 nameKey="type"
                               >
                                 {(activeDashboardData?.activityDistribution || []).map((entry: any, index: number) => (
-                                  <Cell key={`cell-${index}`} fill={COLORS_PALETTE[index % COLORS_PALETTE.length]} />
+                                  <Cell key={`cell-eval-pie-${entry.type || 'act'}-${index}`} fill={COLORS_PALETTE[index % COLORS_PALETTE.length]} />
                                 ))}
                               </Pie>
                               <Tooltip 

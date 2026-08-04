@@ -126,11 +126,11 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
                 <p className="text-sm font-semibold">Tidak ada notifikasi {filter === 'unread' ? 'belum dibaca' : ''}</p>
               </div>
             ) : (
-              filtered.map((item) => {
+              filtered.map((item, idx) => {
                 const isUnread = item.is_read === 0;
                 return (
                   <div
-                    key={item.id}
+                    key={`notif-${item.id}-${idx}`}
                     onClick={() => {
                       if (isUnread) onMarkAsRead(item.id);
                       if (onSelectTicket) {

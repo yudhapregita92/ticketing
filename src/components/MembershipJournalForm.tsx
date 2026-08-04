@@ -441,9 +441,9 @@ export const MembershipJournalForm: React.FC<MembershipJournalFormProps> = ({
                         </div>
                         <div className="max-h-40 overflow-y-auto p-1.5 space-y-0.5">
                           {filteredMembers.length > 0 ? (
-                            filteredMembers.map(m => (
+                            filteredMembers.map((m, idx) => (
                               <div 
-                                key={m.id}
+                                key={`m-dropdown-${m.id || m.full_name}-${idx}`}
                                 onClick={() => {
                                   setSelectedMember(m);
                                   setShowMemberDropdown(false);

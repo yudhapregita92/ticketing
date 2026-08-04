@@ -70,7 +70,7 @@ export const HighlightText = ({ text, highlight, isDark }: { text: string, highl
     <>
       {parts.map((part, i) => 
         part.toLowerCase() === highlight.toLowerCase() ? (
-          <mark key={i} className={`${isDark ? 'bg-emerald-500/30 text-emerald-300' : 'bg-emerald-100 text-emerald-900'} px-0.5 rounded`}>
+          <mark key={`hl-${i}-${part.slice(0, 8)}`} className={`${isDark ? 'bg-emerald-500/30 text-emerald-300' : 'bg-emerald-100 text-emerald-900'} px-0.5 rounded`}>
             {part}
           </mark>
         ) : (

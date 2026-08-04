@@ -2557,8 +2557,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       }`}
                     >
                       <option value="">Pilih Kategori...</option>
-                      {assetCategories.map(c => (
-                        <option key={c.id} value={c.name}>{c.name}</option>
+                      {assetCategories.map((c, idx) => (
+                        <option key={`cat-${c.id || c.name}-${idx}`} value={c.name}>{c.name}</option>
                       ))}
                     </select>
                   </div>
@@ -2696,8 +2696,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                         }`}
                       >
                         <option value="">Pilih Pengguna...</option>
-                        {masterUsers.map(u => (
-                          <option key={u.id} value={u.full_name}>{u.full_name}</option>
+                        {masterUsers.map((u, idx) => (
+                          <option key={`usr-${u.id || u.full_name}-${idx}`} value={u.full_name}>{u.full_name}</option>
                         ))}
                       </select>
                     </div>
@@ -3089,9 +3089,9 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                               return name.includes(q) || code.includes(q) || dept.includes(q) || cat.includes(q);
                             }
                             return true;
-                          }).map(a => (
+                          }).map((a, idx) => (
                             <button
-                              key={a.id}
+                              key={`borrow-asset-${a.id || a.name}-${idx}`}
                               type="button"
                               onClick={() => {
                                 setBorrowFormData(prev => ({
@@ -3257,9 +3257,9 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                               return name.includes(q) || dept.includes(q);
                             }
                             return true;
-                          }).map(u => (
+                          }).map((u, idx) => (
                             <button
-                              key={u.id}
+                              key={`borrow-user-${u.id || u.full_name}-${idx}`}
                               type="button"
                               onClick={() => {
                                 setBorrowFormData(prev => ({
@@ -3546,9 +3546,9 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   
                   {/* Preset Options */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
-                    {['yudha', 'bayu', 'dita', 'chandra'].map((person) => (
+                    {['yudha', 'bayu', 'dita', 'chandra'].map((person, idx) => (
                       <button
-                        key={person}
+                        key={`person-${person}-${idx}`}
                         type="button"
                         onClick={() => setReceivedBy(person)}
                         className={`py-2 px-2.5 rounded-none text-xs font-black capitalize transition-all border text-center min-h-[40px] flex items-center justify-center cursor-pointer ${
@@ -3731,8 +3731,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
                   }`}
                 >
-                  {assets.map(a => (
-                    <option key={a.id} value={a.id}>
+                  {assets.map((a, idx) => (
+                    <option key={`qr-asset-${a.id || a.device_code}-${idx}`} value={a.id}>
                       [{a.device_code || a.asset_id}] {a.name || a.category} - {a.assigned_to || 'Tanpa User'}
                     </option>
                   ))}
@@ -4044,8 +4044,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                           isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
                         }`}
                       >
-                        {masterUsers.map(u => (
-                          <option key={u.id} value={u.full_name}>
+                        {masterUsers.map((u, idx) => (
+                          <option key={`repl-user-${u.id || u.full_name}-${idx}`} value={u.full_name}>
                             {u.full_name} ({u.department || 'Staff'})
                           </option>
                         ))}

@@ -90,9 +90,9 @@ export const MobileFilterModal: React.FC<MobileFilterModalProps> = ({
                   >
                     Semua
                   </button>
-                  {departments.map(dept => (
+                  {departments.map((dept, idx) => (
                     <button 
-                      key={dept.id}
+                      key={`dept-filter-${dept.id || dept.name}-${idx}`}
                       onClick={() => setTempFilters({ ...tempFilters, dept: dept.name })}
                       className={`px-4 py-2 rounded-xl text-[10px] font-bold capitalize tracking-wider transition-all border ${
                         tempFilters.dept === dept.name 
@@ -124,9 +124,9 @@ export const MobileFilterModal: React.FC<MobileFilterModalProps> = ({
                   >
                     Semua
                   </button>
-                  {STATUSES.map(status => (
+                  {STATUSES.map((status, idx) => (
                     <button 
-                      key={status}
+                      key={`status-filter-${status}-${idx}`}
                       onClick={() => setTempFilters({ ...tempFilters, status: status })}
                       className={`px-4 py-2 rounded-xl text-[10px] font-bold capitalize tracking-wider transition-all border ${
                         tempFilters.status === status 

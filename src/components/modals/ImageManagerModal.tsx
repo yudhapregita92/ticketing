@@ -144,8 +144,8 @@ export const ImageManagerModal: React.FC<ImageManagerModalProps> = ({
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {images.map((img) => (
-                <React.Fragment key={img.id}>
+              {images.map((img, idx) => (
+                <React.Fragment key={`img-frag-${img.id || 'img'}-${idx}`}>
                   {img.has_photo === 1 && (
                     <div className={`p-4 rounded-2xl border ${themeClasses.border} ${isDark ? 'bg-slate-800/50' : 'bg-slate-50'} flex flex-col gap-3`}>
                       <div className="flex items-start justify-between">

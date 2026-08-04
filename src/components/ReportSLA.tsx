@@ -565,8 +565,8 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
               className={`w-full px-3 py-2 rounded-xl text-xs font-semibold border ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text} focus:outline-none focus:ring-2 focus:ring-emerald-500`}
             >
               <option value="ALL">Semua Petugas IT</option>
-              {itStaffList.map(name => (
-                <option key={name} value={name}>{name}</option>
+              {itStaffList.map((name, idx) => (
+                <option key={`it-${name}-${idx}`} value={name}>{name}</option>
               ))}
             </select>
           </div>
@@ -800,7 +800,7 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y dark:divide-slate-800/60 text-xs">
-              {filteredTickets.map(ticket => {
+              {filteredTickets.map((ticket, idx) => {
                 const isCompleted = ticket.status === 'Completed' || ticket.status === 'Resolved' || ticket.status === 'Selesai';
                 const respondedTime = ticket.responded_at || (ticket.status !== 'New' && ticket.status !== 'Baru' ? ticket.updated_at : null);
                 const resolvedTime = ticket.resolved_at || (isCompleted ? ticket.updated_at : null);
@@ -813,7 +813,7 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
 
                 return (
                   <tr 
-                    key={ticket.id} 
+                    key={`sla-t-${ticket.id || ticket.ticket_no}-${idx}`} 
                     onClick={() => onSelectTicket && onSelectTicket(ticket)}
                     className="hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-all"
                   >

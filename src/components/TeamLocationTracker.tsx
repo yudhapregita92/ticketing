@@ -656,9 +656,9 @@ export const TeamLocationTracker: React.FC<TeamLocationTrackerProps> = ({
                 { id: 'online', label: 'Aktif Live' },
                 { id: 'away', label: 'Baru Saja' },
                 { id: 'offline', label: 'Inaktif' },
-              ].map((btn) => (
+              ].map((btn, idx) => (
                 <button
-                  key={btn.id}
+                  key={`filter-btn-${btn.id}-${idx}`}
                   onClick={() => setStatusFilter(btn.id as any)}
                   className={`px-3 py-1 rounded-xl transition-all whitespace-nowrap border ${
                     statusFilter === btn.id
@@ -686,13 +686,13 @@ export const TeamLocationTracker: React.FC<TeamLocationTrackerProps> = ({
                   <p className="text-xs font-bold">Tidak ada data anggota tim ditemukan.</p>
                 </div>
               ) : (
-                filteredLocations.map((loc) => {
+                filteredLocations.map((loc, idx) => {
                   const st = getOnlineStatus(loc.updated_at);
                   const isSelected = selectedUser?.username === loc.username;
 
                   return (
                     <div
-                      key={loc.id}
+                      key={`loc-item-${loc.id || loc.username}-${idx}`}
                       className={`p-3.5 rounded-2xl border transition-all space-y-2.5 cursor-pointer ${
                         isSelected
                           ? 'border-blue-500 ring-2 ring-blue-500/20 shadow-md ' + (isDark ? 'bg-slate-800' : 'bg-blue-50/50')

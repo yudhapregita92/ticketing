@@ -463,7 +463,7 @@ export const TicketDetailModal = React.memo(({
                     <div className="flex items-center gap-1">
                       {[1, 2, 3, 4, 5].map((s) => (
                         <Star
-                          key={s}
+                          key={`star-${selectedTicket.id || 't'}-${s}`}
                           className={`w-4 h-4 ${
                             s <= Number(selectedTicket.rating || 0)
                               ? 'fill-amber-400 text-amber-400'
@@ -789,7 +789,7 @@ export const TicketDetailModal = React.memo(({
                   ) : (
                     <div className="space-y-2 relative before:absolute before:left-[6px] before:top-1.5 before:bottom-1.5 before:w-0.5 before:bg-slate-300 dark:before:bg-slate-700">
                       {ticketLogs.map((log, idx) => (
-                        <div key={idx} className="relative pl-5">
+                        <div key={`tlog-${log.id || 'log'}-${idx}`} className="relative pl-5">
                           <div className={`absolute left-0 top-1 w-3 h-3 rounded-full border border-white dark:border-slate-800 shadow-sm flex items-center justify-center ${
                             log.action.includes('Status') ? 'bg-emerald-500' :
                             log.action.includes('Tugaskan') ? 'bg-blue-500' :
@@ -881,8 +881,8 @@ export const TicketDetailModal = React.memo(({
                             defaultValue={selectedTicket.assigned_to || ''}
                           >
                             <option value="">Pilih IT...</option>
-                            {Array.isArray(users) && users.map(u => (
-                              <option key={u.id} value={u.username}>{u.full_name || u.username}</option>
+                            {Array.isArray(users) && users.map((u, idx) => (
+                              <option key={`it-user-${u.id || u.username}-${idx}`} value={u.username}>{u.full_name || u.username}</option>
                             ))}
                           </select>
                         ) : (
@@ -905,9 +905,9 @@ export const TicketDetailModal = React.memo(({
                       <div className="space-y-0.5">
                         <label className="text-[10px] font-bold text-slate-300 tracking-wider">Tingkat Prioritas</label>
                         <div className="grid grid-cols-4 gap-0.5 bg-slate-800/90 p-0.5 rounded-lg border border-slate-700">
-                          {PRIORITIES.map((p: any) => (
+                          {PRIORITIES.map((p: any, idx: number) => (
                             <button
-                              key={p.id}
+                              key={`pri-${p.id}-${idx}`}
                               type="button"
                               onClick={() => setModalPriority(p.id)}
                               className={`py-1 px-0.5 rounded text-[9px] font-black capitalize tracking-tight transition-all text-center cursor-pointer ${
@@ -927,9 +927,9 @@ export const TicketDetailModal = React.memo(({
                     <div className="space-y-0.5">
                       <label className="text-[10px] font-bold text-slate-300 tracking-wider">Status Tiket</label>
                       <div className="grid grid-cols-4 gap-1 bg-slate-800/90 p-0.5 rounded-lg border border-slate-700">
-                        {Array.isArray(STATUSES) && STATUSES.map(status => (
+                        {Array.isArray(STATUSES) && STATUSES.map((status, idx) => (
                           <button
-                            key={status}
+                            key={`st-${status}-${idx}`}
                             type="button"
                             onClick={() => setModalStatus(status)}
                             className={`py-1 px-1 rounded-md text-[10px] font-black capitalize tracking-tight transition-all text-center cursor-pointer ${
@@ -1017,9 +1017,9 @@ export const TicketDetailModal = React.memo(({
                         </div>
                         {estMode === 'quick' && (
                           <div className="grid grid-cols-3 gap-1 pt-0.5">
-                            {[30, 60, 120].map(mins => (
+                            {[30, 60, 120].map((mins, idx) => (
                               <button
-                                key={mins}
+                                key={`mins-${mins}-${idx}`}
                                 type="button"
                                 onClick={() => setEstQuickMins(mins)}
                                 className={`py-0.5 text-[9px] font-bold rounded border cursor-pointer ${

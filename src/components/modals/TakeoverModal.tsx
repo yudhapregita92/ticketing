@@ -55,9 +55,9 @@ export const TakeoverModal: React.FC<TakeoverModalProps> = ({
 
           {showTakeoverConfirm.type === 'reassign' && !showTakeoverConfirm.targetUser && (
             <div className="grid grid-cols-1 gap-2 mb-8 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
-              {users.map(u => (
+              {users.map((u, idx) => (
                 <button
-                  key={u.id}
+                  key={`takeover-${u.id || u.username}-${idx}`}
                   onClick={() => setShowTakeoverConfirm({ ...showTakeoverConfirm, targetUser: u.username })}
                   className={`w-full py-3 px-4 rounded-xl border font-bold text-sm transition-all flex items-center justify-between group ${
                     isDark 

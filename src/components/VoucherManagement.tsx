@@ -2604,9 +2604,9 @@ export const VoucherManagement: React.FC<{
               { id: 'design', label: 'Desain' },
               { id: 'recipients', label: 'Daftar Seri' },
               { id: 'print', label: 'Siap Cetak' }
-            ] as const).map(tab => (
+            ] as const).map((tab, idx) => (
               <button
-                key={tab.id}
+                key={`vtab-${tab.id}-${idx}`}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex-1 py-2 text-xs font-black capitalize rounded-xl transition-all whitespace-nowrap ${
                   activeTab === tab.id

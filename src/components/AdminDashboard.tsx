@@ -253,7 +253,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     stroke="none"
                   >
                     {categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-admin-pie-${entry.name || 'cat'}-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip 

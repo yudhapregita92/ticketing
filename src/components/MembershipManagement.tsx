@@ -1362,7 +1362,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                   
                   return (
                     <button
-                      key={pageNum}
+                      key={`m-page-${pageNum}`}
                       onClick={() => setCurrentPage(pageNum)}
                       className={`w-8 h-8 rounded text-sm font-medium transition-colors ${
                         currentPage === pageNum
@@ -2068,7 +2068,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                     </h4>
                     <div className="text-xs space-y-1.5 pl-3 border-l-2 border-red-300">
                       {duplicateData.duplicatesInFile.map((dup, idx) => (
-                        <div key={idx} className="p-2 rounded bg-amber-500/5 border border-amber-500/10">
+                        <div key={`dup-file-${dup.indek_kdk || 'file'}-${idx}`} className="p-2 rounded bg-amber-500/5 border border-amber-500/10">
                           <div>Index KDK: <span className="font-mono font-bold text-red-650">{dup.indek_kdk}</span></div>
                           <div className={`text-[11px] ${themeClasses.textMuted}`}>
                             Dimiliki oleh: <span className="font-semibold text-slate-700 dark:text-slate-300">{dup.names.join(', ')}</span>
@@ -2086,7 +2086,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                     </h4>
                     <div className="text-xs space-y-1.5 pl-3 border-l-2 border-red-300">
                       {duplicateData.duplicatesWithDb.map((dup, idx) => (
-                        <div key={idx} className="p-2 rounded bg-rose-500/5 border border-rose-500/10">
+                        <div key={`dup-db-${dup.indek_kdk || 'db'}-${idx}`} className="p-2 rounded bg-rose-500/5 border border-rose-500/10">
                           <div>Index KDK: <span className="font-mono font-bold text-red-650">{dup.indek_kdk}</span></div>
                           <div className="grid grid-cols-2 gap-2 text-[11px] mt-1">
                             <div>Nama di Excel: <span className="font-semibold text-slate-700 dark:text-slate-300">{dup.excelName}</span></div>
@@ -2348,8 +2348,8 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
                               }}
                               className={`w-full text-xs px-2 py-1.5 rounded border ${themeClasses.input}`}
                             >
-                              {cameraDevices.map((device) => (
-                                <option key={device.deviceId} value={device.deviceId}>
+                              {cameraDevices.map((device, idx) => (
+                                <option key={`cam-${device.deviceId || 'dev'}-${idx}`} value={device.deviceId}>
                                   {device.label || `Kamera ${device.deviceId.substring(0, 5)}`}
                                 </option>
                               ))}
@@ -2505,8 +2505,8 @@ const MembershipLogsModal = ({ member, onClose, themeClasses }: { member: IMembe
             </div>
           ) : (
             <div className="space-y-4">
-              {logs.map(log => (
-                <div key={log.id} className={`p-3 rounded-xl border ${themeClasses.card} ${themeClasses.border} relative shadow-sm`}>
+              {logs.map((log, idx) => (
+                <div key={`m-log-${log.id || 'log'}-${idx}`} className={`p-3 rounded-xl border ${themeClasses.card} ${themeClasses.border} relative shadow-sm`}>
                   <div className="flex gap-3">
                     <div className="mt-1">
                       <div className="w-2 h-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20"></div>

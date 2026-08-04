@@ -262,8 +262,8 @@ const RichEditor: React.FC<RichEditorProps> = ({ initialValue, onChange, isDark,
             onChange={handleFontChange}
             className={`px-2 py-1 rounded-lg text-xs font-semibold outline-none border cursor-pointer ${isDark ? 'bg-zinc-950 border-zinc-800 text-white' : 'bg-white border-slate-200 text-slate-800'}`}
           >
-            {fontOptions.map(font => (
-              <option key={font.value} value={font.value}>{font.label}</option>
+            {fontOptions.map((font, idx) => (
+              <option key={`f-opt-${font.value}-${idx}`} value={font.value}>{font.label}</option>
             ))}
           </select>
         </div>
@@ -276,8 +276,8 @@ const RichEditor: React.FC<RichEditorProps> = ({ initialValue, onChange, isDark,
             onChange={handleSizeChange}
             className={`px-2 py-1 rounded-lg text-xs font-semibold outline-none border cursor-pointer ${isDark ? 'bg-zinc-950 border-zinc-800 text-white' : 'bg-white border-slate-200 text-slate-800'}`}
           >
-            {sizeOptions.map(size => (
-              <option key={size.value} value={size.value}>{size.label}</option>
+            {sizeOptions.map((size, idx) => (
+              <option key={`s-opt-${size.value}-${idx}`} value={size.value}>{size.label}</option>
             ))}
           </select>
         </div>
@@ -585,11 +585,11 @@ const RichEditor: React.FC<RichEditorProps> = ({ initialValue, onChange, isDark,
                   { label: '75%', value: '75%' },
                   { label: '100%', value: '100%' },
                   { label: 'Auto', value: 'auto' }
-                ].map(opt => {
+                ].map((opt, idx) => {
                   const isCurrent = selectedImage.style.width === opt.value || (!selectedImage.style.width && opt.value === 'auto');
                   return (
                     <button
-                      key={opt.value}
+                      key={`img-w-${opt.value}-${idx}`}
                       type="button"
                       onClick={() => setImageWidth(opt.value)}
                       className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-colors cursor-pointer ${
@@ -615,7 +615,7 @@ const RichEditor: React.FC<RichEditorProps> = ({ initialValue, onChange, isDark,
                   { label: 'Kiri (Rapat)', value: 'left' },
                   { label: 'Tengah (Baris Baru)', value: 'center' },
                   { label: 'Kanan (Rapat)', value: 'right' }
-                ].map(opt => {
+                ].map((opt, idx) => {
                   const floatStyle = selectedImage.style.float;
                   const displayStyle = selectedImage.style.display;
                   const isCurrent = 
@@ -625,7 +625,7 @@ const RichEditor: React.FC<RichEditorProps> = ({ initialValue, onChange, isDark,
 
                   return (
                     <button
-                      key={opt.value}
+                      key={`img-align-${opt.value}-${idx}`}
                       type="button"
                       onClick={() => setImageAlign(opt.value as any)}
                       className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-colors cursor-pointer ${

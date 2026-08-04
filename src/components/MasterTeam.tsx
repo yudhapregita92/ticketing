@@ -840,7 +840,7 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     {pelaksanaList.map((pelaksana, idx) => (
                       <div 
-                        key={pelaksana.id}
+                        key={`pelaksana-${pelaksana.id || pelaksana.name}-${idx}`}
                         className={`p-3.5 sm:p-4 rounded-2xl border-2 border-teal-500/40 transition-all hover:shadow-xl relative ${themeClasses.bgSecondary}`}
                       >
                         <div className="flex items-center justify-between gap-1 mb-2">
@@ -885,7 +885,7 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                           <div className="flex flex-wrap gap-1">
                             {pelaksana.specialization.slice(0, 3).map((spec, sIdx) => (
                               <span 
-                                key={sIdx}
+                                key={`spec-${pelaksana.id || pelaksana.name || 'p'}-${sIdx}`}
                                 className="px-1.5 py-0.5 rounded-md text-[8px] font-bold bg-slate-200/60 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300"
                               >
                                 {spec}
@@ -1042,7 +1042,7 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
 
                   <ul className="space-y-2 text-xs">
                     {member.jobdesks.map((task, tIdx) => (
-                      <li key={tIdx} className="flex items-start gap-2">
+                      <li key={`jd-m-${member.id || member.name || 'mem'}-${tIdx}`} className="flex items-start gap-2">
                         <span className="w-4 h-4 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">
                           {tIdx + 1}
                         </span>
@@ -1212,7 +1212,7 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                 </h4>
                 <ul className="space-y-2 text-xs">
                   {selectedMember.jobdesks.map((jd, idx) => (
-                    <li key={idx} className="flex items-start gap-2 p-2 rounded-xl bg-slate-500/5">
+                    <li key={`jd-sel-${selectedMember.id || selectedMember.name || 'sm'}-${idx}`} className="flex items-start gap-2 p-2 rounded-xl bg-slate-500/5">
                       <span className="w-5 h-5 rounded-lg bg-emerald-500 text-white flex items-center justify-center text-[10px] font-black shrink-0">
                         {idx + 1}
                       </span>

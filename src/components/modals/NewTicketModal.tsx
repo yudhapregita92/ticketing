@@ -941,9 +941,9 @@ export const NewTicketModal = React.memo(({
               />
               {showUserDropdown && filteredUsers.length > 0 && (
                 <div className={`absolute top-full left-0 right-0 z-[100] mt-1 max-h-48 overflow-y-auto rounded-xl border shadow-xl ${isDark ? 'bg-slate-800' : 'bg-white'} ${themeClasses.border}`}>
-                  {filteredUsers.map(user => (
+                  {filteredUsers.map((user, idx) => (
                     <div 
-                      key={user.id} 
+                      key={`user-opt-${user.id || user.full_name}-${idx}`} 
                       className={`px-4 py-2 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors border-b last:border-0 ${themeClasses.border}`}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleSelectUser(user)}
@@ -1053,8 +1053,8 @@ export const NewTicketModal = React.memo(({
                 onChange={e => setNewTicket({...newTicket, priority: e.target.value})}
               >
                 <option value="">Pilih Prioritas...</option>
-                {PRIORITIES.map(p => (
-                  <option key={p.id} value={p.id}>{p.label}</option>
+                {PRIORITIES.map((p, idx) => (
+                  <option key={`p-opt-${p.id}-${idx}`} value={p.id}>{p.label}</option>
                 ))}
               </select>
             </div>

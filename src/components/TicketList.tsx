@@ -222,11 +222,11 @@ export const TicketList: React.FC<TicketListProps> = ({
               activeClass: 'border-purple-500 ring-1 ring-purple-500 bg-purple-50/50 dark:bg-purple-900/20',
               idleClass: isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800' : 'bg-white border-slate-200 hover:bg-slate-50'
             }
-          ].map((item) => {
+          ].map((item, idx) => {
             const isActive = filterStatus === item.id;
             return (
               <motion.button
-                key={item.label}
+                key={`filter-${item.id || item.label}-${idx}`}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setFilterStatus(item.id)}
                 style={{ borderRadius: `${cardRadius}px` }}
@@ -463,7 +463,7 @@ export const TicketList: React.FC<TicketListProps> = ({
                   ) {
                     return (
                       <button
-                        key={page}
+                        key={`t-page-${page}`}
                         onClick={() => setCurrentPage(page)}
                         className={`w-8 h-8 rounded-md text-[10px] font-bold transition-all ${
                           currentPage === page

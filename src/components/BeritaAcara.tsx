@@ -539,9 +539,9 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
               </div>
             </div>
             <div className="divide-y divide-slate-100 dark:divide-zinc-800">
-              {savedDocs.map(doc => (
+              {savedDocs.map((doc, idx) => (
                 <div 
-                  key={doc.id}
+                  key={`doc-${doc.id || 'saved'}-${idx}`}
                   className={`grid grid-cols-12 gap-4 p-4 items-center transition-all ${
                     currentId === doc.id 
                       ? (isDark ? 'bg-emerald-900/10' : 'bg-emerald-50/50')

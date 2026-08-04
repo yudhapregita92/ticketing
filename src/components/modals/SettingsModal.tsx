@@ -856,9 +856,9 @@ export const SettingsModal = React.memo(({
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-400 capitalize tracking-widest ml-1">Logo Default</label>
                     <div className="grid grid-cols-5 gap-2">
-                      {LOGO_OPTIONS.map(logo => (
+                      {LOGO_OPTIONS.map((logo, idx) => (
                         <button
-                          key={logo.id}
+                          key={`logo-opt-${logo.id}-${idx}`}
                           type="button"
                           onClick={() => setAppSettings({...appSettings, logo_type: logo.id})}
                           className={`p-3 rounded-xl border flex items-center justify-center transition-all ${appSettings.logo_type === logo.id ? 'bg-emerald-600 text-white border-emerald-600' : `${themeClasses.bgSecondary} ${themeClasses.border} text-slate-400 hover:border-emerald-500`}`}
@@ -2097,8 +2097,8 @@ export const SettingsModal = React.memo(({
                       {(!appSettings.notification_emails || (Array.isArray(appSettings.notification_emails) ? appSettings.notification_emails.length === 0 : !appSettings.notification_emails)) ? (
                         <p className="text-xs text-slate-400 italic text-center py-4">Belum ada email notifikasi.</p>
                       ) : (
-                        (Array.isArray(appSettings.notification_emails) ? appSettings.notification_emails : [appSettings.notification_emails]).map((email: string) => (
-                          <div key={email} className={`flex items-center justify-between p-3 rounded-xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                        (Array.isArray(appSettings.notification_emails) ? appSettings.notification_emails : [appSettings.notification_emails]).map((email: string, idx: number) => (
+                          <div key={`notif-email-${email}-${idx}`} className={`flex items-center justify-between p-3 rounded-xl border ${themeClasses.bgSecondary} ${themeClasses.border}`}>
                             <div className="flex items-center gap-3">
                               <Mail className="w-4 h-4 text-slate-400" />
                               <span className="text-xs font-bold">{email}</span>
@@ -2311,8 +2311,8 @@ export const SettingsModal = React.memo(({
                       )}
 
                       <div className="flex flex-wrap gap-2">
-                        {Array.isArray(itPersonnel) && itPersonnel.map(it => (
-                          <div key={it.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
+                        {Array.isArray(itPersonnel) && itPersonnel.map((it, idx) => (
+                          <div key={`it-${it.id || it.name}-${idx}`} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
                             <div className="flex flex-col">
                               <span className={`text-xs font-bold ${themeClasses.text}`}>{it.name}</span>
                               {it.role && <span className={`text-[9px] ${themeClasses.textMuted}`}>{it.role}</span>}
@@ -2365,8 +2365,8 @@ export const SettingsModal = React.memo(({
                       )}
 
                       <div className="flex flex-wrap gap-2">
-                        {Array.isArray(departments) && departments.map(dept => (
-                          <div key={dept.id} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
+                        {Array.isArray(departments) && departments.map((dept, idx) => (
+                          <div key={`dept-${dept.id || dept.name}-${idx}`} className={`flex items-center gap-2 ${themeClasses.bgSecondary} px-3 py-1.5 rounded-lg border ${themeClasses.border} group`}>
                             <span className={`text-xs font-bold ${themeClasses.text}`}>{dept.name}</span>
                             <button type="button" onClick={() => handleManagementAction('dept', 'delete', dept)} className="text-rose-500 hover:text-rose-400 opacity-80 hover:opacity-100 transition-opacity ml-2">
                               <Trash2 className="w-3 h-3" />
@@ -2437,8 +2437,8 @@ export const SettingsModal = React.memo(({
                                 }}
                                 className={`w-36 border rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.input}`}
                               >
-                                {allJenisMasalahList.map(jm => (
-                                  <option key={jm} value={jm}>{jm}</option>
+                                {allJenisMasalahList.map((jm, idx) => (
+                                  <option key={`jm-opt-${jm}-${idx}`} value={jm}>{jm}</option>
                                 ))}
                                 <option value="__NEW__">+ Tambah Jenis Baru...</option>
                               </select>
@@ -2457,12 +2457,12 @@ export const SettingsModal = React.memo(({
                           <div className="flex flex-col gap-1">
                             <label className={`text-[9px] font-black uppercase tracking-wider ${themeClasses.textMuted}`}>Pilih IT Penanggung Jawab (Multi-PIC / Prioritas Sequential)</label>
                             <div className="flex flex-wrap gap-1.5 p-2 border rounded-xl bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800">
-                              {adminUsers.map(user => {
+                              {adminUsers.map((user, uIdx) => {
                                 const selectedIndex = (editingCategoryAssignedToList || []).indexOf(user.username);
                                 const isSelected = selectedIndex !== -1;
                                 return (
                                   <button
-                                    key={user.id}
+                                    key={`usr-pic-${user.id || user.username}-${uIdx}`}
                                     type="button"
                                     onClick={() => {
                                       if (isSelected) {
@@ -2510,7 +2510,7 @@ export const SettingsModal = React.memo(({
 
                       <div className="max-h-64 overflow-y-auto p-2 border border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/40 space-y-2">
                         {Array.isArray(categories) && categories.length > 0 ? (
-                          categories.map(cat => {
+                          categories.map((cat, cIdx) => {
                           const getCatPics = (categoryItem: any): string[] => {
                             if (categoryItem.assigned_to_list) {
                               try {
@@ -2527,7 +2527,7 @@ export const SettingsModal = React.memo(({
                           const pics = getCatPics(cat);
 
                           return editingCategoryId === cat.id ? (
-                            <div key={cat.id} className={`flex flex-col gap-2 ${themeClasses.bgSecondary} p-3 rounded-xl border border-emerald-500 w-full max-w-sm`}>
+                            <div key={`cat-edit-${cat.id || cat.name}-${cIdx}`} className={`flex flex-col gap-2 ${themeClasses.bgSecondary} p-3 rounded-xl border border-emerald-500 w-full max-w-sm`}>
                               <div className="flex flex-col gap-0.5">
                                 <label className={`text-[8px] font-black uppercase tracking-wider ${themeClasses.textMuted}`}>Nama Kategori</label>
                                 <input 
@@ -2584,8 +2584,8 @@ export const SettingsModal = React.memo(({
                                     }}
                                     className={`w-full border rounded-lg px-2 py-1 text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500 ${themeClasses.input}`}
                                   >
-                                    {allJenisMasalahList.map(jm => (
-                                      <option key={jm} value={jm}>{jm}</option>
+                                    {allJenisMasalahList.map((jm, jmIdx) => (
+                                      <option key={`jm-edit-${jm}-${jmIdx}`} value={jm}>{jm}</option>
                                     ))}
                                     <option value="__NEW__">+ Tambah Jenis Baru...</option>
                                   </select>
@@ -2594,12 +2594,12 @@ export const SettingsModal = React.memo(({
                               <div className="flex flex-col gap-1">
                                 <label className={`text-[8px] font-black uppercase tracking-wider ${themeClasses.textMuted}`}>PIC Multi-Admin (Urutan Prioritas)</label>
                                 <div className="flex flex-wrap gap-1 p-1.5 border rounded-lg bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800">
-                                  {adminUsers.map(user => {
+                                  {adminUsers.map((user, uIdx) => {
                                     const selectedIndex = editingCategoryAssignedToList.indexOf(user.username);
                                     const isSelected = selectedIndex !== -1;
                                     return (
                                       <button
-                                        key={user.id}
+                                        key={`usr-cat-edit-${user.id || user.username}-${uIdx}`}
                                         type="button"
                                         onClick={() => {
                                           if (isSelected) {
@@ -2659,7 +2659,7 @@ export const SettingsModal = React.memo(({
                               </div>
                             </div>
                           ) : (
-                            <div key={cat.id} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${themeClasses.bgSecondary} px-3 py-2.5 rounded-xl border ${themeClasses.border} group w-full shadow-sm`}>
+                            <div key={`cat-view-${cat.id || cat.name}-${cIdx}`} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${themeClasses.bgSecondary} px-3 py-2.5 rounded-xl border ${themeClasses.border} group w-full shadow-sm`}>
                               <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 min-w-0">
                                 <span className={`text-xs font-bold ${themeClasses.text} min-w-[120px]`}>{cat.name}</span>
                                 <div className="flex flex-wrap items-center gap-2">
@@ -2674,12 +2674,12 @@ export const SettingsModal = React.memo(({
                                   <div className="flex flex-wrap items-center gap-1">
                                     <span className="text-[9px] font-black text-slate-400 ml-1">PIC:</span>
                                     {pics.length > 0 ? (
-                                      pics.map((picUser, idx) => {
+                                      pics.map((picUser, picIdx) => {
                                         const uInfo = adminUsers.find(u => u.username.toLowerCase() === picUser.toLowerCase() || u.full_name.toLowerCase() === picUser.toLowerCase());
                                         const isOff = uInfo && (uInfo.is_on_duty === 0 || uInfo.is_on_duty === '0' || uInfo.is_on_duty === false);
                                         return (
                                           <span 
-                                            key={picUser} 
+                                            key={`pic-chip-${picUser}-${picIdx}`} 
                                             className={`text-[8px] font-black px-1.5 py-0.5 rounded flex items-center gap-1 border ${
                                               isOff 
                                                 ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' 
@@ -2689,7 +2689,7 @@ export const SettingsModal = React.memo(({
                                           >
                                             <span className={`w-1 h-1 rounded-full ${isOff ? 'bg-rose-500' : 'bg-emerald-500'}`} />
                                             <span>{picUser}</span>
-                                            <span className="text-[7px] opacity-75">P{idx + 1}</span>
+                                            <span className="text-[7px] opacity-75">P{picIdx + 1}</span>
                                           </span>
                                         );
                                       })
@@ -2855,7 +2855,7 @@ export const SettingsModal = React.memo(({
 
                         return (
                           <div 
-                            key={rule.name}
+                            key={`rule-${rule.name}-${idx}`}
                             className={`p-3.5 rounded-2xl border flex items-center justify-between gap-2 transition-all ${
                               rule.require_device_code
                                 ? 'bg-gradient-to-r from-blue-500/5 to-indigo-500/5 border-blue-500/20'
@@ -2997,8 +2997,8 @@ export const SettingsModal = React.memo(({
                     )}
 
                     <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-                      {Array.isArray(adminUsers) && adminUsers.map(user => (
-                        <div key={user.id} className={`flex flex-col gap-2 p-2.5 rounded-xl border ${themeClasses.border} ${themeClasses.bgSecondary}`}>
+                      {Array.isArray(adminUsers) && adminUsers.map((user, idx) => (
+                        <div key={`adm-usr-${user.id || user.username}-${idx}`} className={`flex flex-col gap-2 p-2.5 rounded-xl border ${themeClasses.border} ${themeClasses.bgSecondary}`}>
                           <div className="flex items-center justify-between">
                             <div className="flex flex-col">
                               <span className="text-[11px] font-bold">{user.full_name} ({user.username})</span>
@@ -3295,7 +3295,7 @@ export const SettingsModal = React.memo(({
 
                   <div className="space-y-4">
                     {parsedPanduan.map((guide: any, index: number) => (
-                      <div key={guide.id} className={`p-4 rounded-2xl border ${themeClasses.border} ${themeClasses.bgSecondary}`}>
+                      <div key={`guide-${guide.id || 'guide'}-${index}`} className={`p-4 rounded-2xl border ${themeClasses.border} ${themeClasses.bgSecondary}`}>
                         <div className="space-y-4">
                           <div className="flex justify-between items-center">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sub Judul</label>
@@ -3616,12 +3616,12 @@ export const SettingsModal = React.memo(({
                         { label: '5 Menit', val: 5 },
                         { label: '7 Menit', val: 7 },
                         { label: '10 Menit', val: 10 }
-                      ].map((opt) => {
+                      ].map((opt, idx) => {
                         const currentDelay = Number(appSettings.yudha_auto_respond_delay ?? 5);
                         const isSelected = currentDelay === opt.val;
                         return (
                           <button
-                            key={opt.val}
+                            key={`yudha-delay-${opt.val}-${idx}`}
                             type="button"
                             onClick={() => {
                               setAppSettings({
@@ -3710,12 +3710,12 @@ export const SettingsModal = React.memo(({
                             >
                               Semua Kategori (ALL)
                             </button>
-                            {Array.isArray(categories) && categories.map((cat: any) => {
+                            {Array.isArray(categories) && categories.map((cat: any, idx: number) => {
                               const catName = typeof cat === 'string' ? cat : cat.name;
                               const isChecked = !isAll && selectedCats.includes(catName);
                               return (
                                 <button
-                                  key={cat.id || catName}
+                                  key={`yudha-cat-${cat.id || catName}-${idx}`}
                                   type="button"
                                   onClick={() => toggleCat(catName)}
                                   className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
