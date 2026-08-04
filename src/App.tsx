@@ -17,6 +17,7 @@ const safeRemoveItem = (key: string) => {
 };
 
 import { APP_VERSION, getEnvironment } from './version';
+import { initBugLogger } from './utils/bugLogger';
 import { 
   Zap, 
   Send, 
@@ -395,7 +396,7 @@ export default function App() {
   const [loginData, setLoginData] = useState({ username: '', password: '' });
   const [showSettings, setShowSettings] = useState(false); // Toggle modal pengaturan aplikasi
   const [showImageManager, setShowImageManager] = useState(false); // Toggle modal manajemen gambar
-  const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'banner' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup'>('general');
+  const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'banner' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup' | 'bug_log'>('general');
   const [showResetConfirm, setShowResetConfirm] = useState(false); // Toggle konfirmasi reset data
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<{type: 'single' | 'bulk', id?: number} | null>(null);
   const [showTakeoverConfirm, setShowTakeoverConfirm] = useState<{id: number, type: 'takeover' | 'reassign', targetUser?: string} | null>(null);
@@ -470,6 +471,14 @@ export default function App() {
       setAppSettings(prev => ({ ...prev, admin_theme_mode: newMode }));
     }
   };
+
+  // --- Initialize System Bug Logger ---
+  useEffect(() => {
+    initBugLogger(() => ({
+      email: adminUser?.email || currentUser?.email || 'guest',
+      role: adminUser ? 'admin' : 'user',
+    }));
+  }, [adminUser, currentUser]);
 
   // --- Draft Ticket Logic ---
   useEffect(() => {

@@ -29,7 +29,8 @@ import {
   Clock,
   HardDrive,
   Folder,
-  Zap
+  Zap,
+  Bug
 } from 'lucide-react';
 
 import * as xlsx from 'xlsx';
@@ -40,6 +41,7 @@ import { APP_VERSION, BUILD_DATE, UPDATE_HISTORY, getEnvironment } from '../../v
 import { IJenisMasalahRule } from '../../types';
 import { parseJenisMasalahRules } from '../../utils/jenisMasalah';
 import { UserHeroBanner } from '../UserHeroBanner';
+import { BugLogTab } from './BugLogTab';
 
 interface SettingsModalProps {
   showSettings?: boolean;
@@ -47,8 +49,8 @@ interface SettingsModalProps {
   inline?: boolean;
   isDark: boolean;
   themeClasses: any;
-  settingsTab: 'general' | 'branding' | 'banner' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup';
-  setSettingsTab: (tab: 'general' | 'branding' | 'banner' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup') => void;
+  settingsTab: 'general' | 'branding' | 'banner' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup' | 'bug_log';
+  setSettingsTab: (tab: 'general' | 'branding' | 'banner' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup' | 'bug_log') => void;
   appSettings: any;
   setAppSettings: (settings: any) => void;
   LOGO_OPTIONS: any[];
@@ -831,6 +833,13 @@ export const SettingsModal = React.memo(({
               className={`whitespace-nowrap shrink-0 sm:w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'ticket_popup' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <MessageCircle className="w-4 h-4" /> Pop-up Tiket
+            </button>
+            <button 
+              type="button"
+              onClick={() => setSettingsTab('bug_log')}
+              className={`whitespace-nowrap shrink-0 sm:w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'bug_log' ? 'bg-rose-600 text-white shadow-lg shadow-rose-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+            >
+              <Bug className="w-4 h-4 text-rose-400" /> Bug Log (Production)
             </button>
             <button 
               onClick={() => setSettingsTab('panduan')}
@@ -3747,6 +3756,10 @@ export const SettingsModal = React.memo(({
                     </ul>
                   </div>
                 </div>
+              )}
+
+              {settingsTab === 'bug_log' && (
+                <BugLogTab isDark={isDark} themeClasses={themeClasses} adminUser={adminUser} />
               )}
 
             </form>
