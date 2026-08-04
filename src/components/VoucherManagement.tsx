@@ -2536,7 +2536,8 @@ export const VoucherManagement: React.FC<{
 
           <button
             onClick={handleAddTemplate}
-            className="p-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+            style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+            className="p-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 shadow-md shadow-blue-500/20"
             title="Tambah Template Baru"
           >
             <Plus className="w-4 h-4" />
@@ -2545,7 +2546,8 @@ export const VoucherManagement: React.FC<{
 
           <button
             onClick={() => handleDeleteTemplate(activeTemplateId)}
-            className="p-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-bold transition-all"
+            style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+            className="p-2 bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold transition-all active:scale-95 shadow-md shadow-rose-500/20"
             title="Hapus Template Aktif"
           >
             <Trash2 className="w-4 h-4" />

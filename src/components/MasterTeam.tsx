@@ -553,13 +553,17 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
             <button
               onClick={handleExportBackup}
               title="Unduh backup data topologi & tim ke file JSON"
-              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all flex items-center justify-center gap-1.5 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}
+              style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-xs font-bold border transition-all flex items-center justify-center gap-1.5 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}
             >
               <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 shrink-0" />
               <span className="truncate">Backup JSON</span>
             </button>
 
-            <label className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold border cursor-pointer transition-all flex items-center justify-center gap-1.5 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}>
+            <label 
+              style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-xs font-bold border cursor-pointer transition-all flex items-center justify-center gap-1.5 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}
+            >
               <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-500 shrink-0" />
               <span className="truncate">Impor JSON</span>
               <input 
@@ -572,7 +576,8 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
 
             <button
               onClick={handlePrintTopology}
-              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all flex items-center justify-center gap-1.5 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}
+              style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-xs font-bold border transition-all flex items-center justify-center gap-1.5 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}
             >
               <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 shrink-0" />
               <span className="truncate">Cetak</span>
@@ -580,7 +585,8 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
 
             <button
               onClick={handleResetDefault}
-              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all flex items-center justify-center gap-1.5 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}
+              style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-xs font-bold border transition-all flex items-center justify-center gap-1.5 hover:opacity-80 active:scale-95 ${themeClasses.border} ${themeClasses.bgSecondary}`}
             >
               <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0" />
               <span className="truncate">Reset</span>
@@ -598,8 +604,8 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
                 });
                 setIsModalOpen(true);
               }}
-              style={{ backgroundColor: primaryColor }}
-              className="col-span-2 sm:col-span-1 w-full sm:w-auto px-3.5 py-2 rounded-xl text-xs font-bold text-white shadow-lg transition-all hover:brightness-110 active:scale-95 flex items-center justify-center gap-1.5"
+              style={{ backgroundColor: primaryColor, borderRadius: 'var(--admin-btn-radius, 14px)' }}
+              className="col-span-2 sm:col-span-1 w-full sm:w-auto px-3.5 py-2 text-xs font-bold text-white shadow-lg transition-all hover:brightness-110 active:scale-95 flex items-center justify-center gap-1.5"
             >
               <Plus className="w-4 h-4 shrink-0" />
               <span>Tambah Anggota</span>
@@ -611,10 +617,11 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
         <div className="flex items-center gap-1.5 sm:gap-2 mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-slate-200/20 overflow-x-auto no-scrollbar scrollbar-none pb-0.5">
           <button
             onClick={() => setActiveTab('topology')}
-            className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-[11px] sm:text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
+            style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+            className={`px-3 py-2 sm:px-4 sm:py-2 text-[11px] sm:text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
               activeTab === 'topology'
-                ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
-                : `${themeClasses.bgSecondary} ${themeClasses.textMuted} hover:text-emerald-500`
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                : `${themeClasses.bgSecondary} ${themeClasses.textMuted} hover:text-blue-500`
             }`}
           >
             <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
@@ -623,10 +630,11 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
 
           <button
             onClick={() => setActiveTab('jobdesk')}
-            className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-[11px] sm:text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
+            style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+            className={`px-3 py-2 sm:px-4 sm:py-2 text-[11px] sm:text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
               activeTab === 'jobdesk'
-                ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
-                : `${themeClasses.bgSecondary} ${themeClasses.textMuted} hover:text-emerald-500`
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                : `${themeClasses.bgSecondary} ${themeClasses.textMuted} hover:text-blue-500`
             }`}
           >
             <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
@@ -635,9 +643,10 @@ export const MasterTeam: React.FC<MasterTeamProps> = ({
 
           <button
             onClick={() => setActiveTab('manage')}
-            className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-[11px] sm:text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
+            style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+            className={`px-3 py-2 sm:px-4 sm:py-2 text-[11px] sm:text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
               activeTab === 'manage'
-                ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
                 : `${themeClasses.bgSecondary} ${themeClasses.textMuted} hover:text-emerald-500`
             }`}
           >

@@ -364,8 +364,8 @@ export default function App() {
       if (Array.isArray(data)) {
         setNotifications(data);
       }
-    } catch (err) {
-      console.error('Error fetching notifications:', err);
+    } catch {
+      // Silent catch for transient rate limit or network errors
     }
   }, [currentUser, adminUser]);
 
@@ -426,6 +426,10 @@ export default function App() {
       } else {
         view = 'today';
       }
+    }
+
+    if ((view === 'team_location' || view === 'ba') && adminUser?.role !== 'Super Admin') {
+      view = hasAdmin ? 'dashboard' : 'today';
     }
 
     if (['today', 'all', 'my_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership', 'evaluasi_project', 'jurnal', 'voucher', 'master_user', 'master_perangkat', 'master_team', 'report_sla', 'report_perangkat', 'team_location'].includes(view)) {
@@ -1922,7 +1926,7 @@ export default function App() {
                   </>
                 )}
 
-                {adminUser && (
+                {adminUser && adminUser.role === 'Super Admin' && (
                   <button
                     onClick={() => setViewMode('team_location')}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${

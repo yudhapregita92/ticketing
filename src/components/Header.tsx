@@ -197,7 +197,8 @@ export const Header: React.FC<HeaderProps> = ({
                   <button
                     type="button"
                     onClick={handleToggleDuty}
-                    className={`px-2 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider border flex items-center gap-1 transition-all cursor-pointer ${
+                    style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+                    className={`px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider border flex items-center gap-1 transition-all cursor-pointer active:scale-95 ${
                       dutyStatus === 1
                         ? 'bg-emerald-600 text-white border-emerald-400 hover:bg-emerald-500'
                         : 'bg-rose-600 text-white border-rose-400 hover:bg-rose-500'

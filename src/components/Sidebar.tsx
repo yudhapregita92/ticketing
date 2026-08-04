@@ -101,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const getMenuItemClass = (isActive: boolean) => {
     const base = `w-full flex items-center ${
       adminThemeLayout === 'compact' ? 'justify-center p-2.5' : 'justify-between px-3 py-2'
-    } rounded-none transition-all text-xs font-semibold `;
+    } rounded-[var(--admin-btn-radius,14px)] transition-all text-xs font-semibold active:scale-95 `;
     
     if (isActive) {
       if (adminUser) {
@@ -507,7 +507,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </>
               )}
 
-              {adminUser && (
+              {adminUser && adminUser.role === 'Super Admin' && (
                 <>
                   <button
                     onClick={() => setViewMode('team_location')}
@@ -520,18 +520,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                   </button>
 
-                  {adminUser.role === 'Super Admin' && (
-                    <button
-                      onClick={() => setViewMode('ba')}
-                      title="Surat Rekomendasi / BA"
-                      className={getMenuItemClass(viewMode === 'ba')}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <FileText className="w-4 h-4" />
-                        {adminThemeLayout !== 'compact' && <span>Surat Rekomendasi / BA</span>}
-                      </div>
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setViewMode('ba')}
+                    title="Surat Rekomendasi / BA"
+                    className={getMenuItemClass(viewMode === 'ba')}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <FileText className="w-4 h-4" />
+                      {adminThemeLayout !== 'compact' && <span>Surat Rekomendasi / BA</span>}
+                    </div>
+                  </button>
                 </>
               )}
             </>

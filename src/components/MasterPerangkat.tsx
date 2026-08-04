@@ -86,8 +86,8 @@ export const MasterPerangkat = ({ isDark, primaryColor }: { isDark: boolean, pri
             setFormData({ kode_kategori: '', name: '' });
             setShowModal(true);
           }}
-          style={{ backgroundColor: primaryColor }}
-          className="px-4 py-2.5 rounded-xl text-white font-bold text-sm flex items-center gap-2 hover:opacity-90 transition-all"
+          style={{ backgroundColor: primaryColor, borderRadius: 'var(--admin-btn-radius, 14px)' }}
+          className="px-4 py-2.5 text-white font-bold text-sm flex items-center gap-2 hover:opacity-90 transition-all shadow-md shadow-blue-500/10 active:scale-95"
         >
           <Plus className="w-4 h-4" />
           Tambah Kategori
@@ -180,7 +180,8 @@ export const MasterPerangkat = ({ isDark, primaryColor }: { isDark: boolean, pri
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className={`flex-1 py-3 rounded-xl font-bold text-sm ${
+                    style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+                    className={`flex-1 py-3 font-bold text-sm transition-all active:scale-95 ${
                       isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
@@ -188,8 +189,8 @@ export const MasterPerangkat = ({ isDark, primaryColor }: { isDark: boolean, pri
                   </button>
                   <button
                     type="submit"
-                    style={{ backgroundColor: primaryColor }}
-                    className="flex-1 py-3 rounded-xl text-white font-bold text-sm hover:opacity-90"
+                    style={{ backgroundColor: primaryColor, borderRadius: 'var(--admin-btn-radius, 14px)' }}
+                    className="flex-1 py-3 text-white font-bold text-sm hover:opacity-90 transition-all active:scale-95 shadow-md shadow-blue-500/20"
                   >
                     {editingId ? 'Simpan' : 'Tambah'}
                   </button>

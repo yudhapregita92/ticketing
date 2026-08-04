@@ -462,12 +462,16 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
           <button 
             type="button"
             onClick={handleDownloadTemplate}
-            className="text-xs font-black text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 capitalize tracking-widest flex items-center gap-1.5 bg-violet-50 dark:bg-violet-950/40 px-3 py-2 rounded-xl transition-all"
+            style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+            className="text-xs font-black text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 capitalize tracking-widest flex items-center gap-1.5 bg-violet-50 dark:bg-violet-950/40 px-3.5 py-2.5 transition-all active:scale-95 shadow-xs"
           >
             <Download className="w-3.5 h-3.5" /> Download Template
           </button>
           
-          <label className="text-xs font-black text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 capitalize tracking-widest cursor-pointer flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/40 px-3 py-2 rounded-xl transition-all">
+          <label 
+            style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+            className="text-xs font-black text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 capitalize tracking-widest cursor-pointer flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/40 px-3.5 py-2.5 transition-all active:scale-95 shadow-xs"
+          >
             <Upload className="w-3.5 h-3.5" /> Upload Excel
             <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleUploadExcel} />
           </label>
@@ -475,7 +479,8 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
           <button 
             type="button"
             onClick={handleExportMasterUser}
-            className="text-xs font-black text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 capitalize tracking-widest flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 rounded-xl transition-all"
+            style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+            className="text-xs font-black text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 capitalize tracking-widest flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 px-3.5 py-2.5 transition-all active:scale-95 shadow-xs"
           >
             <Download className="w-3.5 h-3.5" /> Export Excel
           </button>
@@ -483,7 +488,8 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
           <button 
             type="button"
             onClick={handleOpenAddMasterUser}
-            className="text-xs font-black text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 capitalize tracking-widest flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-2 rounded-xl transition-all"
+            style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+            className="text-xs font-black text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 capitalize tracking-widest flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/40 px-3.5 py-2.5 transition-all active:scale-95 shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" /> + Tambah User
           </button>
@@ -491,7 +497,8 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
           <button 
             type="button"
             onClick={handlePrintAllLabels}
-            className="text-xs font-black text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 capitalize tracking-widest flex items-center gap-1.5 bg-rose-50 dark:bg-rose-950/40 px-3 py-2 rounded-xl transition-all"
+            style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+            className="text-xs font-black text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 capitalize tracking-widest flex items-center gap-1.5 bg-rose-50 dark:bg-rose-950/40 px-3.5 py-2.5 transition-all active:scale-95 shadow-xs"
           >
             <Printer className="w-3.5 h-3.5" /> Cetak All Label
           </button>

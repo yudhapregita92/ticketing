@@ -232,7 +232,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
                       </button>
                     </>
                   )}
-                  {adminUser && (
+                  {adminUser && adminUser.role === 'Super Admin' && (
                     <>
                       <button 
                         onClick={() => handleMenuClick('team_location')}
@@ -244,18 +244,16 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
                       >
                         📍 Lokasi Team (GPS)
                       </button>
-                      {adminUser.role === 'Super Admin' && (
-                        <button 
-                          onClick={() => handleMenuClick('ba')}
-                          className={`text-left w-full py-2.5 px-3 rounded-md text-xs font-bold transition-all ${
-                            viewMode === 'ba' 
-                              ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
-                              : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
-                          }`}
-                        >
-                          Surat Rekomendasi
-                        </button>
-                      )}
+                      <button 
+                        onClick={() => handleMenuClick('ba')}
+                        className={`text-left w-full py-2.5 px-3 rounded-md text-xs font-bold transition-all ${
+                          viewMode === 'ba' 
+                            ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
+                            : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        Surat Rekomendasi
+                      </button>
                     </>
                   )}
                 </>

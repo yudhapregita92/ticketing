@@ -521,19 +521,22 @@ export const TicketList: React.FC<TicketListProps> = ({
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <button 
                 onClick={() => handleBulkAction('In Progress')}
-                className="flex-1 sm:flex-none px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-[9px] font-black capitalize tracking-widest transition-all active:scale-95"
+                style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+                className="flex-1 sm:flex-none px-3.5 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-[10px] font-black capitalize tracking-widest transition-all active:scale-95 shadow-md shadow-blue-500/20"
               >
                 Progres
               </button>
               <button 
                 onClick={() => handleBulkAction('Completed')}
-                className="flex-1 sm:flex-none px-3 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-md text-[9px] font-black capitalize tracking-widest transition-all active:scale-95"
+                style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+                className="flex-1 sm:flex-none px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-md text-[10px] font-black capitalize tracking-widest transition-all active:scale-95 shadow-md shadow-emerald-500/20"
               >
                 Selesai
               </button>
               <button 
                 onClick={() => handleBulkAction('delete')}
-                className="flex-1 sm:flex-none px-3 py-2 bg-rose-600 hover:bg-rose-700 rounded-md text-[9px] font-black capitalize tracking-widest transition-all active:scale-95"
+                style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+                className="flex-1 sm:flex-none px-3.5 py-2 bg-rose-600 hover:bg-rose-700 rounded-md text-[10px] font-black capitalize tracking-widest transition-all active:scale-95 shadow-md shadow-rose-500/20"
               >
                 Hapus
               </button>

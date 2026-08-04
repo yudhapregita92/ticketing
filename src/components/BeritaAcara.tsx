@@ -858,7 +858,7 @@ const PrintableContent = ({ formData, formattedDate }: { formData: any, formatte
 
           <div className="mb-6 text-justify">
             <p className="mb-2">Bahwa PIHAK PERTAMA telah menyerahkan kepada PIHAK KEDUA berupa:</p>
-            <p className="ml-4 italic">
+            <p className="ml-4">
               {formData.reason ? formData.reason : <span className="text-gray-300">..........................................................................................................................................................................................................................................................................................................................................................................................</span>}
             </p>
           </div>

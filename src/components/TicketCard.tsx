@@ -287,7 +287,8 @@ export const TicketCard: React.FC<TicketCardProps> = React.memo(({
             <button 
               type="button"
               onClick={() => onForwardWhatsApp(ticket)}
-              className={`px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold ${adminUser ? 'rounded-none' : 'rounded-lg'} transition-all shadow-xs flex items-center gap-1 cursor-pointer`}
+              style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold transition-all active:scale-95 shadow-xs flex items-center gap-1 cursor-pointer"
               title="Hubungi via WA"
             >
               <MessageSquare className="w-3 h-3" />
@@ -300,7 +301,8 @@ export const TicketCard: React.FC<TicketCardProps> = React.memo(({
               <button 
                 type="button"
                 onClick={() => handleIntervention(ticket.id, 'takeover')}
-                className={`px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold ${adminUser ? 'rounded-none' : 'rounded-lg'} transition-all shadow-xs flex items-center gap-1 cursor-pointer`}
+                style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold transition-all active:scale-95 shadow-xs flex items-center gap-1 cursor-pointer"
               >
                 <span>🖐️</span>
                 <span>Ambil</span>
@@ -308,7 +310,8 @@ export const TicketCard: React.FC<TicketCardProps> = React.memo(({
               <button 
                 type="button"
                 onClick={() => handleIntervention(ticket.id, 'reassign')}
-                className={`px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-extrabold ${adminUser ? 'rounded-none' : 'rounded-lg'} transition-all shadow-xs flex items-center gap-1 cursor-pointer`}
+                style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+                className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-extrabold transition-all active:scale-95 shadow-xs flex items-center gap-1 cursor-pointer"
               >
                 <span>➡️</span>
                 <span>Pindah</span>
@@ -320,7 +323,8 @@ export const TicketCard: React.FC<TicketCardProps> = React.memo(({
             <button 
               type="button"
               onClick={() => handleDeleteTicket(ticket.id)}
-              className={`px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-extrabold ${adminUser ? 'rounded-none' : 'rounded-lg'} transition-all shadow-xs flex items-center gap-1 cursor-pointer`}
+              style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+              className="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-extrabold transition-all active:scale-95 shadow-xs flex items-center gap-1 cursor-pointer"
               title="Hapus Tiket"
             >
               <Trash2 className="w-3 h-3" />
@@ -331,7 +335,8 @@ export const TicketCard: React.FC<TicketCardProps> = React.memo(({
           <button 
             type="button"
             onClick={() => handleSelectTicket(ticket)}
-            className={`w-7 h-7 ${adminUser ? 'rounded-none' : 'rounded-lg'} bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-xs transition-colors cursor-pointer`}
+            style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+            className="w-7 h-7 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-xs transition-all active:scale-95 cursor-pointer"
             title="Menu & Detail"
           >
             •••

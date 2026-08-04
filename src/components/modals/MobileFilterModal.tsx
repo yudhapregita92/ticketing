@@ -32,6 +32,7 @@ export const MobileFilterModal: React.FC<MobileFilterModalProps> = ({
       {show && (
         <div className="fixed inset-0 z-[150]">
           <motion.div 
+            key="filter-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -39,6 +40,7 @@ export const MobileFilterModal: React.FC<MobileFilterModalProps> = ({
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
           />
           <motion.div 
+            key="filter-drawer"
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}

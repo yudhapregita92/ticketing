@@ -439,14 +439,16 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={handleExportCSV}
-            className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center gap-2 shadow-sm transition-all shrink-0"
+            style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+            className="px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold flex items-center gap-2 shadow-sm transition-all shrink-0 active:scale-95"
           >
             <FileSpreadsheet className="w-4 h-4" />
             <span>Ekspor CSV / Excel</span>
           </button>
           <button
             onClick={handlePrint}
-            className={`px-3.5 py-2.5 rounded-xl border ${themeClasses.bgSecondary} ${themeClasses.border} hover:bg-slate-100 dark:hover:bg-slate-800 ${themeClasses.text} text-xs font-extrabold flex items-center gap-2 shadow-sm transition-all shrink-0`}
+            style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+            className={`px-3.5 py-2.5 border ${themeClasses.bgSecondary} ${themeClasses.border} hover:bg-slate-100 dark:hover:bg-slate-800 ${themeClasses.text} text-xs font-extrabold flex items-center gap-2 shadow-sm transition-all shrink-0 active:scale-95`}
           >
             <Printer className="w-4 h-4 text-slate-500" />
             <span>Cetak Laporan</span>

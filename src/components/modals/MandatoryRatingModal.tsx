@@ -65,6 +65,7 @@ export const MandatoryRatingModal: React.FC<MandatoryRatingModalProps> = ({
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-2 sm:p-4 bg-slate-900/80 backdrop-blur-md select-none overflow-y-auto">
       <motion.div
+        key="rating-modal-content"
         initial={{ scale: 0.95, opacity: 0, y: 15 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 15 }}

@@ -162,7 +162,8 @@ export const ReportPerangkat: React.FC<ReportPerangkatProps> = ({
         </div>
         <button
           onClick={handleExportCSV}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-emerald-500/30 transition-all active:scale-95 whitespace-nowrap"
+          style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold shadow-lg shadow-blue-500/20 transition-all active:scale-95 whitespace-nowrap"
         >
           <Download className="w-4 h-4" />
           Export CSV
