@@ -112,9 +112,20 @@ export const initBugLogger = (getUserInfo?: () => { email?: string; role?: strin
 
   window.addEventListener('error', (event) => {
     try {
+      const message = event.message || 'Unknown runtime error';
+      
+      // Abaikan error benign dari Vite HMR / WebSocket yang diharapkan di environment ini
+      if (
+        message.toLowerCase().includes('websocket') || 
+        message.includes('failed to connect') ||
+        (event.filename && event.filename.includes('@vite/client'))
+      ) {
+        return;
+      }
+
       const userInfo = getUserInfo ? getUserInfo() : {};
       addBugLog({
-        message: event.message || 'Unknown runtime error',
+        message,
         stack: event.error?.stack || '',
         source: event.filename || '',
         line: event.lineno,
@@ -130,10 +141,21 @@ export const initBugLogger = (getUserInfo?: () => { email?: string; role?: strin
 
   window.addEventListener('unhandledrejection', (event) => {
     try {
-      const userInfo = getUserInfo ? getUserInfo() : {};
       const reason = event.reason;
+      const message = typeof reason === 'string' ? reason : (reason?.message || 'Unhandled Promise Rejection');
+      
+      // Abaikan error benign dari Vite HMR / WebSocket yang diharapkan di environment ini
+      if (
+        message.toLowerCase().includes('websocket') || 
+        message.includes('failed to connect') ||
+        (reason?.stack && reason.stack.includes('@vite/client'))
+      ) {
+        return;
+      }
+
+      const userInfo = getUserInfo ? getUserInfo() : {};
       addBugLog({
-        message: typeof reason === 'string' ? reason : (reason?.message || 'Unhandled Promise Rejection'),
+        message,
         stack: reason?.stack || '',
         type: 'unhandledrejection',
         userEmail: userInfo.email,
