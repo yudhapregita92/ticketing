@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   Scan,
   CheckCircle2,
+  XCircle,
   Upload,
   Smartphone,
   Monitor,
@@ -1017,15 +1018,22 @@ export const NewTicketModal = React.memo(({
                       required
                       type="text"
                       placeholder="Contoh: PC-05, PC-LAB-01, dll..."
-                      className={`w-full px-3 py-1.5 ${isPcCodeMatched ? 'pr-20' : 'pr-3'} rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                      className={`w-full px-3 py-1.5 ${newTicket.pc_code?.trim() ? 'pr-28' : 'pr-3'} rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
                       value={newTicket.pc_code || ''}
                       onChange={e => setNewTicket({...newTicket, pc_code: e.target.value})}
                     />
-                    {isPcCodeMatched && (
-                      <div className="absolute right-2 text-emerald-500 flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-lg border border-emerald-500/20">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-500 fill-emerald-500/10" />
-                        <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 tracking-wider">Cocok</span>
-                      </div>
+                    {!!newTicket.pc_code?.trim() && (
+                      isPcCodeMatched ? (
+                        <div className="absolute right-2 text-emerald-500 flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-lg border border-emerald-500/20">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-500 fill-emerald-500/10" />
+                          <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 tracking-wider">Benar</span>
+                        </div>
+                      ) : (
+                        <div className="absolute right-2 text-rose-500 flex items-center gap-1 bg-rose-500/10 px-1.5 py-0.5 rounded-lg border border-rose-500/20">
+                          <XCircle className="w-3 h-3 text-rose-500 fill-rose-500/10" />
+                          <span className="text-[9px] font-bold text-rose-600 dark:text-rose-400 tracking-wider">Tidak Sesuai</span>
+                        </div>
+                      )
                     )}
                   </div>
                   <button
