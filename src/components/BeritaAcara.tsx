@@ -21,13 +21,37 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
     queryFn: () => api.getBeritaAcara()
   });
 
-  const [formData, setFormData] = useState({
+  const defaultBastItems = [
+    {
+      kategori: '1. Laptop Baru (Pengganti Operasional)',
+      spesifikasi: 'Merk/Tipe: [Tipe Laptop Baru]\nS/N: [Serial Number]',
+      kelengkapan: 'Unit Laptop, Charger/Adapter, Box, Mouse',
+      kondisi: 'Baru (100%)',
+      kondisiColor: 'emerald'
+    },
+    {
+      kategori: '2. Laptop Lama (Ditarik / Diserahkan ke IT)',
+      spesifikasi: 'Merk/Tipe: [Tipe Laptop Lama]\nS/N: [Serial Number]',
+      kelengkapan: 'Unit Laptop, Charger/Adapter, Tas Laptop',
+      kondisi: 'Baik / Layak Pakai',
+      kondisiColor: 'blue'
+    }
+  ];
+
+  const defaultBastKetentuan = [
+    'Laptop Baru diserahterimakan kepada Ibu Ririn untuk menunjang tugas operasional sebagai Sub Dep Head.',
+    'Laptop Lama milik Ibu Ririn diserahkan kembali kepada Yudha (Tim IT) untuk inventarisasi / penataan kembali aset IT.',
+    'Penerima bertanggung jawab atas pemeliharaan, kebersihan, dan keamanan laptop baru yang diterima.',
+    'Jika terdapat kendala teknis, penerima dapat berkoordinasi langsung dengan Tim IT.'
+  ];
+
+  const [formData, setFormData] = useState<any>({
     docType: 'rekomendasi',
-    recommenderName: adminUser?.full_name || '',
-    recommenderDept: 'IT KDK',
-    recommendeeName: '',
-    recommendeeDept: '',
-    recommendeePosition: '',
+    recommenderName: adminUser?.full_name || 'Yudha',
+    recommenderDept: 'IT Support / Departemen IT',
+    recommendeeName: 'Ririn',
+    recommendeeDept: 'Sub Dep Head',
+    recommendeePosition: 'Sub Dep Head',
     reason: '',
     location: 'Terbanggi Besar',
     date: new Date().toISOString().split('T')[0],
@@ -36,7 +60,22 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
     headerTitle: 'KOPKAR DWI KARYA',
     headerSubtitle: 'SURAT REKOMENDASI',
     headerDocNo: 'No. Dok: F/KDK/18/XII/2022 Rev. 5, Tanggal 27 September 2024',
-    headerFontSize: 18 // Default to 18px (text-lg)
+    headerFontSize: 18,
+
+    // Form Berita Acara Serah Terima (BAST) baru
+    bastOpeningDay: '',
+    bastOpeningDate: '',
+    bastOpeningMonth: '',
+    bastOpeningYear: '2026',
+    bastOpeningDesc: 'kami yang bertanda tangan di bawah ini telah melaksanakan serah terima aset/perangkat operasional laptop dengan rincian sebagai berikut:',
+    penyerahName: adminUser?.full_name || 'Yudha',
+    penyerahPosition: 'IT Support / Departemen IT',
+    penerimaName: 'Ririn',
+    penerimaPosition: 'Sub Dep Head',
+    bastItems: defaultBastItems,
+    bastKetentuan: defaultBastKetentuan,
+    bastDibuatDi: 'Terbanggi Besar',
+    bastTanggalDibuat: ''
   });
 
   const { data: settings } = useQuery({
@@ -285,128 +324,454 @@ const BeritaAcara: React.FC<BeritaAcaraProps> = ({ isDark, themeClasses, primary
 
             <div className={`h-px w-full ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
-                  {formData.docType === 'kejadian' ? 'Nama Pembuat BA' : formData.docType === 'serah_terima' ? 'Nama PIHAK PERTAMA' : 'Nama Pemberi (Anda)'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.recommenderName}
-                  onChange={(e) => setFormData({...formData, recommenderName: e.target.value})}
-                  className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
-                    isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
-                  }`}
-                />
-              </div>
-              <div>
-                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
-                  {formData.docType === 'kejadian' ? 'Bagian Pembuat BA' : formData.docType === 'serah_terima' ? 'Bagian PIHAK PERTAMA' : 'Bagian Pemberi'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.recommenderDept}
-                  onChange={(e) => setFormData({...formData, recommenderDept: e.target.value})}
-                  className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
-                    isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
-                  }`}
-                />
-              </div>
-            </div>
-
-            <div className={`h-px w-full ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
-
-            <div className="space-y-3">
-              <div>
-                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
-                  {formData.docType === 'kejadian' ? 'Nama Pihak Terkait / Obyek' : formData.docType === 'serah_terima' ? 'Nama PIHAK KEDUA' : 'Nama Penerima'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.recommendeeName}
-                  onChange={(e) => setFormData({...formData, recommendeeName: e.target.value})}
-                  className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
-                    isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
-                  }`}
-                  placeholder="Ex: BAYU AJI"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
-                    {formData.docType === 'kejadian' ? 'Bagian Terkait' : formData.docType === 'serah_terima' ? 'Bagian PIHAK KEDUA' : 'Bagian Penerima'}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.recommendeeDept}
-                    onChange={(e) => setFormData({...formData, recommendeeDept: e.target.value})}
-                    className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
-                      isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
-                    }`}
-                    placeholder="Ex: Fleet"
-                  />
+            {formData.docType === 'serah_terima' ? (
+              <>
+                {/* Section Waktu Pembuka BAST */}
+                <div className="space-y-3">
+                  <h4 className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>Pembuka Waktu Berita Acara</h4>
+                  <div className="grid grid-cols-4 gap-2">
+                    <div>
+                      <label className={`block text-[11px] font-bold mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Hari</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Selasa"
+                        value={formData.bastOpeningDay || ''}
+                        onChange={(e) => setFormData({...formData, bastOpeningDay: e.target.value})}
+                        className={`w-full px-2.5 py-1.5 rounded-xl border text-xs focus:outline-none focus:ring-2 ${
+                          isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-[11px] font-bold mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Tanggal</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: 04"
+                        value={formData.bastOpeningDate || ''}
+                        onChange={(e) => setFormData({...formData, bastOpeningDate: e.target.value})}
+                        className={`w-full px-2.5 py-1.5 rounded-xl border text-xs focus:outline-none focus:ring-2 ${
+                          isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-[11px] font-bold mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Bulan</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Agustus"
+                        value={formData.bastOpeningMonth || ''}
+                        onChange={(e) => setFormData({...formData, bastOpeningMonth: e.target.value})}
+                        className={`w-full px-2.5 py-1.5 rounded-xl border text-xs focus:outline-none focus:ring-2 ${
+                          isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-[11px] font-bold mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Tahun</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: 2026"
+                        value={formData.bastOpeningYear || '2026'}
+                        onChange={(e) => setFormData({...formData, bastOpeningYear: e.target.value})}
+                        className={`w-full px-2.5 py-1.5 rounded-xl border text-xs focus:outline-none focus:ring-2 ${
+                          isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                        }`}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
-                    {formData.docType === 'kejadian' ? 'Keterangan / Jabatan Terkait' : formData.docType === 'serah_terima' ? 'Jabatan PIHAK KEDUA' : 'Jabatan Penerima'}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.recommendeePosition}
-                    onChange={(e) => setFormData({...formData, recommendeePosition: e.target.value})}
-                    className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
-                      isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
-                    }`}
-                    placeholder="Ex: Sub Deb Head"
-                  />
+
+                <div className={`h-px w-full ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
+
+                {/* Section I. PIHAK PENYERAH */}
+                <div className="space-y-3">
+                  <h4 className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>I. PIHAK PENYERAH (DEPARTEMEN IT)</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={`block text-xs font-bold mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Nama / Tim Penyerah</label>
+                      <input
+                        type="text"
+                        value={formData.penyerahName || formData.recommenderName || ''}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          penyerahName: e.target.value,
+                          recommenderName: e.target.value
+                        })}
+                        className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 ${
+                          isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                        }`}
+                        placeholder="Ex: Yudha"
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-xs font-bold mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Jabatan / Unit</label>
+                      <input
+                        type="text"
+                        value={formData.penyerahPosition || formData.recommenderDept || ''}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          penyerahPosition: e.target.value,
+                          recommenderDept: e.target.value
+                        })}
+                        className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 ${
+                          isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                        }`}
+                        placeholder="Ex: IT Support / Departemen IT"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div className={`h-px w-full ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
+                <div className={`h-px w-full ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
 
-            <div className="space-y-3">
-              <div>
-                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
-                  {formData.docType === 'kejadian' ? 'Kronologi Kejadian' : formData.docType === 'serah_terima' ? 'Keterangan Barang/Obyek Serah Terima' : 'Isi Keterangan Pengajuan'}
-                </label>
-                <textarea
-                  value={formData.reason}
-                  onChange={(e) => setFormData({...formData, reason: e.target.value})}
-                  className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all min-h-[120px] ${
-                    isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
-                  }`}
-                  placeholder="Ex: Untuk dapat melakukan pengajuan pembelian Laptop Core i3 series, piranti saat ini akan digunakan oleh Section Head Fleet, dengan mempertimbangkan pekerjaan yang menggunakan monitoring GPS Tracker..."
-                />
-              </div>
-            </div>
+                {/* Section II. PIHAK PENERIMA PERANGKAT */}
+                <div className="space-y-3">
+                  <h4 className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>II. PIHAK PENERIMA PERANGKAT</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={`block text-xs font-bold mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Nama Penerima</label>
+                      <input
+                        type="text"
+                        value={formData.penerimaName || formData.recommendeeName || ''}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          penerimaName: e.target.value,
+                          recommendeeName: e.target.value
+                        })}
+                        className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 ${
+                          isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                        }`}
+                        placeholder="Ex: Ririn"
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-xs font-bold mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Jabatan</label>
+                      <input
+                        type="text"
+                        value={formData.penerimaPosition || formData.recommendeePosition || ''}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          penerimaPosition: e.target.value,
+                          recommendeePosition: e.target.value
+                        })}
+                        className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 ${
+                          isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                        }`}
+                        placeholder="Ex: Sub Dep Head"
+                      />
+                    </div>
+                  </div>
+                </div>
 
-            <div className={`h-px w-full ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
+                <div className={`h-px w-full ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Lokasi</label>
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => setFormData({...formData, location: e.target.value})}
-                  className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
-                    isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
-                  }`}
-                />
-              </div>
-              <div>
-                <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Tanggal</label>
-                <input
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({...formData, date: e.target.value})}
-                  className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
-                    isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
-                  }`}
-                />
-              </div>
-            </div>
+                {/* Section III. RINCIAN PERANGKAT LAPTOP */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>III. RINCIAN PERANGKAT LAPTOP</h4>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newItems = [...(formData.bastItems || [])];
+                        newItems.push({
+                          kategori: `${newItems.length + 1}. Laptop / Perangkat Baru`,
+                          spesifikasi: 'Merk/Tipe: \nS/N: ',
+                          kelengkapan: 'Unit Laptop, Charger/Adapter',
+                          kondisi: 'Baik (100%)',
+                          kondisiColor: 'emerald'
+                        });
+                        setFormData({ ...formData, bastItems: newItems });
+                      }}
+                      className="text-xs font-bold text-emerald-500 hover:text-emerald-400 flex items-center gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Tambah Baris
+                    </button>
+                  </div>
+
+                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                    {(formData.bastItems || []).map((item: any, idx: number) => (
+                      <div key={idx} className={`p-3 rounded-xl border space-y-2 relative ${isDark ? 'bg-zinc-800/60 border-zinc-700' : 'bg-slate-50 border-slate-200'}`}>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-slate-400">Baris #{idx + 1}</span>
+                          {(formData.bastItems || []).length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newItems = formData.bastItems.filter((_: any, i: number) => i !== idx);
+                                setFormData({ ...formData, bastItems: newItems });
+                              }}
+                              className="text-rose-500 hover:text-rose-700 text-xs flex items-center gap-1 font-bold"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Hapus
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            placeholder="Kategori (cth: 1. Laptop Baru)"
+                            value={item.kategori}
+                            onChange={(e) => {
+                              const newItems = [...formData.bastItems];
+                              newItems[idx].kategori = e.target.value;
+                              setFormData({ ...formData, bastItems: newItems });
+                            }}
+                            className={`w-full px-2.5 py-1.5 rounded-lg border text-xs ${isDark ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-white border-slate-300'}`}
+                          />
+                          <select
+                            value={item.kondisiColor || 'emerald'}
+                            onChange={(e) => {
+                              const newItems = [...formData.bastItems];
+                              newItems[idx].kondisiColor = e.target.value;
+                              setFormData({ ...formData, bastItems: newItems });
+                            }}
+                            className={`w-full px-2.5 py-1.5 rounded-lg border text-xs ${isDark ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-white border-slate-300'}`}
+                          >
+                            <option value="emerald">Warna Hijau (Baru 100%)</option>
+                            <option value="blue">Warna Biru (Baik / Layak Pakai)</option>
+                          </select>
+                        </div>
+                        <textarea
+                          placeholder="Spesifikasi & Detail (Merk/Tipe & S/N)"
+                          value={item.spesifikasi}
+                          onChange={(e) => {
+                            const newItems = [...formData.bastItems];
+                            newItems[idx].spesifikasi = e.target.value;
+                            setFormData({ ...formData, bastItems: newItems });
+                          }}
+                          className={`w-full px-2.5 py-1.5 rounded-lg border text-xs h-14 ${isDark ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-white border-slate-300'}`}
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            placeholder="Kelengkapan"
+                            value={item.kelengkapan}
+                            onChange={(e) => {
+                              const newItems = [...formData.bastItems];
+                              newItems[idx].kelengkapan = e.target.value;
+                              setFormData({ ...formData, bastItems: newItems });
+                            }}
+                            className={`w-full px-2.5 py-1.5 rounded-lg border text-xs ${isDark ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-white border-slate-300'}`}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Teks Kondisi (cth: Baru (100%))"
+                            value={item.kondisi}
+                            onChange={(e) => {
+                              const newItems = [...formData.bastItems];
+                              newItems[idx].kondisi = e.target.value;
+                              setFormData({ ...formData, bastItems: newItems });
+                            }}
+                            className={`w-full px-2.5 py-1.5 rounded-lg border text-xs ${isDark ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-white border-slate-300'}`}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={`h-px w-full ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
+
+                {/* Section IV. KETENTUAN DAN SYARAT PENGGUNAAN */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>IV. KETENTUAN & SYARAT PENGGUNAAN</h4>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newKet = [...(formData.bastKetentuan || [])];
+                        newKet.push('Poin ketentuan baru...');
+                        setFormData({ ...formData, bastKetentuan: newKet });
+                      }}
+                      className="text-xs font-bold text-emerald-500 hover:text-emerald-400 flex items-center gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Tambah Poin
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {(formData.bastKetentuan || []).map((ket: string, idx: number) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-400 w-4">{idx + 1}.</span>
+                        <input
+                          type="text"
+                          value={ket}
+                          onChange={(e) => {
+                            const newKet = [...formData.bastKetentuan];
+                            newKet[idx] = e.target.value;
+                            setFormData({ ...formData, bastKetentuan: newKet });
+                          }}
+                          className={`w-full px-2.5 py-1.5 rounded-lg border text-xs ${isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
+                        />
+                        {(formData.bastKetentuan || []).length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newKet = formData.bastKetentuan.filter((_: any, i: number) => i !== idx);
+                              setFormData({ ...formData, bastKetentuan: newKet });
+                            }}
+                            className="text-rose-500 hover:text-rose-700 p-1"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={`h-px w-full ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
+
+                {/* Dibuat Di & Tanggal Dibuat */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={`block text-xs font-bold mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Dibuat Di (Lokasi)</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Terbanggi Besar"
+                      value={formData.bastDibuatDi || formData.location || ''}
+                      onChange={(e) => setFormData({ ...formData, bastDibuatDi: e.target.value, location: e.target.value })}
+                      className={`w-full px-3 py-2 rounded-xl border text-sm ${isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
+                    />
+                  </div>
+                  <div>
+                    <label className={`block text-xs font-bold mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Tanggal Tanda Tangan</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: 04 Agustus 2026"
+                      value={formData.bastTanggalDibuat || ''}
+                      onChange={(e) => setFormData({ ...formData, bastTanggalDibuat: e.target.value })}
+                      className={`w-full px-3 py-2 rounded-xl border text-sm ${isDark ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'}`}
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                      {formData.docType === 'kejadian' ? 'Nama Pembuat BA' : 'Nama Pemberi (Anda)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.recommenderName}
+                      onChange={(e) => setFormData({...formData, recommenderName: e.target.value})}
+                      className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                        isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                      {formData.docType === 'kejadian' ? 'Bagian Pembuat BA' : 'Bagian Pemberi'}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.recommenderDept}
+                      onChange={(e) => setFormData({...formData, recommenderDept: e.target.value})}
+                      className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                        isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                <div className={`h-px w-full ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
+
+                <div className="space-y-3">
+                  <div>
+                    <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                      {formData.docType === 'kejadian' ? 'Nama Pihak Terkait / Obyek' : 'Nama Penerima'}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.recommendeeName}
+                      onChange={(e) => setFormData({...formData, recommendeeName: e.target.value})}
+                      className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                        isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                      }`}
+                      placeholder="Ex: BAYU AJI"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                        {formData.docType === 'kejadian' ? 'Bagian Terkait' : 'Bagian Penerima'}
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.recommendeeDept}
+                        onChange={(e) => setFormData({...formData, recommendeeDept: e.target.value})}
+                        className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                          isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                        }`}
+                        placeholder="Ex: Fleet"
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                        {formData.docType === 'kejadian' ? 'Keterangan / Jabatan Terkait' : 'Jabatan Penerima'}
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.recommendeePosition}
+                        onChange={(e) => setFormData({...formData, recommendeePosition: e.target.value})}
+                        className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                          isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                        }`}
+                        placeholder="Ex: Sub Deb Head"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`h-px w-full ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
+
+                <div className="space-y-3">
+                  <div>
+                    <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                      {formData.docType === 'kejadian' ? 'Kronologi Kejadian' : 'Isi Keterangan Pengajuan'}
+                    </label>
+                    <textarea
+                      value={formData.reason}
+                      onChange={(e) => setFormData({...formData, reason: e.target.value})}
+                      className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all min-h-[120px] ${
+                        isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                      }`}
+                      placeholder="Ex: Untuk dapat melakukan pengajuan..."
+                    />
+                  </div>
+                </div>
+
+                <div className={`h-px w-full ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Lokasi</label>
+                    <input
+                      type="text"
+                      value={formData.location}
+                      onChange={(e) => setFormData({...formData, location: e.target.value})}
+                      className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                        isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <label className={`block text-xs font-bold mb-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Tanggal</label>
+                    <input
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({...formData, date: e.target.value})}
+                      className={`w-full px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
+                        isDark ? 'bg-zinc-800 border-zinc-700 text-white focus:ring-zinc-600' : 'bg-slate-50 border-slate-300 text-slate-900 focus:ring-slate-200'
+                      }`}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className={`h-px w-full ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
 
@@ -811,78 +1176,133 @@ const PrintableContent = ({ formData, formattedDate }: { formData: any, formatte
 
       {formData.docType === 'serah_terima' && (
         <>
-          <div className="text-center font-bold underline mb-8 text-lg uppercase">
-            BERITA ACARA SERAH TERIMA
+          <div className="mb-4 text-justify text-[11pt] leading-relaxed text-slate-900 font-sans">
+            Pada hari ini,{formData.bastOpeningDay ? ` ${formData.bastOpeningDay},` : ' _______________,'} tanggal {formData.bastOpeningDate || '__'} bulan {formData.bastOpeningMonth || '________________'} tahun <strong>{formData.bastOpeningYear || '2026'}</strong>, {formData.bastOpeningDesc || 'kami yang bertanda tangan di bawah ini telah melaksanakan serah terima aset/perangkat operasional laptop dengan rincian sebagai berikut:'}
           </div>
 
-          <div className="mb-6 text-justify">
-            <p className="mb-4">Pada hari ini, tanggal <strong>{formattedDate}</strong>, bertempat di <strong>{formData.location || <span className="text-gray-300">....................</span>}</strong>, kami yang bertandatangan di bawah ini:</p>
-            
-            <p className="mb-2 font-bold">PIHAK PERTAMA (Yang Menyerahkan):</p>
-            <table className="w-full ml-4 mb-4">
-              <tbody>
-                <tr>
-                  <td className="w-32 py-1">Nama</td>
-                  <td className="w-4 py-1">:</td>
-                  <td className="py-1">{formData.recommenderName || <span className="text-gray-300">....................................................................</span>}</td>
-                </tr>
-                <tr>
-                  <td className="py-1">Bagian</td>
-                  <td className="py-1">:</td>
-                  <td className="py-1">{formData.recommenderDept || <span className="text-gray-300">....................................................................</span>}</td>
-                </tr>
-              </tbody>
-            </table>
-
-            <p className="mb-2 font-bold">PIHAK KEDUA (Yang Menerima):</p>
-            <table className="w-full ml-4 mb-4">
-              <tbody>
-                <tr>
-                  <td className="w-32 py-1">Nama</td>
-                  <td className="w-4 py-1">:</td>
-                  <td className="py-1">{formData.recommendeeName || <span className="text-gray-300">....................................................................</span>}</td>
-                </tr>
-                <tr>
-                  <td className="py-1">Bagian</td>
-                  <td className="py-1">:</td>
-                  <td className="py-1">{formData.recommendeeDept || <span className="text-gray-300">....................................................................</span>}</td>
-                </tr>
-                <tr>
-                  <td className="py-1">Jabatan</td>
-                  <td className="py-1">:</td>
-                  <td className="py-1">{formData.recommendeePosition || <span className="text-gray-300">....................................................................</span>}</td>
-                </tr>
-              </tbody>
-            </table>
+          {/* I. PIHAK PENYERAH (DEPARTEMEN IT) */}
+          <div className="bg-slate-100 border-l-4 border-blue-600 px-3 py-1 font-bold text-slate-900 text-xs my-3 uppercase tracking-wider font-sans">
+            I. PIHAK PENYERAH (DEPARTEMEN IT)
           </div>
-
-          <div className="mb-6 text-justify">
-            <p className="mb-2">Bahwa PIHAK PERTAMA telah menyerahkan kepada PIHAK KEDUA berupa:</p>
-            <p className="ml-4">
-              {formData.reason ? formData.reason : <span className="text-gray-300">..........................................................................................................................................................................................................................................................................................................................................................................................</span>}
-            </p>
-          </div>
-
-          <div className="mb-12 text-justify mt-6">
-            <p>
-              Demikian Berita Acara Serah Terima ini dibuat dengan sebenarnya dan ditandatangani oleh kedua belah pihak dalam keadaan sadar dan tanpa paksaan dari pihak manapun.
-            </p>
-          </div>
-
-          <table className="w-full text-center text-sm mt-8">
+          <table className="w-full ml-2 mb-3 text-xs font-sans">
             <tbody>
               <tr>
-                <td className="py-2 w-1/3">PIHAK PERTAMA,</td>
-                <td className="py-2 w-1/3 text-white">.</td>
-                <td className="py-2 w-1/3">PIHAK KEDUA,</td>
+                <td className="w-40 py-1 font-semibold text-slate-700">Nama / Tim Penyerah</td>
+                <td className="w-4 py-1">:</td>
+                <td className="py-1 font-bold text-slate-900">{formData.penyerahName || formData.recommenderName || 'Yudha'}</td>
               </tr>
               <tr>
-                <td className="h-28 align-bottom pb-2">
-                  <span className="font-bold underline">{formData.recommenderName || <span className="text-gray-300">....................</span>}</span>
+                <td className="py-1 font-semibold text-slate-700">Jabatan / Unit</td>
+                <td className="py-1">:</td>
+                <td className="py-1 font-semibold text-slate-900">{formData.penyerahPosition || formData.recommenderDept || 'IT Support / Departemen IT'}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* II. PIHAK PENERIMA PERANGKAT */}
+          <div className="bg-slate-100 border-l-4 border-blue-600 px-3 py-1 font-bold text-slate-900 text-xs my-3 uppercase tracking-wider font-sans">
+            II. PIHAK PENERIMA PERANGKAT
+          </div>
+          <table className="w-full ml-2 mb-3 text-xs font-sans">
+            <tbody>
+              <tr>
+                <td className="w-40 py-1 font-semibold text-slate-700">Nama Penerima</td>
+                <td className="w-4 py-1">:</td>
+                <td className="py-1 font-bold text-slate-900">{formData.penerimaName || formData.recommendeeName || 'Ririn'}</td>
+              </tr>
+              <tr>
+                <td className="py-1 font-semibold text-slate-700">Jabatan</td>
+                <td className="py-1">:</td>
+                <td className="py-1 font-semibold text-slate-900">{formData.penerimaPosition || formData.recommendeePosition || 'Sub Dep Head'}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* III. RINCIAN PERANGKAT LAPTOP */}
+          <div className="bg-slate-100 border-l-4 border-blue-600 px-3 py-1 font-bold text-slate-900 text-xs my-3 uppercase tracking-wider font-sans">
+            III. RINCIAN PERANGKAT LAPTOP
+          </div>
+          <table className="w-full border-collapse border border-slate-400 text-xs my-3 font-sans">
+            <thead>
+              <tr className="bg-slate-100 font-bold text-slate-800 border-b border-slate-400">
+                <th className="border border-slate-400 p-2 text-left w-1/4">Kategori Perangkat</th>
+                <th className="border border-slate-400 p-2 text-left w-1/3">Spesifikasi & Detail</th>
+                <th className="border border-slate-400 p-2 text-left w-1/4">Kelengkapan</th>
+                <th className="border border-slate-400 p-2 text-left">Kondisi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(formData.bastItems && formData.bastItems.length > 0 ? formData.bastItems : [
+                {
+                  kategori: '1. Laptop Baru (Pengganti Operasional)',
+                  spesifikasi: 'Merk/Tipe: [Tipe Laptop Baru]\nS/N: [Serial Number]',
+                  kelengkapan: 'Unit Laptop, Charger/Adapter, Box, Mouse',
+                  kondisi: 'Baru (100%)',
+                  kondisiColor: 'emerald'
+                },
+                {
+                  kategori: '2. Laptop Lama (Ditarik / Diserahkan ke IT)',
+                  spesifikasi: 'Merk/Tipe: [Tipe Laptop Lama]\nS/N: [Serial Number]',
+                  kelengkapan: 'Unit Laptop, Charger/Adapter, Tas Laptop',
+                  kondisi: 'Baik / Layak Pakai',
+                  kondisiColor: 'blue'
+                }
+              ]).map((item: any, idx: number) => (
+                <tr key={idx} className="border-b border-slate-300">
+                  <td className="border border-slate-400 p-2 font-semibold align-top">{item.kategori}</td>
+                  <td className="border border-slate-400 p-2 align-top whitespace-pre-line">{item.spesifikasi}</td>
+                  <td className="border border-slate-400 p-2 align-top">{item.kelengkapan}</td>
+                  <td className={`border border-slate-400 p-2 font-bold align-top ${
+                    item.kondisiColor === 'blue' ? 'text-blue-600' :
+                    item.kondisiColor === 'emerald' || item.kondisiColor === 'green' ? 'text-emerald-600 font-bold' :
+                    'text-emerald-600'
+                  }`}>
+                    {item.kondisi}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* IV. KETENTUAN DAN SYARAT PENGGUNAAN */}
+          <div className="bg-slate-100 border-l-4 border-blue-600 px-3 py-1 font-bold text-slate-900 text-xs my-3 uppercase tracking-wider font-sans">
+            IV. KETENTUAN DAN SYARAT PENGGUNAAN
+          </div>
+          <ol className="list-decimal ml-5 space-y-1 text-xs leading-relaxed text-slate-900 mb-6 font-sans">
+            {(formData.bastKetentuan && formData.bastKetentuan.length > 0 ? formData.bastKetentuan : [
+              'Laptop Baru diserahterimakan kepada Ibu Ririn untuk menunjang tugas operasional sebagai Sub Dep Head.',
+              'Laptop Lama milik Ibu Ririn diserahkan kembali kepada Yudha (Tim IT) untuk inventarisasi / penataan kembali aset IT.',
+              'Penerima bertanggung jawab atas pemeliharaan, kebersihan, dan keamanan laptop baru yang diterima.',
+              'Jika terdapat kendala teknis, penerima dapat berkoordinasi langsung dengan Tim IT.'
+            ]).map((ket: string, idx: number) => (
+              <li key={idx}>{ket}</li>
+            ))}
+          </ol>
+
+          {/* Dibuat Di & Tanggal */}
+          <div className="text-right text-xs my-6 pr-4 font-medium text-slate-800 font-sans">
+            Dibuat di: {formData.bastDibuatDi || '________________'}, Tanggal: {formData.bastTanggalDibuat || '________________ 2026'}
+          </div>
+
+          {/* Signatures */}
+          <table className="w-full text-center text-xs mt-6 font-sans">
+            <tbody>
+              <tr>
+                <td className="w-1/2 py-1 font-semibold text-slate-800">
+                  Pihak Penyerah({formData.penyerahPosition || formData.recommenderDept || 'IT Support'}),
                 </td>
-                <td className="h-28 align-bottom pb-2"></td>
-                <td className="h-28 align-bottom pb-2">
-                  <span className="font-bold underline">{formData.recommendeeName || <span className="text-gray-300">....................</span>}</span>
+                <td className="w-1/2 py-1 font-semibold text-slate-800">
+                  Pihak Penerima,
+                </td>
+              </tr>
+              <tr>
+                <td className="h-28 align-bottom pb-1">
+                  <div className="font-bold underline uppercase text-sm">[ {formData.penyerahName || formData.recommenderName || 'YUDHA'} ]</div>
+                  <div className="text-[11px] font-semibold text-slate-600 mt-0.5">{formData.penyerahPosition || 'IT Support'}</div>
+                </td>
+                <td className="h-28 align-bottom pb-1">
+                  <div className="font-bold underline uppercase text-sm">[ {formData.penerimaName || formData.recommendeeName || 'RIRIN'} ]</div>
+                  <div className="text-[11px] font-semibold text-slate-600 mt-0.5">{formData.penerimaPosition || 'Sub Dep Head'}</div>
                 </td>
               </tr>
             </tbody>
