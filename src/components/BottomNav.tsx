@@ -14,7 +14,8 @@ import {
   Search,
   BookOpen,
   BookOpenText,
-  History
+  History,
+  Ticket
 } from 'lucide-react';
 import { IAdminUser, ISettings, ViewMode } from '../types';
 import { Logo } from './Logo';
@@ -239,8 +240,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               onClick={() => setViewMode('my_tickets')}
               className="flex flex-col items-center justify-center gap-[2px] opacity-90 hover:opacity-100 cursor-pointer"
             >
-              <History className="w-[22px] h-[22px] stroke-[2.5px]" />
-              <span className={`${navTextWeight} tracking-wide`} style={{ fontSize: `${navTextSize}px` }}>Riwayat</span>
+              <Ticket className="w-[22px] h-[22px] stroke-[2.5px]" />
+              <span className={`${navTextWeight} tracking-wide`} style={{ fontSize: `${navTextSize}px` }}>Tiket Saya</span>
             </motion.button>
           </div>
 

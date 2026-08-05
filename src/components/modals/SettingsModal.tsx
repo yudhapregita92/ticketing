@@ -1614,7 +1614,7 @@ export const SettingsModal = React.memo(({
                           }}
                         >
                           <span className={`opacity-90 ${appSettings.nav_text_weight || 'font-medium'}`} style={{ fontSize: `${appSettings.nav_text_size || 10}px`, color: appSettings.nav_text_color || '#ffffff' }}>Beranda</span>
-                          <span className={`opacity-90 ${appSettings.nav_text_weight || 'font-medium'}`} style={{ fontSize: `${appSettings.nav_text_size || 10}px`, color: appSettings.nav_text_color || '#ffffff' }}>Riwayat</span>
+                          <span className={`opacity-90 ${appSettings.nav_text_weight || 'font-medium'}`} style={{ fontSize: `${appSettings.nav_text_size || 10}px`, color: appSettings.nav_text_color || '#ffffff' }}>Tiket Saya</span>
                           
                           {/* FAB Preview */}
                           <div

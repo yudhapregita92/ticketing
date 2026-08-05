@@ -722,7 +722,7 @@ Catatan: Mohon pastikan GPS aktif karena kami memerlukan lokasi Anda untuk penan
       title: '2. Cara melihat status tiket',
       content: `Untuk memantau status tiket yang telah Anda buat:
 
-- Buka menu "Riwayat" pada navigasi bawah.
+- Buka menu "Tiket Saya" pada navigasi bawah.
 - Masukkan nomor WhatsApp atau identitas yang Anda gunakan saat membuat tiket.
 - Anda dapat melihat semua riwayat tiket yang terkait beserta status terbarunya.`
     }
