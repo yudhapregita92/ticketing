@@ -867,7 +867,7 @@ Catatan: Mohon pastikan GPS aktif karena kami memerlukan lokasi Anda untuk penan
   };
 
   return (
-    <div className={`w-full max-w-4xl mx-auto rounded-3xl overflow-hidden shadow-2xl transition-all ${isDark ? 'bg-zinc-900 border border-zinc-800' : 'bg-white border border-slate-100'}`}>
+    <div className={`w-full max-w-4xl mx-auto rounded-3xl shadow-2xl transition-all ${isDark ? 'bg-zinc-900 border border-zinc-800' : 'bg-white border border-slate-100'}`}>
       
       {/* Dynamic Style Injection for beautiful Rich Text elements & alignments */}
       <style>{`
@@ -920,7 +920,7 @@ Catatan: Mohon pastikan GPS aktif karena kami memerlukan lokasi Anda untuk penan
       `}</style>
 
       {/* Header */}
-      <div className={`p-6 sm:p-8 border-b ${isDark ? 'border-zinc-800' : 'border-slate-100'}`}>
+      <div className={`sticky top-0 z-50 rounded-t-3xl p-6 sm:p-8 border-b ${isDark ? 'bg-zinc-900/95 border-zinc-800' : 'bg-white/95 border-slate-100'} backdrop-blur-md`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg" style={{ backgroundColor: primaryColor }}>

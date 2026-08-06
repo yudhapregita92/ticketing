@@ -24,7 +24,9 @@ import {
   Monitor,
   Box,
   QrCode,
-  ZoomIn
+  ZoomIn,
+  ChevronDown,
+  Check
 } from 'lucide-react';
 import { PRIORITIES } from '../../types';
 import { api } from "../../services/api";
@@ -93,6 +95,10 @@ export const NewTicketModal = React.memo(({
   const [permissionDenied, setPermissionDenied] = React.useState(false);
   const [cameraTarget, setCameraTarget] = React.useState<'face_photo' | 'photo'>('photo');
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const [openDropdown, setOpenDropdown] = React.useState<'jenis' | 'kategori' | 'prioritas' | null>(null);
+  const jenisRef = React.useRef<HTMLDivElement>(null);
+  const kategoriRef = React.useRef<HTMLDivElement>(null);
+  const prioritasRef = React.useRef<HTMLDivElement>(null);
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const streamRef = React.useRef<MediaStream | null>(null);
 
@@ -328,6 +334,15 @@ export const NewTicketModal = React.memo(({
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowUserDropdown(false);
+      }
+      if (jenisRef.current && !jenisRef.current.contains(event.target as Node)) {
+        setOpenDropdown(prev => prev === 'jenis' ? null : prev);
+      }
+      if (kategoriRef.current && !kategoriRef.current.contains(event.target as Node)) {
+        setOpenDropdown(prev => prev === 'kategori' ? null : prev);
+      }
+      if (prioritasRef.current && !prioritasRef.current.contains(event.target as Node)) {
+        setOpenDropdown(prev => prev === 'prioritas' ? null : prev);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -975,36 +990,95 @@ export const NewTicketModal = React.memo(({
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div className="space-y-0.5">
+            <div className="space-y-0.5 relative" ref={jenisRef}>
               <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
                 <Box className="w-2 h-2" /> Jenis Masalah <span className="text-rose-500 font-bold">* Wajib</span>
               </label>
-              <select 
-                required
-                className={`w-full px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
-                value={newTicket.jenis_masalah}
-                onChange={e => setNewTicket({...newTicket, jenis_masalah: e.target.value, category: ''})}
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'jenis' ? null : 'jenis')}
+                className={`w-full px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all flex items-center justify-between gap-2 text-left ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
               >
-                <option value="">Pilih Jenis Masalah...</option>
-                {availableJenisMasalah.map((jm, idx) => (
-                  <option key={`${jm}-${idx}`} value={jm}>{jm}</option>
-                ))}
-              </select>
+                <span className={newTicket.jenis_masalah ? 'font-semibold' : 'text-slate-400'}>
+                  {newTicket.jenis_masalah || 'Pilih Jenis Masalah...'}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 shrink-0 text-slate-400 transition-transform ${openDropdown === 'jenis' ? 'rotate-180' : ''}`} />
+              </button>
+
+              {openDropdown === 'jenis' && (
+                <div className={`absolute top-full left-0 right-0 z-[100] mt-1 max-h-60 overflow-y-auto rounded-xl border shadow-2xl p-1 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} animate-in fade-in zoom-in-95 duration-150`}>
+                  {availableJenisMasalah.length === 0 ? (
+                    <div className="p-3 text-center text-xs text-slate-400">Tidak ada pilihan</div>
+                  ) : (
+                    availableJenisMasalah.map((jm, idx) => {
+                      const isSelected = newTicket.jenis_masalah === jm;
+                      return (
+                        <div
+                          key={`jm-${jm}-${idx}`}
+                          onClick={() => {
+                            setNewTicket({ ...newTicket, jenis_masalah: jm, category: '' });
+                            setOpenDropdown(null);
+                          }}
+                          className={`px-3 py-2 rounded-lg cursor-pointer text-xs sm:text-sm font-medium flex items-center justify-between gap-2 transition-colors ${
+                            isSelected
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold'
+                              : `hover:bg-slate-100 dark:hover:bg-slate-700/60 ${themeClasses.text}`
+                          }`}
+                        >
+                          <span className="leading-snug">{jm}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </div>
-            <div className="space-y-0.5">
+
+            <div className="space-y-0.5 relative" ref={kategoriRef}>
               <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
                 <Layers className="w-2 h-2" /> Kategori Masalah <span className="text-rose-500 font-bold">* Wajib</span>
               </label>
-              <select 
-                required
+              <button
+                type="button"
                 disabled={!newTicket.jenis_masalah}
-                className={`w-full px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
-                value={newTicket.category}
-                onChange={e => setNewTicket({...newTicket, category: e.target.value})}
+                onClick={() => setOpenDropdown(openDropdown === 'kategori' ? null : 'kategori')}
+                className={`w-full px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all flex items-center justify-between gap-2 text-left disabled:opacity-50 disabled:cursor-not-allowed ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
               >
-                <option value="">{newTicket.jenis_masalah ? 'Pilih Kategori...' : 'Pilih Jenis Masalah Dulu'}</option>
-                {filteredCategories.map((cat, idx) => <option key={`${cat}-${idx}`} value={cat}>{cat}</option>)}
-              </select>
+                <span className={newTicket.category ? 'font-semibold' : 'text-slate-400'}>
+                  {newTicket.category || (newTicket.jenis_masalah ? 'Pilih Kategori...' : 'Pilih Jenis Masalah Dulu')}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 shrink-0 text-slate-400 transition-transform ${openDropdown === 'kategori' ? 'rotate-180' : ''}`} />
+              </button>
+
+              {openDropdown === 'kategori' && newTicket.jenis_masalah && (
+                <div className={`absolute top-full left-0 right-0 z-[100] mt-1 max-h-60 overflow-y-auto rounded-xl border shadow-2xl p-1 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} animate-in fade-in zoom-in-95 duration-150`}>
+                  {filteredCategories.length === 0 ? (
+                    <div className="p-3 text-center text-xs text-slate-400">Tidak ada kategori</div>
+                  ) : (
+                    filteredCategories.map((cat, idx) => {
+                      const isSelected = newTicket.category === cat;
+                      return (
+                        <div
+                          key={`cat-${cat}-${idx}`}
+                          onClick={() => {
+                            setNewTicket({ ...newTicket, category: cat });
+                            setOpenDropdown(null);
+                          }}
+                          className={`px-3 py-2 rounded-lg cursor-pointer text-xs sm:text-sm font-medium flex items-center justify-between gap-2 transition-colors ${
+                            isSelected
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold'
+                              : `hover:bg-slate-100 dark:hover:bg-slate-700/60 ${themeClasses.text}`
+                          }`}
+                        >
+                          <span className="leading-snug">{cat}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </div>
 
             {isDeviceCodeRequired && (
@@ -1052,21 +1126,45 @@ export const NewTicketModal = React.memo(({
               </div>
             )}
 
-            <div className="space-y-0.5 sm:col-span-2">
+            <div className="space-y-0.5 sm:col-span-2 relative" ref={prioritasRef}>
               <label className="flex items-center gap-1.5 text-[8px] font-black text-slate-400 capitalize tracking-widest ml-0.5">
                 <AlertTriangle className="w-2 h-2" /> Prioritas <span className="text-rose-500 font-bold">* Wajib</span>
               </label>
-              <select 
-                required
-                className={`w-full px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
-                value={newTicket.priority}
-                onChange={e => setNewTicket({...newTicket, priority: e.target.value})}
+              <button
+                type="button"
+                onClick={() => setOpenDropdown(openDropdown === 'prioritas' ? null : 'prioritas')}
+                className={`w-full px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500 transition-all flex items-center justify-between gap-2 text-left ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
               >
-                <option value="">Pilih Prioritas...</option>
-                {PRIORITIES.map((p, idx) => (
-                  <option key={`p-opt-${p.id}-${idx}`} value={p.id}>{p.label}</option>
-                ))}
-              </select>
+                <span className={newTicket.priority ? 'font-semibold' : 'text-slate-400'}>
+                  {PRIORITIES.find(p => p.id === newTicket.priority)?.label || 'Pilih Prioritas...'}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 shrink-0 text-slate-400 transition-transform ${openDropdown === 'prioritas' ? 'rotate-180' : ''}`} />
+              </button>
+
+              {openDropdown === 'prioritas' && (
+                <div className={`absolute top-full left-0 right-0 z-[100] mt-1 max-h-60 overflow-y-auto rounded-xl border shadow-2xl p-1 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} animate-in fade-in zoom-in-95 duration-150`}>
+                  {PRIORITIES.map((p, idx) => {
+                    const isSelected = newTicket.priority === p.id;
+                    return (
+                      <div
+                        key={`p-opt-${p.id}-${idx}`}
+                        onClick={() => {
+                          setNewTicket({ ...newTicket, priority: p.id });
+                          setOpenDropdown(null);
+                        }}
+                        className={`px-3 py-2 rounded-lg cursor-pointer text-xs sm:text-sm font-medium flex items-center justify-between gap-2 transition-colors ${
+                          isSelected
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold'
+                            : `hover:bg-slate-100 dark:hover:bg-slate-700/60 ${themeClasses.text}`
+                        }`}
+                      >
+                        <span className="leading-snug">{p.label}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
