@@ -564,28 +564,49 @@ export default function App() {
         if (ticketDate !== today) return false;
       } else if (viewMode === 'my_tickets') {
         if (adminUser) {
-          // Admin view: tickets assigned to me
-          if (ticket.assigned_to !== adminUser.username && ticket.assigned_to !== adminUser.full_name) return false;
+          // Admin view: tickets assigned to me or created by me
+          const myAdminName = (adminUser.full_name || adminUser.username || '').toLowerCase().trim();
+          const myAdminUser = (adminUser.username || '').toLowerCase().trim();
+          const tAssigned = (ticket.assigned_to || '').toLowerCase().trim();
+          const tName = (ticket.name || '').toLowerCase().trim();
+          
+          if (tAssigned !== myAdminName && tAssigned !== myAdminUser && tName !== myAdminName && tName !== myAdminUser) {
+            return false;
+          }
         } else {
           // User view: tickets I submitted
-          if (currentUser) {
-            const userName = currentUser.full_name.toLowerCase();
-            const userPhone = currentUser.phone ? currentUser.phone.toLowerCase() : '';
-            if (
-              ticket.name.toLowerCase() !== userName &&
-              (userPhone === '' || ticket.phone.toLowerCase() !== userPhone)
-            ) {
-              return false;
+          let storedNos: string[] = [];
+          try {
+            const raw = safeGetItem('my_ticket_numbers');
+            if (raw && Array.isArray(JSON.parse(raw))) {
+              storedNos = JSON.parse(raw);
             }
-          } else {
-            if (!userIdentifier) return false;
-            const search = userIdentifier.toLowerCase();
-            if (
-              ticket.phone.toLowerCase() !== search && 
-              ticket.name.toLowerCase() !== search &&
-              !ticket.ticket_no.toLowerCase().includes(search)
-            ) return false;
+          } catch (e) {}
+
+          const myIndex = (currentUser?.employee_index || safeGetItem('my_employee_index') || '').toLowerCase().trim();
+          const myName = (currentUser?.full_name || currentUser?.name || safeGetItem('my_user_name') || '').toLowerCase().trim();
+          const myPhone = (currentUser?.phone || safeGetItem('my_user_phone') || '').toLowerCase().trim();
+          const mySearch = userIdentifier ? userIdentifier.toLowerCase().trim() : '';
+
+          const tIndex = (ticket.employee_index || '').toLowerCase().trim();
+          const tName = (ticket.name || '').toLowerCase().trim();
+          const tPhone = (ticket.phone || '').toLowerCase().trim();
+          const tNo = (ticket.ticket_no || '').toLowerCase().trim();
+
+          let isMyTicket = false;
+
+          if (myIndex && tIndex && myIndex === tIndex) isMyTicket = true;
+          if (myName && tName && myName === tName) isMyTicket = true;
+          if (myPhone && tPhone && myPhone === tPhone) isMyTicket = true;
+          if (storedNos.length > 0 && storedNos.some(no => String(no).toLowerCase().trim() === tNo)) isMyTicket = true;
+
+          if (!isMyTicket && mySearch) {
+            if (tPhone === mySearch || tName === mySearch || tIndex === mySearch || tNo === mySearch) {
+              isMyTicket = true;
+            }
           }
+
+          if (!isMyTicket) return false;
         }
       }
 
