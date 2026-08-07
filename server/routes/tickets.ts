@@ -281,9 +281,11 @@ export default function(io: Server) {
     }
     db.transaction(() => {
       db.prepare("DELETE FROM ticket_logs").run();
+      db.prepare("DELETE FROM notifications").run();
       db.prepare("DELETE FROM tickets").run();
     })();
-    res.json({ success: true });
+    io.emit("ticketUpdated");
+    res.json({ success: true, message: "Semua data tiket berhasil direset" });
   }));
 
   router.delete("/:id", asyncHandler(async (req: any, res: any) => {
