@@ -557,94 +557,89 @@ export default function App() {
    */
   const filteredTickets = useMemo(() => {
     return tickets.filter(ticket => {
-      // 1. View Mode Filter
+      // 1. NON-ADMIN USER ISOLATION (MANDATORY)
+      // Non-admin users must NEVER see tickets created by other users under any view mode.
+      if (!adminUser) {
+        const tName = (ticket.name || '').toLowerCase().trim();
+        const tIndex = (ticket.employee_index || '').toLowerCase().trim();
+        const tPhone = (ticket.phone || '').toLowerCase().trim();
+        const tNo = (ticket.ticket_no || '').toLowerCase().trim();
+
+        let isMyTicket = false;
+
+        if (currentUser) {
+          // Logged-in member (e.g. Andri Diham Saputra)
+          const myName = (currentUser.full_name || currentUser.name || '').toLowerCase().trim();
+          const myIndex = (currentUser.employee_index || '').toLowerCase().trim();
+          const myPhone = (currentUser.phone || '').toLowerCase().trim();
+
+          if (myName.length >= 2 && tName === myName) {
+            isMyTicket = true;
+          }
+          if (!isMyTicket && myIndex.length >= 2 && tIndex.length >= 2 && tIndex === myIndex) {
+            isMyTicket = true;
+          }
+          if (!isMyTicket && myPhone.length >= 4 && tPhone.length >= 4 && tPhone === myPhone) {
+            isMyTicket = true;
+          }
+        } else {
+          // Guest / Unauthenticated user session
+          let storedNos: string[] = [];
+          try {
+            const raw = safeGetItem('my_ticket_numbers');
+            if (raw && Array.isArray(JSON.parse(raw))) {
+              storedNos = JSON.parse(raw);
+            }
+          } catch (e) {}
+
+          const savedPhone = (safeGetItem('my_user_phone') || userIdentifier || '').toLowerCase().trim();
+          const savedIndex = (safeGetItem('my_employee_index') || '').toLowerCase().trim();
+          const savedName = (safeGetItem('my_user_name') || '').toLowerCase().trim();
+
+          if (storedNos.length > 0 && storedNos.some(no => String(no).toLowerCase().trim() === tNo)) {
+            isMyTicket = true;
+          }
+          if (!isMyTicket && savedName.length >= 3 && tName === savedName) {
+            isMyTicket = true;
+          }
+          if (!isMyTicket && savedIndex.length >= 2 && tIndex.length >= 2 && tIndex === savedIndex) {
+            isMyTicket = true;
+          }
+          if (!isMyTicket && savedPhone.length >= 5 && tPhone.length >= 5 && tPhone === savedPhone) {
+            isMyTicket = true;
+          }
+
+          const search = (searchQuery || '').toLowerCase().trim();
+          if (!isMyTicket && search.length >= 3) {
+            if (
+              tNo === search ||
+              (tPhone.length >= 4 && tPhone === search) ||
+              (tIndex.length >= 2 && tIndex === search) ||
+              (tName.length >= 3 && tName === search)
+            ) {
+              isMyTicket = true;
+            }
+          }
+        }
+
+        // Strictly exclude any ticket not belonging to this user
+        if (!isMyTicket) return false;
+      }
+
+      // 2. View Mode Filter (Today vs All vs My Tickets)
       if (viewMode === 'today') {
         const ticketDate = parseSafeDate(ticket.created_at).toLocaleDateString('en-CA'); // YYYY-MM-DD
         const today = new Date().toLocaleDateString('en-CA');
         if (ticketDate !== today) return false;
-      } else if (viewMode === 'my_tickets') {
-        if (adminUser) {
-          // Admin View Filter for "my_tickets" tab
-          const myAdminName = (adminUser.full_name || adminUser.username || '').toLowerCase().trim();
-          const myAdminUser = (adminUser.username || '').toLowerCase().trim();
-          const tAssigned = (ticket.assigned_to || '').toLowerCase().trim();
-          const tName = (ticket.name || '').toLowerCase().trim();
-          
-          if (tAssigned !== myAdminName && tAssigned !== myAdminUser && tName !== myAdminName && tName !== myAdminUser) {
-            return false;
-          }
-        } else {
-          // Public User View Filter for "Riwayat Tiket Saya" tab
-          const tName = (ticket.name || '').toLowerCase().trim();
-          const tIndex = (ticket.employee_index || '').toLowerCase().trim();
-          const tPhone = (ticket.phone || '').toLowerCase().trim();
-          const tNo = (ticket.ticket_no || '').toLowerCase().trim();
-
-          let isMyTicket = false;
-
-          if (currentUser) {
-            // SCENARIO 1: User is Logged In (e.g. Andri Diham Saputra)
-            // MUST ONLY match fields from currentUser object directly.
-            const myName = (currentUser.full_name || currentUser.name || '').toLowerCase().trim();
-            const myIndex = (currentUser.employee_index || '').toLowerCase().trim();
-            const myPhone = (currentUser.phone || '').toLowerCase().trim();
-
-            // Match by Full Name
-            if (myName.length >= 2 && tName === myName) {
-              isMyTicket = true;
-            }
-            // Match by Employee Index (if present on currentUser)
-            if (!isMyTicket && myIndex.length >= 2 && tIndex.length >= 2 && tIndex === myIndex) {
-              isMyTicket = true;
-            }
-            // Match by Phone Number (if present on currentUser)
-            if (!isMyTicket && myPhone.length >= 4 && tPhone.length >= 4 && tPhone === myPhone) {
-              isMyTicket = true;
-            }
-          } else {
-            // SCENARIO 2: Guest / Unauthenticated User (No currentUser)
-            // Match tickets created in this session (storedNos) or typed in searchQuery
-            let storedNos: string[] = [];
-            try {
-              const raw = safeGetItem('my_ticket_numbers');
-              if (raw && Array.isArray(JSON.parse(raw))) {
-                storedNos = JSON.parse(raw);
-              }
-            } catch (e) {}
-
-            const savedPhone = (safeGetItem('my_user_phone') || userIdentifier || '').toLowerCase().trim();
-            const savedIndex = (safeGetItem('my_employee_index') || '').toLowerCase().trim();
-            const savedName = (safeGetItem('my_user_name') || '').toLowerCase().trim();
-
-            if (storedNos.length > 0 && storedNos.some(no => String(no).toLowerCase().trim() === tNo)) {
-              isMyTicket = true;
-            }
-            if (!isMyTicket && savedName.length >= 3 && tName === savedName) {
-              isMyTicket = true;
-            }
-            if (!isMyTicket && savedIndex.length >= 2 && tIndex.length >= 2 && tIndex === savedIndex) {
-              isMyTicket = true;
-            }
-            if (!isMyTicket && savedPhone.length >= 5 && tPhone.length >= 5 && tPhone === savedPhone) {
-              isMyTicket = true;
-            }
-
-            // Optional manual search query typed in input
-            const search = (searchQuery || '').toLowerCase().trim();
-            if (!isMyTicket && search.length >= 3) {
-              if (
-                tNo === search ||
-                (tPhone.length >= 4 && tPhone === search) ||
-                (tIndex.length >= 2 && tIndex === search) ||
-                (tName.length >= 3 && tName === search)
-              ) {
-                isMyTicket = true;
-              }
-            }
-          }
-
-          // Strictly exclude any ticket that does not belong to this user
-          if (!isMyTicket) return false;
+      } else if (viewMode === 'my_tickets' && adminUser) {
+        // Admin View Filter for "my_tickets" tab
+        const myAdminName = (adminUser.full_name || adminUser.username || '').toLowerCase().trim();
+        const myAdminUser = (adminUser.username || '').toLowerCase().trim();
+        const tAssigned = (ticket.assigned_to || '').toLowerCase().trim();
+        const tName = (ticket.name || '').toLowerCase().trim();
+        
+        if (tAssigned !== myAdminName && tAssigned !== myAdminUser && tName !== myAdminName && tName !== myAdminUser) {
+          return false;
         }
       }
 
