@@ -156,7 +156,7 @@ export const TicketList: React.FC<TicketListProps> = ({
           )}
         </button>
 
-        {adminUser && (
+        {(adminUser || viewMode === 'my_tickets') && (
           <button
             onClick={() => setViewMode('my_tickets')}
             className={`relative flex-1 py-2.5 sm:py-3 px-4 text-center text-sm sm:text-base font-bold transition-colors ${
