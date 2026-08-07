@@ -557,50 +557,14 @@ export default function App() {
    */
   const filteredTickets = useMemo(() => {
     return tickets.filter(ticket => {
-      // 1. User Isolation for Non-Admin Users:
-      // Non-admin users MUST only see tickets belonging to themselves across all views.
-      if (!adminUser) {
-        let storedNos: string[] = [];
-        try {
-          const raw = safeGetItem('my_ticket_numbers');
-          if (raw && Array.isArray(JSON.parse(raw))) {
-            storedNos = JSON.parse(raw);
-          }
-        } catch (e) {}
-
-        const myIndex = (currentUser?.employee_index || safeGetItem('my_employee_index') || '').toLowerCase().trim();
-        const myName = (currentUser?.full_name || currentUser?.name || safeGetItem('my_user_name') || '').toLowerCase().trim();
-        const myPhone = (currentUser?.phone || safeGetItem('my_user_phone') || '').toLowerCase().trim();
-        const mySearch = userIdentifier ? userIdentifier.toLowerCase().trim() : '';
-
-        const tIndex = (ticket.employee_index || '').toLowerCase().trim();
-        const tName = (ticket.name || '').toLowerCase().trim();
-        const tPhone = (ticket.phone || '').toLowerCase().trim();
-        const tNo = (ticket.ticket_no || '').toLowerCase().trim();
-
-        let isMyTicket = false;
-
-        if (myIndex && tIndex && myIndex === tIndex) isMyTicket = true;
-        if (myName && tName && myName === tName) isMyTicket = true;
-        if (myPhone && tPhone && myPhone === tPhone) isMyTicket = true;
-        if (storedNos.length > 0 && storedNos.some(no => String(no).toLowerCase().trim() === tNo)) isMyTicket = true;
-
-        if (!isMyTicket && mySearch) {
-          if (
-            (tPhone && tPhone === mySearch) || 
-            (tName && tName === mySearch) || 
-            (tIndex && tIndex === mySearch) || 
-            (tNo && tNo === mySearch)
-          ) {
-            isMyTicket = true;
-          }
-        }
-
-        // Strictly exclude any ticket not belonging to this non-admin user
-        if (!isMyTicket) return false;
-      } else {
-        // Admin View Filter for "my_tickets" tab
-        if (viewMode === 'my_tickets') {
+      // 1. View Mode Filter
+      if (viewMode === 'today') {
+        const ticketDate = parseSafeDate(ticket.created_at).toLocaleDateString('en-CA'); // YYYY-MM-DD
+        const today = new Date().toLocaleDateString('en-CA');
+        if (ticketDate !== today) return false;
+      } else if (viewMode === 'my_tickets') {
+        if (adminUser) {
+          // Admin View Filter for "my_tickets" tab
           const myAdminName = (adminUser.full_name || adminUser.username || '').toLowerCase().trim();
           const myAdminUser = (adminUser.username || '').toLowerCase().trim();
           const tAssigned = (ticket.assigned_to || '').toLowerCase().trim();
@@ -609,14 +573,64 @@ export default function App() {
           if (tAssigned !== myAdminName && tAssigned !== myAdminUser && tName !== myAdminName && tName !== myAdminUser) {
             return false;
           }
-        }
-      }
+        } else {
+          // Public User View Filter for "Riwayat Tiket Saya" tab
+          let storedNos: string[] = [];
+          try {
+            const raw = safeGetItem('my_ticket_numbers');
+            if (raw && Array.isArray(JSON.parse(raw))) {
+              storedNos = JSON.parse(raw);
+            }
+          } catch (e) {}
 
-      // 2. View Mode Filter (Today vs All)
-      if (viewMode === 'today') {
-        const ticketDate = parseSafeDate(ticket.created_at).toLocaleDateString('en-CA'); // YYYY-MM-DD
-        const today = new Date().toLocaleDateString('en-CA');
-        if (ticketDate !== today) return false;
+          const myIndex = (currentUser?.employee_index || safeGetItem('my_employee_index') || '').toLowerCase().trim();
+          const myPhone = (currentUser?.phone || safeGetItem('my_user_phone') || '').toLowerCase().trim();
+          
+          // Logged-in member name (only if logged in)
+          const myMemberName = currentUser ? (currentUser.full_name || currentUser.name || '').toLowerCase().trim() : '';
+
+          const tIndex = (ticket.employee_index || '').toLowerCase().trim();
+          const tName = (ticket.name || '').toLowerCase().trim();
+          const tPhone = (ticket.phone || '').toLowerCase().trim();
+          const tNo = (ticket.ticket_no || '').toLowerCase().trim();
+
+          let isMyTicket = false;
+
+          // Condition 1: Ticket number stored in localStorage for this browser session
+          if (storedNos.length > 0 && storedNos.some(no => String(no).toLowerCase().trim() === tNo)) {
+            isMyTicket = true;
+          }
+
+          // Condition 2: Employee index match (must be at least 2 chars)
+          if (!isMyTicket && myIndex.length >= 2 && tIndex.length >= 2 && myIndex === tIndex) {
+            isMyTicket = true;
+          }
+
+          // Condition 3: Phone number match (must be at least 5 digits to prevent matching short strings)
+          if (!isMyTicket && myPhone.length >= 5 && tPhone.length >= 5 && myPhone === tPhone) {
+            isMyTicket = true;
+          }
+
+          // Condition 4: Logged in member name match
+          if (!isMyTicket && myMemberName.length >= 3 && tName === myMemberName) {
+            isMyTicket = true;
+          }
+
+          // Condition 5: Specific manual search or userIdentifier exact match (if typed by user)
+          const manualSearch = (searchQuery || userIdentifier || '').toLowerCase().trim();
+          if (!isMyTicket && manualSearch.length >= 3) {
+            if (
+              tNo === manualSearch || 
+              (tPhone.length >= 5 && tPhone === manualSearch) || 
+              (tIndex.length >= 2 && tIndex === manualSearch)
+            ) {
+              isMyTicket = true;
+            }
+          }
+
+          // Strictly exclude any ticket not belonging to this user in "Riwayat Tiket Saya"
+          if (!isMyTicket) return false;
+        }
       }
 
       const matchDept = filterDept ? ticket.department === filterDept : true;
@@ -627,6 +641,7 @@ export default function App() {
         ticket.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         ticket.description.toLowerCase().includes(searchQuery.toLowerCase())
       ) : true;
+
       return matchDept && matchStatus && matchDate && matchSearch;
     });
   }, [tickets, viewMode, filterDept, filterStatus, filterDate, searchQuery, adminUser, currentUser, userIdentifier]);
