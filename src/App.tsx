@@ -575,60 +575,75 @@ export default function App() {
           }
         } else {
           // Public User View Filter for "Riwayat Tiket Saya" tab
-          let storedNos: string[] = [];
-          try {
-            const raw = safeGetItem('my_ticket_numbers');
-            if (raw && Array.isArray(JSON.parse(raw))) {
-              storedNos = JSON.parse(raw);
-            }
-          } catch (e) {}
-
-          const myIndex = (currentUser?.employee_index || safeGetItem('my_employee_index') || '').toLowerCase().trim();
-          const myPhone = (currentUser?.phone || safeGetItem('my_user_phone') || '').toLowerCase().trim();
-          
-          // Logged-in member name (only if logged in)
-          const myMemberName = currentUser ? (currentUser.full_name || currentUser.name || '').toLowerCase().trim() : '';
-
-          const tIndex = (ticket.employee_index || '').toLowerCase().trim();
           const tName = (ticket.name || '').toLowerCase().trim();
+          const tIndex = (ticket.employee_index || '').toLowerCase().trim();
           const tPhone = (ticket.phone || '').toLowerCase().trim();
           const tNo = (ticket.ticket_no || '').toLowerCase().trim();
 
           let isMyTicket = false;
 
-          // Condition 1: Ticket number stored in localStorage for this browser session
-          if (storedNos.length > 0 && storedNos.some(no => String(no).toLowerCase().trim() === tNo)) {
-            isMyTicket = true;
-          }
+          if (currentUser) {
+            // SCENARIO 1: User is Logged In (e.g. Andri Diham Saputra)
+            // MUST ONLY match fields from currentUser object directly.
+            const myName = (currentUser.full_name || currentUser.name || '').toLowerCase().trim();
+            const myIndex = (currentUser.employee_index || '').toLowerCase().trim();
+            const myPhone = (currentUser.phone || '').toLowerCase().trim();
 
-          // Condition 2: Employee index match (must be at least 2 chars)
-          if (!isMyTicket && myIndex.length >= 2 && tIndex.length >= 2 && myIndex === tIndex) {
-            isMyTicket = true;
-          }
-
-          // Condition 3: Phone number match (must be at least 5 digits to prevent matching short strings)
-          if (!isMyTicket && myPhone.length >= 5 && tPhone.length >= 5 && myPhone === tPhone) {
-            isMyTicket = true;
-          }
-
-          // Condition 4: Logged in member name match
-          if (!isMyTicket && myMemberName.length >= 3 && tName === myMemberName) {
-            isMyTicket = true;
-          }
-
-          // Condition 5: Specific manual search or userIdentifier exact match (if typed by user)
-          const manualSearch = (searchQuery || userIdentifier || '').toLowerCase().trim();
-          if (!isMyTicket && manualSearch.length >= 3) {
-            if (
-              tNo === manualSearch || 
-              (tPhone.length >= 5 && tPhone === manualSearch) || 
-              (tIndex.length >= 2 && tIndex === manualSearch)
-            ) {
+            // Match by Full Name
+            if (myName.length >= 2 && tName === myName) {
               isMyTicket = true;
+            }
+            // Match by Employee Index (if present on currentUser)
+            if (!isMyTicket && myIndex.length >= 2 && tIndex.length >= 2 && tIndex === myIndex) {
+              isMyTicket = true;
+            }
+            // Match by Phone Number (if present on currentUser)
+            if (!isMyTicket && myPhone.length >= 4 && tPhone.length >= 4 && tPhone === myPhone) {
+              isMyTicket = true;
+            }
+          } else {
+            // SCENARIO 2: Guest / Unauthenticated User (No currentUser)
+            // Match tickets created in this session (storedNos) or typed in searchQuery
+            let storedNos: string[] = [];
+            try {
+              const raw = safeGetItem('my_ticket_numbers');
+              if (raw && Array.isArray(JSON.parse(raw))) {
+                storedNos = JSON.parse(raw);
+              }
+            } catch (e) {}
+
+            const savedPhone = (safeGetItem('my_user_phone') || userIdentifier || '').toLowerCase().trim();
+            const savedIndex = (safeGetItem('my_employee_index') || '').toLowerCase().trim();
+            const savedName = (safeGetItem('my_user_name') || '').toLowerCase().trim();
+
+            if (storedNos.length > 0 && storedNos.some(no => String(no).toLowerCase().trim() === tNo)) {
+              isMyTicket = true;
+            }
+            if (!isMyTicket && savedName.length >= 3 && tName === savedName) {
+              isMyTicket = true;
+            }
+            if (!isMyTicket && savedIndex.length >= 2 && tIndex.length >= 2 && tIndex === savedIndex) {
+              isMyTicket = true;
+            }
+            if (!isMyTicket && savedPhone.length >= 5 && tPhone.length >= 5 && tPhone === savedPhone) {
+              isMyTicket = true;
+            }
+
+            // Optional manual search query typed in input
+            const search = (searchQuery || '').toLowerCase().trim();
+            if (!isMyTicket && search.length >= 3) {
+              if (
+                tNo === search ||
+                (tPhone.length >= 4 && tPhone === search) ||
+                (tIndex.length >= 2 && tIndex === search) ||
+                (tName.length >= 3 && tName === search)
+              ) {
+                isMyTicket = true;
+              }
             }
           }
 
-          // Strictly exclude any ticket not belonging to this user in "Riwayat Tiket Saya"
+          // Strictly exclude any ticket that does not belong to this user
           if (!isMyTicket) return false;
         }
       }
