@@ -396,7 +396,7 @@ export default function App() {
   const [loginData, setLoginData] = useState({ username: '', password: '' });
   const [showSettings, setShowSettings] = useState(false); // Toggle modal pengaturan aplikasi
   const [showImageManager, setShowImageManager] = useState(false); // Toggle modal manajemen gambar
-  const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'banner' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup' | 'bug_log'>('general');
+  const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'banner' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup' | 'bug_log' | 'it_action'>('general');
   const [showResetConfirm, setShowResetConfirm] = useState(false); // Toggle konfirmasi reset data
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<{type: 'single' | 'bulk', id?: number} | null>(null);
   const [showTakeoverConfirm, setShowTakeoverConfirm] = useState<{id: number, type: 'takeover' | 'reassign', targetUser?: string} | null>(null);
@@ -433,7 +433,7 @@ export default function App() {
       view = hasAdmin ? 'dashboard' : 'today';
     }
 
-    if (['today', 'all', 'my_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership', 'evaluasi_project', 'jurnal', 'voucher', 'master_user', 'master_perangkat', 'master_team', 'report_sla', 'report_perangkat', 'team_location'].includes(view)) {
+    if (['today', 'all', 'my_tickets', 'team_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership', 'evaluasi_project', 'jurnal', 'voucher', 'master_user', 'master_perangkat', 'master_team', 'report_sla', 'report_perangkat', 'team_location'].includes(view)) {
       return view as ViewMode;
     }
     return hasAdmin ? 'dashboard' : 'today';
@@ -564,6 +564,74 @@ export default function App() {
         if (ticketDate !== today) return false;
       } else if (viewMode === 'all') {
         // Show ALL tickets (no restriction by user or date)
+      } else if (viewMode === 'team_tickets') {
+        if (!currentUser) return false;
+        
+        // Allowed if the ticket belongs to a subordinate
+        let isTeamTicket = false;
+        // Helper to parse valid sub-departments ignoring dummy values like '-' or 'none'
+        const parseSubDepts = (str?: string) => {
+          if (!str) return [];
+          return str
+            .toLowerCase()
+            .split(/[,/]/)
+            .map((s: string) => s.trim())
+            .filter((s: string) => Boolean(s) && s !== '-' && s !== 'none' && s !== 'n/a' && s !== 'null');
+        };
+
+        const myId = currentUser.id;
+        const myDept = (currentUser.department || '').toLowerCase().trim();
+        const tDept = (ticket.department || '').toLowerCase().trim();
+        const mySubDepts = parseSubDepts(currentUser.sub_department);
+        
+        const creator = masterUsers.find((u: any) => 
+          (u.full_name && ticket.name && u.full_name.toLowerCase() === ticket.name.toLowerCase()) || 
+          (u.employee_index && ticket.employee_index && u.employee_index === ticket.employee_index)
+        );
+
+        if (creator) {
+          // Option 1: Explicit Atasan Match
+          if (creator.atasan_id === myId) {
+            isTeamTicket = true;
+          } else {
+            // Option 2: Department and Sub-Department match
+            // Only evaluate department matching if creator doesn't have another explicit atasan assigned
+            if (!creator.atasan_id) {
+               const creatorDept = (creator.department || '').toLowerCase().trim();
+               const creatorSubDepts = parseSubDepts(creator.sub_department);
+
+               // Strict matching:
+               // If I have specific valid sub-departments, I should ONLY see tickets from creators 
+               // who share at least one of my sub-departments (or their exact department matches my sub-department).
+               if (mySubDepts.length > 0) {
+                 if (
+                   mySubDepts.includes(creatorDept) || 
+                   creatorSubDepts.some((s: string) => mySubDepts.includes(s))
+                 ) {
+                   isTeamTicket = true;
+                 }
+               } 
+               // If I DO NOT have specific sub-departments, I am likely a general Dept Head or in a flat department.
+               // In this case, I can see all tickets within my exact department.
+               else if (myDept && myDept !== '-' && creatorDept === myDept) {
+                 isTeamTicket = true;
+               }
+            }
+          }
+        } else {
+          // If creator not found in master user, fallback to simple ticket department match
+          if (mySubDepts.length > 0) {
+            if (mySubDepts.includes(tDept)) {
+              isTeamTicket = true;
+            }
+          } else if (myDept && myDept !== '-' && tDept === myDept) {
+            isTeamTicket = true;
+          }
+        }
+        
+        if (!isTeamTicket) return false;
+
+
       } else if (viewMode === 'my_tickets') {
         if (adminUser) {
           // Admin View Filter for "my_tickets" tab
@@ -1272,7 +1340,9 @@ export default function App() {
     estimated_duration?: string | null,
     estimated_start_at?: string | null,
     estimated_target_at?: string | null,
-    require_rating?: number | null
+    require_rating?: number | null,
+    action_type?: string | null,
+    action_notes?: string | null
   ) => {
     if (!assigned_to) {
       toast.error('Silakan pilih IT yang menangani terlebih dahulu.');
@@ -1288,7 +1358,9 @@ export default function App() {
       estimated_duration,
       estimated_start_at,
       estimated_target_at,
-      require_rating
+      require_rating,
+      action_type,
+      action_notes
     } as any);
   };
 
@@ -1309,6 +1381,8 @@ export default function App() {
         estimated_start_at: (pendingUpdate as any).estimated_start_at,
         estimated_target_at: (pendingUpdate as any).estimated_target_at,
         require_rating: (pendingUpdate as any).require_rating,
+        action_type: (pendingUpdate as any).action_type,
+        action_notes: (pendingUpdate as any).action_notes,
         performed_by: adminUser.username
       }
     }, {
@@ -1822,6 +1896,7 @@ export default function App() {
                   handleLogout={handleLogout}
                   userCanVoucher={userCanVoucher}
                   adminThemeLayout={adminThemeLayout}
+                  currentUser={currentUser}
                 />
               </div>
             </div>
@@ -1892,6 +1967,20 @@ export default function App() {
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Tiket Saya</span>
                 </button>
+
+                {currentUser && ((currentUser.jabatan || '').toLowerCase().includes('head') || (currentUser.jabatan || '').toLowerCase().includes('manager')) && (
+                  <button
+                    onClick={() => setViewMode('team_tickets')}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
+                      viewMode === 'team_tickets'
+                        ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                        : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <Users className="w-4 h-4" />
+                    <span>Tiket Tim Saya</span>
+                  </button>
+                )}
 
                 {(adminUser || userCanVoucher) && (
                   <button
@@ -2366,6 +2455,7 @@ export default function App() {
               getStatusColor={getStatusColor}
               STATUSES={STATUSES}
               primaryColor={primaryColor}
+              appSettings={appSettings}
               onRefreshTickets={() => queryClient.invalidateQueries({ queryKey: ['tickets'] })}
               onForwardWhatsApp={(t) => setWhatsappModalTicket(t)}
             />

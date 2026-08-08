@@ -11,7 +11,8 @@ export const MasterPerangkat = ({ isDark, primaryColor }: { isDark: boolean, pri
   
   const [formData, setFormData] = useState({
     kode_kategori: '',
-    name: ''
+    name: '',
+    tahun_penyusutan: 4
   });
 
   const fetchCategories = async () => {
@@ -47,7 +48,7 @@ export const MasterPerangkat = ({ isDark, primaryColor }: { isDark: boolean, pri
       }
       setShowModal(false);
       setEditingId(null);
-      setFormData({ kode_kategori: '', name: '' });
+      setFormData({ kode_kategori: '', name: '', tahun_penyusutan: 4 });
       fetchCategories();
     } catch (err) {
       console.error(err);
@@ -68,7 +69,8 @@ export const MasterPerangkat = ({ isDark, primaryColor }: { isDark: boolean, pri
     setEditingId(cat.id);
     setFormData({
       kode_kategori: cat.kode_kategori || '',
-      name: cat.name
+      name: cat.name,
+      tahun_penyusutan: cat.tahun_penyusutan || 4
     });
     setShowModal(true);
   };
@@ -78,12 +80,12 @@ export const MasterPerangkat = ({ isDark, primaryColor }: { isDark: boolean, pri
       <div className="flex justify-between items-center">
         <div>
           <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Master Kategori Perangkat</h2>
-          <p className="text-sm text-slate-500">Kelola kode dan nama kategori perangkat (asset).</p>
+          <p className="text-sm text-slate-500">Kelola kode, nama kategori, dan estimasi tahun penyusutan perangkat (asset).</p>
         </div>
         <button
           onClick={() => {
             setEditingId(null);
-            setFormData({ kode_kategori: '', name: '' });
+            setFormData({ kode_kategori: '', name: '', tahun_penyusutan: 4 });
             setShowModal(true);
           }}
           style={{ backgroundColor: primaryColor, borderRadius: 'var(--admin-btn-radius, 14px)' }}
@@ -105,18 +107,24 @@ export const MasterPerangkat = ({ isDark, primaryColor }: { isDark: boolean, pri
               <tr>
                 <th className="px-6 py-4">Kode Kategori</th>
                 <th className="px-6 py-4">Nama Kategori</th>
+                <th className="px-6 py-4">Tahun Penyusutan</th>
                 <th className="px-6 py-4 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
               {categories.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="px-6 py-8 text-center text-slate-500">Belum ada data kategori.</td>
+                  <td colSpan={4} className="px-6 py-8 text-center text-slate-500">Belum ada data kategori.</td>
                 </tr>
               ) : categories.map((cat, idx) => (
                 <tr key={`${cat.id || cat.name}-${idx}`} className={`transition-colors ${isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}>
                   <td className={`px-6 py-4 font-mono font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{cat.kode_kategori || '-'}</td>
                   <td className={`px-6 py-4 font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{cat.name}</td>
+                  <td className="px-6 py-4">
+                    <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-full text-xs font-bold">
+                      {cat.tahun_penyusutan || 4} Tahun
+                    </span>
+                  </td>
                   <td className="px-6 py-4 flex items-center justify-end gap-2">
                     <button onClick={() => openEdit(cat)} className="p-2 rounded-lg text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10">
                       <Edit2 className="w-4 h-4" />
@@ -175,6 +183,20 @@ export const MasterPerangkat = ({ isDark, primaryColor }: { isDark: boolean, pri
                       isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                     }`}
                   />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Tahun Penyusutan</label>
+                  <select
+                    value={formData.tahun_penyusutan}
+                    onChange={e => setFormData({...formData, tahun_penyusutan: Number(e.target.value)})}
+                    className={`w-full px-4 py-2.5 rounded-xl border text-sm font-medium focus:ring-2 focus:outline-none transition-all ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    }`}
+                  >
+                    <option value={1}>1 Tahun</option>
+                    <option value={4}>4 Tahun</option>
+                    <option value={8}>8 Tahun</option>
+                  </select>
                 </div>
                 <div className="pt-4 flex gap-3">
                   <button

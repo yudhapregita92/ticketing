@@ -87,16 +87,18 @@ router.get("/categories", asyncHandler(async (req, res) => {
 }));
 
 router.post("/categories", asyncHandler(async (req, res) => {
-  const { name, kode_kategori } = req.body;
+  const { name, kode_kategori, tahun_penyusutan } = req.body;
   if (!name) throw new AppError("Name is required", 400);
-  const info = db.prepare("INSERT INTO asset_categories (name, kode_kategori) VALUES (?, ?)").run(name, kode_kategori || null);
-  res.status(201).json({ id: info.lastInsertRowid, name, kode_kategori });
+  const years = Number(tahun_penyusutan) || 4;
+  const info = db.prepare("INSERT INTO asset_categories (name, kode_kategori, tahun_penyusutan) VALUES (?, ?, ?)").run(name, kode_kategori || null, years);
+  res.status(201).json({ id: info.lastInsertRowid, name, kode_kategori, tahun_penyusutan: years });
 }));
 
 router.put("/categories/:id", asyncHandler(async (req, res) => {
-  const { name, kode_kategori } = req.body;
+  const { name, kode_kategori, tahun_penyusutan } = req.body;
   if (!name) throw new AppError("Name is required", 400);
-  db.prepare("UPDATE asset_categories SET name = ?, kode_kategori = ? WHERE id = ?").run(name, kode_kategori || null, req.params.id);
+  const years = Number(tahun_penyusutan) || 4;
+  db.prepare("UPDATE asset_categories SET name = ?, kode_kategori = ?, tahun_penyusutan = ? WHERE id = ?").run(name, kode_kategori || null, years, req.params.id);
   res.json({ success: true });
 }));
 

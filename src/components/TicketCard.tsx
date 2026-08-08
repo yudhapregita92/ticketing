@@ -219,6 +219,17 @@ export const TicketCard: React.FC<TicketCardProps> = React.memo(({
             </span>
           )}
 
+          {/* Action Type Badge (Dipinjamkan / Harus Dibeli) */}
+          {ticket.action_type && ticket.action_type !== 'none' && (
+            <span className={`inline-flex items-center gap-0.5 h-5 px-2 ${adminUser ? 'rounded-none' : 'rounded-full'} text-[9.5px] font-extrabold uppercase whitespace-nowrap shrink-0 border ${
+              ticket.action_type === 'Harus Dibeli' 
+                ? 'bg-rose-600 text-white border-rose-500 shadow-xs'
+                : 'bg-amber-600 text-white border-amber-500 shadow-xs'
+            }`}>
+              {ticket.action_type === 'Harus Dibeli' ? '🛒 Harus Dibeli' : '📦 Dipinjamkan'}
+            </span>
+          )}
+
           {/* Ticket DB ID */}
           <span className="text-[11px] text-slate-400 font-medium font-mono shrink-0">
             ID:{ticket.id}

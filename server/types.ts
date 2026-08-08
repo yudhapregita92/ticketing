@@ -42,6 +42,8 @@ export interface Ticket {
   rating_feedback?: string;
   rating_at?: string;
   require_rating?: number;
+  action_type?: string;
+  action_notes?: string;
 }
 
 export interface TicketLog {

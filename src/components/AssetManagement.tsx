@@ -106,6 +106,15 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
   const [isViewMode, setIsViewMode] = useState(false);
   const [masterUsers, setMasterUsers] = useState<any[]>([]);
   const [assetCategories, setAssetCategories] = useState<any[]>([]);
+
+  const getUsefulYearsForAsset = (catName?: string) => {
+    if (!catName) return 4;
+    const found = assetCategories.find(c =>
+      (c.name && c.name.toLowerCase() === catName.toLowerCase()) ||
+      (c.kode_kategori && c.kode_kategori.toLowerCase() === catName.toLowerCase())
+    );
+    return found?.tahun_penyusutan || 4;
+  };
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
   const [deleteAllPassword, setDeleteAllPassword] = useState('');
   const [isDeletingAll, setIsDeletingAll] = useState(false);
@@ -2137,10 +2146,11 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       </span>
                     </div>
                     {(() => {
-                      const dep = calculateAssetDepreciation(asset.purchase_date);
+                      const yearsVal = getUsefulYearsForAsset(asset.category);
+                      const dep = calculateAssetDepreciation(asset.purchase_date, yearsVal);
                       return (
                         <div className="text-right">
-                          <span className="text-[9px] font-black uppercase text-slate-400 block">Penyusutan (4 Thn)</span>
+                          <span className="text-[9px] font-black uppercase text-slate-400 block">Penyusutan ({yearsVal} Thn)</span>
                           <span className={`px-1.5 py-0.5 rounded-none text-[9px] font-extrabold border ${dep.badgeClass}`}>
                             {dep.status} ({dep.percentage}%)
                           </span>
@@ -2230,7 +2240,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     </td>
                     <td className="px-3 py-2.5 whitespace-nowrap">
                       {(() => {
-                        const dep = calculateAssetDepreciation(asset.purchase_date);
+                        const yearsVal = getUsefulYearsForAsset(asset.category);
+                        const dep = calculateAssetDepreciation(asset.purchase_date, yearsVal);
                         return (
                           <div className="flex flex-col gap-0.5">
                             <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-none border inline-block w-fit ${dep.badgeClass}`}>
@@ -2819,17 +2830,18 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     />
                   </div>
 
-                  {/* Info Penyusutan Aset 4 Tahun (Live Preview) */}
+                  {/* Info Penyusutan Aset berdasarkan Kategori (Live Preview) */}
                   <div className="sm:col-span-2">
                     {(() => {
-                      const dep = calculateAssetDepreciation(formData.purchase_date);
+                      const yearsVal = getUsefulYearsForAsset(formData.category);
+                      const dep = calculateAssetDepreciation(formData.purchase_date, yearsVal);
                       return (
                         <div className={`p-3.5 rounded-none border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-1.5">
                               <Clock className="w-4 h-4 text-emerald-500" />
                               <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                                Estimasi Penyusutan (Standar 4 Tahun)
+                                Estimasi Penyusutan (Standar {yearsVal} Tahun)
                               </span>
                             </div>
                             <span className={`px-2.5 py-0.5 rounded-none text-[10px] font-extrabold border ${dep.badgeClass}`}>
@@ -3850,16 +3862,17 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                             </span>
                           </div>
 
-                          {/* Section Penyusutan Aset (Standar 4 Tahun) */}
+                          {/* Section Penyusutan Aset berdasarkan Kategori */}
                           {(() => {
-                            const dep = calculateAssetDepreciation(qrPreviewAsset.purchase_date);
+                            const yearsVal = getUsefulYearsForAsset(qrPreviewAsset.category);
+                            const dep = calculateAssetDepreciation(qrPreviewAsset.purchase_date, yearsVal);
                             return (
                               <div className={`mt-3 p-3.5 rounded-xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50/80 border-slate-200/80'} shadow-2xs space-y-2.5`}>
                                 <div className="flex items-center justify-between gap-2">
                                   <div className="flex items-center gap-1.5 min-w-0">
                                     <Clock className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                                     <span className={`text-[10px] sm:text-[11px] font-black uppercase tracking-wider truncate ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
-                                      ESTIMASI PENYUSUTAN (STANDAR 4 TAHUN)
+                                      ESTIMASI PENYUSUTAN (STANDAR {yearsVal} TAHUN)
                                     </span>
                                   </div>
                                   <span className={`px-2 py-0.5 rounded-xl text-[9px] font-bold border shrink-0 ${dep.badgeClass}`}>
@@ -3974,7 +3987,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     </div>
                     <div>
                       <span className="text-[9px] text-slate-400 block uppercase font-bold">Usia Pemakaian</span>
-                      <span className="text-amber-600 dark:text-amber-400 font-bold">{calculateAssetDepreciation(replacementAsset.purchase_date).ageText}</span>
+                      <span className="text-amber-600 dark:text-amber-400 font-bold">{calculateAssetDepreciation(replacementAsset.purchase_date, getUsefulYearsForAsset(replacementAsset.category)).ageText}</span>
                     </div>
                   </div>
                 </div>

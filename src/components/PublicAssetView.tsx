@@ -17,15 +17,20 @@ const getCategoryIcon = (category: string = '') => {
 
 export const PublicAssetView = ({ assetId, isDark }: { assetId: string, isDark: boolean }) => {
   const [asset, setAsset] = useState<any>(null);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     const fetchAsset = async () => {
       try {
-        const assets = await api.getAssets();
+        const [assets, cats] = await Promise.all([
+          api.getAssets(),
+          api.getAssetCategories()
+        ]);
         // Asset ID from QR is usually device_code or asset_id. Let's find it.
         const found = assets.find(a => String(a.device_code) === assetId || String(a.asset_id) === assetId || String(a.id) === assetId);
         setAsset(found);
+        setCategories(cats || []);
       } catch (err) {
         console.error("Error fetching asset", err);
       } finally {
@@ -122,9 +127,14 @@ export const PublicAssetView = ({ assetId, isDark }: { assetId: string, isDark: 
           <DetailRow label="Tanggal Pembelian" value={asset.purchase_date ? new Date(asset.purchase_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'} isDark={isDark} />
           <DetailRow label="Kondisi" value={asset.condition || 'Good'} isDark={isDark} />
           
-          {/* Section Penyusutan Aset (Standar 4 Tahun) */}
+          {/* Section Penyusutan Aset berdasarkan Kategori */}
           {(() => {
-            const dep = calculateAssetDepreciation(asset.purchase_date);
+            const catObj = categories.find(c => 
+              (c.name && asset.category && c.name.toLowerCase() === asset.category.toLowerCase()) ||
+              (c.kode_kategori && asset.category && c.kode_kategori.toLowerCase() === asset.category.toLowerCase())
+            );
+            const usefulYears = catObj?.tahun_penyusutan || 4;
+            const dep = calculateAssetDepreciation(asset.purchase_date, usefulYears);
             return (
               <div className={`p-4 sm:p-5 my-4 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50/80 border-slate-200/80'} shadow-2xs space-y-3`}>
                 <div className="flex items-center justify-between gap-2">
@@ -133,7 +143,7 @@ export const PublicAssetView = ({ assetId, isDark }: { assetId: string, isDark: 
                       <Clock className="w-4 h-4" />
                     </div>
                     <span className={`text-xs font-black uppercase tracking-wider truncate ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
-                      ESTIMASI PENYUSUTAN (STANDAR 4 TAHUN)
+                      ESTIMASI PENYUSUTAN (STANDAR {usefulYears} TAHUN)
                     </span>
                   </div>
                   <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${dep.badgeClass}`}>
@@ -170,7 +180,7 @@ export const PublicAssetView = ({ assetId, isDark }: { assetId: string, isDark: 
                 {dep.isReplaceReady && (
                   <div className="mt-2 flex items-start gap-2 text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 p-2.5 rounded-xl border border-rose-500/20">
                     <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
-                    <span>Perangkat telah memenuhi masa pakai 4 tahun dan direkomendasikan untuk penggantian/replace.</span>
+                    <span>Perangkat telah memenuhi masa pakai {usefulYears} tahun dan direkomendasikan untuk penggantian/replace.</span>
                   </div>
                 )}
               </div>

@@ -30,7 +30,9 @@ import {
   HardDrive,
   Folder,
   Zap,
-  Bug
+  Bug,
+  Package,
+  FileText
 } from 'lucide-react';
 
 import * as xlsx from 'xlsx';
@@ -49,8 +51,8 @@ interface SettingsModalProps {
   inline?: boolean;
   isDark: boolean;
   themeClasses: any;
-  settingsTab: 'general' | 'branding' | 'banner' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup' | 'bug_log';
-  setSettingsTab: (tab: 'general' | 'branding' | 'banner' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup' | 'bug_log') => void;
+  settingsTab: 'general' | 'branding' | 'banner' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup' | 'bug_log' | 'it_action';
+  setSettingsTab: (tab: 'general' | 'branding' | 'banner' | 'login' | 'notifications' | 'data' | 'system' | 'panduan' | 'sla' | 'auto_respond' | 'ticket_popup' | 'bug_log' | 'it_action') => void;
   appSettings: any;
   setAppSettings: (settings: any) => void;
   LOGO_OPTIONS: any[];
@@ -833,6 +835,13 @@ export const SettingsModal = React.memo(({
               className={`whitespace-nowrap shrink-0 sm:w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'ticket_popup' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
             >
               <MessageCircle className="w-4 h-4" /> Pop-up Tiket
+            </button>
+            <button 
+              type="button"
+              onClick={() => setSettingsTab('it_action')}
+              className={`whitespace-nowrap shrink-0 sm:w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[11px] font-black capitalize tracking-widest transition-all ${settingsTab === 'it_action' ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/20' : `text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800`}`}
+            >
+              <Package className="w-4 h-4 text-amber-400" /> Form Tindakan IT
             </button>
             <button 
               type="button"
@@ -3754,6 +3763,386 @@ export const SettingsModal = React.memo(({
                       <li>Jika jeda di-set "Langsung (0 min)", respon dilakukan instan saat tiket dibuat.</li>
                       <li>Waktu respon (<code className="font-mono">responded_at</code>) terisi otomatis secara rinci.</li>
                     </ul>
+                  </div>
+                </div>
+              )}
+
+              {settingsTab === 'it_action' && (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+                      <Package className="w-5 h-5 text-amber-500" />
+                    </div>
+                    <div>
+                      <h3 className={`text-base font-black ${themeClasses.text}`}>Pengaturan Form & Surat Rekomendasi Tindakan IT</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Atur kop surat resmi, judul dokumen, label penandatangan, dan template catatan default untuk rekomendasi IT.</p>
+                    </div>
+                  </div>
+
+                  {/* Section 1: Kop Surat Rekomendasi IT & 2 Logo Header */}
+                  <div className={`p-4 sm:p-5 rounded-2xl border space-y-4 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                    <h4 className="text-xs font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                      <FileText className="w-4 h-4" /> Header Kop Surat & Dual Logo
+                    </h4>
+
+                    {/* Logo Kiri & Logo Kanan Upload */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
+                      {/* Logo 1 (Header Kiri) */}
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Logo 1 (Header Kiri)</label>
+                        <div className="flex items-center gap-3">
+                          <div className="w-14 h-14 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
+                            {appSettings.it_logo_left || appSettings.custom_logo ? (
+                              <img src={appSettings.it_logo_left || appSettings.custom_logo} alt="Logo Left" className="w-full h-full object-contain p-1" />
+                            ) : (
+                              <ImageIcon className="w-6 h-6 text-slate-300" />
+                            )}
+                          </div>
+                          <div className="space-y-1.5 flex-1">
+                            <div className="flex items-center gap-2">
+                              <label className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider cursor-pointer transition-all flex items-center gap-1">
+                                <Upload className="w-3 h-3" /> Upload Logo 1
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onloadend = () => {
+                                        setAppSettings({ ...appSettings, it_logo_left: reader.result as string });
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                />
+                              </label>
+                              {appSettings.it_logo_left && (
+                                <button
+                                  type="button"
+                                  onClick={() => setAppSettings({ ...appSettings, it_logo_left: '' })}
+                                  className="px-2.5 py-1.5 bg-rose-500/10 text-rose-500 rounded-lg text-[10px] font-bold hover:bg-rose-500 hover:text-white transition-all"
+                                >
+                                  Hapus
+                                </button>
+                              )}
+                            </div>
+                            <input
+                              type="text"
+                              value={appSettings.it_logo_left ?? ''}
+                              onChange={(e) => setAppSettings({ ...appSettings, it_logo_left: e.target.value })}
+                              placeholder="atau tempel URL Gambar Logo 1..."
+                              className={`w-full px-2.5 py-1 rounded-lg border text-[10px] font-mono outline-none ${themeClasses.bgCard} ${themeClasses.border} ${themeClasses.text}`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Logo 2 (Header Kanan) */}
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Logo 2 (Header Kanan)</label>
+                        <div className="flex items-center gap-3">
+                          <div className="w-14 h-14 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
+                            {appSettings.it_logo_right ? (
+                              <img src={appSettings.it_logo_right} alt="Logo Right" className="w-full h-full object-contain p-1" />
+                            ) : (
+                              <ImageIcon className="w-6 h-6 text-slate-300" />
+                            )}
+                          </div>
+                          <div className="space-y-1.5 flex-1">
+                            <div className="flex items-center gap-2">
+                              <label className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider cursor-pointer transition-all flex items-center gap-1">
+                                <Upload className="w-3 h-3" /> Upload Logo 2
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onloadend = () => {
+                                        setAppSettings({ ...appSettings, it_logo_right: reader.result as string });
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                />
+                              </label>
+                              {appSettings.it_logo_right && (
+                                <button
+                                  type="button"
+                                  onClick={() => setAppSettings({ ...appSettings, it_logo_right: '' })}
+                                  className="px-2.5 py-1.5 bg-rose-500/10 text-rose-500 rounded-lg text-[10px] font-bold hover:bg-rose-500 hover:text-white transition-all"
+                                >
+                                  Hapus
+                                </button>
+                              )}
+                            </div>
+                            <input
+                              type="text"
+                              value={appSettings.it_logo_right ?? ''}
+                              onChange={(e) => setAppSettings({ ...appSettings, it_logo_right: e.target.value })}
+                              placeholder="atau tempel URL Gambar Logo 2..."
+                              className={`w-full px-2.5 py-1 rounded-lg border text-[10px] font-mono outline-none ${themeClasses.bgCard} ${themeClasses.border} ${themeClasses.text}`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Nama Perusahaan / Instansi</label>
+                        <input
+                          type="text"
+                          value={appSettings.it_company_name ?? appSettings.company_name ?? ''}
+                          onChange={(e) => setAppSettings({ ...appSettings, it_company_name: e.target.value })}
+                          placeholder="misal: PT. INDOFOOD FORTUNA LAND"
+                          className={`w-full px-3.5 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-amber-500 ${themeClasses.bgCard} ${themeClasses.border} ${themeClasses.text}`}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Sub Judul Divisi / Departemen</label>
+                        <input
+                          type="text"
+                          value={appSettings.it_dept_subtitle ?? ''}
+                          onChange={(e) => setAppSettings({ ...appSettings, it_dept_subtitle: e.target.value })}
+                          placeholder="misal: DEPARTEMEN INFORMATION & TECHNOLOGY (IT)"
+                          className={`w-full px-3.5 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-amber-500 ${themeClasses.bgCard} ${themeClasses.border} ${themeClasses.text}`}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Alamat / Kontak / Info Kop Surat</label>
+                        <input
+                          type="text"
+                          value={appSettings.it_company_address ?? ''}
+                          onChange={(e) => setAppSettings({ ...appSettings, it_company_address: e.target.value })}
+                          placeholder="misal: Gedung Utama, Lt. 3 • Telp: (021) 555-0199 • Email: it.helpdesk@company.com"
+                          className={`w-full px-3.5 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-amber-500 ${themeClasses.bgCard} ${themeClasses.border} ${themeClasses.text}`}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Judul Dokumen Surat Rekomendasi</label>
+                        <input
+                          type="text"
+                          value={appSettings.it_document_title ?? ''}
+                          onChange={(e) => setAppSettings({ ...appSettings, it_document_title: e.target.value })}
+                          placeholder="misal: SURAT REKOMENDASI TINDAKAN IT"
+                          className={`w-full px-3.5 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-amber-500 ${themeClasses.bgCard} ${themeClasses.border} ${themeClasses.text}`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 2: Form Tanda Tangan & Digital Signature IT */}
+                  <div className={`p-4 sm:p-5 rounded-2xl border space-y-4 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                        <Edit3 className="w-4 h-4" /> Form Tanda Tangan & Petugas IT
+                      </h4>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        Format Resmi: 2 Penandatangan
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Nama Petugas IT (PIC IT Support)</label>
+                        <input
+                          type="text"
+                          value={appSettings.it_pic_name ?? 'Yudha Pregita (PIC IT K3DK)'}
+                          onChange={(e) => setAppSettings({ ...appSettings, it_pic_name: e.target.value })}
+                          placeholder="Yudha Pregita (PIC IT K3DK)"
+                          className={`w-full px-3.5 py-2 rounded-xl border text-xs font-bold text-emerald-600 dark:text-emerald-400 outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgCard} ${themeClasses.border}`}
+                        />
+                        <p className="text-[10px] text-slate-400">Nama Petugas IT default yang tercantum di Surat Rekomendasi.</p>
+                      </div>
+
+                      {/* Tanda Tangan Digital IT */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Tanda Tangan Digital IT (PNG/Gambar)</label>
+                        <div className="flex items-center gap-3">
+                          <div className="w-16 h-12 rounded-xl border border-dashed border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
+                            {appSettings.it_digital_signature ? (
+                              <img src={appSettings.it_digital_signature} alt="TTD IT" className="max-h-10 max-w-full object-contain p-0.5" />
+                            ) : (
+                              <span className="text-[9px] text-slate-300 font-bold italic">Tanpa TTD</span>
+                            )}
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <label className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider cursor-pointer transition-all flex items-center gap-1">
+                                <Upload className="w-3 h-3" /> Upload TTD
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onloadend = () => {
+                                        setAppSettings({ ...appSettings, it_digital_signature: reader.result as string });
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                />
+                              </label>
+                              {appSettings.it_digital_signature && (
+                                <button
+                                  type="button"
+                                  onClick={() => setAppSettings({ ...appSettings, it_digital_signature: '' })}
+                                  className="px-2 py-1 bg-rose-500/10 text-rose-500 rounded-lg text-[10px] font-bold hover:bg-rose-500 hover:text-white transition-all"
+                                >
+                                  Hapus
+                                </button>
+                              )}
+                            </div>
+                            <input
+                              type="text"
+                              value={appSettings.it_digital_signature ?? ''}
+                              onChange={(e) => setAppSettings({ ...appSettings, it_digital_signature: e.target.value })}
+                              placeholder="atau tempel URL Gambar TTD..."
+                              className={`w-full px-2.5 py-0.5 rounded-lg border text-[10px] font-mono outline-none ${themeClasses.bgCard} ${themeClasses.border} ${themeClasses.text}`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-200 dark:border-slate-800">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Label Penandatangan 1 (Pembuat / IT Support)</label>
+                        <input
+                          type="text"
+                          value={appSettings.it_sig1_title ?? ''}
+                          onChange={(e) => setAppSettings({ ...appSettings, it_sig1_title: e.target.value })}
+                          placeholder="Dikeluarkan Oleh (IT Support)"
+                          className={`w-full px-3.5 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgCard} ${themeClasses.border} ${themeClasses.text}`}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Label Penandatangan 2 (Penyetuju / Atasan)</label>
+                        <input
+                          type="text"
+                          value={appSettings.it_sig2_title ?? ''}
+                          onChange={(e) => setAppSettings({ ...appSettings, it_sig2_title: e.target.value })}
+                          placeholder="Disetujui Oleh (Sub Dept Head)"
+                          className={`w-full px-3.5 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgCard} ${themeClasses.border} ${themeClasses.text}`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 3: Template Catatan Default */}
+                  <div className={`p-4 sm:p-5 rounded-2xl border space-y-4 ${themeClasses.bgSecondary} ${themeClasses.border}`}>
+                    <h4 className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-2">
+                      <Zap className="w-4 h-4" /> Template Catatan Rekomendasi Default
+                    </h4>
+
+                    <div className="space-y-3">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
+                          Catatan Default "Dipinjamkan"
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={appSettings.it_default_loan_notes ?? ''}
+                          onChange={(e) => setAppSettings({ ...appSettings, it_default_loan_notes: e.target.value })}
+                          placeholder="Unit perangkat pengganti sementara telah disiapkan dan diserahkan. Harap menjaga kondisi fisik dan mengembalikan unit setelah perbaikan selesai."
+                          className={`w-full px-3.5 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500 ${themeClasses.bgCard} ${themeClasses.border} ${themeClasses.text}`}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-rose-500 inline-block"></span>
+                          Catatan Default "Harus Dibeli"
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={appSettings.it_default_buy_notes ?? ''}
+                          onChange={(e) => setAppSettings({ ...appSettings, it_default_buy_notes: e.target.value })}
+                          placeholder="Berdasarkan hasil pemeriksaan teknis IT, komponen/perangkat mengalami kerusakan permanen dan tidak efisien untuk diperbaiki. Direkomendasikan pengadaan unit baru."
+                          className={`w-full px-3.5 py-2 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500 ${themeClasses.bgCard} ${themeClasses.border} ${themeClasses.text}`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 4: Live Preview Miniature */}
+                  <div className={`p-4 sm:p-5 rounded-2xl border space-y-3 bg-white text-slate-900 border-slate-300 shadow-sm`}>
+                    <div className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 border-b pb-2 flex items-center justify-between">
+                      <span>Pratinjau Hasil Cetak Kop & Tanda Tangan (Preview)</span>
+                      <span className="text-emerald-600 font-bold">2 Penandatangan</span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 py-2 border-b-2 border-slate-900 border-double">
+                      <div className="w-12 shrink-0 text-left">
+                        {appSettings.it_logo_left || appSettings.custom_logo ? (
+                          <img src={appSettings.it_logo_left || appSettings.custom_logo} alt="L1" className="max-h-10 max-w-12 object-contain" />
+                        ) : null}
+                      </div>
+                      <div className="flex-1 text-center">
+                        <h3 className="text-xs sm:text-sm font-black uppercase text-slate-900 tracking-wide">
+                          {appSettings.it_company_name || appSettings.company_name || 'PT. INDOFOOD FORTUNA LAND'}
+                        </h3>
+                        <p className="text-[10px] font-extrabold text-blue-600 uppercase">
+                          {appSettings.it_dept_subtitle || 'DEPARTEMEN INFORMATION & TECHNOLOGY (IT)'}
+                        </p>
+                        <p className="text-[8.5px] text-slate-500 font-medium">
+                          {appSettings.it_company_address || 'Gedung Utama, Lt. 3 • Telp: (021) 555-0199 • Email: it.helpdesk@company.com'}
+                        </p>
+                      </div>
+                      <div className="w-12 shrink-0 text-right">
+                        {appSettings.it_logo_right ? (
+                          <img src={appSettings.it_logo_right} alt="L2" className="max-h-10 max-w-12 object-contain" />
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <div className="text-center py-1">
+                      <h4 className="text-xs font-black underline uppercase tracking-wider text-slate-900">
+                        {appSettings.it_document_title || 'SURAT REKOMENDASI TINDAKAN IT'}
+                      </h4>
+                      <p className="text-[9px] font-mono text-slate-400 font-bold">Nomor Tiket: #20260807001</p>
+                    </div>
+
+                    <div className="pt-4 grid grid-cols-2 gap-4 text-center">
+                      <div className="border-t border-slate-300 pt-1">
+                        <div className="text-[9.5px] font-bold text-slate-600 uppercase">
+                          {appSettings.it_sig1_title || 'Dikeluarkan Oleh (IT Support)'}
+                        </div>
+                        <div className="h-10 flex items-center justify-center my-1">
+                          {appSettings.it_digital_signature ? (
+                            <img src={appSettings.it_digital_signature} alt="TTD" className="max-h-9 max-w-28 object-contain" />
+                          ) : null}
+                        </div>
+                        <div className="text-[10px] font-black border-b border-slate-800 pb-0.5">
+                          {appSettings.it_pic_name || 'Yudha Pregita (PIC IT K3DK)'}
+                        </div>
+                        <div className="text-[8.5px] text-slate-500">IT Support</div>
+                      </div>
+
+                      <div className="border-t border-slate-300 pt-1">
+                        <div className="text-[9.5px] font-bold text-slate-600 uppercase">
+                          {appSettings.it_sig2_title || 'Disetujui Oleh (Sub Dept Head)'}
+                        </div>
+                        <div className="h-10 flex items-center justify-center my-1"></div>
+                        <div className="text-[10px] font-black border-b border-slate-800 pb-0.5">(........................................)</div>
+                        <div className="text-[8.5px] text-slate-500">Sub Dept Head - Treasury</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

@@ -173,28 +173,9 @@ router.get("/master-users", asyncHandler(async (req, res) => {
 }));
 
 router.post("/master-users", asyncHandler(async (req, res) => {
-  const { full_name, department, sub_department, phone, employee_index, email, jenis_piranti, kode_piranti, jabatan } = req.body;
+  const { full_name, department, sub_department, phone, employee_index, email, jenis_piranti, kode_piranti, jabatan, atasan_id } = req.body;
   const normalizedPiranti = normalizeJenisPiranti(jenis_piranti);
-  db.prepare("INSERT INTO master_users (full_name, department, sub_department, phone, employee_index, email, jenis_piranti, kode_piranti, jabatan) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
-    full_name ? String(full_name).trim() : '',
-    department ? String(department).trim() : '-',
-    sub_department ? String(sub_department).trim() : '-',
-    phone ? String(phone).trim() : '-',
-    employee_index ? String(employee_index).trim() : '-',
-    email ? String(email).trim() : '-',
-    normalizedPiranti,
-    kode_piranti ? String(kode_piranti).trim() : '-',
-    jabatan ? String(jabatan).trim() : '-'
-  );
-  emitUpdate();
-  res.json({ success: true });
- }));
- 
- router.put("/master-users/:id", asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const { full_name, department, sub_department, phone, employee_index, email, jenis_piranti, kode_piranti, jabatan } = req.body;
-  const normalizedPiranti = normalizeJenisPiranti(jenis_piranti);
-  db.prepare("UPDATE master_users SET full_name = ?, department = ?, sub_department = ?, phone = ?, employee_index = ?, email = ?, jenis_piranti = ?, kode_piranti = ?, jabatan = ? WHERE id = ?").run(
+  db.prepare("INSERT INTO master_users (full_name, department, sub_department, phone, employee_index, email, jenis_piranti, kode_piranti, jabatan, atasan_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
     full_name ? String(full_name).trim() : '',
     department ? String(department).trim() : '-',
     sub_department ? String(sub_department).trim() : '-',
@@ -204,6 +185,27 @@ router.post("/master-users", asyncHandler(async (req, res) => {
     normalizedPiranti,
     kode_piranti ? String(kode_piranti).trim() : '-',
     jabatan ? String(jabatan).trim() : '-',
+    atasan_id || null
+  );
+  emitUpdate();
+  res.json({ success: true });
+ }));
+ 
+ router.put("/master-users/:id", asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { full_name, department, sub_department, phone, employee_index, email, jenis_piranti, kode_piranti, jabatan, atasan_id } = req.body;
+  const normalizedPiranti = normalizeJenisPiranti(jenis_piranti);
+  db.prepare("UPDATE master_users SET full_name = ?, department = ?, sub_department = ?, phone = ?, employee_index = ?, email = ?, jenis_piranti = ?, kode_piranti = ?, jabatan = ?, atasan_id = ? WHERE id = ?").run(
+    full_name ? String(full_name).trim() : '',
+    department ? String(department).trim() : '-',
+    sub_department ? String(sub_department).trim() : '-',
+    phone ? String(phone).trim() : '-',
+    employee_index ? String(employee_index).trim() : '-',
+    email ? String(email).trim() : '-',
+    normalizedPiranti,
+    kode_piranti ? String(kode_piranti).trim() : '-',
+    jabatan ? String(jabatan).trim() : '-',
+    atasan_id || null,
     id
   );
   emitUpdate();

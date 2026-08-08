@@ -22,7 +22,7 @@ interface TicketListProps {
   isDark: boolean;
   themeClasses: any;
   categories?: ICategory[];
-  viewMode: 'today' | 'all' | 'my_tickets' | 'dashboard' | 'assets';
+  viewMode: 'today' | 'all' | 'my_tickets' | 'team_tickets' | 'dashboard' | 'assets';
   setViewMode: (mode: any) => void;
   filterDept: string;
   setFilterDept: (dept: string) => void;
@@ -57,6 +57,7 @@ interface TicketListProps {
   handleBulkAction: (status: string) => Promise<void>;
   appSettings?: any;
   onForwardWhatsApp?: (ticket: ITicket) => void;
+  masterUsers?: any[];
 }
 
 export const TicketList: React.FC<TicketListProps> = ({
@@ -99,7 +100,8 @@ export const TicketList: React.FC<TicketListProps> = ({
   setShowForm,
   handleBulkAction,
   appSettings,
-  onForwardWhatsApp
+  onForwardWhatsApp,
+  masterUsers
 }) => {
   const cardRadius = appSettings?.ui_card_radius ?? 24;
 
@@ -117,12 +119,12 @@ export const TicketList: React.FC<TicketListProps> = ({
       )}
 
       {/* Primary View Tabs: Hari Ini / Semua */}
-      <div className={`relative mt-1 mb-2 sm:mb-3 border-b transition-colors flex items-center ${
+      <div className={`relative mt-1 mb-2 sm:mb-3 border-b transition-colors flex items-center overflow-x-auto no-scrollbar ${
         isDark ? 'border-slate-800' : 'border-slate-200/80'
       }`}>
         <button
           onClick={() => setViewMode('today')}
-          className={`relative flex-1 py-2.5 sm:py-3 px-4 text-center text-sm sm:text-base font-bold transition-colors ${
+          className={`relative flex-1 min-w-max py-2 sm:py-3 px-2.5 sm:px-4 text-center text-xs sm:text-sm md:text-base font-bold whitespace-nowrap transition-colors ${
             viewMode === 'today'
               ? 'text-emerald-600 dark:text-emerald-400 font-extrabold'
               : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-900'
@@ -132,7 +134,7 @@ export const TicketList: React.FC<TicketListProps> = ({
           {viewMode === 'today' && (
             <motion.div 
               layoutId="tabUnderline"
-              className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-600 dark:bg-emerald-500 rounded-full"
+              className="absolute bottom-0 left-0 right-0 h-0.5 sm:h-1 bg-emerald-600 dark:bg-emerald-500 rounded-full"
               transition={{ type: "spring", stiffness: 350, damping: 30 }}
             />
           )}
@@ -140,7 +142,7 @@ export const TicketList: React.FC<TicketListProps> = ({
 
         <button
           onClick={() => setViewMode('all')}
-          className={`relative flex-1 py-2.5 sm:py-3 px-4 text-center text-sm sm:text-base font-bold transition-colors ${
+          className={`relative flex-1 min-w-max py-2 sm:py-3 px-2.5 sm:px-4 text-center text-xs sm:text-sm md:text-base font-bold whitespace-nowrap transition-colors ${
             viewMode === 'all'
               ? 'text-emerald-600 dark:text-emerald-400 font-extrabold'
               : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-900'
@@ -150,16 +152,16 @@ export const TicketList: React.FC<TicketListProps> = ({
           {viewMode === 'all' && (
             <motion.div 
               layoutId="tabUnderline"
-              className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-600 dark:bg-emerald-500 rounded-full"
+              className="absolute bottom-0 left-0 right-0 h-0.5 sm:h-1 bg-emerald-600 dark:bg-emerald-500 rounded-full"
               transition={{ type: "spring", stiffness: 350, damping: 30 }}
             />
           )}
         </button>
 
-        {(adminUser || viewMode === 'my_tickets') && (
+        {(adminUser || viewMode === 'my_tickets' || currentUser) && (
           <button
             onClick={() => setViewMode('my_tickets')}
-            className={`relative flex-1 py-2.5 sm:py-3 px-4 text-center text-sm sm:text-base font-bold transition-colors ${
+            className={`relative flex-1 min-w-max py-2 sm:py-3 px-2.5 sm:px-4 text-center text-xs sm:text-sm md:text-base font-bold whitespace-nowrap transition-colors ${
               viewMode === 'my_tickets'
                 ? 'text-emerald-600 dark:text-emerald-400 font-extrabold'
                 : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-900'
@@ -169,7 +171,27 @@ export const TicketList: React.FC<TicketListProps> = ({
             {viewMode === 'my_tickets' && (
               <motion.div 
                 layoutId="tabUnderline"
-                className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-600 dark:bg-emerald-500 rounded-full"
+                className="absolute bottom-0 left-0 right-0 h-0.5 sm:h-1 bg-emerald-600 dark:bg-emerald-500 rounded-full"
+                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+              />
+            )}
+          </button>
+        )}
+
+        {!adminUser && currentUser && ((currentUser.jabatan || '').toLowerCase().includes('head') || (currentUser.jabatan || '').toLowerCase().includes('manager')) && (
+          <button
+            onClick={() => setViewMode('team_tickets')}
+            className={`relative flex-1 min-w-max py-2 sm:py-3 px-2.5 sm:px-4 text-center text-xs sm:text-sm md:text-base font-bold whitespace-nowrap transition-colors ${
+              viewMode === 'team_tickets'
+                ? 'text-emerald-600 dark:text-emerald-400 font-extrabold'
+                : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            Tiket Tim Saya
+            {viewMode === 'team_tickets' && (
+              <motion.div 
+                layoutId="tabUnderline"
+                className="absolute bottom-0 left-0 right-0 h-0.5 sm:h-1 bg-emerald-600 dark:bg-emerald-500 rounded-full"
                 transition={{ type: "spring", stiffness: 350, damping: 30 }}
               />
             )}

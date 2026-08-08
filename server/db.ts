@@ -139,6 +139,7 @@ export function initDb() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT UNIQUE NOT NULL,
       kode_kategori TEXT,
+      tahun_penyusutan INTEGER DEFAULT 4,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -399,18 +400,18 @@ export function initDb() {
   try {
     const catCount = db.prepare("SELECT COUNT(*) as count FROM asset_categories").get() as any;
     if (catCount && catCount.count === 0) {
-      const insertCat = db.prepare("INSERT INTO asset_categories (name, kode_kategori) VALUES (?, ?)");
+      const insertCat = db.prepare("INSERT INTO asset_categories (name, kode_kategori, tahun_penyusutan) VALUES (?, ?, ?)");
       const defaultCats = [
-        { name: "Komputer", kode_kategori: "PC" },
-        { name: "Laptop", kode_kategori: "LPT" },
-        { name: "Printer", kode_kategori: "PRN" },
-        { name: "Smartphone", kode_kategori: "HP" },
-        { name: "Server", kode_kategori: "SRV" },
-        { name: "Jaringan", kode_kategori: "NET" },
-        { name: "Lainnya", kode_kategori: "ETC" },
+        { name: "Komputer", kode_kategori: "PC", tahun_penyusutan: 4 },
+        { name: "Laptop", kode_kategori: "LPT", tahun_penyusutan: 4 },
+        { name: "Printer", kode_kategori: "PRN", tahun_penyusutan: 4 },
+        { name: "Smartphone", kode_kategori: "HP", tahun_penyusutan: 1 },
+        { name: "Server", kode_kategori: "SRV", tahun_penyusutan: 8 },
+        { name: "Jaringan", kode_kategori: "NET", tahun_penyusutan: 4 },
+        { name: "Lainnya", kode_kategori: "ETC", tahun_penyusutan: 4 },
       ];
       for (const c of defaultCats) {
-        insertCat.run(c.name, c.kode_kategori);
+        insertCat.run(c.name, c.kode_kategori, c.tahun_penyusutan);
       }
     }
   } catch (err) {
@@ -573,6 +574,12 @@ export function initDb() {
       if (!columns.find(c => c.name === 'require_rating')) {
         db.prepare("ALTER TABLE tickets ADD COLUMN require_rating INTEGER DEFAULT 0").run();
       }
+      if (!columns.find(c => c.name === 'action_type')) {
+        db.prepare("ALTER TABLE tickets ADD COLUMN action_type TEXT DEFAULT 'none'").run();
+      }
+      if (!columns.find(c => c.name === 'action_notes')) {
+        db.prepare("ALTER TABLE tickets ADD COLUMN action_notes TEXT").run();
+      }
     }
     
     if (table === 'users') {
@@ -623,6 +630,9 @@ export function initDb() {
       }
       if (!columns.find(c => c.name === 'sub_department')) {
         db.prepare("ALTER TABLE master_users ADD COLUMN sub_department TEXT").run();
+      }
+      if (!columns.find(c => c.name === 'atasan_id')) {
+        db.prepare("ALTER TABLE master_users ADD COLUMN atasan_id INTEGER").run();
       }
       db.prepare("UPDATE master_users SET jenis_piranti = '(Tidak Ada)' WHERE jenis_piranti IS NULL OR jenis_piranti = ''").run();
       db.prepare("UPDATE master_users SET kode_piranti = '-' WHERE kode_piranti IS NULL OR kode_piranti = ''").run();
@@ -743,6 +753,14 @@ export function initDb() {
     try {
       db.prepare("ALTER TABLE categories ADD COLUMN jenis_masalah TEXT DEFAULT 'Hardware'").run();
       console.log("Migration: Added jenis_masalah column to categories table.");
+    } catch (colErr) {
+      // Column already exists, ignore
+    }
+
+    // Add column tahun_penyusutan to asset_categories table if not exists (migration)
+    try {
+      db.prepare("ALTER TABLE asset_categories ADD COLUMN tahun_penyusutan INTEGER DEFAULT 4").run();
+      console.log("Migration: Added tahun_penyusutan column to asset_categories table.");
     } catch (colErr) {
       // Column already exists, ignore
     }

@@ -31,6 +31,7 @@ interface BottomNavProps {
   setShowImageManager?: (show: boolean) => void;
   isDark?: boolean;
   appSettings?: ISettings | any;
+  currentUser?: any;
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({
@@ -43,7 +44,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   setShowSettings,
   setShowImageManager,
   isDark = false,
-  appSettings
+  appSettings,
+  currentUser
 }) => {
   const bgClass = isDark ? 'bg-slate-900/90 backdrop-blur-xl' : 'bg-white/90 backdrop-blur-xl';
   const textClass = isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-slate-500 hover:text-slate-850';

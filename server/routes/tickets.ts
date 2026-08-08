@@ -1,6 +1,6 @@
 import express from "express";
 import db from "../db.ts";
-import { sendNotificationEmail, sendTelegramNotification, sendUserNotificationEmail, createDbNotification } from "../utils/notifications.ts";
+import { sendNotificationEmail, sendTelegramNotification, sendUserNotificationEmail, sendActionRecommendationEmails, createDbNotification } from "../utils/notifications.ts";
 import { Server } from "socket.io";
 import { asyncHandler } from "../utils/asyncHandler.ts";
 import type { Ticket, User, TicketLog } from "../types.ts";
@@ -14,7 +14,7 @@ export default function(io: Server) {
     console.log('GET /api/tickets', req.query);
     const { username, role } = req.query;
     // Exclude 'photo' from the list to keep payload small
-    const columns = "id, ticket_no, name, employee_index, department, phone, category, description, assigned_to, admin_reply, status, created_at, updated_at, responded_at, resolved_at, ip_address, user_agent, latitude, longitude, internal_notes, device_type, pc_code, rating, rating_feedback, rating_at, require_rating";
+    const columns = "id, ticket_no, name, employee_index, department, phone, category, description, assigned_to, admin_reply, status, created_at, updated_at, responded_at, resolved_at, ip_address, user_agent, latitude, longitude, internal_notes, device_type, pc_code, rating, rating_feedback, rating_at, require_rating, action_type, action_notes";
     let tickets;
     if (role === 'Super Admin' || !username) {
       tickets = db.prepare(`SELECT ${columns} FROM tickets ORDER BY created_at DESC`).all() as Ticket[];
@@ -64,7 +64,7 @@ export default function(io: Server) {
 
   router.get("/history/:index", asyncHandler(async (req: any, res: any) => {
     const { index } = req.params;
-    const columns = "id, ticket_no, name, employee_index, department, phone, category, description, assigned_to, admin_reply, status, created_at, updated_at, responded_at, resolved_at, priority, device_type, pc_code, rating, rating_feedback, rating_at, require_rating";
+    const columns = "id, ticket_no, name, employee_index, department, phone, category, description, assigned_to, admin_reply, status, created_at, updated_at, responded_at, resolved_at, priority, device_type, pc_code, rating, rating_feedback, rating_at, require_rating, action_type, action_notes";
     const tickets = db.prepare(`SELECT ${columns} FROM tickets WHERE employee_index = ? ORDER BY created_at DESC`).all(index) as Ticket[];
     res.json(tickets);
   }));
@@ -315,7 +315,7 @@ export default function(io: Server) {
 
 async function handleTicketUpdate(req: any, res: any, io: Server) {
   const { id } = req.params;
-  const { status, assigned_to, admin_reply, internal_notes, takeover_by, reassign_to, performed_by, note, priority, estimated_duration, estimated_start_at, estimated_target_at, require_rating } = req.body;
+  const { status, assigned_to, admin_reply, internal_notes, takeover_by, reassign_to, performed_by, note, priority, estimated_duration, estimated_start_at, estimated_target_at, require_rating, action_type, action_notes } = req.body;
   
   const currentTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(id) as Ticket | undefined;
   if (!currentTicket) throw new AppError("Ticket not found", 404);
@@ -331,6 +331,8 @@ async function handleTicketUpdate(req: any, res: any, io: Server) {
   let newEstStart = estimated_start_at !== undefined ? estimated_start_at : currentTicket.estimated_start_at;
   let newEstTarget = estimated_target_at !== undefined ? estimated_target_at : currentTicket.estimated_target_at;
   let newRequireRating = require_rating !== undefined ? (require_rating ? 1 : 0) : (currentTicket.require_rating || 0);
+  let newActionType = action_type !== undefined ? action_type : (currentTicket.action_type || 'none');
+  let newActionNotes = action_notes !== undefined ? action_notes : (currentTicket.action_notes || '');
 
   const logs: any[] = [];
 
@@ -366,6 +368,11 @@ async function handleTicketUpdate(req: any, res: any, io: Server) {
     logs.push({ action: 'Minta Rating', note: newRequireRating ? 'Permintaan rating layanan diaktifkan' : 'Permintaan rating layanan dinonaktifkan', performed_by: performed_by || 'System' });
   }
 
+  if (action_type !== undefined && action_type !== currentTicket.action_type) {
+    const actLabel = action_type === 'Dipinjamkan' ? 'Dipinjamkan (Perangkat Pengganti)' : action_type === 'Harus Dibeli' ? 'Harus Dibeli (Pengadaan Baru)' : 'Biasa / Normal';
+    logs.push({ action: 'Tindakan IT', note: `Opsi tindakan IT: ${actLabel}${action_notes ? ' - Catatan: ' + action_notes : ''}`, performed_by: performed_by || 'System' });
+  }
+
   if (!respondedAt && (admin_reply !== undefined || (newStatus !== 'New' && newStatus !== currentTicket.status))) {
     respondedAt = new Date().toISOString();
   }
@@ -376,8 +383,8 @@ async function handleTicketUpdate(req: any, res: any, io: Server) {
     resolvedAt = null;
   }
 
-  db.prepare("UPDATE tickets SET status = ?, assigned_to = ?, admin_reply = ?, internal_notes = ?, priority = ?, responded_at = ?, resolved_at = ?, estimated_duration = ?, estimated_start_at = ?, estimated_target_at = ?, require_rating = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
-    .run(newStatus, newAssignedTo, newAdminReply, newInternalNotes, newPriority, respondedAt, resolvedAt, newEstDuration, newEstStart, newEstTarget, newRequireRating, id);
+  db.prepare("UPDATE tickets SET status = ?, assigned_to = ?, admin_reply = ?, internal_notes = ?, priority = ?, responded_at = ?, resolved_at = ?, estimated_duration = ?, estimated_start_at = ?, estimated_target_at = ?, require_rating = ?, action_type = ?, action_notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+    .run(newStatus, newAssignedTo, newAdminReply, newInternalNotes, newPriority, respondedAt, resolvedAt, newEstDuration, newEstStart, newEstTarget, newRequireRating, newActionType, newActionNotes, id);
   
   const insertLog = db.prepare("INSERT INTO ticket_logs (ticket_id, action, note, performed_by) VALUES (?, ?, ?, ?)");
   logs.forEach(log => {
@@ -388,6 +395,48 @@ async function handleTicketUpdate(req: any, res: any, io: Server) {
     const updatedTicket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(id) as Ticket;
     sendUserNotificationEmail(updatedTicket, 'done');
   }
+
+  // Helper to get supervisors/atasan for a ticket creator
+  const getSupervisors = (ticket: any) => {
+    const sups: { employee_index: string | null; name: string }[] = [];
+    const addedIds = new Set<number>();
+
+    let creator: any = null;
+    if (ticket.employee_index) {
+      creator = db.prepare("SELECT * FROM master_users WHERE employee_index = ?").get(ticket.employee_index);
+    }
+    if (!creator && ticket.name) {
+      creator = db.prepare("SELECT * FROM master_users WHERE LOWER(full_name) = LOWER(?)").get(ticket.name);
+    }
+
+    if (creator && creator.atasan_id) {
+      const atasan = db.prepare("SELECT * FROM master_users WHERE id = ?").get(creator.atasan_id) as any;
+      if (atasan) {
+        sups.push({ employee_index: atasan.employee_index || null, name: atasan.full_name });
+        addedIds.add(atasan.id);
+      }
+    }
+
+    const dept = ticket.department || creator?.department;
+    if (dept) {
+      const deptSupervisors = db.prepare(`
+        SELECT * FROM master_users 
+        WHERE (LOWER(department) = LOWER(?) OR LOWER(sub_department) = LOWER(?))
+          AND (LOWER(jabatan) LIKE '%head%' OR LOWER(jabatan) LIKE '%manager%' OR LOWER(jabatan) LIKE '%atasan%')
+      `).all(dept, dept) as any[];
+
+      deptSupervisors.forEach(sup => {
+        if (!addedIds.has(sup.id)) {
+          sups.push({ employee_index: sup.employee_index || null, name: sup.full_name });
+          addedIds.add(sup.id);
+        }
+      });
+    }
+
+    return sups;
+  };
+
+  const supervisors = getSupervisors(currentTicket);
 
   // Generate DB notification for user when status changes
   if (status !== undefined && status !== currentTicket.status) {
@@ -413,6 +462,46 @@ async function handleTicketUpdate(req: any, res: any, io: Server) {
       message: `IT Support (${performed_by || 'Admin'}): "${admin_reply.trim()}"`,
       type: 'admin_reply'
     }, io);
+  }
+
+  // Generate DB notification for user and atasan when action_type changes
+  if (action_type !== undefined && action_type !== currentTicket.action_type && action_type !== 'none') {
+    const isLoan = action_type === 'Dipinjamkan';
+    
+    // 1. Notification for Pemohon (Ticket creator)
+    createDbNotification({
+      ticket_id: currentTicket.id,
+      ticket_no: currentTicket.ticket_no,
+      employee_index: currentTicket.employee_index,
+      recipient_name: currentTicket.name,
+      title: isLoan
+        ? `📦 Peminjaman Perangkat/Part - Tiket #${currentTicket.ticket_no}`
+        : `🚨 Rekomendasi Pembelian Urgent - Tiket #${currentTicket.ticket_no}`,
+      message: isLoan
+        ? `IT menyetujui peminjaman unit/part pengganti sementara.${action_notes ? ' Catatan IT: ' + action_notes : ''}`
+        : `IT menetapkan rekomendasi pengadaan/pembelian perangkat baru URGENT.${action_notes ? ' Catatan IT: ' + action_notes : ''}`,
+      type: isLoan ? 'part_loan' : 'urgent_purchase'
+    }, io);
+
+    // 2. Notification for Atasan / Supervisors (e.g. Puji Sulastiana)
+    supervisors.forEach(sup => {
+      createDbNotification({
+        ticket_id: currentTicket.id,
+        ticket_no: currentTicket.ticket_no,
+        employee_index: sup.employee_index,
+        recipient_name: sup.name,
+        title: isLoan
+          ? `📦 Peminjaman Part - Tiket #${currentTicket.ticket_no} (${currentTicket.name})`
+          : `🚨 Pembelian Urgent - Tiket #${currentTicket.ticket_no} (${currentTicket.name})`,
+        message: isLoan
+          ? `IT menyetujui peminjaman unit/part pengganti untuk anggota tim Anda (${currentTicket.name}).${action_notes ? ' Catatan IT: ' + action_notes : ''}`
+          : `IT menetapkan rekomendasi pembelian/pengadaan baru URGENT untuk anggota tim Anda (${currentTicket.name}).${action_notes ? ' Catatan IT: ' + action_notes : ''}`,
+        type: isLoan ? 'part_loan' : 'urgent_purchase'
+      }, io);
+    });
+
+    // 3. Send Email Notifications to Pemohon & Supervisors
+    sendActionRecommendationEmails(currentTicket, action_type, action_notes || '', supervisors);
   }
 
   res.json({ success: true });

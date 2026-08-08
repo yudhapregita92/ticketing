@@ -61,6 +61,7 @@ interface SidebarProps {
   handleLogout?: () => void;
   userCanVoucher?: boolean;
   adminThemeLayout?: string;
+  currentUser?: any;
 }
 
 // Helper to safely parse date strings for Safari compatibility
@@ -91,9 +92,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setShowLogin,
   handleLogout,
   userCanVoucher,
-  adminThemeLayout
+  adminThemeLayout,
+  currentUser
 }) => {
-  const [ticketMenuOpen, setTicketMenuOpen] = React.useState(viewMode === 'today' || viewMode === 'all' || viewMode === 'my_tickets');
+  const [ticketMenuOpen, setTicketMenuOpen] = React.useState(viewMode === 'today' || viewMode === 'all' || viewMode === 'my_tickets' || viewMode === 'team_tickets');
   const [masterDataOpen, setMasterDataOpen] = React.useState(viewMode === 'master_user' || viewMode === 'master_perangkat' || viewMode === 'master_team');
   const [reportOpen, setReportOpen] = React.useState(viewMode === 'report_sla' || viewMode === 'report_perangkat');
   const [assetMenuOpen, setAssetMenuOpen] = React.useState(viewMode === 'assets');
@@ -129,7 +131,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   React.useEffect(() => {
-    if (viewMode === 'today' || viewMode === 'all' || viewMode === 'my_tickets') {
+    if (viewMode === 'today' || viewMode === 'all' || viewMode === 'my_tickets' || viewMode === 'team_tickets') {
       setTicketMenuOpen(true);
     } else if (viewMode === 'master_user' || viewMode === 'master_perangkat' || viewMode === 'master_team') {
       setMasterDataOpen(true);
@@ -179,7 +181,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   setTicketMenuOpen(!ticketMenuOpen);
                 }}
                 title="Tiket"
-                className={getMenuItemClass(viewMode === 'today' || viewMode === 'all' || viewMode === 'my_tickets' || ticketMenuOpen)}
+                className={getMenuItemClass(viewMode === 'today' || viewMode === 'all' || viewMode === 'my_tickets' || viewMode === 'team_tickets' || ticketMenuOpen)}
               >
                 <div className="flex items-center gap-2.5">
                   <Ticket className="w-4 h-4" />
@@ -281,6 +283,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {adminThemeLayout !== 'compact' && <span>Riwayat Tiket Saya</span>}
                 </div>
               </button>
+              {currentUser && ((currentUser.jabatan || '').toLowerCase().includes('head') || (currentUser.jabatan || '').toLowerCase().includes('manager')) && (
+                <button
+                  onClick={() => setViewMode('team_tickets')}
+                  title="Tiket Tim Saya"
+                  className={getMenuItemClass(viewMode === 'team_tickets')}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <CheckCircle2 className="w-4 h-4" />
+                    {adminThemeLayout !== 'compact' && <span>Tiket Tim Saya</span>}
+                  </div>
+                </button>
+              )}
             </div>
           )}
           

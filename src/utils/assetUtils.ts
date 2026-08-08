@@ -8,7 +8,7 @@ export interface IDepreciationResult {
   months: number;
 }
 
-export const calculateAssetDepreciation = (purchaseDateStr?: string): IDepreciationResult => {
+export const calculateAssetDepreciation = (purchaseDateStr?: string, usefulYears: number = 4): IDepreciationResult => {
   if (!purchaseDateStr || purchaseDateStr === '-' || purchaseDateStr.trim() === '') {
     return {
       ageText: 'Belum diisi',
@@ -49,20 +49,24 @@ export const calculateAssetDepreciation = (purchaseDateStr?: string): IDepreciat
   ageText += `${remMonths} Bln`;
   if (years === 0 && remMonths === 0) ageText = '< 1 Bln';
 
-  // Standar Masa Pakai Penyusutan 4 Tahun = 48 Bulan
-  const totalUsefulMonths = 48;
+  // Masa Pakai Penyusutan berdasarkan Kategori (1, 4, atau 8 Tahun)
+  const yearsVal = Number(usefulYears) > 0 ? Number(usefulYears) : 4;
+  const totalUsefulMonths = yearsVal * 12;
   const percentage = Math.min(100, Math.round((months / totalUsefulMonths) * 100));
 
   let status = 'Normal (Layak)';
   let isReplaceReady = false;
   let badgeClass = 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400';
 
+  const thresholdMonths = Math.floor(totalUsefulMonths * 0.85);
+
   if (months >= totalUsefulMonths) {
-    status = 'Siap Replace (100% / 4+ Thn)';
+    status = `Siap Replace (100% / ${yearsVal}+ Thn)`;
     isReplaceReady = true;
     badgeClass = 'bg-rose-500/10 text-rose-600 border-rose-500/20 dark:text-rose-400';
-  } else if (months >= 42) {
-    status = 'Mendekati Replace (>3.5 Thn)';
+  } else if (months >= thresholdMonths) {
+    const nearLimitYears = (thresholdMonths / 12).toFixed(1);
+    status = `Mendekati Replace (>${nearLimitYears} Thn)`;
     isReplaceReady = false;
     badgeClass = 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400';
   }

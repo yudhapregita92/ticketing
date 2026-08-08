@@ -32,6 +32,8 @@ export interface ITicket {
   rating_feedback?: string | null;
   rating_at?: string | null;
   require_rating?: number | null;
+  action_type?: string | null;
+  action_notes?: string | null;
 }
 
 export interface IUser {
@@ -73,6 +75,7 @@ export interface IMasterUser {
   jenis_piranti?: string;
   kode_piranti?: string;
   jabatan?: string;
+  atasan_id?: number | null;
 }
 
 export interface IJenisMasalahRule {
@@ -144,11 +147,23 @@ export interface ISettings {
   banner_custom_image?: string;
   banner_image_size?: number;
   ui_card_radius?: number;
+  it_company_name?: string;
+  it_dept_subtitle?: string;
+  it_company_address?: string;
+  it_document_title?: string;
+  it_sig1_title?: string;
+  it_sig2_title?: string;
+  it_default_loan_notes?: string;
+  it_default_buy_notes?: string;
+  it_pic_name?: string;
+  it_logo_left?: string;
+  it_logo_right?: string;
+  it_digital_signature?: string;
 }
 
 export interface IAdminUser extends IUser {}
 export type IAppSettings = ISettings;
-export type ViewMode = 'today' | 'all' | 'my_tickets' | 'dashboard' | 'assets' | 'network' | 'ba' | 'panduan' | 'settings' | 'testing' | 'membership' | 'evaluasi_project' | 'jurnal' | 'voucher' | 'master_user' | 'master_perangkat' | 'master_team' | 'report_sla' | 'report_perangkat' | 'team_location';
+export type ViewMode = 'today' | 'all' | 'my_tickets' | 'team_tickets' | 'dashboard' | 'assets' | 'network' | 'ba' | 'panduan' | 'settings' | 'testing' | 'membership' | 'evaluasi_project' | 'jurnal' | 'voucher' | 'master_user' | 'master_perangkat' | 'master_team' | 'report_sla' | 'report_perangkat' | 'team_location';
 export interface IAsset {
   id: number;
   asset_id: string;

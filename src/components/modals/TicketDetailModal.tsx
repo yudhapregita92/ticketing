@@ -23,10 +23,16 @@ import {
   CheckCircle2,
   RotateCcw,
   Send,
-  Star
+  Star,
+  Printer,
+  Package,
+  ShoppingCart,
+  FileText,
+  Laptop
 } from 'lucide-react';
 
 import { ITicket, PRIORITIES } from '../../types';
+import { api } from '../../services/api';
 
 interface TicketDetailModalProps {
   selectedTicket: ITicket | null;
@@ -55,10 +61,13 @@ interface TicketDetailModalProps {
     estimated_duration?: string | null,
     estimated_start_at?: string | null,
     estimated_target_at?: string | null,
-    require_rating?: number | null
+    require_rating?: number | null,
+    action_type?: string | null,
+    action_notes?: string | null
   ) => void;
   handleIntervention: (id: number, type: 'takeover' | 'reassign') => void;
   primaryColor: string;
+  appSettings?: any;
   onRefreshTickets?: () => void;
   onForwardWhatsApp?: (ticket: ITicket) => void;
 }
@@ -83,6 +92,7 @@ export const TicketDetailModal = React.memo(({
   handleUpdateClick,
   handleIntervention,
   primaryColor,
+  appSettings,
   onRefreshTickets,
   onForwardWhatsApp
 }: TicketDetailModalProps) => {
@@ -240,9 +250,28 @@ export const TicketDetailModal = React.memo(({
     return selectedTicket?.require_rating === 1;
   });
 
+  const [actionType, setActionType] = useState<'none' | 'Dipinjamkan' | 'Harus Dibeli'>(() => {
+    return (selectedTicket?.action_type as any) || 'none';
+  });
+
+  const [actionNotes, setActionNotes] = useState<string>(() => {
+    return selectedTicket?.action_notes || '';
+  });
+
+  const [availableAssets, setAvailableAssets] = useState<any[]>([]);
+  const [selectedLoanAssetId, setSelectedLoanAssetId] = useState<string>('');
+
+  useEffect(() => {
+    api.getAssets().then(res => {
+      if (Array.isArray(res)) setAvailableAssets(res);
+    }).catch(e => console.error('Error loading assets in modal:', e));
+  }, []);
+
   useEffect(() => {
     if (selectedTicket) {
       setRequireRating(selectedTicket.require_rating === 1);
+      setActionType((selectedTicket.action_type as any) || 'none');
+      setActionNotes(selectedTicket.action_notes || '');
       if (selectedTicket.estimated_start_at) {
         setEstMode('range');
       } else if (selectedTicket.estimated_duration) {
@@ -259,6 +288,190 @@ export const TicketDetailModal = React.memo(({
       setEstTargetAt(toLocalISOString(selectedTicket.estimated_target_at));
     }
   }, [selectedTicket]);
+
+  const handlePrintRecommendation = (ticket: ITicket) => {
+    const printWindow = window.open('', '_blank', 'width=850,height=1000');
+    if (!printWindow) {
+      toast.error('Gagal membuka jendela cetak. Mohon izinkan pop-up di browser Anda.');
+      return;
+    }
+
+    const compName = appSettings?.it_company_name || appSettings?.company_name || appSettings?.app_name || 'PT. INDOFOOD FORTUNA LAND';
+    const deptSub = appSettings?.it_dept_subtitle || 'DEPARTEMEN INFORMATION & TECHNOLOGY (IT)';
+    const compAddr = appSettings?.it_company_address || 'Gedung Utama, Lt. 3 • Telp: (021) 555-0199 • Email: it.helpdesk@company.com';
+    
+    const picIT = appSettings?.it_pic_name || ticket.assigned_to || 'Yudha Pregita (PIC IT K3DK)';
+    const logoLeft = appSettings?.it_logo_left || appSettings?.custom_logo || '';
+    const logoRight = appSettings?.it_logo_right || '';
+    const digitalSig = appSettings?.it_digital_signature || '';
+
+    const actType = ticket.action_type || actionType || 'none';
+    const actNotes = ticket.action_notes || actionNotes || ticket.admin_reply || '';
+    const dateFormatted = formatDate(ticket.created_at);
+
+    // Bedakan Judul Dokumen, Warna, & Struktur berdasarkan Tindakan IT
+    let docTitle = 'SURAT REKOMENDASI TINDAKAN IT';
+    let themeBorder = '#2563eb';
+    let themeBg = '#f0f9ff';
+    let themeTitleColor = '#1e40af';
+    let statusBadgeText = '📍 STATUS REKOMENDASI IT: PENANGANAN STANDAR / PERBAIKAN RUTIN';
+    let sectionHeading = 'Catatan / Detail Spesifikasi Penanganan:';
+    let footerDisclaimer = '* Dokumen ini diterbitkan secara resmi oleh sistem IT Helpdesk sebagai landasan keputusan dan pertimbangan persetujuan oleh Sub Dept Head / Atasan.';
+
+    if (actType === 'Dipinjamkan') {
+      docTitle = 'SURAT PEMINJAMAN PERANGKAT PENGGANTI (LOANER)';
+      themeBorder = '#d97706';
+      themeBg = '#fffbeb';
+      themeTitleColor = '#92400e';
+      statusBadgeText = '📦 STATUS REKOMENDASI IT: DIPINJAMKAN PERANGKAT PENGGANTI SEMENTARA (LOANER UNIT)';
+      sectionHeading = 'Detail Unit Pinjaman (Stok IT) & Ketentuan Peminjaman:';
+      footerDisclaimer = '* Peminjam bertanggung jawab atas fisik dan keutuhan unit pengganti selama pemakaian. Perangkat wajib dikembalikan ke IT Support setelah perangkat utama selesai diperbaiki.';
+    } else if (actType === 'Harus Dibeli') {
+      docTitle = 'SURAT REKOMENDASI PEMBELIAN / PENGADAAN (URGENT)';
+      themeBorder = '#e11d48';
+      themeBg = '#fff1f2';
+      themeTitleColor = '#9f1239';
+      statusBadgeText = '🚨 STATUS REKOMENDASI IT: REKOMENDASI REPLACEMENT / PEMBELIAN UNIT BARU (URGENT)';
+      sectionHeading = 'Justifikasi Teknis & Spesifikasi Rekomendasi Pengadaan:';
+      footerDisclaimer = '* Surat rekomendasi ini diterbitkan oleh tim IT sebagai pertimbangan teknis persetujuan anggaran (Capex/Opex) dan pengadaan barang ke Sub Dept Head / Manajemen.';
+    }
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="id">
+      <head>
+        <meta charset="UTF-8">
+        <title>${docTitle} - #${ticket.ticket_no || ticket.id}</title>
+        <style>
+          body { font-family: 'Arial', sans-serif; margin: 30px; color: #1e293b; line-height: 1.5; font-size: 13px; }
+          .header-container { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px double #0f172a; padding-bottom: 12px; margin-bottom: 20px; }
+          .header-center { flex: 1; text-align: center; padding: 0 10px; }
+          .header-center h2 { margin: 0; font-size: 19px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.8px; }
+          .header-center h4 { margin: 3px 0 0 0; font-size: 12.5px; font-weight: 800; color: #2563eb; text-transform: uppercase; letter-spacing: 0.5px; }
+          .header-center p { margin: 4px 0 0 0; font-size: 10.5px; color: #64748b; font-weight: 500; }
+          .doc-title { text-align: center; margin-bottom: 20px; }
+          .doc-title h3 { margin: 0; font-size: 16px; font-weight: 900; text-decoration: underline; text-transform: uppercase; letter-spacing: 1px; color: #0f172a; }
+          .doc-title p { margin: 4px 0 0 0; font-size: 12px; color: #475569; font-family: monospace; font-weight: bold; }
+          
+          table.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+          table.meta-table td { padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top; }
+          table.meta-table td.label { font-weight: bold; background-color: #f8fafc; width: 22%; color: #334155; }
+          
+          .box-section { border: 1px solid #cbd5e1; border-radius: 4px; padding: 12px; margin-bottom: 15px; background-color: #fafafa; }
+          .box-title { font-weight: bold; font-size: 12px; text-transform: uppercase; color: #0f172a; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+          
+          .recommendation-box { border: 2px solid ${themeBorder}; padding: 12px; border-radius: 6px; background-color: ${themeBg}; margin-bottom: 20px; }
+          .recommendation-title { font-weight: 900; font-size: 13.5px; color: ${themeTitleColor}; text-transform: uppercase; margin-bottom: 6px; }
+          .notes-box { background-color: #ffffff; border: 1px solid #cbd5e1; padding: 10px; border-radius: 4px; margin-top: 6px; font-size: 12px; font-family: sans-serif; white-space: pre-wrap; color: #0f172a; }
+
+          .signatures { width: 100%; border-collapse: collapse; margin-top: 35px; text-align: center; }
+          .signatures td { vertical-align: bottom; padding: 10px; }
+          .sig-line { border-bottom: 1.5px solid #0f172a; margin-top: 10px; font-weight: 900; font-size: 12.5px; color: #0f172a; padding-bottom: 2px; }
+          .sig-title { font-size: 11px; font-weight: bold; color: #334155; text-transform: uppercase; margin-bottom: 10px; }
+          
+          @media print {
+            body { margin: 15mm; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="no-print" style="margin-bottom: 15px; text-align: right;">
+          <button onclick="window.print()" style="background: #059669; color: white; border: none; padding: 8px 16px; font-weight: bold; border-radius: 4px; cursor: pointer;">🖨️ Cetak / Simpan PDF</button>
+        </div>
+
+        <div class="header-container">
+          <div style="width: 120px; text-align: left; flex-shrink: 0;">
+            ${logoLeft ? `<img src="${logoLeft}" style="max-height: 65px; max-width: 110px; object-fit: contain;" />` : ''}
+          </div>
+          <div class="header-center">
+            <h2>${compName}</h2>
+            <h4>${deptSub}</h4>
+            <p>${compAddr}</p>
+          </div>
+          <div style="width: 120px; text-align: right; flex-shrink: 0;">
+            ${logoRight ? `<img src="${logoRight}" style="max-height: 65px; max-width: 110px; object-fit: contain;" />` : ''}
+          </div>
+        </div>
+
+        <div class="doc-title">
+          <h3>${docTitle}</h3>
+          <p>Nomor Tiket: #${ticket.ticket_no || ticket.id}</p>
+        </div>
+
+        <table class="meta-table">
+          <tr>
+            <td class="label">Nama Pemohon</td>
+            <td>${ticket.name || '-'}</td>
+            <td class="label">Tanggal Tiket</td>
+            <td>${dateFormatted}</td>
+          </tr>
+          <tr>
+            <td class="label">Departemen</td>
+            <td>${ticket.department || '-'}</td>
+            <td class="label">Kategori / Piranti</td>
+            <td>${ticket.category || '-'} (${ticket.device_type || 'Hardware'})</td>
+          </tr>
+          <tr>
+            <td class="label">Kode Perangkat Utama</td>
+            <td>${ticket.pc_code || '-'}</td>
+            <td class="label">No. Kontak HP</td>
+            <td>${ticket.phone || '-'}</td>
+          </tr>
+          <tr>
+            <td class="label">Petugas IT (PIC)</td>
+            <td colspan="3">${picIT}</td>
+          </tr>
+        </table>
+
+        <div class="box-section">
+          <div class="box-title">Deskripsi Kerusakan / Kendala Pengguna</div>
+          <div>${ticket.description || 'Tidak ada deskripsi keluhan'}</div>
+        </div>
+
+        <div class="recommendation-box">
+          <div class="recommendation-title">${statusBadgeText}</div>
+          <div style="font-size: 12px; margin-top: 4px;">
+            <strong>${sectionHeading}</strong>
+            <div class="notes-box">${actNotes || 'Berdasarkan pemeriksaan fisik dan teknis oleh tim IT, tindakan ini direkomendasikan untuk kelancaran operasional kerja.'}</div>
+          </div>
+        </div>
+
+        <div style="font-size: 11px; font-style: italic; color: #64748b; margin-bottom: 25px;">
+          ${footerDisclaimer}
+        </div>
+
+        <div style="font-family: monospace, 'Courier New', Courier, monospace; border: 1.5px dashed #0f172a; border-radius: 4px; padding: 12px 16px; background-color: #f8fafc; color: #0f172a; font-size: 11px; line-height: 1.8; margin-top: 25px;">
+          <div style="font-weight: bold; margin-bottom: 8px; font-size: 12px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 4px; letter-spacing: 0.5px;">
+            RIWAYAT APPROVAL:
+          </div>
+          ${actType === 'Dipinjamkan' ? `
+            <div>[✓] Level 1: ${picIT} (IT Technical Support) - APPROVED pada ${dateFormatted}</div>
+            <div>[✓] Level 2: ${ticket.name || 'Pemohon'} (Peminjam / User) - APPROVED (Serah Terima Unit Pengganti)</div>
+            <div>[⏳] Level 3: Sub Dept Head (${ticket.department || 'Dept Terkait'}) - PENDING</div>
+          ` : actType === 'Harus Dibeli' ? `
+            <div>[✓] Level 1: ${picIT} (IT Technical Support) - APPROVED (Rekomendasi Pengadaan Urgent) pada ${dateFormatted}</div>
+            <div>[⏳] Level 2: Sub Dept Head (${ticket.department || 'Dept Terkait'}) - PENDING</div>
+            <div>[⏳] Level 3: IT Dept Head / Head Office - PENDING</div>
+          ` : `
+            <div>[✓] Level 1: ${picIT} (IT Technical Support) - APPROVED pada ${dateFormatted}</div>
+            <div>[✓] Level 2: ${ticket.name || 'Pemohon'} (${ticket.department || 'User'}) - RESOLVED</div>
+            <div>[✓] Level 3: Sub Dept Head (${ticket.department || 'Dept Terkait'}) - VERIFIED BY SYSTEM</div>
+          `}
+        </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(() => { window.print(); }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
 
   const handleSave = () => {
     if (!selectedTicket || !adminUser) return;
@@ -302,6 +515,22 @@ export const TicketDetailModal = React.memo(({
       }
     }
 
+    if (actionType === 'Dipinjamkan' && selectedLoanAssetId) {
+      const foundAst = availableAssets.find(a => String(a.id) === String(selectedLoanAssetId));
+      if (foundAst) {
+        api.addBorrowedAsset({
+          asset_id: foundAst.id,
+          device_name: foundAst.name,
+          device_code: foundAst.device_code || foundAst.asset_id,
+          borrower_name: selectedTicket.name || 'Pemohon Tiket',
+          borrower_department: selectedTicket.department || 'Operasional',
+          borrow_date: new Date().toISOString().split('T')[0],
+          notes: actionNotes || `Dipinjamkan via Tiket #${selectedTicket.ticket_no || selectedTicket.id}`,
+          budget_type: 'Capex'
+        }).catch(err => console.log('Borrowed asset log note:', err));
+      }
+    }
+
     handleUpdateClick(
       selectedTicket.id, 
       status, 
@@ -312,7 +541,9 @@ export const TicketDetailModal = React.memo(({
       finalEstDuration,
       finalEstStartAt,
       finalEstTargetAt,
-      requireRating ? 1 : 0
+      requireRating ? 1 : 0,
+      actionType,
+      actionNotes
     );
     setSelectedTicket(null);
     setModalStatus('');
@@ -454,6 +685,61 @@ export const TicketDetailModal = React.memo(({
                   {selectedTicket.description}
                 </p>
               </div>
+
+              {/* Status Rekomendasi / Tindakan IT Banner (Terlihat oleh User & Atasan) */}
+              {((selectedTicket.action_type && selectedTicket.action_type !== 'none') || (actionType && actionType !== 'none')) && (
+                <div className={`p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl border-2 shadow-md space-y-2 transition-all ${
+                  (selectedTicket.action_type || actionType) === 'Harus Dibeli'
+                    ? 'bg-gradient-to-br from-rose-950/80 via-rose-900/50 to-slate-900/95 border-rose-500/70 text-rose-100'
+                    : 'bg-gradient-to-br from-amber-950/80 via-amber-900/50 to-slate-900/95 border-amber-500/70 text-amber-100'
+                }`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-2.5">
+                      {(selectedTicket.action_type || actionType) === 'Harus Dibeli' ? (
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-rose-500/20 border border-rose-400/40 flex items-center justify-center text-rose-400 shrink-0 shadow-inner">
+                          <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 shrink-0 shadow-inner">
+                          <Package className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </div>
+                      )}
+                      <div>
+                        <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider block leading-tight">
+                          Tindakan IT: {(selectedTicket.action_type || actionType) === 'Harus Dibeli' ? 'Harus Dibeli (Pengadaan)' : 'Dipinjamkan (Unit Pengganti)'}
+                        </span>
+                        <span className="text-[9.5px] opacity-75 block font-medium mt-0.5 leading-none">
+                          Informasi Keputusan Pemohon & Atasan
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handlePrintRecommendation(selectedTicket)}
+                      className="w-full sm:w-auto px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[10.5px] sm:text-xs font-bold flex items-center justify-center gap-1.5 border border-emerald-400/50 shadow-md cursor-pointer active:scale-95 transition-all"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>
+                        {(selectedTicket.action_type || actionType) === 'Dipinjamkan'
+                          ? 'Cetak Surat Pinjaman Unit'
+                          : (selectedTicket.action_type || actionType) === 'Harus Dibeli'
+                          ? 'Cetak Surat Rekomendasi Pengadaan'
+                          : 'Cetak Surat Rekomendasi'}
+                      </span>
+                    </button>
+                  </div>
+
+                  {(selectedTicket.action_notes || actionNotes) && (
+                    <div className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-slate-950/70 border border-slate-700/60 space-y-0.5">
+                      <p className="text-[9px] sm:text-[10px] font-extrabold uppercase opacity-75 tracking-wider">Catatan / Spesifikasi IT:</p>
+                      <p className="text-[10.5px] sm:text-xs font-semibold whitespace-pre-wrap leading-normal text-slate-100">
+                        {selectedTicket.action_notes || actionNotes}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Rating & Ulasan Pelayanan */}
               {selectedTicket.rating && Number(selectedTicket.rating) > 0 ? (
@@ -1052,6 +1338,135 @@ export const TicketDetailModal = React.memo(({
                           </div>
                         )}
                       </div>
+                    </div>
+
+                    {/* Opsi Rekomendasi / Tindakan Perangkat IT */}
+                    <div className="p-2 rounded-lg bg-slate-800/90 border border-slate-700/80 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-extrabold text-amber-300 uppercase tracking-wider flex items-center gap-1">
+                          <Package className="w-3.5 h-3.5 text-amber-400" />
+                          Tindakan IT (Opsi Perangkat)
+                        </label>
+                        <span className="text-[9px] text-slate-400 font-medium">Transparan ke User & Atasan</span>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setActionType('none')}
+                          className={`py-1 px-1 rounded-lg text-[9.5px] font-bold border transition-all text-center cursor-pointer ${
+                            actionType === 'none'
+                              ? 'bg-slate-700 text-white border-slate-500 shadow-sm'
+                              : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:bg-slate-800'
+                          }`}
+                        >
+                          Biasa / Normal
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActionType('Dipinjamkan');
+                            if (!actionNotes && appSettings?.it_default_loan_notes) {
+                              setActionNotes(appSettings.it_default_loan_notes);
+                            }
+                          }}
+                          className={`py-1 px-1 rounded-lg text-[9.5px] font-bold border transition-all text-center cursor-pointer flex items-center justify-center gap-1 ${
+                            actionType === 'Dipinjamkan'
+                              ? 'bg-amber-600 text-white border-amber-400 shadow-md ring-1 ring-amber-400/50'
+                              : 'bg-slate-900/60 text-amber-400/80 border-slate-800 hover:bg-slate-800'
+                          }`}
+                        >
+                          <Package className="w-3 h-3" />
+                          Dipinjamkan
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActionType('Harus Dibeli');
+                            if (!actionNotes && appSettings?.it_default_buy_notes) {
+                              setActionNotes(appSettings.it_default_buy_notes);
+                            }
+                          }}
+                          className={`py-1 px-1 rounded-lg text-[9.5px] font-bold border transition-all text-center cursor-pointer flex items-center justify-center gap-1 ${
+                            actionType === 'Harus Dibeli'
+                              ? 'bg-rose-600 text-white border-rose-400 shadow-md ring-1 ring-rose-400/50'
+                              : 'bg-slate-900/60 text-rose-400/80 border-slate-800 hover:bg-slate-800'
+                          }`}
+                        >
+                          <ShoppingCart className="w-3 h-3" />
+                          Harus Dibeli
+                        </button>
+                      </div>
+
+                      {actionType === 'Dipinjamkan' && (
+                        <div className="pt-1 space-y-1 bg-amber-950/20 p-1.5 rounded-lg border border-amber-500/30">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-bold text-amber-300 flex items-center gap-1">
+                              <Laptop className="w-3.5 h-3.5 text-amber-400" />
+                              Pilih Unit Pengganti dari Stok Aset IT (Dept IT)
+                            </label>
+                            <span className="text-[8.5px] text-amber-400/80 font-mono">
+                              {
+                                (availableAssets.filter(ast => {
+                                  const d = (ast.department || '').toString().toUpperCase();
+                                  return d === 'IT' || d.includes('IT') || d.includes('INFO') || d.includes('TEKNOLOGI');
+                                }).length > 0
+                                  ? availableAssets.filter(ast => {
+                                      const d = (ast.department || '').toString().toUpperCase();
+                                      return d === 'IT' || d.includes('IT') || d.includes('INFO') || d.includes('TEKNOLOGI');
+                                    })
+                                  : availableAssets).length
+                              } unit terdata
+                            </span>
+                          </div>
+                          <select
+                            value={selectedLoanAssetId}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSelectedLoanAssetId(val);
+                              const ast = availableAssets.find(a => String(a.id) === String(val));
+                              if (ast) {
+                                const loanText = `[STOK IT ASSET]\nKode Unit: ${ast.device_code || ast.asset_id || `AST-${ast.id}`}\nPerangkat: ${ast.name} (${ast.category || 'Hardware'})\nDepartemen: ${ast.department || 'IT'}\nSerial Number: ${ast.serial_number || '-'}\nStatus Asset: ${ast.status || 'Active'}`.trim();
+                                setActionNotes(loanText);
+                              }
+                            }}
+                            className="w-full bg-slate-900 border border-amber-500/40 text-amber-100 rounded-lg p-1.5 text-[10px] font-medium outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer"
+                          >
+                            <option value="">-- Pilih Unit Pengganti (Departemen IT) --</option>
+                            {(
+                              availableAssets.filter(ast => {
+                                const d = (ast.department || '').toString().toUpperCase();
+                                return d === 'IT' || d.includes('IT') || d.includes('INFO') || d.includes('TEKNOLOGI');
+                              }).length > 0
+                                ? availableAssets.filter(ast => {
+                                    const d = (ast.department || '').toString().toUpperCase();
+                                    return d === 'IT' || d.includes('IT') || d.includes('INFO') || d.includes('TEKNOLOGI');
+                                  })
+                                : availableAssets
+                            ).map((ast) => (
+                              <option key={`modal-ast-${ast.id}`} value={ast.id}>
+                                [{ast.device_code || ast.asset_id || `ID-${ast.id}`}] {ast.name} - Dept: {ast.department || 'IT'} ({ast.status || 'Active'})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {actionType !== 'none' && (
+                        <div className="pt-1">
+                          <textarea
+                            rows={2.5}
+                            value={actionNotes}
+                            onChange={e => setActionNotes(e.target.value)}
+                            placeholder={
+                              actionType === 'Dipinjamkan'
+                                ? "Tuliskan detail unit pinjaman (cth: Laptop ThinkPad T480 S/N: 98124, charger)..."
+                                : "Tuliskan spesifikasi/alasan penggantian unit baru (cth: Motherboard rusak total, butuh PC Core i5 SSD 512GB)..."
+                            }
+                            className="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-lg p-2 text-[10px] outline-none focus:border-amber-500 placeholder:text-slate-500 font-medium"
+                          />
+                        </div>
+                      )}
                     </div>
 
                     {/* Side-by-side Balasan & Catatan Internal */}

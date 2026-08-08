@@ -48,6 +48,7 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
   const [masterUserEmail, setMasterUserEmail] = React.useState('');
   const [masterUserJenisPiranti, setMasterUserJenisPiranti] = React.useState('(Tidak Ada)');
   const [masterUserJabatan, setMasterUserJabatan] = React.useState('');
+  const [masterUserAtasanId, setMasterUserAtasanId] = React.useState<number | ''>('');
   const [editingMasterUser, setEditingMasterUser] = React.useState<any | null>(null);
   const [masterUserSearch, setMasterUserSearch] = React.useState('');
   const [addingType, setAddingType] = React.useState<'master-user' | null>(null);
@@ -343,7 +344,8 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
           employee_index: masterUserIndex,
           email: masterUserEmail || null,
           jenis_piranti: masterUserJenisPiranti,
-          jabatan: masterUserJabatan
+          jabatan: masterUserJabatan,
+          atasan_id: masterUserAtasanId || null
         });
         setAddingType(null);
         setEditingMasterUser(null);
@@ -359,7 +361,8 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
           employee_index: masterUserIndex,
           email: masterUserEmail || null,
           jenis_piranti: masterUserJenisPiranti,
-          jabatan: masterUserJabatan
+          jabatan: masterUserJabatan,
+          atasan_id: masterUserAtasanId || null
         });
         setAddingType(null);
         clearForm();
@@ -380,6 +383,7 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
     setMasterUserEmail('');
     setMasterUserJenisPiranti('(Tidak Ada)');
     setMasterUserJabatan('');
+    setMasterUserAtasanId('');
   };
 
   const handleOpenAddMasterUser = () => {
@@ -407,6 +411,7 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
     setMasterUserEmail(user.email || '');
     setMasterUserJenisPiranti(normalizeJenisPiranti(user.jenis_piranti));
     setMasterUserJabatan(user.jabatan || '');
+    setMasterUserAtasanId(user.atasan_id || '');
     setAddingType('master-user');
   };
 
@@ -656,6 +661,25 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
                 
                 <div className="grid grid-cols-1 gap-3">
                   <div>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Atasan Langsung (Opsional)</label>
+                    <select
+                      className={`w-full px-3 py-2.5 rounded-xl border text-xs font-medium outline-none focus:ring-2 focus:ring-emerald-500 ${themeClasses.bgSecondary} ${themeClasses.border} ${themeClasses.text}`}
+                      value={masterUserAtasanId}
+                      onChange={e => setMasterUserAtasanId(e.target.value === '' ? '' : Number(e.target.value))}
+                    >
+                      <option value="">(Tidak Ada)</option>
+                      {masterUsers
+                        .filter(u => u.id !== editingMasterUser?.id)
+                        .filter(u => masterUserDept ? u.department === masterUserDept : true)
+                        .map(u => (
+                          <option key={u.id} value={u.id}>{u.full_name} ({u.jabatan || 'User'})</option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
                     <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Email (Opsional)</label>
                     <input 
                       type="email"
@@ -732,6 +756,11 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
                         {user.jabatan && user.jabatan !== '-' && (
                           <span className={`text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5`}>
                             {user.jabatan}
+                          </span>
+                        )}
+                        {user.atasan_id && (
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">
+                            Atasan: {masterUsers.find(u => u.id === user.atasan_id)?.full_name || 'Tidak diketahui'}
                           </span>
                         )}
                       </div>
