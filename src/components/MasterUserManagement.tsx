@@ -94,8 +94,9 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
         'No. Telepon': '081234567890',
         'Index Karyawan': '12345',
         'Jenis Piranti': 'Komputer',
-        'Email': 'budi@example.com',
-        'Jabatan': 'Staff HR'
+        'Jabatan': 'Staff HR',
+        'Atasan Langsung': 'Puji Sulastiana',
+        'Email': 'budi@example.com'
       },
       {
         'Nama Lengkap': 'Siti Aminah',
@@ -104,8 +105,9 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
         'No. Telepon': '081234567891',
         'Index Karyawan': '67890',
         'Jenis Piranti': 'Laptop',
-        'Email': 'siti@example.com',
-        'Jabatan': 'Supervisor GA'
+        'Jabatan': 'Supervisor GA',
+        'Atasan Langsung': 'Puji Sulastiana',
+        'Email': 'siti@example.com'
       },
       {
         'Nama Lengkap': 'Andi Wijaya',
@@ -114,8 +116,9 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
         'No. Telepon': '081234567892',
         'Index Karyawan': '11223',
         'Jenis Piranti': '(Tidak Ada)',
-        'Email': '',
-        'Jabatan': 'Driver'
+        'Jabatan': 'Driver',
+        'Atasan Langsung': '-',
+        'Email': ''
       }
     ];
 
@@ -309,18 +312,22 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
       return;
     }
 
-    const exportData = masterUsers.map(user => ({
-      'Nama Lengkap': user.full_name || '',
-      'Bagian / Departemen': user.department || '',
-      'Sub Bagian': user.sub_department || '-',
-      'No. Telepon': user.phone || '',
-      'Index Karyawan': user.employee_index || '',
-      'Jenis Piranti': user.jenis_piranti || '(Tidak Ada)',
-      'Email': user.email || '',
-      'Jabatan': user.jabatan || '',
-      'Akses Voucher': user.can_request_voucher === 1 ? 'Ya' : 'Tidak',
-      'Fitur Lari-Lari': user.enable_funny_egg === 1 ? 'Aktif' : 'Nonaktif'
-    }));
+    const exportData = masterUsers.map(user => {
+      const atasan = masterUsers.find(u => Number(u.id) === Number(user.atasan_id));
+      return {
+        'Nama Lengkap': user.full_name || '',
+        'Bagian / Departemen': user.department || '',
+        'Sub Bagian': user.sub_department || '-',
+        'No. Telepon': user.phone || '',
+        'Index Karyawan': user.employee_index || '',
+        'Jenis Piranti': user.jenis_piranti || '(Tidak Ada)',
+        'Jabatan': user.jabatan || '',
+        'Atasan Langsung': atasan ? atasan.full_name : '-',
+        'Email': user.email || '',
+        'Akses Voucher': user.can_request_voucher === 1 ? 'Ya' : 'Tidak',
+        'Fitur Lari-Lari': user.enable_funny_egg === 1 ? 'Aktif' : 'Nonaktif'
+      };
+    });
 
     const ws = xlsx.utils.json_to_sheet(exportData);
     const wb = xlsx.utils.book_new();

@@ -228,8 +228,6 @@ router.post("/master-users", asyncHandler(async (req, res) => {
    const sheet = workbook.Sheets[sheetName];
    const data = xlsx.utils.sheet_to_json(sheet);
    
-   const insert = db.prepare("INSERT OR REPLACE INTO master_users (full_name, department, sub_department, phone, employee_index, email, jenis_piranti, kode_piranti, jabatan) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-   
    let count = 0;
    
    const findValue = (row: any, possibleHeaders: string[]) => {
@@ -240,6 +238,8 @@ router.post("/master-users", asyncHandler(async (req, res) => {
      });
      return matchedKey ? row[matchedKey] : null;
    };
+
+   const pendingAtasans: { userId: number; atasanRaw: string }[] = [];
 
    db.transaction(() => {
      for (const row of data as any[]) {
@@ -252,22 +252,90 @@ router.post("/master-users", asyncHandler(async (req, res) => {
        const jenisPirantiRaw = findValue(row, ['Jenis Piranti', 'jenis_piranti', 'Piranti', 'Device Type', 'Jenis Device', 'Device']);
        const kodePirantiRaw = findValue(row, ['Kode Piranti', 'kode_piranti', 'Device Code', 'Kode Device', 'Kode']);
        const jabatanRaw = findValue(row, ['Jabatan', 'jabatan', 'Position', 'Role', 'Title', 'Pekerjaan']);
+       const atasanRaw = findValue(row, ['Atasan Langsung', 'Atasan', 'Atasan Direct', 'Nama Atasan', 'atasan_id', 'Atasan ID']);
        
+       if (!fullName) continue;
+
+       const nameStr = String(fullName).trim();
+       const deptStr = department ? String(department).trim() : '-';
+       const subDeptStr = subDepartment ? String(subDepartment).trim() : '-';
+       const phoneStr = phone ? String(phone).trim() : '-';
+       const empIndexStr = employeeIndex ? String(employeeIndex).trim() : '-';
+       const emailStr = email ? String(email).trim() : '-';
        const normalizedPiranti = normalizeJenisPiranti(jenisPirantiRaw);
-       
-       if (fullName) {
-         insert.run(
-           String(fullName).trim(), 
-           department ? String(department).trim() : '-', 
-           subDepartment ? String(subDepartment).trim() : '-', 
-           phone ? String(phone).trim() : '-', 
-           employeeIndex ? String(employeeIndex).trim() : '-', 
-           email ? String(email).trim() : '-', 
-           normalizedPiranti,
-           kodePirantiRaw ? String(kodePirantiRaw).trim() : '-',
-           jabatanRaw ? String(jabatanRaw).trim() : '-'
+       const kodePirantiStr = kodePirantiRaw ? String(kodePirantiRaw).trim() : '-';
+       const jabatanStr = jabatanRaw ? String(jabatanRaw).trim() : '-';
+
+       // Check if user already exists by full_name or employee_index
+       const existing = db.prepare(
+         "SELECT * FROM master_users WHERE full_name = ? OR (employee_index = ? AND employee_index != '-')"
+       ).get(nameStr, empIndexStr) as any;
+
+       let userId: number;
+
+       if (existing) {
+         userId = existing.id;
+         db.prepare(`
+           UPDATE master_users 
+           SET full_name = ?,
+               department = ?,
+               sub_department = ?,
+               phone = ?,
+               employee_index = ?,
+               email = ?,
+               jenis_piranti = ?,
+               kode_piranti = ?,
+               jabatan = ?
+           WHERE id = ?
+         `).run(
+           nameStr,
+           deptStr !== '-' ? deptStr : (existing.department || '-'),
+           subDeptStr !== '-' ? subDeptStr : (existing.sub_department || '-'),
+           phoneStr !== '-' ? phoneStr : (existing.phone || '-'),
+           empIndexStr !== '-' ? empIndexStr : (existing.employee_index || '-'),
+           emailStr !== '-' ? emailStr : (existing.email || '-'),
+           normalizedPiranti !== '(Tidak Ada)' ? normalizedPiranti : (existing.jenis_piranti || '(Tidak Ada)'),
+           kodePirantiStr !== '-' ? kodePirantiStr : (existing.kode_piranti || '-'),
+           jabatanStr !== '-' ? jabatanStr : (existing.jabatan || '-'),
+           userId
          );
-         count++;
+       } else {
+         const resInsert = db.prepare(`
+           INSERT INTO master_users 
+           (full_name, department, sub_department, phone, employee_index, email, jenis_piranti, kode_piranti, jabatan)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         `).run(
+           nameStr,
+           deptStr,
+           subDeptStr,
+           phoneStr,
+           empIndexStr,
+           emailStr,
+           normalizedPiranti,
+           kodePirantiStr,
+           jabatanStr
+         );
+         userId = resInsert.lastInsertRowid as number;
+       }
+
+       if (atasanRaw && String(atasanRaw).trim() !== '-' && String(atasanRaw).trim() !== '') {
+         pendingAtasans.push({ userId, atasanRaw: String(atasanRaw).trim() });
+       }
+
+       count++;
+     }
+
+     // Pass 2: Resolve Atasan Langsung IDs
+     for (const item of pendingAtasans) {
+       const cleanAtasanName = item.atasanRaw.replace(/\s*\(.*?\)/g, '').trim();
+       if (!cleanAtasanName || cleanAtasanName === '-') continue;
+
+       const match = db.prepare(
+         "SELECT id FROM master_users WHERE full_name = ? OR full_name LIKE ? OR (employee_index = ? AND employee_index != '-')"
+       ).get(cleanAtasanName, `%${cleanAtasanName}%`, cleanAtasanName) as any;
+
+       if (match && match.id !== item.userId) {
+         db.prepare("UPDATE master_users SET atasan_id = ? WHERE id = ?").run(match.id, item.userId);
        }
      }
    })();
