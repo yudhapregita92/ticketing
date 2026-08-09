@@ -9,7 +9,9 @@ import {
   CheckCircle2,
   Activity,
   AlertCircle,
-  ArrowUpDown
+  ArrowUpDown,
+  User,
+  Calendar
 } from 'lucide-react';
 import { ITicket, IAdminUser, ICategory } from '../types';
 import { TicketCard } from './TicketCard';
@@ -199,73 +201,104 @@ export const TicketList: React.FC<TicketListProps> = ({
         )}
       </div>
 
-      {/* Mobile Navigation Stats Grid */}
-      <div className="lg:hidden mb-2.5 sm:mb-3">
-        {/* Interactive Stats Quick-Filter Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
+      {/* Navigation Stats Quick Grid */}
+      <div className="mb-2.5 sm:mb-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5 w-full">
           {[
             { 
-              id: '', 
+              key: 'all_tickets',
               label: 'Semua Tiket', 
               count: tickets.length,
-              icon: <TicketIcon className="w-5 h-5" />,
+              icon: <TicketIcon className="w-4 h-4 sm:w-5 sm:h-5" />,
               numColor: 'text-blue-600 dark:text-blue-400',
               iconBg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-              activeClass: 'border-blue-500 ring-1 ring-blue-500 bg-blue-50/50 dark:bg-blue-900/20',
-              idleClass: isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800' : 'bg-white border-slate-200 hover:bg-slate-50'
+              activeClass: 'border-blue-500 ring-2 ring-blue-500/30 bg-blue-50/70 dark:bg-blue-950/40 shadow-sm',
+              idleClass: isDark ? 'bg-slate-900/90 border-slate-800 hover:bg-slate-850' : 'bg-white border-slate-200/90 hover:bg-slate-50',
+              pulsePing: 'bg-blue-400',
+              pulseDot: 'bg-blue-500',
+              dotActive: 'bg-blue-500',
+              isActive: viewMode === 'all' && !filterStatus,
+              onClick: () => { setViewMode('all'); setFilterStatus(''); }
             },
             { 
-              id: 'New', 
-              label: 'Tiket Baru', 
-              count: tickets.filter(t => t.status === 'New').length,
-              icon: <CheckCircle2 className="w-5 h-5" />,
+              key: 'my_tickets',
+              label: 'Tiket Saya', 
+              count: tickets.filter(t => (currentUser?.employee_index && t.employee_index === currentUser.employee_index) || (currentUser?.name && t.name?.toLowerCase() === currentUser.name?.toLowerCase())).length,
+              icon: <User className="w-4 h-4 sm:w-5 sm:h-5" />,
               numColor: 'text-emerald-600 dark:text-emerald-400',
               iconBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-              activeClass: 'border-emerald-500 ring-1 ring-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/20',
-              idleClass: isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800' : 'bg-white border-slate-200 hover:bg-slate-50'
+              activeClass: 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-50/70 dark:bg-emerald-950/40 shadow-sm',
+              idleClass: isDark ? 'bg-slate-900/90 border-slate-800 hover:bg-slate-850' : 'bg-white border-slate-200/90 hover:bg-slate-50',
+              pulsePing: 'bg-emerald-400',
+              pulseDot: 'bg-emerald-500',
+              dotActive: 'bg-emerald-500',
+              isActive: viewMode === 'my_tickets' && !filterStatus,
+              onClick: () => { setViewMode('my_tickets'); setFilterStatus(''); }
             },
             { 
-              id: 'In Progress', 
-              label: 'Tiket Progres', 
-              count: tickets.filter(t => t.status === 'In Progress').length,
-              icon: <Activity className="w-5 h-5" />,
-              numColor: 'text-orange-600 dark:text-orange-400',
-              iconBg: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
-              activeClass: 'border-orange-500 ring-1 ring-orange-500 bg-orange-50/50 dark:bg-orange-900/20',
-              idleClass: isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800' : 'bg-white border-slate-200 hover:bg-slate-50'
+              key: 'in_progress',
+              label: 'Progres Tiket', 
+              count: tickets.filter(t => t.status === 'In Progress' || t.status === 'Progres').length,
+              icon: <Activity className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />,
+              numColor: 'text-amber-600 dark:text-amber-400',
+              iconBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+              activeClass: 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-50/70 dark:bg-amber-950/40 shadow-sm',
+              idleClass: isDark ? 'bg-slate-900/90 border-slate-800 hover:bg-slate-850' : 'bg-white border-slate-200/90 hover:bg-slate-50',
+              pulsePing: 'bg-amber-400',
+              pulseDot: 'bg-amber-500',
+              dotActive: 'bg-amber-500',
+              isActive: filterStatus === 'In Progress',
+              onClick: () => { setFilterStatus('In Progress'); }
             },
             { 
-              id: 'Re-opened', 
-              label: 'Tiket Reopen', 
-              count: tickets.filter(t => t.status === 'Re-opened').length,
-              icon: <AlertCircle className="w-5 h-5" />,
+              key: 'today_tickets',
+              label: 'Tiket Hari Ini', 
+              count: tickets.filter(t => new Date(t.created_at).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA')).length,
+              icon: <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />,
               numColor: 'text-purple-600 dark:text-purple-400',
               iconBg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
-              activeClass: 'border-purple-500 ring-1 ring-purple-500 bg-purple-50/50 dark:bg-purple-900/20',
-              idleClass: isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800' : 'bg-white border-slate-200 hover:bg-slate-50'
+              activeClass: 'border-purple-500 ring-2 ring-purple-500/30 bg-purple-50/70 dark:bg-purple-950/40 shadow-sm',
+              idleClass: isDark ? 'bg-slate-900/90 border-slate-800 hover:bg-slate-850' : 'bg-white border-slate-200/90 hover:bg-slate-50',
+              pulsePing: 'bg-purple-400',
+              pulseDot: 'bg-purple-500',
+              dotActive: 'bg-purple-500',
+              isActive: viewMode === 'today' && !filterStatus,
+              onClick: () => { setViewMode('today'); setFilterStatus(''); }
             }
           ].map((item, idx) => {
-            const isActive = filterStatus === item.id;
             return (
               <motion.button
-                key={`filter-${item.id || item.label}-${idx}`}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setFilterStatus(item.id)}
+                key={`stat-card-${item.key}-${idx}`}
+                whileTap={{ scale: 0.96 }}
+                onClick={item.onClick}
                 style={{ borderRadius: `${cardRadius}px` }}
-                className={`p-3 sm:p-4 border text-left flex items-center justify-between transition-all ${
-                  isActive ? item.activeClass : item.idleClass
+                className={`p-3 sm:p-4 border text-left flex items-center justify-between transition-all relative overflow-hidden group cursor-pointer ${
+                  item.isActive ? item.activeClass : item.idleClass
                 }`}
               >
-                <div className="flex flex-col h-full justify-between gap-2 sm:gap-3">
-                  <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400">
+                <div className="flex flex-col h-full justify-between gap-1.5 sm:gap-2 z-10">
+                  <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-400 flex items-center gap-1">
                     {item.label}
+                    {item.isActive && (
+                      <span className={`inline-block w-1.5 h-1.5 rounded-full ${item.dotActive} animate-pulse`} />
+                    )}
                   </span>
-                  <span className={`text-xl sm:text-2xl font-black leading-none ${item.numColor}`}>
+                  <span className={`text-xl sm:text-2xl font-black leading-none ${item.numColor} ${item.isActive ? 'animate-pulse' : ''}`}>
                     <RollingNumber value={item.count} />
                   </span>
                 </div>
-                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${item.iconBg}`}>
-                  {item.icon}
+
+                <div className="relative flex items-center justify-center shrink-0">
+                  <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 ${item.iconBg}`}>
+                    {item.icon}
+                  </div>
+                  {/* Animasi Berdenyut (Pulsing Glow / Ring) khusus warna tiap kartu */}
+                  {item.count > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${item.pulsePing} opacity-75`}></span>
+                      <span className={`relative inline-flex rounded-full h-3 w-3 ${item.pulseDot} border-2 border-white dark:border-slate-900`}></span>
+                    </span>
+                  )}
                 </div>
               </motion.button>
             );

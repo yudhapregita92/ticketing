@@ -1,7 +1,7 @@
 import { ShieldCheck, Cpu, Globe, Zap, Ticket } from 'lucide-react';
 import { Logo } from './components/Logo';
 
-export const STATUSES = ['New', 'In Progress', 'Completed', 'Closed', 'Re-opened', 'Cancelled'];
+export const STATUSES = ['New', 'In Progress', 'Pending', 'Completed', 'Closed', 'Re-opened', 'Cancelled'];
 
 export const LOGO_OPTIONS = [
   { id: 'ShieldCheck', icon: ShieldCheck },

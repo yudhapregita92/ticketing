@@ -1,6 +1,9 @@
 import { parseSafeDate } from './dateUtils';
 
-export const getSLAColor = (createdAt: string, status: string, criticalHours?: number, delayedHours?: number) => {
+export const getSLAColor = (createdAt: string, status: string, criticalHours?: number, delayedHours?: number, actionType?: string | null) => {
+  if (status === 'Pending' || status === 'Pending Pengadaan' || actionType === 'Harus Dibeli') {
+    return 'bg-purple-500/10 border-purple-500/30 text-purple-400';
+  }
   if (status !== 'New') return '';
   const created = parseSafeDate(createdAt).getTime();
   const now = new Date().getTime();
@@ -34,7 +37,10 @@ export const getSLAColor = (createdAt: string, status: string, criticalHours?: n
   return '';
 };
 
-export const getSLALabel = (createdAt: string, status: string, criticalHours?: number, delayedHours?: number) => {
+export const getSLALabel = (createdAt: string, status: string, criticalHours?: number, delayedHours?: number, actionType?: string | null) => {
+  if (status === 'Pending' || status === 'Pending Pengadaan' || actionType === 'Harus Dibeli') {
+    return '⏸️ SLA Paused (Pengadaan)';
+  }
   if (status !== 'New') return null;
   const created = parseSafeDate(createdAt).getTime();
   const now = new Date().getTime();

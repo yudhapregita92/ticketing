@@ -42,20 +42,47 @@ export const UserHeroBanner: React.FC<UserHeroBannerProps> = ({
   const fullName = currentUser?.full_name || 'User';
   const firstName = fullName.trim().split(' ')[0] || fullName;
 
-  // Calculate ticket counts
-  const newTicketsCount = tickets.filter(t => t.status === 'New').length;
-  const progressTicketsCount = tickets.filter(t => t.status === 'In Progress').length;
+  // Calculate ticket counts for User vs Admin
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'it_support' || currentUser?.is_admin || currentUser?.employee_index === 'IT' || currentUser?.employee_index === 'ADMIN';
 
-  // Construct dynamic text matching the reference layout
+  const myTickets = tickets.filter(t => 
+    (currentUser?.employee_index && t.employee_index === currentUser.employee_index) || 
+    (currentUser?.name && t.name?.toLowerCase() === currentUser.name?.toLowerCase())
+  );
+  const myNewCount = myTickets.filter(t => t.status === 'New').length;
+  const myProgressCount = myTickets.filter(t => t.status === 'In Progress' || t.status === 'Progres').length;
+  const myPendingCount = myTickets.filter(t => t.status === 'Pending' || t.status === 'Pending Pengadaan').length;
+
+  const globalNewCount = tickets.filter(t => t.status === 'New').length;
+  const globalProgressCount = tickets.filter(t => t.status === 'In Progress' || t.status === 'Progres').length;
+
+  // Construct dynamic text appropriate for User or Admin
   let bannerText = '';
-  if (newTicketsCount > 0 && progressTicketsCount > 0) {
-    bannerText = `Ada ${newTicketsCount} tiket baru dan ${progressTicketsCount} tiket progres perlu ditangani hari ini.`;
-  } else if (newTicketsCount > 0) {
-    bannerText = `Ada ${newTicketsCount} tiket baru perlu ditangani hari ini.`;
-  } else if (progressTicketsCount > 0) {
-    bannerText = `Ada ${progressTicketsCount} tiket progres sedang ditangani hari ini.`;
+  if (isAdmin) {
+    if (globalNewCount > 0 && globalProgressCount > 0) {
+      bannerText = `Ada ${globalNewCount} tiket baru dan ${globalProgressCount} tiket progres perlu ditangani tim IT hari ini.`;
+    } else if (globalNewCount > 0) {
+      bannerText = `Ada ${globalNewCount} tiket baru menunggu respon tim IT hari ini.`;
+    } else if (globalProgressCount > 0) {
+      bannerText = `Ada ${globalProgressCount} tiket sedang dalam proses penanganan IT hari ini.`;
+    } else {
+      bannerText = 'Semua antrian tiket telah selesai ditangani oleh tim IT hari ini.';
+    }
   } else {
-    bannerText = 'Semua antrian tiket telah ditangani dengan lancar hari ini.';
+    // User / Karyawan perspective
+    if (myProgressCount > 0 && myNewCount > 0) {
+      bannerText = `Status Tiket Anda: ${myProgressCount} sedang diproses IT dan ${myNewCount} baru diajukan.`;
+    } else if (myProgressCount > 0) {
+      bannerText = `Tiket Anda (${myProgressCount}) saat ini sedang dalam proses penanganan oleh tim IT Support.`;
+    } else if (myPendingCount > 0) {
+      bannerText = `Tiket Anda (${myPendingCount}) sedang dalam status Pending (proses pengadaan perangkat / persetujuan).`;
+    } else if (myNewCount > 0) {
+      bannerText = `Tiket Anda (${myNewCount}) berhasil dikirim dan sedang menunggu giliran penanganan tim IT.`;
+    } else if (myTickets.length > 0) {
+      bannerText = 'Semua tiket Anda telah selesai ditangani. Apabila menemukan kendala baru, silakan ajukan tiket di bawah.';
+    } else {
+      bannerText = 'Selamat datang! Jika Anda mengalami kendala komputer, jaringan, atau aplikasi, silakan buat tiket baru.';
+    }
   }
 
   return (

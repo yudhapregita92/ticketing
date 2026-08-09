@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Bell, CheckCheck, MessageSquare, Zap, Activity, Clock, Package, ShoppingCart, AlertTriangle, ChevronRight } from 'lucide-react';
+import { X, Bell, CheckCheck, MessageSquare, Zap, Activity, Clock, Package, ShoppingCart, AlertTriangle, ChevronRight, PauseCircle } from 'lucide-react';
 import { INotification } from '../../types';
 
 interface NotificationModalProps {
@@ -176,6 +176,9 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
             filtered.map((item, idx) => {
               const isUnread = item.is_read === 0;
               const category = getNotifCategory(item);
+              const msgLower = (item.message || '').toLowerCase();
+              const titleLower = (item.title || '').toLowerCase();
+              const isSlaPaused = category === 'urgent_purchase' || msgLower.includes('harus dibeli') || msgLower.includes('pengadaan') || msgLower.includes('pending') || msgLower.includes('sla paused') || titleLower.includes('pengadaan') || titleLower.includes('pembelian');
 
               let icon = <Activity className="w-4 h-4" />;
               let iconBg = "bg-emerald-500/10 text-emerald-500";
@@ -237,8 +240,14 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1.5 mb-1 flex-wrap">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           {badgeTag}
+                          {isSlaPaused && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-600 flex items-center gap-1 shadow-2xs">
+                              <PauseCircle className="w-2.5 h-2.5 text-purple-600 dark:text-purple-400 shrink-0" />
+                              <span>⏸️ SLA Paused</span>
+                            </span>
+                          )}
                           <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-zinc-400">
                             #{item.ticket_no}
                           </span>

@@ -28,7 +28,8 @@ import {
   Package,
   ShoppingCart,
   FileText,
-  Laptop
+  Laptop,
+  PauseCircle
 } from 'lucide-react';
 
 import { ITicket, PRIORITIES } from '../../types';
@@ -1225,6 +1226,7 @@ export const TicketDetailModal = React.memo(({
                               ? (
                                 status === 'New' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/50' :
                                 status === 'In Progress' ? 'bg-blue-600 text-white shadow-md shadow-blue-950/50' :
+                                status === 'Pending' ? 'bg-purple-600 text-white shadow-md shadow-purple-950/50' :
                                 status === 'Completed' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/50' :
                                 'bg-rose-600 text-white shadow-md shadow-rose-950/50'
                               )
@@ -1232,6 +1234,7 @@ export const TicketDetailModal = React.memo(({
                             }`}
                           >
                             {status === 'In Progress' ? 'Progres' : 
+                             status === 'Pending' ? 'Pending' :
                              status === 'Completed' ? 'Selesai' : 
                              status === 'Cancelled' ? 'Batal' : 
                              status === 'New' ? 'Baru' : status}
@@ -1383,6 +1386,7 @@ export const TicketDetailModal = React.memo(({
                           type="button"
                           onClick={() => {
                             setActionType('Harus Dibeli');
+                            setModalStatus('Pending');
                             if (!actionNotes && appSettings?.it_default_buy_notes) {
                               setActionNotes(appSettings.it_default_buy_notes);
                             }
@@ -1397,6 +1401,18 @@ export const TicketDetailModal = React.memo(({
                           Harus Dibeli
                         </button>
                       </div>
+
+                      {(actionType === 'Harus Dibeli' || (modalStatus || selectedTicket.status) === 'Pending') && (
+                        <div className="p-2 sm:p-2.5 rounded-xl bg-purple-950/80 border border-purple-500/50 text-purple-200 text-[10px] sm:text-[10.5px] space-y-1 shadow-md">
+                          <div className="flex items-center gap-1.5 font-black text-purple-300 uppercase tracking-wider text-[10.5px] sm:text-[11px]">
+                            <PauseCircle className="w-4 h-4 text-purple-400 shrink-0" />
+                            <span>SLA Penanganan IT Dibekukan (Paused)</span>
+                          </div>
+                          <p className="leading-snug text-purple-200/90 font-medium">
+                            Status tiket ditandai <strong>Menunggu Pengadaan (Pending)</strong>. Perhitungan jam SLA penanganan teknis IT secara otomatis <strong>DIBEKUKAN / PAUSED</strong> agar estimasi waktu proses pembelian oleh Purchasing/Procurement tidak membebani performa SLA tim IT.
+                          </p>
+                        </div>
+                      )}
 
                       {actionType === 'Dipinjamkan' && (
                         <div className="pt-1 space-y-1 bg-amber-950/20 p-1.5 rounded-lg border border-amber-500/30">

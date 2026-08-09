@@ -881,11 +881,13 @@ export const ReportSLA: React.FC<ReportSLAProps> = ({
                       <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
                         isCompleted
                           ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                          : ticket.status === 'Pending' || ticket.status === 'Pending Pengadaan' || ticket.action_type === 'Harus Dibeli'
+                          ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40'
                           : ticket.status === 'In Progress' || ticket.status === 'Progres' || ticket.status === 'Assigned'
                           ? 'bg-blue-500/10 text-blue-600 border border-blue-500/20'
                           : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
                       }`}>
-                        {ticket.status === 'Completed' ? 'Selesai' : ticket.status}
+                        {ticket.status === 'Pending' || ticket.status === 'Pending Pengadaan' || ticket.action_type === 'Harus Dibeli' ? 'Pending: Pengadaan (SLA Paused)' : ticket.status === 'Completed' ? 'Selesai' : ticket.status}
                       </span>
                     </td>
                   </tr>

@@ -440,13 +440,18 @@ async function handleTicketUpdate(req: any, res: any, io: Server) {
 
   // Generate DB notification for user when status changes
   if (status !== undefined && status !== currentTicket.status) {
+    const isPendingStatus = newStatus === 'Pending' || newStatus === 'Pending Pengadaan';
     createDbNotification({
       ticket_id: currentTicket.id,
       ticket_no: currentTicket.ticket_no,
       employee_index: currentTicket.employee_index,
       recipient_name: currentTicket.name,
-      title: `Status Tiket #${currentTicket.ticket_no} Berubah`,
-      message: `Status tiket Anda diubah dari "${currentTicket.status}" menjadi "${newStatus}"${note ? '. Catatan: ' + note : '.'}`,
+      title: isPendingStatus 
+        ? `Status Tiket #${currentTicket.ticket_no} Pending (SLA Paused)`
+        : `Status Tiket #${currentTicket.ticket_no} Berubah`,
+      message: isPendingStatus
+        ? `Status tiket Anda diubah menjadi "${newStatus}". Perhitungan SLA penanganan IT saat ini DIBEKUKAN / PAUSED (proses pengadaan).${note ? ' Catatan: ' + note : ''}`
+        : `Status tiket Anda diubah dari "${currentTicket.status}" menjadi "${newStatus}"${note ? '. Catatan: ' + note : '.'}`,
       type: 'status_change'
     }, io);
   }
@@ -479,7 +484,7 @@ async function handleTicketUpdate(req: any, res: any, io: Server) {
         : `🚨 Rekomendasi Pembelian Urgent - Tiket #${currentTicket.ticket_no}`,
       message: isLoan
         ? `IT menyetujui peminjaman unit/part pengganti sementara.${action_notes ? ' Catatan IT: ' + action_notes : ''}`
-        : `IT menetapkan rekomendasi pengadaan/pembelian perangkat baru URGENT.${action_notes ? ' Catatan IT: ' + action_notes : ''}`,
+        : `IT menetapkan rekomendasi pengadaan/pembelian perangkat baru URGENT (SLA Penanganan IT Dibekukan / Paused).${action_notes ? ' Catatan IT: ' + action_notes : ''}`,
       type: isLoan ? 'part_loan' : 'urgent_purchase'
     }, io);
 
@@ -495,7 +500,7 @@ async function handleTicketUpdate(req: any, res: any, io: Server) {
           : `🚨 Pembelian Urgent - Tiket #${currentTicket.ticket_no} (${currentTicket.name})`,
         message: isLoan
           ? `IT menyetujui peminjaman unit/part pengganti untuk anggota tim Anda (${currentTicket.name}).${action_notes ? ' Catatan IT: ' + action_notes : ''}`
-          : `IT menetapkan rekomendasi pembelian/pengadaan baru URGENT untuk anggota tim Anda (${currentTicket.name}).${action_notes ? ' Catatan IT: ' + action_notes : ''}`,
+          : `IT menetapkan rekomendasi pembelian/pengadaan baru URGENT untuk anggota tim Anda (${currentTicket.name}) (SLA Penanganan IT Dibekukan / Paused).${action_notes ? ' Catatan IT: ' + action_notes : ''}`,
         type: isLoan ? 'part_loan' : 'urgent_purchase'
       }, io);
     });

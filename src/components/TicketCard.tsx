@@ -120,7 +120,10 @@ export const TicketCard: React.FC<TicketCardProps> = React.memo(({
   }
 
   // Get status badge badge display text and custom badge background
-  const getStatusDisplay = (status: string) => {
+  const getStatusDisplay = (status: string, actionType?: string | null) => {
+    if (status === 'Pending' || status === 'Pending Pengadaan' || actionType === 'Harus Dibeli') {
+      return { label: 'Pending', bg: 'bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-300 border border-purple-300 dark:border-purple-700 font-extrabold' };
+    }
     switch (status) {
       case 'In Progress': 
         return { label: 'Progres', bg: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/80' };
@@ -139,7 +142,7 @@ export const TicketCard: React.FC<TicketCardProps> = React.memo(({
     }
   };
 
-  const statusInfo = getStatusDisplay(ticket.status);
+  const statusInfo = getStatusDisplay(ticket.status, ticket.action_type);
 
   return (
     <motion.div
@@ -163,7 +166,7 @@ export const TicketCard: React.FC<TicketCardProps> = React.memo(({
           ? 'ring-2 ring-emerald-500 border-emerald-500' 
           : isDark ? 'border-slate-800 bg-slate-900/95 text-slate-100' : 'border-slate-200/90 bg-white text-slate-700'
       } p-3 sm:p-4 shadow-xs transition-all group cursor-pointer overflow-hidden ${adminUser ? 'rounded-none' : ''} ${
-        getSLAColor(ticket.created_at, ticket.status, customCritical, customDelayed) || ''
+        getSLAColor(ticket.created_at, ticket.status, customCritical, customDelayed, ticket.action_type) || ''
       }`}
       onClick={() => handleSelectTicket(ticket)}
     >
@@ -213,9 +216,13 @@ export const TicketCard: React.FC<TicketCardProps> = React.memo(({
           })()}
 
           {/* SLA Badge if active */}
-          {getSLALabel(ticket.created_at, ticket.status, customCritical, customDelayed) && (
-            <span className={`inline-flex items-center justify-center h-5 px-2 text-[9.5px] font-bold ${adminUser ? 'rounded-none' : 'rounded-full'} bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/80 leading-none whitespace-nowrap shadow-xs shrink-0`}>
-              {getSLALabel(ticket.created_at, ticket.status, customCritical, customDelayed)}
+          {getSLALabel(ticket.created_at, ticket.status, customCritical, customDelayed, ticket.action_type) && (
+            <span className={`inline-flex items-center justify-center h-5 px-2 text-[9.5px] font-bold ${adminUser ? 'rounded-none' : 'rounded-full'} ${
+              (ticket.status === 'Pending' || ticket.action_type === 'Harus Dibeli') 
+                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/60 dark:text-purple-300 border border-purple-300 dark:border-purple-700'
+                : 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/80'
+            } leading-none whitespace-nowrap shadow-xs shrink-0`}>
+              {getSLALabel(ticket.created_at, ticket.status, customCritical, customDelayed, ticket.action_type)}
             </span>
           )}
 
