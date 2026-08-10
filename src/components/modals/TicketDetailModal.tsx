@@ -1369,6 +1369,7 @@ export const TicketDetailModal = React.memo(({
                           type="button"
                           onClick={() => {
                             setActionType('Dipinjamkan');
+                            setModalStatus('Completed');
                             if (!actionNotes && appSettings?.it_default_loan_notes) {
                               setActionNotes(appSettings.it_default_loan_notes);
                             }
@@ -1410,6 +1411,18 @@ export const TicketDetailModal = React.memo(({
                           </div>
                           <p className="leading-snug text-purple-200/90 font-medium">
                             Status tiket ditandai <strong>Menunggu Pengadaan (Pending)</strong>. Perhitungan jam SLA penanganan teknis IT secara otomatis <strong>DIBEKUKAN / PAUSED</strong> agar estimasi waktu proses pembelian oleh Purchasing/Procurement tidak membebani performa SLA tim IT.
+                          </p>
+                        </div>
+                      )}
+
+                      {actionType === 'Dipinjamkan' && (
+                        <div className="p-2 sm:p-2.5 rounded-xl bg-amber-950/80 border border-amber-500/50 text-amber-200 text-[10px] sm:text-[10.5px] space-y-1 shadow-md">
+                          <div className="flex items-center gap-1.5 font-black text-amber-300 uppercase tracking-wider text-[10.5px] sm:text-[11px]">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <span>Solusi Dua Tahap: SLA Tiket Diselesaikan (Completed)</span>
+                          </div>
+                          <p className="leading-snug text-amber-200/90 font-medium">
+                            Status tiket otomatis diubah ke <strong>Selesai (Completed)</strong> karena kendala operasional user tuntas teratasi dengan pemberian unit pengganti. Peminjaman barang ini secara otomatis dicatat & dipantau pengembaliannya melalui Manajemen Aset.
                           </p>
                         </div>
                       )}

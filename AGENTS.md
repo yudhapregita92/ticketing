@@ -40,10 +40,23 @@ Aplikasi ini mendukung beberapa variasi tata letak (layout) dan tema khusus untu
 * **Skema Warna Navigasi & Tema**:
   * **Halaman Admin**: Menggunakan tema warna aksen **Biru (Blue/Sky)** untuk item aktif dan tombol navigasi utama. Menu "Tiket" di Admin menggunakan format dropdown/grouping.
   * **Halaman User (Public)**: Menggunakan tema warna aksen **Hijau (Emerald/Green)** untuk item aktif dan tombol navigasi utama. Menu "Tiket" di halaman User ditampilkan langsung (tanpa dropdown/toggle) agar mudah diakses langsung.
+* **Eliminasi Tab Menu Ganda (Single Tab Navigation)**:
+  * Pada tampilan Admin (terutama mobile/layar kecil), tab filter tiket ("Hari Ini", "Semua", "Tiket Saya") **TIDAK BOHLEH ganda**.
+  * Tab bagian atas pada `MobileAppNav` disembunyikan saat daftar tiket aktif, sehingga navigasi tab hanya fokus dan terpusat satu kali pada baris utama `TicketList`.
 * **Prinsip**: Desain dan pembeda visual antara halaman User dan Admin harus selalu konsisten dan dapat dibedakan dengan jelas.
 
 ---
 
-## 5. Komitmen Konsistensi
+## 5. Aturan Penanganan SLA Tiket IT (Dipinjamkan vs Harus Dibeli)
+* **Status "Dipinjamkan" (Unit Pengganti)**:
+  * Tiket utama langsung diubah statusnya menjadi **Completed (Selesai)**.
+  * **Alasan**: Kendala operasional pemohon telah tuntas dengan adanya unit pengganti. Peminjaman fisik perangkat otomatis dicatat dan dikelola di **Manajemen Aset (Aset Dipinjamkan)** agar SLA penanganan tiket tidak menggantung/memburuk.
+* **Status "Harus Dibeli" (Pengadaan)**:
+  * Tiket diubah statusnya menjadi **Pending (Menunggu Pengadaan)**.
+  * Jam SLA penanganan IT otomatis **DIBEKUKAN / PAUSED** agar proses pembelian oleh Purchasing tidak merusak performa SLA tim IT.
+
+---
+
+## 6. Komitmen Konsistensi
 * Jaga kebersihan kode (clean code) dan gunakan **TypeScript** yang aman.
 * Lakukan verifikasi build (`npm run build`) dan linting (`npm run lint`) setiap setelah melakukan perubahan guna memastikan aplikasi selalu siap dirilis tanpa error.

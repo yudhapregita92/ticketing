@@ -36,58 +36,63 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
     setIsMenuOpen(false);
   };
 
+  const isTicketView = ['today', 'all', 'my_tickets', 'team_tickets'].includes(viewMode);
+
   return (
-    <div className="lg:hidden mb-4 relative" ref={menuRef}>
+    <div className="lg:hidden mb-2 relative" ref={menuRef}>
       <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-zinc-900/40 p-1.5 rounded-md border border-slate-100/80 dark:border-zinc-800/60">
         
         {(adminUser || userCanVoucher) && (
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className={`flex-none p-2 rounded-md transition-all ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
               isMenuOpen || ['dashboard', 'assets', 'network', 'ba', 'membership', 'evaluasi_project', 'voucher'].includes(viewMode)
                 ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/15' 
                 : isDark ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
             }`}
           >
             {isMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            <span>Menu Admin</span>
           </button>
         )}
 
-        <div className="flex-1 overflow-x-auto no-scrollbar scroll-smooth flex items-center gap-1.5">
-          <button 
-            onClick={() => setViewMode('today')}
-            className={`flex-none py-2 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap text-center ${
-              viewMode === 'today' 
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/15' 
-                : isDark ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
-            }`}
-          >
-            Hari Ini
-          </button>
-
-          <button 
-            onClick={() => setViewMode('all')}
-            className={`flex-none py-2 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap text-center ${
-              viewMode === 'all' 
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/15' 
-                : isDark ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
-            }`}
-          >
-            Semua
-          </button>
-          {adminUser && (
+        {!isTicketView && (
+          <div className="flex-1 overflow-x-auto no-scrollbar scroll-smooth flex items-center gap-1.5">
             <button 
-              onClick={() => setViewMode('my_tickets')}
+              onClick={() => setViewMode('today')}
               className={`flex-none py-2 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap text-center ${
-                viewMode === 'my_tickets' 
+                viewMode === 'today' 
                   ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/15' 
                   : isDark ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
               }`}
             >
-              Tiket Saya
+              Hari Ini
             </button>
-          )}
-        </div>
+
+            <button 
+              onClick={() => setViewMode('all')}
+              className={`flex-none py-2 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap text-center ${
+                viewMode === 'all' 
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/15' 
+                  : isDark ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
+              }`}
+            >
+              Semua
+            </button>
+            {adminUser && (
+              <button 
+                onClick={() => setViewMode('my_tickets')}
+                className={`flex-none py-2 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap text-center ${
+                  viewMode === 'my_tickets' 
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/15' 
+                    : isDark ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
+                }`}
+              >
+                Tiket Saya
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <AnimatePresence>

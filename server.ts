@@ -37,7 +37,7 @@ async function startServer() {
       methods: ["GET", "POST"]
     }
   });
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   io.on("connection", (socket) => {
     console.log("Client connected:", socket.id);
