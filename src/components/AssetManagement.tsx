@@ -82,6 +82,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
   const [filterDepartment, setFilterDepartment] = useState('');
   const [filterUsageStatus, setFilterUsageStatus] = useState('');
   const [filterAssetStatus, setFilterAssetStatus] = useState('');
+  const [filterCondition, setFilterCondition] = useState('');
   const [internalSubTab, setInternalSubTab] = useState<'all' | 'Capex' | 'Opex' | 'borrowed'>('all');
   
   const activeSubTab = externalSubTab !== undefined ? externalSubTab : internalSubTab;
@@ -141,7 +142,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filterCategory, filterDepartment, filterUsageStatus, filterAssetStatus, activeSubTab]);
+  }, [searchQuery, filterCategory, filterDepartment, filterUsageStatus, filterAssetStatus, filterCondition, activeSubTab]);
   
   // Form State
   const [formData, setFormData] = useState({
@@ -157,7 +158,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
     assigned_to: '',
     user_index: '',
     status: 'Active',
-    condition: 'Good',
+    condition: 'Normal',
     notes: '',
     budget_type: 'Capex',
     is_issued: false as boolean,
@@ -388,7 +389,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
       assigned_to: '',
       user_index: '',
       status: 'Active',
-      condition: 'Good',
+      condition: 'Normal',
       notes: '',
       budget_type: activeSubTab !== 'all' ? activeSubTab : 'Capex',
       is_issued: false,
@@ -424,7 +425,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
       assigned_to: asset.assigned_to || '',
       user_index: asset.user_index || '',
       status: asset.status || 'Active',
-      condition: asset.condition || 'Good',
+      condition: asset.condition || 'Normal',
       notes: asset.notes || '',
       budget_type: asset.budget_type || 'Capex',
       is_issued: Boolean(asset.is_issued),
@@ -545,13 +546,52 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Active':
-        return <span className="px-2 py-1 text-[10px] font-bold rounded-none bg-emerald-100 text-emerald-700">Aktif</span>;
+      case 'Aktif':
+      case 'aktif':
+        return <span className="px-2 py-1 text-[10px] font-bold rounded-none bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">Aktif</span>;
       case 'In Repair':
-        return <span className="px-2 py-1 text-[10px] font-bold rounded-none bg-amber-100 text-amber-700">Diperbaiki</span>;
+      case 'Diperbaiki':
+      case 'diperbaiki':
+        return <span className="px-2 py-1 text-[10px] font-bold rounded-none bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">Diperbaiki</span>;
+      case 'Backup':
+      case 'Cadangan':
+      case 'cadangan':
+        return <span className="px-2 py-1 text-[10px] font-bold rounded-none bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">Cadangan</span>;
+      case 'Broken':
+      case 'Rusak':
+      case 'rusak':
+        return <span className="px-2 py-1 text-[10px] font-bold rounded-none bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300">Rusak</span>;
       case 'Retired':
-        return <span className="px-2 py-1 text-[10px] font-bold rounded-none bg-slate-100 text-slate-700">Pensiun</span>;
+      case 'Pensiun':
+      case 'pensiun':
+        return <span className="px-2 py-1 text-[10px] font-bold rounded-none bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">Pensiun</span>;
+      case 'Lost':
+      case 'Hilang':
+      case 'hilang':
+        return <span className="px-2 py-1 text-[10px] font-bold rounded-none bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300">Hilang</span>;
       default:
         return <span className="px-2 py-1 text-[10px] font-bold rounded-none bg-slate-100 text-slate-700">{status}</span>;
+    }
+  };
+
+  const getConditionBadge = (condition: string) => {
+    switch (condition) {
+      case 'Normal':
+      case 'Good':
+      case 'Baik':
+      case 'normal':
+        return <span className="px-2 py-0.5 text-[10px] font-bold rounded-none bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">Normal</span>;
+      case 'Rusak':
+      case 'Broken':
+      case 'Fair':
+      case 'rusak':
+        return <span className="px-2 py-0.5 text-[10px] font-bold rounded-none bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">Rusak</span>;
+      case 'Mati Total':
+      case 'Mati':
+      case 'mati total':
+        return <span className="px-2 py-0.5 text-[10px] font-bold rounded-none bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300">Mati Total</span>;
+      default:
+        return <span className="px-2 py-0.5 text-[10px] font-bold rounded-none bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">{condition || 'Normal'}</span>;
     }
   };
 
@@ -660,10 +700,31 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
     })() : true;
 
     const matchesUsageStatus = filterUsageStatus ? (asset.usage_status || '').toLowerCase() === filterUsageStatus.toLowerCase() : true;
-    const matchesAssetStatus = filterAssetStatus ? (asset.status || '').toLowerCase() === filterAssetStatus.toLowerCase() : true;
-    const matchesSubTab = activeSubTab === 'all' ? true : (asset.budget_type || 'Capex') === activeSubTab;
+    
+    const matchesAssetStatus = filterAssetStatus ? (() => {
+      const fas = filterAssetStatus.toLowerCase();
+      const as = (asset.status || '').toLowerCase();
+      if (fas === 'aktif' || fas === 'active') return as === 'aktif' || as === 'active';
+      if (fas === 'diperbaiki' || fas === 'in repair') return as === 'diperbaiki' || as === 'in repair';
+      if (fas === 'cadangan' || fas === 'backup') return as === 'cadangan' || as === 'backup';
+      if (fas === 'rusak' || fas === 'broken') return as === 'rusak' || as === 'broken';
+      if (fas === 'pensiun' || fas === 'retired') return as === 'pensiun' || as === 'retired';
+      if (fas === 'hilang' || fas === 'lost') return as === 'hilang' || as === 'lost';
+      return as === fas;
+    })() : true;
 
-    return matchesSearch && matchesCategory && matchesDepartment && matchesUsageStatus && matchesAssetStatus && matchesSubTab;
+    const matchesCondition = filterCondition ? (() => {
+      const fc = filterCondition.toLowerCase();
+      const ac = (asset.condition || '').toLowerCase();
+      if (fc === 'normal') return ac === 'normal' || ac === 'good' || ac === 'baik';
+      if (fc === 'rusak') return ac === 'rusak' || ac === 'broken' || ac === 'fair';
+      if (fc === 'mati total') return ac === 'mati total' || ac === 'mati';
+      return ac === fc;
+    })() : true;
+
+    const matchesSubTab = activeSubTab === 'all' || activeSubTab === 'borrowed' ? true : (asset.budget_type || 'Capex') === activeSubTab;
+
+    return matchesSearch && matchesCategory && matchesDepartment && matchesUsageStatus && matchesAssetStatus && matchesCondition && matchesSubTab;
   });
 
   // Stats summary calculations
@@ -1913,13 +1974,30 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     <option value="">Semua Status Aset</option>
                     <option value="Active">Aktif</option>
                     <option value="In Repair">Diperbaiki</option>
-                    <option value="Retired">Pensiun</option>
+                    <option value="Backup">Cadangan</option>
                     <option value="Broken">Rusak</option>
+                    <option value="Retired">Pensiun</option>
                     <option value="Lost">Hilang</option>
                   </select>
                 </div>
 
-                {(searchQuery || filterCategory || filterDepartment || filterUsageStatus || filterAssetStatus) && (
+                <div className="relative flex-1 min-w-[140px]">
+                  <Filter className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                  <select
+                    value={filterCondition}
+                    onChange={(e) => setFilterCondition(e.target.value)}
+                    className={`w-full pl-9 pr-7 py-1.5 sm:py-2 rounded-none sm:rounded-none text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
+                    }`}
+                  >
+                    <option value="">Semua Kondisi Fisik</option>
+                    <option value="Normal">Normal</option>
+                    <option value="Rusak">Rusak</option>
+                    <option value="Mati Total">Mati Total</option>
+                  </select>
+                </div>
+
+                {(searchQuery || filterCategory || filterDepartment || filterUsageStatus || filterAssetStatus || filterCondition) && (
                   <button
                     type="button"
                     onClick={() => {
@@ -1928,6 +2006,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       setFilterDepartment('');
                       setFilterUsageStatus('');
                       setFilterAssetStatus('');
+                      setFilterCondition('');
                     }}
                     className="px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-none text-xs font-extrabold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition-all whitespace-nowrap"
                   >
@@ -2070,6 +2149,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                           {asset.category}
                         </span>
                         {getStatusBadge(asset.status)}
+                        {getConditionBadge(asset.condition)}
                         {Boolean(asset.is_issued) && (
                           <span className="px-1.5 py-0.5 rounded-none text-[9px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-0.5" title={asset.issued_reason || 'Di-issued untuk operasional'}>
                             <AlertTriangle className="w-2.5 h-2.5 text-amber-500" /> ISSUED
@@ -2187,6 +2267,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Tipe</th>
                   <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Status Pengguna</th>
                   <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400">Status Aset</th>
+                  <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400 whitespace-nowrap">Kondisi Fisik</th>
                   <th className="px-3 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400 text-right">Aksi</th>
                 </tr>
               </thead>
@@ -2284,6 +2365,9 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       <div className="flex items-center gap-1">
                         {getStatusBadge(asset.status)}
                       </div>
+                    </td>
+                    <td className="px-3 py-2.5 whitespace-nowrap">
+                      {getConditionBadge(asset.condition)}
                     </td>
                     <td className="px-3 py-2.5 text-right">
                       <div className="flex items-center justify-end gap-1">
@@ -2532,12 +2616,10 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     <div className={`p-4 rounded-none space-y-3 ${
                       isDark ? 'bg-slate-800/40 border border-slate-800' : 'bg-slate-50 border border-slate-100'
                     }`}>
-                      {editingAsset.condition && (
-                        <div>
-                          <span className="text-[10px] font-black uppercase text-slate-400 block mb-1">Kondisi Fisik</span>
-                          <span className="text-slate-700 dark:text-slate-300">{editingAsset.condition}</span>
-                        </div>
-                      )}
+                      <div>
+                        <span className="text-[10px] font-black uppercase text-slate-400 block mb-1">Kondisi Fisik</span>
+                        {getConditionBadge(editingAsset.condition)}
+                      </div>
                       {editingAsset.notes && (
                         <div>
                           <span className="text-[10px] font-black uppercase text-slate-400 block mb-1">Catatan Tambahan</span>
@@ -2891,8 +2973,26 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                     >
                       <option value="Active">Aktif</option>
                       <option value="In Repair">Diperbaiki</option>
+                      <option value="Backup">Cadangan</option>
+                      <option value="Broken">Rusak</option>
                       <option value="Retired">Pensiun</option>
                       <option value="Lost">Hilang</option>
+                    </select>
+                  </div>
+
+                  {/* Kondisi Fisik */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 ml-1">Kondisi Fisik</label>
+                    <select 
+                      value={formData.condition}
+                      onChange={(e) => setFormData({...formData, condition: e.target.value})}
+                      className={`w-full px-3.5 py-1.5 sm:py-2 rounded-none text-xs sm:text-sm font-bold border focus:ring-2 focus:outline-none transition-all ${
+                        isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-emerald-500/20'
+                      }`}
+                    >
+                      <option value="Normal">Normal</option>
+                      <option value="Rusak">Rusak</option>
+                      <option value="Mati Total">Mati Total</option>
                     </select>
                   </div>
 
