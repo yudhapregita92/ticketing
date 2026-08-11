@@ -403,17 +403,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               </button>
 
-              <button
-                onClick={() => setViewMode('evaluasi_project')}
-                title="Evaluasi Project"
-                className={getMenuItemClass(viewMode === 'evaluasi_project')}
-              >
-                <div className="flex items-center gap-2.5">
-                  <TrendingUp className="w-4 h-4" />
-                  {adminThemeLayout !== 'compact' && <span>Evaluasi Project</span>}
-                </div>
-              </button>
-
               <div className="space-y-1">
                 <button
                   onClick={() => setReportOpen(!reportOpen)}
@@ -574,13 +563,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
 
               <button
-                onClick={() => setViewMode('testing')}
-                title="Menu Testing"
-                className={getMenuItemClass(viewMode === 'testing')}
+                onClick={() => setViewMode('activity_log')}
+                title="Log Aktivitas Tim IT"
+                className={getMenuItemClass(viewMode === 'activity_log')}
               >
                 <div className="flex items-center gap-2.5">
-                  <Activity className="w-4 h-4" />
-                  {adminThemeLayout !== 'compact' && <span>Menu Testing</span>}
+                  <Activity className="w-4 h-4 text-emerald-500" />
+                  {adminThemeLayout !== 'compact' && <span>Log Aktivitas Tim IT</span>}
                 </div>
               </button>
             </>

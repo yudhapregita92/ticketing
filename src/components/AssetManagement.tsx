@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 import { IAsset, IBorrowedAsset } from '../types';
 import { api } from '../services/api';
 import { calculateAssetDepreciation } from '../utils/assetUtils';
+import { addActivityLog } from '../utils/activityLogger';
 
 interface AssetManagementProps {
   isDark: boolean;
@@ -358,9 +359,25 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
     try {
       if (editingAsset) {
         await api.updateAsset(editingAsset.id, payload);
+        addActivityLog({
+          user_name: 'Petugas IT',
+          user_role: 'Staff IT Support',
+          action_type: 'UPDATE',
+          module: 'Manajemen Aset',
+          description: `Mengubah data aset: ${finalName} (${finalAssetId})`,
+          details: `Kategori: ${formData.category}, Pengguna: ${formData.assigned_to || '-'}`
+        });
         toast.success('Aset berhasil diperbarui');
       } else {
         await api.addAsset(payload);
+        addActivityLog({
+          user_name: 'Petugas IT',
+          user_role: 'Staff IT Support',
+          action_type: 'CREATE',
+          module: 'Manajemen Aset',
+          description: `Menambahkan aset baru: ${finalName} (${finalAssetId})`,
+          details: `Kategori: ${formData.category}, Tipe: ${formData.budget_type || 'Capex'}`
+        });
         toast.success('Aset baru berhasil ditambahkan');
       }
       
@@ -403,7 +420,15 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
   const handleDelete = async (id: number) => {
     if (!window.confirm('Apakah Anda yakin ingin menghapus aset ini?')) return;
     try {
+      const targetAsset = assets.find(a => a.id === id);
       await api.deleteAsset(id);
+      addActivityLog({
+        user_name: 'Petugas IT',
+        user_role: 'Staff IT Support',
+        action_type: 'DELETE',
+        module: 'Manajemen Aset',
+        description: `Menghapus aset: ${targetAsset ? targetAsset.name + ' (' + targetAsset.asset_id + ')' : 'ID ' + id}`
+      });
       fetchData();
     } catch (err) {
       console.error('Error deleting asset:', err);

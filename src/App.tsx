@@ -76,12 +76,11 @@ const ImageManagerModal = lazy(() => import('./components/modals/ImageManagerMod
 const AdminDashboard = lazy(() => import('./components/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 const Panduan = lazy(() => import('./components/Panduan').then(m => ({ default: m.Panduan })));
 const AssetManagement = lazy(() => import('./components/AssetManagement').then(m => ({ default: m.AssetManagement })));
-const ProjectEvaluation = lazy(() => import('./components/ProjectEvaluation').then(m => ({ default: m.ProjectEvaluation })));
 const NetworkMonitor = lazy(() => import('./components/NetworkMonitor'));
 const BeritaAcara = lazy(() => import('./components/BeritaAcara'));
 const MembershipManagement = lazy(() => import('./components/MembershipManagement').then(m => ({ default: m.MembershipManagement })));
 const MembershipJournalForm = lazy(() => import('./components/MembershipJournalForm').then(m => ({ default: m.MembershipJournalForm })));
-const TestingView = lazy(() => import('./components/TestingView').then(m => ({ default: m.TestingView })));
+const ActivityLogView = lazy(() => import('./components/ActivityLogView').then(m => ({ default: m.ActivityLogView })));
 const VoucherManagement = lazy(() => import('./components/VoucherManagement').then(m => ({ default: m.VoucherManagement })));
 const MasterUserManagement = lazy(() => import('./components/MasterUserManagement').then(m => ({ default: m.MasterUserManagement })));
 const MasterPerangkat = lazy(() => import('./components/MasterPerangkat').then(m => ({ default: m.MasterPerangkat })));
@@ -421,7 +420,7 @@ export default function App() {
     let view = p === '' ? (hasAdmin ? 'dashboard' : 'today') : p;
 
     // Admin only routes fallback
-    if (!hasAdmin && ['dashboard', 'assets', 'network', 'membership', 'evaluasi_project', 'voucher', 'master_user', 'master_perangkat', 'master_team', 'report_sla', 'report_perangkat', 'team_location'].includes(view)) {
+    if (!hasAdmin && ['dashboard', 'assets', 'network', 'membership', 'voucher', 'master_user', 'master_perangkat', 'master_team', 'report_sla', 'report_perangkat', 'team_location'].includes(view)) {
       if (view === 'voucher' && userCanVoucher) {
         // Allowed
       } else {
@@ -433,7 +432,7 @@ export default function App() {
       view = hasAdmin ? 'dashboard' : 'today';
     }
 
-    if (['today', 'all', 'my_tickets', 'team_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'testing', 'membership', 'evaluasi_project', 'jurnal', 'voucher', 'master_user', 'master_perangkat', 'master_team', 'report_sla', 'report_perangkat', 'team_location'].includes(view)) {
+    if (['today', 'all', 'my_tickets', 'team_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'activity_log', 'membership', 'jurnal', 'voucher', 'master_user', 'master_perangkat', 'master_team', 'report_sla', 'report_perangkat', 'team_location'].includes(view)) {
       return view as ViewMode;
     }
     return hasAdmin ? 'dashboard' : 'today';
@@ -2021,18 +2020,6 @@ export default function App() {
                 </button>
 
                 <button
-                  onClick={() => setViewMode('evaluasi_project')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
-                    viewMode === 'evaluasi_project'
-                      ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
-                      : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
-                >
-                  <TrendingUp className="w-4 h-4" />
-                  <span>Evaluasi</span>
-                </button>
-
-                <button
                   onClick={() => setViewMode('report_sla')}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
                     viewMode === 'report_sla'
@@ -2157,15 +2144,15 @@ export default function App() {
                 </button>
 
                 <button
-                  onClick={() => setViewMode('testing')}
+                  onClick={() => setViewMode('activity_log')}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
-                    viewMode === 'testing'
-                      ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                    viewMode === 'activity_log'
+                      ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
                       : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 >
                   <Activity className="w-4 h-4 text-emerald-500" />
-                  <span>Testing</span>
+                  <span>Log Aktivitas</span>
                 </button>
               </div>
             )}
@@ -2253,12 +2240,6 @@ export default function App() {
                       currentUser={currentUser}
                       loggedInMasterUser={loggedInMasterUser}
                     />
-                  ) : viewMode === 'evaluasi_project' ? (
-                    <ProjectEvaluation 
-                      isDark={isDark}
-                      themeClasses={themeClasses}
-                      primaryColor={primaryColor}
-                    />
                   ) : viewMode === 'report_sla' ? (
                     <ReportSLA 
                       tickets={tickets}
@@ -2321,10 +2302,12 @@ export default function App() {
                       adminThemeColor={appSettings?.admin_primary_color || 'blue'}
                       adminThemeLayout={adminThemeLayout}
                     />
-                  ) : viewMode === 'testing' ? (
-                    <TestingView 
+                  ) : viewMode === 'activity_log' ? (
+                    <ActivityLogView 
                       isDark={isDark}
-                      themeClasses={themeClasses}
+                      currentUser={adminUser || currentUser}
+                      adminThemeColor={appSettings?.admin_primary_color || 'blue'}
+                      adminThemeLayout={adminThemeLayout}
                     />
                   ) : viewMode === 'panduan' ? (
                     <Panduan 

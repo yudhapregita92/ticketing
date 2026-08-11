@@ -72,6 +72,15 @@ Aplikasi ini mendukung beberapa variasi tata letak (layout) dan tema khusus untu
 
 ---
 
-## 8. Komitmen Konsistensi
+## 8. Log Aktivitas Tim IT, Eliminasi Menu Testing & Evaluasi Project
+* **Log Aktivitas Tim IT**:
+  * Seluruh aktivitas tim IT (Tambah, Ubah/Edit, Hapus Aset, Tiket, User, Login, dan Export) otomatis terekam secara sistematis pada modul **Log Aktivitas Tim IT**.
+  * Modul ini dilengkapi dengan pencarian, filter berdasarkan modul, tipe aksi (CREATE, UPDATE, DELETE, LOGIN), rentang tanggal, ringkasan statistik, serta opsi *Export CSV* dan *Bersihkan Log* (Super Admin).
+* **Penghapusan Menu Testing & Evaluasi Project**:
+  * Fitur dan menu "Testing" serta "Evaluasi Project" telah dihapus sepenuhnya dari navigasi utama untuk menjaga kebersihan antarmuka, menyederhanakan navigasi, serta menghemat ukuran *bundle* aplikasi (~197 KB) sehingga loading aplikasi menjadi jauh lebih cepat dan ringan.
+
+---
+
+## 9. Komitmen Konsistensi
 * Jaga kebersihan kode (clean code) dan gunakan **TypeScript** yang aman.
 * Lakukan verifikasi build (`npm run build`) dan linting (`npm run lint`) setiap setelah melakukan perubahan guna memastikan aplikasi selalu siap dirilis tanpa error.

@@ -163,7 +163,19 @@ export interface ISettings {
 
 export interface IAdminUser extends IUser {}
 export type IAppSettings = ISettings;
-export type ViewMode = 'today' | 'all' | 'my_tickets' | 'team_tickets' | 'dashboard' | 'assets' | 'network' | 'ba' | 'panduan' | 'settings' | 'testing' | 'membership' | 'evaluasi_project' | 'jurnal' | 'voucher' | 'master_user' | 'master_perangkat' | 'master_team' | 'report_sla' | 'report_perangkat' | 'team_location';
+export type ViewMode = 'today' | 'all' | 'my_tickets' | 'team_tickets' | 'dashboard' | 'assets' | 'network' | 'ba' | 'panduan' | 'settings' | 'activity_log' | 'membership' | 'jurnal' | 'voucher' | 'master_user' | 'master_perangkat' | 'master_team' | 'report_sla' | 'report_perangkat' | 'team_location';
+
+export interface IActivityLog {
+  id: string;
+  timestamp: string;
+  user_name: string;
+  user_role?: string;
+  action_type: 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'EXPORT' | 'IMPORT' | 'SYSTEM' | 'STATUS_CHANGE';
+  module: string;
+  description: string;
+  details?: string;
+  ip_address?: string;
+}
 export interface IAsset {
   id: number;
   asset_id: string;

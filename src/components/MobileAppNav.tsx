@@ -46,7 +46,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-              isMenuOpen || ['dashboard', 'assets', 'network', 'ba', 'membership', 'evaluasi_project', 'voucher'].includes(viewMode)
+              isMenuOpen || ['dashboard', 'assets', 'network', 'ba', 'membership', 'voucher'].includes(viewMode)
                 ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/15' 
                 : isDark ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
             }`}
@@ -158,17 +158,6 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
               {adminUser && (
                 <>
                   <button 
-                    onClick={() => handleMenuClick('evaluasi_project')}
-                    className={`text-left w-full py-2.5 px-3 rounded-md text-xs font-bold transition-all ${
-                      viewMode === 'evaluasi_project' 
-                        ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
-                        : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    Evaluasi Project
-                  </button>
-
-                  <button 
                     onClick={() => handleMenuClick('report_sla')}
                     className={`text-left w-full py-2.5 px-3 rounded-md text-xs font-bold transition-all ${
                       viewMode === 'report_sla' 
@@ -188,6 +177,17 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
                     }`}
                   >
                     Report Perangkat
+                  </button>
+
+                  <button 
+                    onClick={() => handleMenuClick('activity_log')}
+                    className={`text-left w-full py-2.5 px-3 rounded-md text-xs font-bold transition-all ${
+                      viewMode === 'activity_log' 
+                        ? 'bg-emerald-600/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' 
+                        : isDark ? 'text-zinc-300 hover:bg-zinc-700/50' : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    Log Aktivitas IT
                   </button>
                   
                   {(adminUser.role === 'Super Admin' || adminUser.role === 'Staff IT Support') && (
