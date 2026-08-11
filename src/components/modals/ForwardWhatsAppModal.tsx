@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Send, X, Phone, UserCheck, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { MessageSquare, Send, X, Phone, UserCheck, AlertCircle, CheckCircle2, Lock } from 'lucide-react';
 import { ITicket } from '../../types';
 import { formatPhoneNumber, findAgentPhoneNumber, generateTicketWhatsAppText } from '../../utils/whatsapp';
 
@@ -228,63 +228,31 @@ export const ForwardWhatsAppModal: React.FC<ForwardWhatsAppModalProps> = ({
                   <UserCheck className="w-4 h-4 text-emerald-500" />
                   Petugas IT Tujuan:
                 </label>
-                {isLocked ? (
-                  <button
-                    type="button"
-                    onClick={() => setIsLocked(false)}
-                    className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
-                  >
-                    Ganti Agen
-                  </button>
-                ) : (
-                  agentList.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setIsLocked(true)}
-                      className="text-[10px] font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
-                    >
-                      Kunci ke Default
-                    </button>
-                  )
-                )}
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-2 py-0.5 rounded-full">
+                  <Lock className="w-3 h-3 text-emerald-500" /> Agen Terkunci
+                </span>
               </div>
 
-              {isLocked ? (
-                <div className={`p-3 rounded-xl border flex items-center justify-between gap-3 ${
-                  isDark ? 'bg-emerald-950/20 border-emerald-800/50' : 'bg-emerald-50/70 border-emerald-200'
-                }`}>
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 bg-emerald-600 text-white rounded-lg shadow-sm">
-                      <CheckCircle2 className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-extrabold text-emerald-800 dark:text-emerald-300">
-                        {detectedAgent?.name || ticket.assigned_to || selectedAgentKey || 'Petugas IT'}
-                      </p>
-                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-                        {detectedAgent?.role || 'Tim IT Support'} • {customPhone || 'Nomor HP Otomatis'}
-                      </p>
-                    </div>
+              <div className={`p-3 rounded-xl border flex items-center justify-between gap-3 ${
+                isDark ? 'bg-emerald-950/20 border-emerald-800/50' : 'bg-emerald-50/70 border-emerald-200'
+              }`}>
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-emerald-600 text-white rounded-lg shadow-sm">
+                    <CheckCircle2 className="w-4 h-4" />
                   </div>
-                  <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white rounded-md">
-                    Terhubung
-                  </span>
+                  <div>
+                    <p className="text-xs font-extrabold text-emerald-800 dark:text-emerald-300">
+                      {detectedAgent?.name || ticket.assigned_to || selectedAgentKey || 'Petugas IT'}
+                    </p>
+                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                      {detectedAgent?.role || 'Tim IT Support'} • {customPhone || 'Nomor HP Otomatis'}
+                    </p>
+                  </div>
                 </div>
-              ) : (
-                <select
-                  value={selectedAgentKey}
-                  onChange={e => handleAgentChange(e.target.value)}
-                  className={`w-full px-3 py-2 rounded-xl text-xs font-semibold border outline-none focus:ring-2 focus:ring-emerald-500 transition-all ${
-                    isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-200 text-slate-800'
-                  }`}
-                >
-                  {agentList.map((a, idx) => (
-                    <option key={`${a.type}-${a.username}-${idx}`} value={a.username}>
-                      {a.name} ({a.role}) {a.phone ? `— ${a.phone}` : '(No HP Belum Diisi)'}
-                    </option>
-                  ))}
-                </select>
-              )}
+                <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white rounded-md shrink-0">
+                  Terhubung
+                </span>
+              </div>
             </div>
 
             {/* Custom Phone Number Input */}

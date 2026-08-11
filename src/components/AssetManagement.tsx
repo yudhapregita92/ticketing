@@ -83,6 +83,8 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
   const [filterUsageStatus, setFilterUsageStatus] = useState('');
   const [filterAssetStatus, setFilterAssetStatus] = useState('');
   const [filterCondition, setFilterCondition] = useState('');
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const activeFilterCount = [filterCategory, filterDepartment, filterUsageStatus, filterAssetStatus, filterCondition].filter(Boolean).length;
   const [internalSubTab, setInternalSubTab] = useState<'all' | 'Capex' | 'Opex' | 'borrowed'>('all');
   
   const activeSubTab = externalSubTab !== undefined ? externalSubTab : internalSubTab;
@@ -1901,26 +1903,69 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
           <div className="flex flex-col gap-3">
             {/* Search and Filter */}
             <div className="flex flex-col gap-2.5">
-              <div className="relative w-full">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-                <input 
-                  type="text" 
-                  placeholder={`Cari aset ${activeSubTab} (Kode, Nama, Pengguna)...`}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`w-full pl-10 pr-4 py-1.5 sm:py-2 rounded-none sm:rounded-none text-xs sm:text-sm font-medium border focus:ring-2 focus:outline-none transition-all ${
-                    isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                  <input 
+                    type="text" 
+                    placeholder={`Cari aset ${activeSubTab} (Kode, Nama, Pengguna)...`}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className={`w-full pl-10 pr-4 py-1.5 sm:py-2 rounded-xl sm:rounded-none text-xs sm:text-sm font-medium border focus:ring-2 focus:outline-none transition-all ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
+                    }`}
+                  />
+                </div>
+
+                {/* Mobile Filter Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowMobileFilters(!showMobileFilters)}
+                  className={`sm:hidden px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 shrink-0 transition-all ${
+                    activeFilterCount > 0
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                      : isDark
+                        ? 'bg-slate-800 border-slate-700 text-slate-300'
+                        : 'bg-slate-100 border-slate-200 text-slate-700'
                   }`}
-                />
+                >
+                  <Filter className="w-3.5 h-3.5" />
+                  <span>Filter</span>
+                  {activeFilterCount > 0 && (
+                    <span className="w-4 h-4 rounded-full bg-white text-emerald-700 text-[10px] font-black flex items-center justify-center">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Mobile "Tambah Aset" Button */}
+                {(activeSubTab === 'Capex' || activeSubTab === 'Opex') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetForm();
+                      setFormData(prev => ({ ...prev, budget_type: activeSubTab }));
+                      setEditingAsset(null);
+                      setIsViewMode(false);
+                      setShowModal(true);
+                    }}
+                    style={{ backgroundColor: primaryColor }}
+                    className="sm:hidden px-3 py-1.5 rounded-xl text-white text-xs font-bold flex items-center gap-1 shrink-0 transition-all active:scale-95 shadow-sm"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Tambah</span>
+                  </button>
+                )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="relative flex-1 min-w-[140px]">
+              {/* Filter Controls (Collapsible on Mobile, Expanded on Desktop) */}
+              <div className={`${showMobileFilters ? 'flex' : 'hidden sm:flex'} flex-col sm:flex-row flex-wrap items-center gap-2 p-3 sm:p-0 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 sm:bg-transparent dark:sm:bg-transparent border border-slate-200/80 dark:border-slate-700/60 sm:border-0`}>
+                <div className="relative w-full sm:flex-1 sm:min-w-[140px]">
                   <Filter className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
                   <select
                     value={filterCategory}
                     onChange={(e) => setFilterCategory(e.target.value)}
-                    className={`w-full pl-9 pr-7 py-1.5 sm:py-2 rounded-none sm:rounded-none text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
+                    className={`w-full pl-9 pr-7 py-1.5 sm:py-2 rounded-xl sm:rounded-none text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
                       isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                     }`}
                   >
@@ -1931,12 +1976,12 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   </select>
                 </div>
                 
-                <div className="relative flex-1 min-w-[140px]">
+                <div className="relative w-full sm:flex-1 sm:min-w-[140px]">
                   <Filter className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
                   <select
                     value={filterDepartment}
                     onChange={(e) => setFilterDepartment(e.target.value)}
-                    className={`w-full pl-9 pr-7 py-1.5 sm:py-2 rounded-none sm:rounded-none text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
+                    className={`w-full pl-9 pr-7 py-1.5 sm:py-2 rounded-xl sm:rounded-none text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
                       isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                     }`}
                   >
@@ -1947,12 +1992,12 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   </select>
                 </div>
                 
-                <div className="relative flex-1 min-w-[140px]">
+                <div className="relative w-full sm:flex-1 sm:min-w-[140px]">
                   <Filter className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
                   <select
                     value={filterUsageStatus}
                     onChange={(e) => setFilterUsageStatus(e.target.value)}
-                    className={`w-full pl-9 pr-7 py-1.5 sm:py-2 rounded-none sm:rounded-none text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
+                    className={`w-full pl-9 pr-7 py-1.5 sm:py-2 rounded-xl sm:rounded-none text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
                       isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                     }`}
                   >
@@ -1962,12 +2007,12 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   </select>
                 </div>
                 
-                <div className="relative flex-1 min-w-[140px]">
+                <div className="relative w-full sm:flex-1 sm:min-w-[140px]">
                   <Filter className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
                   <select
                     value={filterAssetStatus}
                     onChange={(e) => setFilterAssetStatus(e.target.value)}
-                    className={`w-full pl-9 pr-7 py-1.5 sm:py-2 rounded-none sm:rounded-none text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
+                    className={`w-full pl-9 pr-7 py-1.5 sm:py-2 rounded-xl sm:rounded-none text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
                       isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                     }`}
                   >
@@ -1981,12 +2026,12 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   </select>
                 </div>
 
-                <div className="relative flex-1 min-w-[140px]">
+                <div className="relative w-full sm:flex-1 sm:min-w-[140px]">
                   <Filter className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
                   <select
                     value={filterCondition}
                     onChange={(e) => setFilterCondition(e.target.value)}
-                    className={`w-full pl-9 pr-7 py-1.5 sm:py-2 rounded-none sm:rounded-none text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
+                    className={`w-full pl-9 pr-7 py-1.5 sm:py-2 rounded-xl sm:rounded-none text-xs sm:text-sm font-medium border appearance-none focus:ring-2 focus:outline-none transition-all ${
                       isDark ? 'bg-slate-800 border-slate-700 text-white focus:ring-emerald-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-emerald-500/20'
                     }`}
                   >
@@ -2008,7 +2053,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                       setFilterAssetStatus('');
                       setFilterCondition('');
                     }}
-                    className="px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-none text-xs font-extrabold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition-all whitespace-nowrap"
+                    className="w-full sm:w-auto px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-none text-xs font-extrabold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition-all whitespace-nowrap text-center"
                   >
                     Reset Filter
                   </button>
@@ -2111,7 +2156,7 @@ export const AssetManagement: React.FC<AssetManagementProps> = ({
                   setShowModal(true);
                 }}
                 style={{ backgroundColor: primaryColor }}
-                className="hidden sm:flex ml-auto px-3 py-1.5 sm:py-2 rounded-xl text-white text-xs sm:text-sm font-bold items-center gap-2 transition-all hover:brightness-110 shadow-lg whitespace-nowrap"
+                className="flex shrink-0 ml-auto px-3 py-1.5 sm:py-2 rounded-xl text-white text-xs sm:text-sm font-bold items-center gap-2 transition-all hover:brightness-110 shadow-lg whitespace-nowrap active:scale-95"
               >
                 <Plus className="w-4 h-4" />
                 <span>Tambah Aset {activeSubTab}</span>

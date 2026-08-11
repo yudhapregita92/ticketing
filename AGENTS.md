@@ -57,6 +57,21 @@ Aplikasi ini mendukung beberapa variasi tata letak (layout) dan tema khusus untu
 
 ---
 
-## 6. Komitmen Konsistensi
+## 6. Aturan Penguncian Petugas IT pada Modal WhatsApp (WhatsApp Agent Locking)
+* **Penguncian Otomatis (Locked State)**:
+  * Pada modal "Teruskan Tiket ke WhatsApp", target Petugas IT **dikunci secara permanen** pada agen yang menangani tiket tersebut (`assigned_to`) atau petugas default.
+  * Opsi tombol "Ganti Agen" ditiadakan/dikunci dari antarmuka pengguna agar tiket selalu terkirim secara konsisten ke petugas IT yang tepat dan bertanggung jawab, menghindari kesalahan pengiriman pesan ke agen lain.
+
+---
+
+## 7. Optimasi Tampilan Mobile Manajemen Aset (Filter & Tombol Tambah Aset)
+* **Penyederhanaan Filter di Handphone**:
+  * Opsi filter aset (Kategori, Departemen, Status Pengguna, Status Aset, Kondisi Fisik) pada tampilan HP/mobile disembunyikan secara bawaan dan dapat dibuka-tutup dengan tombol toggle **"Filter"** (dilengkapi indikator jumlah filter aktif).
+* **Visibilitas Tombol Tambah Aset di Mobile**:
+  * Tombol **"Tambah Aset"** / **"Tambah"** selalu ditampilkan secara jelas di tampilan mobile (baik sejajar dengan kolom pencarian maupun pada toolbar aksi) agar admin dapat menambah aset baru dari HP dengan mudah tanpa kehilangan akses fitur.
+
+---
+
+## 8. Komitmen Konsistensi
 * Jaga kebersihan kode (clean code) dan gunakan **TypeScript** yang aman.
 * Lakukan verifikasi build (`npm run build`) dan linting (`npm run lint`) setiap setelah melakukan perubahan guna memastikan aplikasi selalu siap dirilis tanpa error.
