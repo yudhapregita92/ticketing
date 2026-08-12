@@ -273,7 +273,10 @@ export const TicketDetailModal = React.memo(({
   useEffect(() => {
     api.getAssets().then(res => {
       if (Array.isArray(res)) setAvailableAssets(res);
-    }).catch(e => console.error('Error loading assets in modal:', e));
+    }).catch(e => {
+      console.warn('Assets load fallback active:', e?.message || e);
+      setAvailableAssets([]);
+    });
   }, []);
 
   useEffect(() => {

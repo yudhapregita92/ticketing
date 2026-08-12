@@ -68,10 +68,10 @@ async function startServer() {
   // Basic API Rate Limiter
   const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 200, // Limit each IP to 200 requests per `window` (here, per 15 minutes)
+    max: 5000, // Limit each IP to 5000 requests per 15 minutes
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-    message: { error: "Too many requests from this IP, please try again after 15 minutes" }
+    message: { error: "Terlalu banyak permintaan dari IP ini, silakan coba lagi dalam 15 menit" }
   });
   
   // Apply rate limiter to all API routes

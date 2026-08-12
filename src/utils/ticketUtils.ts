@@ -1,13 +1,12 @@
 import { parseSafeDate } from './dateUtils';
+import { calculateWorkingHoursElapsed, isCurrentlyWorkingHours } from './slaUtils';
 
 export const getSLAColor = (createdAt: string, status: string, criticalHours?: number, delayedHours?: number, actionType?: string | null) => {
   if (status === 'Pending' || status === 'Pending Pengadaan' || status === 'Menunggu Persetujuan Sub Dept Head' || actionType === 'Harus Dibeli') {
     return 'bg-purple-500/10 border-purple-500/30 text-purple-400';
   }
   if (status !== 'New') return '';
-  const created = parseSafeDate(createdAt).getTime();
-  const now = new Date().getTime();
-  const diffHours = (now - created) / (1000 * 60 * 60);
+  const diffHours = calculateWorkingHoursElapsed(createdAt, new Date());
 
   let crit = criticalHours;
   let del = delayedHours;
@@ -34,6 +33,7 @@ export const getSLAColor = (createdAt: string, status: string, criticalHours?: n
 
   if (diffHours > crit) return 'bg-rose-500/10 border-rose-500/20 text-rose-600 animate-pulse';
   if (diffHours > del) return 'bg-amber-500/10 border-amber-500/20 text-amber-600';
+  if (!isCurrentlyWorkingHours()) return 'bg-sky-500/10 border-sky-500/20 text-sky-600';
   return '';
 };
 
@@ -42,9 +42,7 @@ export const getSLALabel = (createdAt: string, status: string, criticalHours?: n
     return '⏸️ SLA Paused (Pengadaan)';
   }
   if (status !== 'New') return null;
-  const created = parseSafeDate(createdAt).getTime();
-  const now = new Date().getTime();
-  const diffHours = (now - created) / (1000 * 60 * 60);
+  const diffHours = calculateWorkingHoursElapsed(createdAt, new Date());
 
   let crit = criticalHours;
   let del = delayedHours;
@@ -71,6 +69,7 @@ export const getSLALabel = (createdAt: string, status: string, criticalHours?: n
 
   if (diffHours > crit) return `Critical (>${crit}h)`;
   if (diffHours > del) return `Delayed (>${del}h)`;
+  if (!isCurrentlyWorkingHours()) return '⏸️ SLA Di-pause (Luar Jam Kerja)';
   return null;
 };
 

@@ -127,7 +127,7 @@ export const TicketList: React.FC<TicketListProps> = ({
 
       {/* Compact Interactive Menu Cards (Exact requested layout and card styling) */}
       <div className="mb-3 sm:mb-4">
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 w-full">
+        <div className={`grid grid-cols-2 ${isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-2.5 sm:gap-3 w-full`}>
           {[
             { 
               key: 'all_tickets',
@@ -216,7 +216,7 @@ export const TicketList: React.FC<TicketListProps> = ({
                 whileTap={{ scale: 0.97 }}
                 onClick={item.onClick}
                 className={`p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border text-left flex items-center justify-between transition-all relative overflow-hidden group cursor-pointer ${
-                  item.isFullWidth ? 'col-span-2' : 'col-span-1'
+                  item.isFullWidth ? 'col-span-2 md:col-span-1' : 'col-span-1'
                 } ${
                   item.isActive ? item.activeClass : item.idleClass
                 }`}

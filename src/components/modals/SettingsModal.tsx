@@ -23,6 +23,7 @@ import {
   Edit3,
   Phone,
   Search,
+  Calendar,
   Printer,
   Key,
   Sparkles,
@@ -3368,17 +3369,167 @@ export const SettingsModal = React.memo(({
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-xs font-black capitalize tracking-widest text-slate-400">Pengaturan Waktu SLA (Service Level Agreement)</h3>
-                    <p className="text-[10px] text-slate-500 mt-1">Sesuaikan batas waktu respons untuk tiket baru agar tim IT tetap responsif.</p>
+                    <p className="text-[10px] text-slate-500 mt-1">Sesuaikan batas waktu respons tiket serta jam kerja operasional agar statistik SLA tim IT dihitung secara adil dan akurat.</p>
                   </div>
 
                   <div className={`p-4 sm:p-6 rounded-2xl border ${themeClasses.border} ${themeClasses.bgSecondary} space-y-6`}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    {/* Operating Hours SLA Toggle & Notice */}
+                    <div className="p-4 rounded-xl border border-sky-500/20 bg-sky-500/10 space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-sky-500" />
+                          <span className="text-xs font-bold text-sky-950 dark:text-sky-200">SLA Berbasis Jam Kerja Operasional</span>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input 
+                            type="checkbox"
+                            className="sr-only peer"
+                            checked={appSettings.sla_working_hours_enabled !== false}
+                            onChange={e => {
+                              setAppSettings({
+                                ...appSettings,
+                                sla_working_hours_enabled: e.target.checked
+                              });
+                            }}
+                          />
+                          <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-500" />
+                        </label>
+                      </div>
+                      <p className="text-[11px] text-sky-900/80 dark:text-sky-300/80 leading-relaxed">
+                        Tiket dapat dibuat pengguna 24 jam nonstop. Apabila fitur ini aktif, timer SLA hanya dihitung pada jam operasional kerja di bawah ini. Tiket yang diajukan di luar jam kerja (misal pukul 18:30) akan di-pause SLA-nya dan baru dihitung mulai pukul 07:45 pada hari kerja berikutnya.
+                      </p>
+                    </div>
+
+                    {/* Jam Kerja Configuration Grid */}
+                    {appSettings.sla_working_hours_enabled !== false && (
+                      <div className="space-y-4 pt-2 border-t border-slate-200/60 dark:border-zinc-800">
+                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-emerald-500" />
+                          Jadwal Jam Operasional Kantor
+                        </h4>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          
+                          {/* Senin - Jumat */}
+                          <div className={`p-3.5 rounded-xl border ${themeClasses.border} ${themeClasses.bg} space-y-3`}>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Senin – Jumat</span>
+                              <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">Jam Kerja Utama</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-[9px] text-slate-400 font-bold block mb-1">Mulai</label>
+                                <input 
+                                  type="time" 
+                                  className={`w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold ${themeClasses.input}`}
+                                  value={appSettings.sla_work_weekday_start || '07:45'}
+                                  onChange={e => setAppSettings({ ...appSettings, sla_work_weekday_start: e.target.value })}
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[9px] text-slate-400 font-bold block mb-1">Selesai</label>
+                                <input 
+                                  type="time" 
+                                  className={`w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold ${themeClasses.input}`}
+                                  value={appSettings.sla_work_weekday_end || '16:00'}
+                                  onChange={e => setAppSettings({ ...appSettings, sla_work_weekday_end: e.target.value })}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Sabtu */}
+                          <div className={`p-3.5 rounded-xl border ${themeClasses.border} ${themeClasses.bg} space-y-3`}>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Sabtu</span>
+                              <label className="flex items-center gap-1.5 cursor-pointer">
+                                <input 
+                                  type="checkbox" 
+                                  checked={appSettings.sla_work_sat_enabled !== false}
+                                  onChange={e => setAppSettings({ ...appSettings, sla_work_sat_enabled: e.target.checked })}
+                                  className="rounded text-emerald-500 focus:ring-0"
+                                />
+                                <span className="text-[9px] font-bold text-slate-500">{appSettings.sla_work_sat_enabled !== false ? 'Aktif' : 'Libur'}</span>
+                              </label>
+                            </div>
+                            {appSettings.sla_work_sat_enabled !== false ? (
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="text-[9px] text-slate-400 font-bold block mb-1">Mulai</label>
+                                  <input 
+                                    type="time" 
+                                    className={`w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold ${themeClasses.input}`}
+                                    value={appSettings.sla_work_sat_start || '07:45'}
+                                    onChange={e => setAppSettings({ ...appSettings, sla_work_sat_start: e.target.value })}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[9px] text-slate-400 font-bold block mb-1">Selesai</label>
+                                  <input 
+                                    type="time" 
+                                    className={`w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold ${themeClasses.input}`}
+                                    value={appSettings.sla_work_sat_end || '12:00'}
+                                    onChange={e => setAppSettings({ ...appSettings, sla_work_sat_end: e.target.value })}
+                                  />
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-[10px] text-slate-400 italic pt-2">Hari Sabtu di-set Libur (SLA Paused).</p>
+                            )}
+                          </div>
+
+                          {/* Minggu */}
+                          <div className={`p-3.5 rounded-xl border ${themeClasses.border} ${themeClasses.bg} space-y-3`}>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Minggu</span>
+                              <label className="flex items-center gap-1.5 cursor-pointer">
+                                <input 
+                                  type="checkbox" 
+                                  checked={appSettings.sla_work_sun_enabled === true}
+                                  onChange={e => setAppSettings({ ...appSettings, sla_work_sun_enabled: e.target.checked })}
+                                  className="rounded text-emerald-500 focus:ring-0"
+                                />
+                                <span className="text-[9px] font-bold text-slate-500">{appSettings.sla_work_sun_enabled === true ? 'Aktif' : 'Libur'}</span>
+                              </label>
+                            </div>
+                            {appSettings.sla_work_sun_enabled === true ? (
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="text-[9px] text-slate-400 font-bold block mb-1">Mulai</label>
+                                  <input 
+                                    type="time" 
+                                    className={`w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold ${themeClasses.input}`}
+                                    value={appSettings.sla_work_sun_start || '07:45'}
+                                    onChange={e => setAppSettings({ ...appSettings, sla_work_sun_start: e.target.value })}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[9px] text-slate-400 font-bold block mb-1">Selesai</label>
+                                  <input 
+                                    type="time" 
+                                    className={`w-full px-2.5 py-1.5 rounded-lg border text-xs font-bold ${themeClasses.input}`}
+                                    value={appSettings.sla_work_sun_end || '12:00'}
+                                    onChange={e => setAppSettings({ ...appSettings, sla_work_sun_end: e.target.value })}
+                                  />
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-[10px] text-slate-400 italic pt-2">Hari Minggu Libur (SLA Paused).</p>
+                            )}
+                          </div>
+
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-slate-200/60 dark:border-zinc-800">
                       
                       {/* Delayed SLA Settings */}
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full bg-amber-500" />
-                          Batas Waktu Delayed (Jam)
+                          Batas Waktu Delayed (Jam Kerja)
                         </label>
                         <input 
                           type="number"
@@ -3395,7 +3546,7 @@ export const SettingsModal = React.memo(({
                           }}
                         />
                         <p className="text-[10px] text-slate-500">
-                          Tiket baru yang belum ditangani lebih dari durasi ini akan diberi tanda kuning/Delayed. (Bawaan: 2 jam).
+                          Tiket baru yang belum ditangani lebih dari durasi jam kerja ini akan diberi tanda kuning/Delayed. (Bawaan: 2 jam kerja).
                         </p>
                       </div>
 
@@ -3403,7 +3554,7 @@ export const SettingsModal = React.memo(({
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                          Batas Waktu Critical (Jam)
+                          Batas Waktu Critical (Jam Kerja)
                         </label>
                         <input 
                           type="number"
@@ -3420,7 +3571,7 @@ export const SettingsModal = React.memo(({
                           }}
                         />
                         <p className="text-[10px] text-slate-500">
-                          Tiket baru yang belum ditangani lebih dari durasi ini akan diberi tanda merah berkedip/Critical. (Bawaan: 5 jam).
+                          Tiket baru yang belum ditangani lebih dari durasi jam kerja ini akan diberi tanda merah berkedip/Critical. (Bawaan: 5 jam kerja).
                         </p>
                       </div>
 
@@ -3436,7 +3587,7 @@ export const SettingsModal = React.memo(({
                         </div>
                         
                         <div className="flex flex-col gap-1">
-                          <span className="text-[9px] text-slate-500 font-bold">Status Delayed (&gt; {appSettings.sla_delayed_hours || 2} jam):</span>
+                          <span className="text-[9px] text-slate-500 font-bold">Status Delayed (&gt; {appSettings.sla_delayed_hours || 2} jam kerja):</span>
                           <div className="flex items-center gap-2">
                             <span className="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded capitalize bg-amber-500/10 border border-amber-500/20 text-amber-600 leading-none whitespace-nowrap">
                               Delayed (&gt;{appSettings.sla_delayed_hours || 2}h)
@@ -3445,10 +3596,19 @@ export const SettingsModal = React.memo(({
                         </div>
 
                         <div className="flex flex-col gap-1">
-                          <span className="text-[9px] text-slate-500 font-bold">Status Critical (&gt; {appSettings.sla_critical_hours || 5} jam):</span>
+                          <span className="text-[9px] text-slate-500 font-bold">Status Critical (&gt; {appSettings.sla_critical_hours || 5} jam kerja):</span>
                           <div className="flex items-center gap-2">
                             <span className="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded capitalize bg-rose-500 text-white leading-none whitespace-nowrap">
                               Critical (&gt;{appSettings.sla_critical_hours || 5}h)
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[9px] text-slate-500 font-bold">Status Luar Jam Kerja:</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/20 text-sky-600 leading-none whitespace-nowrap">
+                              ⏸️ SLA Di-pause (Luar Jam Kerja)
                             </span>
                           </div>
                         </div>

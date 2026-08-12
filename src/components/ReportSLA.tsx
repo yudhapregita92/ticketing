@@ -22,6 +22,7 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 import { ITicket, IAdminUser } from '../types';
+import { calculateWorkingMinutesElapsed } from '../utils/slaUtils';
 
 interface ReportSLAProps {
   tickets: ITicket[];
@@ -32,14 +33,10 @@ interface ReportSLAProps {
   onSelectTicket?: (ticket: ITicket) => void;
 }
 
-// Utility to calculate duration in minutes between two ISO/date strings
+// Utility to calculate working duration in minutes between two ISO/date strings
 const calculateDurationMins = (startStr?: string | null, endStr?: string | null): number | null => {
   if (!startStr || !endStr) return null;
-  const start = new Date(startStr.includes('T') ? startStr : startStr.replace(' ', 'T')).getTime();
-  const end = new Date(endStr.includes('T') ? endStr : endStr.replace(' ', 'T')).getTime();
-  if (isNaN(start) || isNaN(end)) return null;
-  if (end < start) return 0;
-  return Math.round((end - start) / (1000 * 60));
+  return calculateWorkingMinutesElapsed(startStr, endStr);
 };
 
 // Option C: Helper to get effective start time for Resolution SLA (active work time)

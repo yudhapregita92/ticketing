@@ -118,6 +118,15 @@ export interface ISettings {
   card_layout?: string;
   sla_critical_hours?: number;
   sla_delayed_hours?: number;
+  sla_working_hours_enabled?: boolean;
+  sla_work_weekday_start?: string;
+  sla_work_weekday_end?: string;
+  sla_work_sat_start?: string;
+  sla_work_sat_end?: string;
+  sla_work_sat_enabled?: boolean;
+  sla_work_sun_start?: string;
+  sla_work_sun_end?: string;
+  sla_work_sun_enabled?: boolean;
   gps_working_hours_start?: string;
   gps_working_hours_end?: string;
   yudha_auto_respond_enabled?: boolean | string;

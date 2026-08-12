@@ -175,7 +175,16 @@ export default function App() {
       login_guide_enabled: true,
       login_guide_content: 'Langkah-langkah Login:\n1. Pilih nama Anda pada pilihan "Nama Anda".\n2. Ketik Index KDK Anda dengan benar.\n3. Tekan tombol "Masuk" untuk masuk ke dashboard.\n\nJika nama Anda belum terdaftar, silakan hubungi tim Admin IT.',
       sla_critical_hours: 5,
-      sla_delayed_hours: 2
+      sla_delayed_hours: 2,
+      sla_working_hours_enabled: true,
+      sla_work_weekday_start: '07:45',
+      sla_work_weekday_end: '16:00',
+      sla_work_sat_start: '07:45',
+      sla_work_sat_end: '12:00',
+      sla_work_sat_enabled: true,
+      sla_work_sun_start: '07:45',
+      sla_work_sun_end: '12:00',
+      sla_work_sun_enabled: false
     };
   }); // Pengaturan nama & logo app
 
@@ -586,6 +595,11 @@ export default function App() {
 
 
       } else if (viewMode === 'Setujui Pengadaan') {
+        const activeUser = currentUser || adminUser;
+        if (!adminUser && currentUser) {
+          if (!isTeamTicketForUser(ticket, currentUser, masterUsers)) return false;
+        }
+
         const isApprovalTicket = 
           ticket.action_type === 'Harus Dibeli' || 
           ticket.status === 'Pending' || 
