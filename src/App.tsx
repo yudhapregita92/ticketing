@@ -73,6 +73,9 @@ const TicketDetailModal = lazy(() => import('./components/modals/TicketDetailMod
 const NewTicketModal = lazy(() => import('./components/modals/NewTicketModal').then(m => ({ default: m.NewTicketModal })));
 const SettingsModal = lazy(() => import('./components/modals/SettingsModal').then(m => ({ default: m.SettingsModal })));
 const ImageManagerModal = lazy(() => import('./components/modals/ImageManagerModal').then(m => ({ default: m.ImageManagerModal })));
+const UserProfileModal = lazy(() => import('./components/modals/UserProfileModal').then(m => ({ default: m.UserProfileModal })));
+const ChangePasswordModal = lazy(() => import('./components/modals/ChangePasswordModal').then(m => ({ default: m.ChangePasswordModal })));
+const MyAssetsModal = lazy(() => import('./components/modals/MyAssetsModal').then(m => ({ default: m.MyAssetsModal })));
 
 const AdminDashboard = lazy(() => import('./components/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 const Panduan = lazy(() => import('./components/Panduan').then(m => ({ default: m.Panduan })));
@@ -125,6 +128,9 @@ export default function App() {
 
   // --- State Management ---
   const [adminUser, setAdminUser] = useState<any>(null); // Data login admin
+  const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState<boolean>(false);
+  const [showMyAssetsModal, setShowMyAssetsModal] = useState<boolean>(false);
   const [adminThemeLayout, setAdminThemeLayout] = useState<string>(() => {
     return safeGetItem('adminThemeLayout') || 'modern';
   });
@@ -417,8 +423,8 @@ export default function App() {
   const navigate = useNavigate();
 
   const getViewModeFromPath = (path: string, hasAdmin: boolean): ViewMode => {
-    const p = path.replace(/^\//, '');
-    let view = p === '' ? (hasAdmin ? 'dashboard' : 'today') : p;
+    const raw = path.replace(/^\//, '');
+    let view = raw === '' ? (hasAdmin ? 'dashboard' : 'today') : decodeURIComponent(raw);
 
     // Admin only routes fallback
     if (!hasAdmin && ['dashboard', 'assets', 'network', 'membership', 'voucher', 'master_user', 'master_perangkat', 'master_team', 'report_sla', 'report_perangkat', 'team_location'].includes(view)) {
@@ -433,7 +439,7 @@ export default function App() {
       view = hasAdmin ? 'dashboard' : 'today';
     }
 
-    if (['today', 'all', 'my_tickets', 'team_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'activity_log', 'membership', 'jurnal', 'voucher', 'master_user', 'master_perangkat', 'master_team', 'report_sla', 'report_perangkat', 'team_location'].includes(view)) {
+    if (['today', 'all', 'my_tickets', 'Setujui Pengadaan', 'team_tickets', 'dashboard', 'assets', 'network', 'ba', 'panduan', 'settings', 'activity_log', 'membership', 'jurnal', 'voucher', 'master_user', 'master_perangkat', 'master_team', 'report_sla', 'report_perangkat', 'team_location'].includes(view)) {
       return view as ViewMode;
     }
     return hasAdmin ? 'dashboard' : 'today';
@@ -632,16 +638,20 @@ export default function App() {
         if (!isTeamTicket) return false;
 
 
-      } else if (viewMode === 'my_tickets') {
+      } else if (viewMode === 'my_tickets' || viewMode === 'Setujui Pengadaan') {
         if (isSubDeptHeadOrSuperAdmin(currentUser || adminUser)) {
-          // Sub Dept Head & Super Admin View for "Setujui Pengadaan" tab
+          // Sub Dept Head & Super Admin View for "Setujui Pengadaan" / "Riwayat Setuju" tab
           const isApprovalTicket = 
             ticket.action_type === 'Harus Dibeli' || 
             ticket.status === 'Pending' || 
             ticket.status === 'Pending Pengadaan' || 
             ticket.status === 'Menunggu Persetujuan Sub Dept Head' ||
             ticket.status === 'Disetujui (Dalam Pengadaan)' ||
-            ticket.status === 'Pengadaan Ditolak';
+            ticket.status === 'Pengadaan Ditolak' ||
+            (ticket.admin_reply || '').includes('[PERSETUJUAN SUB DEPT HEAD]') ||
+            (ticket.admin_reply || '').includes('[DITOLAK SUB DEPT HEAD]') ||
+            (ticket.admin_reply || '').includes('[PENGADAAN DITOLAK]') ||
+            (ticket.action_notes || '').includes('Sub Dept Head');
 
           let isMyOwnTicket = false;
           if (currentUser) {
@@ -1400,7 +1410,9 @@ export default function App() {
    * Mengeksekusi update tiket setelah konfirmasi
    */
   const confirmUpdate = async () => {
-    if (!pendingUpdate || !adminUser) return;
+    const activeUser = adminUser || currentUser;
+    if (!pendingUpdate || !activeUser) return;
+    const performer = activeUser.username || activeUser.full_name || activeUser.name || 'User';
     updateTicketMutation.mutate({
       id: pendingUpdate.id,
       data: {
@@ -1415,11 +1427,14 @@ export default function App() {
         require_rating: (pendingUpdate as any).require_rating,
         action_type: (pendingUpdate as any).action_type,
         action_notes: (pendingUpdate as any).action_notes,
-        performed_by: adminUser.username
+        performed_by: performer
       }
     }, {
       onSuccess: () => {
         setPendingUpdate(null);
+      },
+      onError: (err: any) => {
+        toast.error(err?.message || 'Gagal memperbarui tiket.');
       }
     });
   };
@@ -1880,6 +1895,9 @@ export default function App() {
               toggleTheme={toggleTheme}
               unreadCount={unreadCount}
               onOpenNotifications={() => setShowNotificationModal(true)}
+              onOpenProfile={() => setShowProfileModal(true)}
+              onOpenChangePassword={() => setShowChangePasswordModal(true)}
+              onOpenMyAssets={() => setShowMyAssetsModal(true)}
               onDutyChange={(nextDuty) => {
                 if (adminUser) {
                   const updated = { ...adminUser, is_on_duty: nextDuty };
@@ -1942,6 +1960,7 @@ export default function App() {
                 setViewMode={setViewMode}
                 isDark={isDark}
                 adminUser={adminUser}
+                currentUser={currentUser}
                 userCanVoucher={userCanVoucher}
               />
             )}
@@ -1989,15 +2008,15 @@ export default function App() {
                 </button>
 
                 <button
-                  onClick={() => setViewMode('my_tickets')}
+                  onClick={() => setViewMode(isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Setujui Pengadaan' : 'my_tickets')}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
-                    viewMode === 'my_tickets'
+                    (viewMode === 'my_tickets' || viewMode === 'Setujui Pengadaan')
                       ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                       : isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Tiket Saya</span>
+                  <span>{isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Riwayat Setuju' : 'Tiket Saya'}</span>
                 </button>
 
                 {currentUser && ((currentUser.jabatan || '').toLowerCase().includes('head') || (currentUser.jabatan || '').toLowerCase().includes('manager')) && (
@@ -2647,6 +2666,7 @@ export default function App() {
               confirmText="Ya, Simpan"
               isDark={isDark}
               themeClasses={themeClasses}
+              loading={updateTicketMutation.isPending}
               type="success"
             />
           )}
@@ -2701,11 +2721,46 @@ export default function App() {
               isDark={isDark}
             />
           )}
+
+          {showProfileModal && (
+            <UserProfileModal
+              show={showProfileModal}
+              onClose={() => setShowProfileModal(false)}
+              currentUser={currentUser || adminUser}
+              masterUsers={masterUsers}
+              isDark={isDark}
+              themeClasses={themeClasses}
+              onChangePasswordClick={() => setShowChangePasswordModal(true)}
+              onViewAssetsClick={() => setShowMyAssetsModal(true)}
+            />
+          )}
+
+          {showChangePasswordModal && (
+            <ChangePasswordModal
+              show={showChangePasswordModal}
+              onClose={() => setShowChangePasswordModal(false)}
+              currentUser={currentUser}
+              adminUser={adminUser}
+              isDark={isDark}
+              themeClasses={themeClasses}
+            />
+          )}
+
+          {showMyAssetsModal && (
+            <MyAssetsModal
+              show={showMyAssetsModal}
+              onClose={() => setShowMyAssetsModal(false)}
+              currentUser={currentUser || adminUser}
+              isDark={isDark}
+              themeClasses={themeClasses}
+            />
+          )}
       </Suspense>
 
       <div className="print:hidden">
         <BottomNav 
           adminUser={adminUser}
+          currentUser={currentUser}
           viewMode={viewMode}
           setViewMode={setViewMode}
           setShowForm={setShowForm}

@@ -111,12 +111,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               
               <motion.button 
                 whileTap={{ scale: 0.9 }}
-                onClick={() => setViewMode('my_tickets')}
-                className={`flex flex-col items-center justify-center gap-[2px] ${viewMode === 'my_tickets' ? activeTextClass : textClass}`}
+                onClick={() => setViewMode(isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Setujui Pengadaan' : 'my_tickets')}
+                className={`flex flex-col items-center justify-center gap-[2px] ${(viewMode === 'my_tickets' || viewMode === 'Setujui Pengadaan') ? activeTextClass : textClass}`}
               >
-                <UserCog className={`w-5 h-5 ${viewMode === 'my_tickets' ? 'stroke-[2.5px]' : 'stroke-2'}`} style={{ color: viewMode === 'my_tickets' ? primaryColor : undefined }} />
+                <UserCog className={`w-5 h-5 ${(viewMode === 'my_tickets' || viewMode === 'Setujui Pengadaan') ? 'stroke-[2.5px]' : 'stroke-2'}`} style={{ color: (viewMode === 'my_tickets' || viewMode === 'Setujui Pengadaan') ? primaryColor : undefined }} />
                 <span className={`${navTextWeight}`} style={{ fontSize: `${navTextSize}px` }}>
-                  {isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Setujui' : 'Saya'}
+                  {isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Riwayat Setuju' : 'Saya'}
                 </span>
               </motion.button>
 
@@ -242,11 +242,17 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             
             <motion.button 
               whileTap={{ scale: 0.9 }}
-              onClick={() => setViewMode('my_tickets')}
+              onClick={() => setViewMode(isSubDeptHeadOrSuperAdmin(currentUser || adminUser) ? 'Setujui Pengadaan' : 'my_tickets')}
               className="flex flex-col items-center justify-center gap-[2px] opacity-90 hover:opacity-100 cursor-pointer"
             >
-              <Ticket className="w-[22px] h-[22px] stroke-[2.5px]" />
-              <span className={`${navTextWeight} tracking-wide`} style={{ fontSize: `${navTextSize}px` }}>Tiket Saya</span>
+              {isSubDeptHeadOrSuperAdmin(currentUser || adminUser) ? (
+                <History className="w-[22px] h-[22px] stroke-[2.5px]" />
+              ) : (
+                <Ticket className="w-[22px] h-[22px] stroke-[2.5px]" />
+              )}
+              <span className={`${navTextWeight} tracking-wide`} style={{ fontSize: `${navTextSize}px` }}>
+                {isSubDeptHeadOrSuperAdmin(currentUser || adminUser) ? 'Riwayat Setuju' : 'Tiket Saya'}
+              </span>
             </motion.button>
           </div>
 

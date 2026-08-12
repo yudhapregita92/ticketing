@@ -696,26 +696,32 @@ export const TicketDetailModal = React.memo(({
               </div>
 
               {/* Status Rekomendasi / Tindakan IT Banner (Terlihat oleh User & Atasan) */}
-              {((selectedTicket.action_type && selectedTicket.action_type !== 'none') || (actionType && actionType !== 'none')) && (
+              {((selectedTicket.action_type && selectedTicket.action_type !== 'none') || 
+                (actionType && actionType !== 'none') ||
+                (selectedTicket.admin_reply || '').includes('[PERSETUJUAN SUB DEPT HEAD]') ||
+                (selectedTicket.admin_reply || '').toLowerCase().includes('pengadaan') ||
+                (selectedTicket.admin_reply || '').toLowerCase().includes('harus dibeli') ||
+                (selectedTicket.admin_reply || '').toLowerCase().includes('dipinjamkan') ||
+                (selectedTicket.action_notes || '').toLowerCase().includes('pengadaan')) && (
                 <div className={`p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl border-2 shadow-md space-y-2 transition-all ${
-                  (selectedTicket.action_type || actionType) === 'Harus Dibeli'
-                    ? 'bg-gradient-to-br from-rose-950/80 via-rose-900/50 to-slate-900/95 border-rose-500/70 text-rose-100'
-                    : 'bg-gradient-to-br from-amber-950/80 via-amber-900/50 to-slate-900/95 border-amber-500/70 text-amber-100'
+                  (selectedTicket.action_type || actionType) === 'Dipinjamkan'
+                    ? 'bg-gradient-to-br from-amber-950/80 via-amber-900/50 to-slate-900/95 border-amber-500/70 text-amber-100'
+                    : 'bg-gradient-to-br from-rose-950/80 via-rose-900/50 to-slate-900/95 border-rose-500/70 text-rose-100'
                 }`}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                     <div className="flex items-center gap-2.5">
-                      {(selectedTicket.action_type || actionType) === 'Harus Dibeli' ? (
-                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-rose-500/20 border border-rose-400/40 flex items-center justify-center text-rose-400 shrink-0 shadow-inner">
-                          <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
-                        </div>
-                      ) : (
+                      {(selectedTicket.action_type || actionType) === 'Dipinjamkan' ? (
                         <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 shrink-0 shadow-inner">
                           <Package className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-rose-500/20 border border-rose-400/40 flex items-center justify-center text-rose-400 shrink-0 shadow-inner">
+                          <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
                         </div>
                       )}
                       <div>
                         <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider block leading-tight">
-                          Tindakan IT: {(selectedTicket.action_type || actionType) === 'Harus Dibeli' ? 'Harus Dibeli (Pengadaan)' : 'Dipinjamkan (Unit Pengganti)'}
+                          Tindakan IT: {(selectedTicket.action_type || actionType) === 'Dipinjamkan' ? 'Dipinjamkan (Unit Pengganti)' : 'Harus Dibeli (Pengadaan)'}
                         </span>
                         <span className="text-[9.5px] opacity-75 block font-medium mt-0.5 leading-none">
                           Informasi Keputusan Pemohon & Atasan
@@ -745,7 +751,7 @@ export const TicketDetailModal = React.memo(({
                       </div>
 
                       {/* Integrated Approval / Print Section inside Red Box */}
-                      {(selectedTicket.action_type === 'Harus Dibeli' || actionType === 'Harus Dibeli') && (
+                      {((selectedTicket.action_type || actionType) !== 'Dipinjamkan') && (
                         <div className="pt-2 border-t border-slate-800 space-y-2">
                           {((selectedTicket.admin_reply || '').includes('[PERSETUJUAN SUB DEPT HEAD]') ||
                             (selectedTicket.internal_notes || '').toLowerCase().includes('disetujui') ||

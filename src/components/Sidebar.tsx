@@ -228,15 +228,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </button>
                   
                   <button
-                    onClick={() => setViewMode('my_tickets')}
-                    title={isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Setujui' : 'Tiket Saya'}
-                    className={getMenuItemClass(viewMode === 'my_tickets')}
+                    onClick={() => setViewMode(isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Setujui Pengadaan' : 'my_tickets')}
+                    title={isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Riwayat Setuju' : 'Tiket Saya'}
+                    className={getMenuItemClass(viewMode === 'my_tickets' || viewMode === 'Setujui Pengadaan')}
                   >
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center gap-2.5">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         {adminThemeLayout !== 'compact' && (
-                          <span>{isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Setujui' : 'Tiket Saya'}</span>
+                          <span>{isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Riwayat Setuju' : 'Tiket Saya'}</span>
                         )}
                       </div>
                       {isSubDeptHeadOrSuperAdmin(adminUser || currentUser) && getPendingApprovalCount(tickets) > 0 && (
@@ -284,15 +284,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
               
               <button
-                onClick={() => setViewMode('my_tickets')}
-                title={isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Setujui' : 'Riwayat Tiket Saya'}
-                className={getMenuItemClass(viewMode === 'my_tickets')}
+                onClick={() => setViewMode(isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Setujui Pengadaan' : 'my_tickets')}
+                title={isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Riwayat Setuju' : 'Riwayat Tiket Saya'}
+                className={getMenuItemClass(viewMode === 'my_tickets' || viewMode === 'Setujui Pengadaan')}
               >
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-2.5">
                     <CheckCircle2 className="w-4 h-4" />
                     {adminThemeLayout !== 'compact' && (
-                      <span>{isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Setujui' : 'Riwayat Tiket Saya'}</span>
+                      <span>{isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Riwayat Setuju' : 'Riwayat Tiket Saya'}</span>
                     )}
                   </div>
                   {isSubDeptHeadOrSuperAdmin(adminUser || currentUser) && getPendingApprovalCount(tickets) > 0 && (

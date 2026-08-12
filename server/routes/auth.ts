@@ -76,7 +76,50 @@ router.delete("/admin-users/:id", asyncHandler(async (req, res) => {
 }));
 
 router.post("/change-password", asyncHandler(async (req, res) => {
-  const { username, newPassword } = req.body;
+  const { username, newPassword, currentPassword, user_id } = req.body;
+  
+  if (user_id) {
+    // Changing password for master_user (staff)
+    const masterUser = db.prepare("SELECT * FROM master_users WHERE id = ?").get(user_id) as any;
+    if (!masterUser) {
+      throw new AppError("User tidak ditemukan", 404);
+    }
+    
+    if (!currentPassword || !newPassword) {
+      throw new AppError("Password lama dan Password baru wajib diisi", 400);
+    }
+    
+    const cleanCurrent = String(currentPassword).trim();
+    const cleanNew = String(newPassword).trim();
+    
+    if (cleanNew.length < 3) {
+      throw new AppError("Password baru minimal 3 karakter", 400);
+    }
+    
+    const storedPass = masterUser.custom_password;
+    let isValid = false;
+    
+    if (storedPass) {
+      if (storedPass.startsWith("$2a$") || storedPass.startsWith("$2b$")) {
+        isValid = await bcrypt.compare(cleanCurrent, storedPass);
+      } else {
+        isValid = (storedPass === cleanCurrent);
+      }
+    } else {
+      isValid = (masterUser.employee_index && String(masterUser.employee_index).trim() === cleanCurrent);
+    }
+    
+    if (!isValid) {
+      throw new AppError("Password lama yang Anda masukkan salah", 400);
+    }
+    
+    const hashedPassword = await bcrypt.hash(cleanNew, 10);
+    db.prepare("UPDATE master_users SET custom_password = ? WHERE id = ?").run(hashedPassword, user_id);
+    
+    res.json({ success: true, message: "Password berhasil diubah" });
+    return;
+  }
+
   if (!username || !newPassword) {
     throw new AppError("Username dan Password baru wajib diisi", 400);
   }
@@ -86,10 +129,83 @@ router.post("/change-password", asyncHandler(async (req, res) => {
     throw new AppError("User tidak ditemukan", 404);
   }
 
+  if (currentPassword) {
+    const isMatch = await bcrypt.compare(String(currentPassword).trim(), user.password || '');
+    if (!isMatch) {
+      throw new AppError("Password lama yang Anda masukkan salah", 400);
+    }
+  }
+
   const hashedPassword = await bcrypt.hash(newPassword, 10);
   db.prepare("UPDATE users SET password = ? WHERE LOWER(username) = LOWER(?)").run(hashedPassword, username.trim().toLowerCase());
   
   res.json({ success: true, message: "Password berhasil diubah" });
+}));
+
+// Validate login password for master_users
+router.post("/verify-user-login", asyncHandler(async (req, res) => {
+  const { user_id, password } = req.body;
+  if (!user_id || !password) {
+    throw new AppError("User dan Password / Index wajib diisi", 400);
+  }
+  
+  const user = db.prepare("SELECT * FROM master_users WHERE id = ?").get(user_id) as any;
+  if (!user) {
+    throw new AppError("User tidak ditemukan", 404);
+  }
+
+  const cleanInput = String(password).trim();
+  const storedPass = user.custom_password;
+
+  let isValid = false;
+  if (storedPass) {
+    if (storedPass.startsWith("$2a$") || storedPass.startsWith("$2b$")) {
+      isValid = await bcrypt.compare(cleanInput, storedPass);
+    } else {
+      isValid = (storedPass === cleanInput);
+    }
+  } else {
+    isValid = (user.employee_index && String(user.employee_index).trim() === cleanInput);
+  }
+
+  if (!isValid) {
+    throw new AppError("Password / Index Karyawan yang Anda masukkan salah", 401);
+  }
+
+  res.json({ success: true, user });
+}));
+
+// Reset password for master_users back to NIK / employee_index
+router.post("/master-users/:id/reset-password", asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const user = db.prepare("SELECT * FROM master_users WHERE id = ?").get(id) as any;
+  if (!user) {
+    throw new AppError("User tidak ditemukan", 404);
+  }
+
+  db.prepare("UPDATE master_users SET custom_password = NULL WHERE id = ?").run(id);
+  res.json({ 
+    success: true, 
+    message: `Password untuk ${user.full_name} berhasil di-reset kembali ke Indeks/NIK (${user.employee_index || '-'})` 
+  });
+}));
+
+// Reset password for admin users back to default
+router.post("/admin-users/:id/reset-password", asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(id) as any;
+  if (!user) {
+    throw new AppError("User admin tidak ditemukan", 404);
+  }
+
+  const defaultPass = user.username || "123456";
+  const hashedPassword = await bcrypt.hash(defaultPass, 10);
+  db.prepare("UPDATE users SET password = ? WHERE id = ?").run(hashedPassword, id);
+
+  res.json({
+    success: true,
+    message: `Password admin ${user.username} berhasil di-reset ke default (${defaultPass})`
+  });
 }));
 
 router.get("/users", asyncHandler(async (req, res) => {

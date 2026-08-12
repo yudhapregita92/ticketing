@@ -12,9 +12,10 @@ import {
   ArrowUpDown,
   User,
   Users,
-  Calendar
+  Calendar,
+  History
 } from 'lucide-react';
-import { ITicket, IAdminUser, ICategory } from '../types';
+import { ITicket, IAdminUser, ICategory, ViewMode } from '../types';
 import { TicketCard } from './TicketCard';
 import { SkeletonTicket, RollingNumber } from './Common';
 import { UserHeroBanner } from './UserHeroBanner';
@@ -27,7 +28,7 @@ interface TicketListProps {
   isDark: boolean;
   themeClasses: any;
   categories?: ICategory[];
-  viewMode: 'today' | 'all' | 'my_tickets' | 'team_tickets' | 'dashboard' | 'assets';
+  viewMode: ViewMode;
   setViewMode: (mode: any) => void;
   filterDept: string;
   setFilterDept: (dept: string) => void;
@@ -123,11 +124,10 @@ export const TicketList: React.FC<TicketListProps> = ({
         />
       )}
 
-      {/* Primary View Tabs: Hari Ini / Semua (Hidden for Sub Dept Head to prevent stacked tabs) */}
-      {!isSubDeptHeadOrSuperAdmin(adminUser || currentUser) && (
-        <div className={`relative mt-1 mb-2 sm:mb-3 border-b transition-colors flex items-center overflow-x-auto no-scrollbar ${
-          isDark ? 'border-slate-800' : 'border-slate-200/80'
-        }`}>
+      {/* Primary View Tabs */}
+      <div className={`relative mt-1 mb-2 sm:mb-3 border-b transition-colors flex items-center overflow-x-auto no-scrollbar ${
+        isDark ? 'border-slate-800' : 'border-slate-200/80'
+      }`}>
           <button
             onClick={() => setViewMode('today')}
             className={`relative flex-1 min-w-max py-2 sm:py-3 px-2.5 sm:px-4 text-center text-xs sm:text-sm md:text-base font-bold whitespace-nowrap transition-colors ${
@@ -164,22 +164,28 @@ export const TicketList: React.FC<TicketListProps> = ({
             )}
           </button>
 
-          {(adminUser || viewMode === 'my_tickets' || currentUser) && (
+          {(adminUser || viewMode === 'my_tickets' || viewMode === 'Setujui Pengadaan' || currentUser) && (
             <button
-              onClick={() => setViewMode('my_tickets')}
+              onClick={() => {
+                if (isSubDeptHeadOrSuperAdmin(adminUser || currentUser)) {
+                  setViewMode('Setujui Pengadaan');
+                } else {
+                  setViewMode('my_tickets');
+                }
+              }}
               className={`relative flex-1 min-w-max py-2 sm:py-3 px-2.5 sm:px-4 text-center text-xs sm:text-sm md:text-base font-bold whitespace-nowrap transition-colors flex items-center justify-center gap-1.5 ${
-                viewMode === 'my_tickets'
+                (viewMode === 'my_tickets' || viewMode === 'Setujui Pengadaan')
                   ? 'text-emerald-600 dark:text-emerald-400 font-extrabold'
                   : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              <span>{isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Setujui Pengadaan' : 'Tiket Saya'}</span>
+              <span>{isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Riwayat Setuju' : 'Tiket Saya'}</span>
               {isSubDeptHeadOrSuperAdmin(adminUser || currentUser) && getPendingApprovalCount(tickets) > 0 && (
                 <span className="px-1.5 py-0.5 text-[10px] font-black bg-rose-500 text-white rounded-full animate-pulse">
                   {getPendingApprovalCount(tickets)}
                 </span>
               )}
-              {viewMode === 'my_tickets' && (
+              {(viewMode === 'my_tickets' || viewMode === 'Setujui Pengadaan') && (
                 <motion.div 
                   layoutId="tabUnderline"
                   className="absolute bottom-0 left-0 right-0 h-0.5 sm:h-1 bg-emerald-600 dark:bg-emerald-500 rounded-full"
@@ -209,7 +215,6 @@ export const TicketList: React.FC<TicketListProps> = ({
             </button>
           )}
         </div>
-      )}
 
       {/* Navigation Stats Quick Grid */}
       <div className="mb-2.5 sm:mb-3">
@@ -232,11 +237,18 @@ export const TicketList: React.FC<TicketListProps> = ({
             },
             { 
               key: 'my_tickets',
-              label: isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Setujui Pengadaan' : 'Tiket Saya', 
+              label: isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Riwayat Setuju' : 'Tiket Saya', 
               count: isSubDeptHeadOrSuperAdmin(adminUser || currentUser)
-                ? getPendingApprovalCount(tickets)
+                ? tickets.filter(t => 
+                    t.status === 'Menunggu Persetujuan Sub Dept Head' ||
+                    (t.action_type === 'Harus Dibeli' && t.status === 'Pending') ||
+                    (t.admin_reply || '').includes('[PERSETUJUAN SUB DEPT HEAD]') ||
+                    (t.admin_reply || '').includes('[DITOLAK SUB DEPT HEAD]') ||
+                    (t.admin_reply || '').includes('[PENGADAAN DITOLAK]') ||
+                    (t.action_notes || '').includes('Sub Dept Head')
+                  ).length
                 : tickets.filter(t => isUserTicket(t, currentUser)).length,
-              icon: <User className="w-4 h-4 sm:w-5 sm:h-5" />,
+              icon: isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? <History className="w-4 h-4 sm:w-5 sm:h-5" /> : <User className="w-4 h-4 sm:w-5 sm:h-5" />,
               numColor: isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'text-purple-600 dark:text-purple-400' : 'text-emerald-600 dark:text-emerald-400',
               iconBg: isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
               activeClass: 'border-purple-500 ring-2 ring-purple-500/30 bg-purple-50/70 dark:bg-purple-950/40 shadow-sm',
@@ -244,8 +256,15 @@ export const TicketList: React.FC<TicketListProps> = ({
               pulsePing: 'bg-purple-400',
               pulseDot: 'bg-purple-500',
               dotActive: 'bg-purple-500',
-              isActive: viewMode === 'my_tickets' && !filterStatus,
-              onClick: () => { setViewMode('my_tickets'); setFilterStatus(''); }
+              isActive: (viewMode === 'my_tickets' || viewMode === 'Setujui Pengadaan') && !filterStatus,
+              onClick: () => { 
+                if (isSubDeptHeadOrSuperAdmin(adminUser || currentUser)) {
+                  setViewMode('Setujui Pengadaan');
+                } else {
+                  setViewMode('my_tickets');
+                }
+                setFilterStatus(''); 
+              }
             },
             { 
               key: 'in_progress',

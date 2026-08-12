@@ -634,6 +634,9 @@ export function initDb() {
       if (!columns.find(c => c.name === 'atasan_id')) {
         db.prepare("ALTER TABLE master_users ADD COLUMN atasan_id INTEGER").run();
       }
+      if (!columns.find(c => c.name === 'custom_password')) {
+        db.prepare("ALTER TABLE master_users ADD COLUMN custom_password TEXT").run();
+      }
       db.prepare("UPDATE master_users SET jenis_piranti = '(Tidak Ada)' WHERE jenis_piranti IS NULL OR jenis_piranti = ''").run();
       db.prepare("UPDATE master_users SET kode_piranti = '-' WHERE kode_piranti IS NULL OR kode_piranti = ''").run();
       db.prepare("UPDATE master_users SET jabatan = '-' WHERE jabatan IS NULL OR jabatan = ''").run();

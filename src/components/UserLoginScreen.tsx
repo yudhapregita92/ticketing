@@ -218,29 +218,53 @@ export const UserLoginScreen = React.memo(({
       return;
     }
 
-    // Verify index
-    if (selectedUser.employee_index !== indexCode) {
-      const newCount = (userAttempts.count || 0) + 1;
-      if (newCount >= 5) {
-        const lockUntil = Date.now() + 3 * 60 * 1000; // 3 minutes
-        saveAttemptData(selectedUser.id, { count: 0, lockedUntil: lockUntil });
-        const secondsLeft = 180;
-        setLockoutTimeLeft(secondsLeft);
-        setError(`Gagal 5 kali! Akses terkunci selama 3 menit.`);
-        toast.error(`Gagal 5 kali! Akses Anda dikunci selama 3 menit.`);
-      } else {
-        saveAttemptData(selectedUser.id, { count: newCount, lockedUntil: null });
-        const remaining = 5 - newCount;
-        setError(`${appSettings?.login_index_label || "Index"} yang Anda masukkan salah. (Percobaan tersisa: ${remaining}x)`);
+    // Verify password/index via API or local fallback
+    fetch('/api/verify-user-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: selectedUser.id,
+        password: indexCode
+      })
+    })
+    .then(async (res) => {
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.message || errJson.error || 'Password/Index salah');
       }
-      return;
-    }
-
-    // Success login: clear lockout data
-    clearAttemptData(selectedUser.id);
-    setLockoutTimeLeft(0);
-    toast.success(`Selamat datang, ${selectedUser.full_name}!`);
-    onLogin(selectedUser);
+      return res.json();
+    })
+    .then(() => {
+      // Success login: clear lockout data
+      clearAttemptData(selectedUser.id);
+      setLockoutTimeLeft(0);
+      toast.success(`Selamat datang, ${selectedUser.full_name}!`);
+      onLogin(selectedUser);
+    })
+    .catch((err: any) => {
+      // Local check fallback if network error
+      const isDirectMatch = (selectedUser.employee_index && selectedUser.employee_index === indexCode);
+      if (err.message && err.message.includes('salah') || !isDirectMatch) {
+        const newCount = (userAttempts.count || 0) + 1;
+        if (newCount >= 5) {
+          const lockUntil = Date.now() + 3 * 60 * 1000; // 3 minutes
+          saveAttemptData(selectedUser.id, { count: 0, lockedUntil: lockUntil });
+          const secondsLeft = 180;
+          setLockoutTimeLeft(secondsLeft);
+          setError(`Gagal 5 kali! Akses terkunci selama 3 menit.`);
+          toast.error(`Gagal 5 kali! Akses Anda dikunci selama 3 menit.`);
+        } else {
+          saveAttemptData(selectedUser.id, { count: newCount, lockedUntil: null });
+          const remaining = 5 - newCount;
+          setError(`${appSettings?.login_index_label || "Index/Password"} yang Anda masukkan salah. (Percobaan tersisa: ${remaining}x)`);
+        }
+      } else {
+        clearAttemptData(selectedUser.id);
+        setLockoutTimeLeft(0);
+        toast.success(`Selamat datang, ${selectedUser.full_name}!`);
+        onLogin(selectedUser);
+      }
+    });
   };
 
   const loginTitle = isAdminMode ? "Portal Admin" : (appSettings?.login_title || "Masuk ke Aplikasi");

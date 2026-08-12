@@ -17,11 +17,13 @@ import {
   Hash,
   Laptop,
   Mail,
-  UserCheck
+  UserCheck,
+  RotateCcw
 } from 'lucide-react';
 import * as xlsx from 'xlsx';
 import { api } from '../services/api';
 import toast from 'react-hot-toast';
+import { ConfirmModal } from './modals/ConfirmModal';
 
 interface MasterUserManagementProps {
   isDark: boolean;
@@ -53,6 +55,8 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
   const [masterUserSearch, setMasterUserSearch] = React.useState('');
   const [addingType, setAddingType] = React.useState<'master-user' | null>(null);
   const [assetCategories, setAssetCategories] = React.useState<any[]>([]);
+  const [userToResetPassword, setUserToResetPassword] = React.useState<any | null>(null);
+  const [isResettingPassword, setIsResettingPassword] = React.useState<boolean>(false);
 
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 20;
@@ -444,6 +448,25 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
     }
   };
 
+  const handleResetUserPassword = (user: any) => {
+    setUserToResetPassword(user);
+  };
+
+  const confirmResetPassword = async () => {
+    if (!userToResetPassword) return;
+    setIsResettingPassword(true);
+    try {
+      const res = await api.resetUserPassword(userToResetPassword.id);
+      toast.success(res?.message || 'Password berhasil di-reset!');
+      handleManagementAction('master-user', 'refresh');
+      setUserToResetPassword(null);
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal reset password');
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
   const handleToggleFunnyEgg = async (user: any) => {
     const nextVal = user.enable_funny_egg === 1 ? 0 : 1;
     try {
@@ -828,6 +851,15 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
                         
                         <button 
                           type="button"
+                          onClick={() => handleResetUserPassword(user)}
+                          className="p-1.5 text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-lg transition-all"
+                          title="Reset Password ke NIK/Indeks Default"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        </button>
+                        
+                        <button 
+                          type="button"
                           onClick={() => handlePrintLabel(user)}
                           className="p-1.5 text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg transition-all"
                           title="Cetak Label"
@@ -927,6 +959,21 @@ export const MasterUserManagement: React.FC<MasterUserManagementProps> = ({
           </div>
         )}
       </div>
+
+      {userToResetPassword && (
+        <ConfirmModal
+          show={!!userToResetPassword}
+          onClose={() => setUserToResetPassword(null)}
+          onConfirm={confirmResetPassword}
+          title="Reset Password Karyawan"
+          message={`Apakah Anda yakin ingin mereset password untuk ${userToResetPassword.full_name}? Password akan dikembalikan ke Indeks/NIK default (${userToResetPassword.employee_index || '-'}).`}
+          confirmText="Ya, Reset Password"
+          isDark={isDark}
+          themeClasses={themeClasses}
+          loading={isResettingPassword}
+          type="warning"
+        />
+      )}
     </div>
   );
 };

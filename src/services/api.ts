@@ -169,6 +169,18 @@ export const api = {
     }).then(handleResponse);
   },
 
+  resetUserPassword: (id: number) => fetch(`/api/master-users/${id}/reset-password`, {
+    method: 'POST'
+  }).then(handleResponse),
+  resetAdminPassword: (id: number) => fetch(`/api/admin-users/${id}/reset-password`, {
+    method: 'POST'
+  }).then(handleResponse),
+  changePassword: (data: { username?: string, user_id?: number, currentPassword?: string, newPassword: string }) => fetch('/api/change-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(handleResponse),
+
   getAdminUsers: (): Promise<IUser[]> => fetch('/api/admin-users').then(handleResponse),
   addAdminUser: (data: any) => fetch('/api/admin-users', {
     method: 'POST',
@@ -330,13 +342,6 @@ export const api = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ mode })
-  }).then(handleResponse),
-
-  // Personal Password Change
-  changePassword: (data: { username: string; newPassword: string }) => fetch('/api/change-password', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
   }).then(handleResponse),
 
   // Evaluation Projects

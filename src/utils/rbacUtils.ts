@@ -1,12 +1,16 @@
 export const isSubDeptHeadOrSuperAdmin = (user: any): boolean => {
   if (!user) return false;
-  const role = (user.role || user.jabatan || '').toString().toLowerCase();
+  const role = (user.role || '').toString().toLowerCase();
+  const jabatan = (user.jabatan || '').toString().toLowerCase();
+  const combined = `${role} ${jabatan}`;
   return (
-    role.includes('super admin') ||
-    role.includes('sub dept head') ||
-    role.includes('sub dept') ||
+    combined.includes('super admin') ||
+    combined.includes('sub dept head') ||
+    combined.includes('sub dept') ||
     role === 'manager' ||
-    role.includes('head')
+    jabatan === 'manager' ||
+    role.includes('head') ||
+    jabatan.includes('head')
   );
 };
 

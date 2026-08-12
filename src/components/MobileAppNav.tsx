@@ -9,6 +9,7 @@ interface MobileAppNavProps {
   setViewMode: (mode: ViewMode) => void;
   isDark: boolean;
   adminUser: IAdminUser | null;
+  currentUser?: any;
   userCanVoucher?: boolean;
 }
 
@@ -17,6 +18,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
   setViewMode,
   isDark,
   adminUser,
+  currentUser,
   userCanVoucher
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -80,16 +82,16 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
             >
               Semua
             </button>
-            {adminUser && (
+            {(adminUser || currentUser) && (
               <button 
-                onClick={() => setViewMode('my_tickets')}
+                onClick={() => setViewMode(isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Setujui Pengadaan' : 'my_tickets')}
                 className={`flex-none py-2 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap text-center ${
-                  viewMode === 'my_tickets' 
+                  (viewMode === 'my_tickets' || viewMode === 'Setujui Pengadaan')
                     ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/15' 
                     : isDark ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
                 }`}
               >
-                {isSubDeptHeadOrSuperAdmin(adminUser) ? 'Setujui' : 'Tiket Saya'}
+                {isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Riwayat Setuju' : 'Tiket Saya'}
               </button>
             )}
           </div>
