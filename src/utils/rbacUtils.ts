@@ -33,7 +33,33 @@ export const isPelaksana = (user: any): boolean => {
   if (!user) return false;
   const role = (user.role || '').toString().toLowerCase();
   const jabatan = (user.jabatan || '').toString().toLowerCase();
-  return role.includes('pelaksana') || jabatan.includes('pelaksana');
+  const combined = `${role} ${jabatan}`;
+
+  // If user has Atasan or Admin/IT role, they are NOT Pelaksana
+  if (
+    combined.includes('super admin') ||
+    combined.includes('superadmin') ||
+    combined.includes('admin') ||
+    combined.includes('it support') ||
+    combined.includes('staff it') ||
+    combined.includes('app support') ||
+    combined.includes('sub dept head') ||
+    combined.includes('sub dept') ||
+    combined.includes('subdept') ||
+    combined.includes('kdkhead') ||
+    combined.includes('kdk head') ||
+    combined.includes('dept head') ||
+    combined.includes('department head') ||
+    combined.includes('section head') ||
+    combined.includes('manager') ||
+    role === 'manager' ||
+    jabatan === 'manager'
+  ) {
+    return false;
+  }
+
+  // Everyone else is Pelaksana / Karyawan / Regular User
+  return true;
 };
 
 export const isITSupportStaff = (user: any): boolean => {
@@ -42,7 +68,6 @@ export const isITSupportStaff = (user: any): boolean => {
   return (
     role.includes('staff it') ||
     role.includes('it support') ||
-    role.includes('pelaksana') ||
     role.includes('app support')
   );
 };
@@ -124,10 +149,21 @@ export const canViewTicketDetail = (
   if (adminUser) return true;
   if (!user) return false;
 
-  const myRole = (user.role || '').toString().toLowerCase();
-  const myJabatan = (user.jabatan || '').toString().toLowerCase();
+  // Lookup in masterUsers to get complete user metadata if available
+  const master = masterUsers.find((m: any) => 
+    (m.id && user.id && Number(m.id) === Number(user.id)) ||
+    (m.employee_index && user.employee_index && String(m.employee_index).toLowerCase().trim() === String(user.employee_index).toLowerCase().trim()) ||
+    (m.full_name && user.full_name && m.full_name.toLowerCase().trim() === user.full_name.toLowerCase().trim()) ||
+    (m.username && user.username && m.username.toLowerCase().trim() === user.username.toLowerCase().trim())
+  );
+  
+  const activeUser = master ? { ...user, ...master } : user;
+
+  const myRole = (activeUser.role || '').toString().toLowerCase().trim();
+  const myJabatan = (activeUser.jabatan || '').toString().toLowerCase().trim();
   const combined = `${myRole} ${myJabatan}`;
 
+  // IT Team / Admin roles -> Full access
   if (
     combined.includes('super admin') ||
     combined.includes('superadmin') ||
@@ -139,19 +175,24 @@ export const canViewTicketDetail = (
     return true;
   }
 
-  // 2. Ticket creator can always view their own ticket
-  if (isUserTicket(ticket, user)) {
+  // 2. Ticket creator can ALWAYS view their own ticket
+  if (isUserTicket(ticket, activeUser) || isUserTicket(ticket, user)) {
     return true;
   }
 
-  // 3. Check department match
-  const inSameDept = isTeamTicketForUser(ticket, user, masterUsers);
+  // 3. Pelaksana / Regular Employee CANNOT view other users' tickets even in the same department
+  if (isPelaksana(activeUser)) {
+    return false;
+  }
+
+  // 4. For Atasan / Leadership: Check department match
+  const inSameDept = isTeamTicketForUser(ticket, activeUser, masterUsers);
   if (!inSameDept) {
     return false;
   }
 
-  // 4. Within same department: Staff, Section Head, Sub Dept Head, KDKHead, Dept Head, Manager can view
-  const isDeptLeaderOrStaff = 
+  // 5. Within same department: Atasan (Sub Dept Head, Section Head, Dept Head, KDKHead, Manager) can view
+  const isDeptAtasan = 
     combined.includes('sub dept head') ||
     combined.includes('sub dept') ||
     combined.includes('subdept') ||
@@ -160,16 +201,13 @@ export const canViewTicketDetail = (
     combined.includes('dept head') ||
     combined.includes('department head') ||
     combined.includes('section head') ||
-    combined.includes('staff') ||
-    combined.includes('specialist') ||
     combined.includes('manager') ||
     myRole === 'manager' ||
     myJabatan === 'manager';
 
-  if (isDeptLeaderOrStaff) {
+  if (isDeptAtasan) {
     return true;
   }
 
-  // Pelaksana / user biasa viewing another user's ticket in the same department
   return false;
 };
