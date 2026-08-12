@@ -319,3 +319,5 @@ export const ForwardWhatsAppModal: React.FC<ForwardWhatsAppModalProps> = ({
     </AnimatePresence>
   );
 };
+
+export default ForwardWhatsAppModal;

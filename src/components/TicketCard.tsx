@@ -9,10 +9,12 @@ import {
   Trash2,
   Clock,
   Calendar,
-  MessageSquare
+  MessageSquare,
+  Lock
 } from 'lucide-react';
 import { ITicket, IAdminUser, ICategory } from '../types';
 import { getSLAColor, getSLALabel } from '../utils/ticketUtils';
+import { canViewTicketDetail } from '../utils/rbacUtils';
 import { HighlightText } from './Common';
 
 interface TicketCardProps {
@@ -22,6 +24,7 @@ interface TicketCardProps {
   themeClasses: any;
   adminUser: IAdminUser | null;
   currentUser?: any;
+  masterUsers?: any[];
   selectedTickets: number[];
   setSelectedTickets: React.Dispatch<React.SetStateAction<number[]>>;
   handleSelectTicket: (ticket: ITicket) => void;
@@ -43,6 +46,7 @@ export const TicketCard: React.FC<TicketCardProps> = React.memo(({
   themeClasses,
   adminUser,
   currentUser,
+  masterUsers = [],
   selectedTickets,
   setSelectedTickets,
   handleSelectTicket,
@@ -144,6 +148,10 @@ export const TicketCard: React.FC<TicketCardProps> = React.memo(({
 
   const statusInfo = getStatusDisplay(ticket.status, ticket.action_type);
 
+  const canViewDetail = React.useMemo(() => {
+    return canViewTicketDetail(ticket, currentUser, adminUser, masterUsers);
+  }, [ticket, currentUser, adminUser, masterUsers]);
+
   return (
     <motion.div
       layout
@@ -223,6 +231,14 @@ export const TicketCard: React.FC<TicketCardProps> = React.memo(({
                 : 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/80'
             } leading-none whitespace-nowrap shadow-xs shrink-0`}>
               {getSLALabel(ticket.created_at, ticket.status, customCritical, customDelayed, ticket.action_type)}
+            </span>
+          )}
+
+          {/* Access Lock Badge if restricted */}
+          {!canViewDetail && (
+            <span className={`inline-flex items-center gap-1 h-5 px-2 ${adminUser ? 'rounded-none' : 'rounded-full'} text-[9.5px] font-extrabold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 whitespace-nowrap shrink-0`} title="Akses Terbatas (Hanya Bagian Terkait)">
+              <Lock className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" />
+              Terbatas
             </span>
           )}
 
@@ -354,10 +370,14 @@ export const TicketCard: React.FC<TicketCardProps> = React.memo(({
             type="button"
             onClick={() => handleSelectTicket(ticket)}
             style={{ borderRadius: 'var(--admin-btn-radius, 14px)' }}
-            className="w-7 h-7 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-xs transition-all active:scale-95 cursor-pointer"
-            title="Menu & Detail"
+            className={`w-7 h-7 ${
+              !canViewDetail 
+                ? 'bg-amber-100/80 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 hover:bg-amber-200' 
+                : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'
+            } flex items-center justify-center font-bold text-xs transition-all active:scale-95 cursor-pointer`}
+            title={canViewDetail ? "Menu & Detail" : "Akses Terbatas (🔒)"}
           >
-            •••
+            {canViewDetail ? '•••' : <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />}
           </button>
         </div>
       </div>

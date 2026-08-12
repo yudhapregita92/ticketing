@@ -754,15 +754,10 @@ export const TicketDetailModal = React.memo(({
                       {((selectedTicket.action_type || actionType) !== 'Dipinjamkan') && (
                         <div className="pt-2 border-t border-slate-800 space-y-2">
                           {((selectedTicket.admin_reply || '').includes('[PERSETUJUAN SUB DEPT HEAD]') ||
-                            (selectedTicket.internal_notes || '').toLowerCase().includes('disetujui') ||
-                            (selectedTicket.status || modalStatus || '').toLowerCase().includes('disetujui') || 
-                            (selectedTicket.status || modalStatus || '').toLowerCase().includes('pending') ||
-                            (selectedTicket.status || modalStatus || '').toLowerCase().includes('selesai') || 
-                            (selectedTicket.status || modalStatus || '').toLowerCase().includes('completed') ||
-                            (selectedTicket.status || modalStatus || '').toLowerCase().includes('done') ||
-                            (selectedTicket.status || modalStatus || '').toLowerCase().includes('progres')) && 
+                            (selectedTicket.internal_notes || '').toLowerCase().includes('disetujui oleh sub dept head') ||
+                            (selectedTicket.status || modalStatus || '') === 'Disetujui (Dalam Pengadaan)') && 
                            !(selectedTicket.admin_reply || '').includes('[DITOLAK SUB DEPT HEAD]') ? (
-                            /* State: Pengadaan Telah Disetujui (Tombol Setujui tidak bisa diklik lagi) */
+                            /* State: Pengadaan Telah Disetujui (Tombol Setujui tidak bisa diklik lagi, Tombol Cetak Aktif) */
                             <div className="space-y-2.5 pt-1">
                               <div className="p-3 rounded-xl bg-emerald-950/95 border-2 border-emerald-500/80 text-emerald-100 shadow-xl space-y-1">
                                 <div className="flex items-center justify-between gap-2">
@@ -801,98 +796,92 @@ export const TicketDetailModal = React.memo(({
                                 </span>
                               </div>
 
-                              <div className="flex flex-col sm:flex-row items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    setActionType('Harus Dibeli');
-                                    const nextStatus = 'Pending (Menunggu Pengadaan)';
-                                    setModalStatus(nextStatus);
-                                    
-                                    const approverName = currentUser?.full_name || currentUser?.name || adminUser?.full_name || adminUser?.username || 'Sub Dept Head';
-                                    const notes = actionNotes || selectedTicket.action_notes || 'Pengadaan disetujui Sub Dept Head';
-                                    const reply = `[PERSETUJUAN SUB DEPT HEAD] Pengadaan barang telah disetujui oleh ${approverName} pada ${new Date().toLocaleString('id-ID')}.`;
-                                    const internal = 'Disetujui oleh Sub Dept Head / Manajemen';
+                              {/* Tombol Setujui / Tolak hanya tampil untuk Sub Dept Head / Super Admin */}
+                              {isSubDeptHeadOrSuperAdmin(currentUser || adminUser) && (
+                                <div className="flex flex-col sm:flex-row items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      setActionType('Harus Dibeli');
+                                      const nextStatus = 'Disetujui (Dalam Pengadaan)';
+                                      setModalStatus(nextStatus);
+                                      
+                                      const approverName = currentUser?.full_name || currentUser?.name || adminUser?.full_name || adminUser?.username || 'Sub Dept Head';
+                                      const notes = actionNotes || selectedTicket.action_notes || 'Pengadaan disetujui Sub Dept Head';
+                                      const reply = `[PERSETUJUAN SUB DEPT HEAD] Pengadaan barang telah disetujui oleh ${approverName} pada ${new Date().toLocaleString('id-ID')}.`;
+                                      const internal = 'Disetujui oleh Sub Dept Head / Manajemen';
 
-                                    const updatedTicket = {
-                                      ...selectedTicket,
-                                      status: nextStatus,
-                                      action_type: 'Harus Dibeli',
-                                      action_notes: notes,
-                                      admin_reply: reply,
-                                      internal_notes: internal
-                                    };
-
-                                    // 1. Update React state immediately
-                                    if (setSelectedTicket) {
-                                      setSelectedTicket(updatedTicket);
-                                    }
-
-                                    // 2. Persist to API immediately
-                                    try {
-                                      await api.updateTicket(selectedTicket.id, {
+                                      const updatedTicket = {
+                                        ...selectedTicket,
                                         status: nextStatus,
                                         action_type: 'Harus Dibeli',
                                         action_notes: notes,
                                         admin_reply: reply,
-                                        internal_notes: internal,
-                                        performed_by: approverName
+                                        internal_notes: internal
+                                      };
+
+                                      // 1. Update React state immediately
+                                      if (setSelectedTicket) {
+                                        setSelectedTicket(updatedTicket);
+                                      }
+
+                                      // 2. Persist to API immediately
+                                      try {
+                                        await api.updateTicket(selectedTicket.id, {
+                                          status: nextStatus,
+                                          action_type: 'Harus Dibeli',
+                                          action_notes: notes,
+                                          admin_reply: reply,
+                                          internal_notes: internal,
+                                          performed_by: approverName
+                                        });
+                                      } catch (e) {
+                                        console.error('API update error:', e);
+                                      }
+
+                                      addActivityLog({
+                                        user_name: approverName,
+                                        user_role: currentUser?.jabatan || adminUser?.role || 'Sub Dept Head',
+                                        action_type: 'UPDATE',
+                                        module: 'Tiket IT',
+                                        description: `Sub Dept Head / Admin menyetujui pengadaan barang untuk Tiket #${selectedTicket.ticket_no || selectedTicket.id}`,
+                                        ip_address: '192.168.1.1'
                                       });
-                                    } catch (e) {
-                                      console.error('API update error:', e);
-                                    }
 
-                                    addActivityLog({
-                                      user_name: approverName,
-                                      user_role: currentUser?.jabatan || adminUser?.role || 'Sub Dept Head',
-                                      action_type: 'UPDATE',
-                                      module: 'Tiket IT',
-                                      description: `Sub Dept Head / Admin menyetujui pengadaan barang untuk Tiket #${selectedTicket.ticket_no || selectedTicket.id}`,
-                                      ip_address: '192.168.1.1'
-                                    });
+                                      const assignee = selectedTicket.assigned_to || 'IT Support';
 
-                                    const assignee = selectedTicket.assigned_to || 'IT Support';
+                                      handleUpdateClick(
+                                        selectedTicket.id, 
+                                        nextStatus, 
+                                        assignee, 
+                                        reply, 
+                                        internal, 
+                                        modalPriority || selectedTicket.priority || 'Medium',
+                                        selectedTicket.estimated_duration,
+                                        selectedTicket.estimated_start_at,
+                                        selectedTicket.estimated_target_at,
+                                        requireRating ? 1 : 0,
+                                        'Harus Dibeli',
+                                        notes
+                                      );
+                                      toast.success('Pengadaan berhasil DISETUJUI! Surat Rekomendasi Pembelian Urgent siap dicetak.');
+                                    }}
+                                    className="w-full sm:flex-1 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-lg border border-emerald-400/50 transition-all cursor-pointer"
+                                  >
+                                    <Check className="w-4 h-4" />
+                                    <span>Setujui Pengadaan</span>
+                                  </button>
 
-                                    handleUpdateClick(
-                                      selectedTicket.id, 
-                                      nextStatus, 
-                                      assignee, 
-                                      reply, 
-                                      internal, 
-                                      modalPriority || selectedTicket.priority || 'Medium',
-                                      selectedTicket.estimated_duration,
-                                      selectedTicket.estimated_start_at,
-                                      selectedTicket.estimated_target_at,
-                                      requireRating ? 1 : 0,
-                                      'Harus Dibeli',
-                                      notes
-                                    );
-                                    toast.success('Pengadaan berhasil DISETUJUAI! Surat Rekomendasi Pembelian Urgent siap dicetak.');
-                                  }}
-                                  className="w-full sm:flex-1 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-lg border border-emerald-400/50 transition-all cursor-pointer"
-                                >
-                                  <Check className="w-4 h-4" />
-                                  <span>Setujui Pengadaan</span>
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => setShowRejectModal(true)}
-                                  className="w-full sm:flex-1 py-2.5 px-3 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-lg border border-rose-400/50 transition-all cursor-pointer"
-                                >
-                                  <X className="w-4 h-4" />
-                                  <span>Tolak Pengadaan</span>
-                                </button>
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={() => handlePrintRecommendation(selectedTicket)}
-                                className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-98 text-slate-200 text-xs font-bold flex items-center justify-center gap-2 border border-slate-700 shadow-md transition-all cursor-pointer"
-                              >
-                                <Printer className="w-4 h-4 text-emerald-400" />
-                                <span>Cetak Surat Rekomendasi Pembelian Urgent</span>
-                              </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowRejectModal(true)}
+                                    className="w-full sm:flex-1 py-2.5 px-3 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-lg border border-rose-400/50 transition-all cursor-pointer"
+                                  >
+                                    <X className="w-4 h-4" />
+                                    <span>Tolak Pengadaan</span>
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>

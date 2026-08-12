@@ -18,7 +18,8 @@ const safeRemoveItem = (key: string) => {
 
 import { APP_VERSION, getEnvironment } from './version';
 import { initBugLogger } from './utils/bugLogger';
-import { isSubDeptHeadOrSuperAdmin } from './utils/rbacUtils';
+import { isSubDeptHeadOrSuperAdmin, isTeamTicketForUser, canViewTicketDetail } from './utils/rbacUtils';
+import { isUserTicket } from './utils/ticketUtils';
 import { 
   Zap, 
   Send, 
@@ -315,6 +316,14 @@ export default function App() {
   }, [ticketDetails]);
 
   const handleSelectTicket = async (ticket: ITicket) => {
+    const canView = canViewTicketDetail(ticket, currentUser, adminUser, masterUsers);
+    if (!canView) {
+      toast.error(`🔒 Akses Terbatas: Detail tiket ini hanya dapat dibuka oleh pemohon, staff/atasan bagian ${ticket.department || 'terkait'}, dan Tim IT.`, {
+        duration: 4000,
+        icon: '🔒'
+      });
+      return;
+    }
     setSelectedTicket(ticket);
     setTicketLogs([]);
   };
@@ -571,112 +580,30 @@ export default function App() {
       } else if (viewMode === 'all') {
         // Show ALL tickets (no restriction by user or date)
       } else if (viewMode === 'team_tickets') {
-        if (!currentUser) return false;
-        
-        // Allowed if the ticket belongs to a subordinate
-        let isTeamTicket = false;
-        // Helper to parse valid sub-departments ignoring dummy values like '-' or 'none'
-        const parseSubDepts = (str?: string) => {
-          if (!str) return [];
-          return str
-            .toLowerCase()
-            .split(/[,/]/)
-            .map((s: string) => s.trim())
-            .filter((s: string) => Boolean(s) && s !== '-' && s !== 'none' && s !== 'n/a' && s !== 'null');
-        };
-
-        const myId = currentUser.id;
-        const myDept = (currentUser.department || '').toLowerCase().trim();
-        const tDept = (ticket.department || '').toLowerCase().trim();
-        const mySubDepts = parseSubDepts(currentUser.sub_department);
-        
-        const creator = masterUsers.find((u: any) => 
-          (u.full_name && ticket.name && u.full_name.toLowerCase() === ticket.name.toLowerCase()) || 
-          (u.employee_index && ticket.employee_index && u.employee_index === ticket.employee_index)
-        );
-
-        if (creator) {
-          // Option 1: Explicit Atasan Match
-          if (creator.atasan_id === myId) {
-            isTeamTicket = true;
-          } else {
-            // Option 2: Department and Sub-Department match
-            // Only evaluate department matching if creator doesn't have another explicit atasan assigned
-            if (!creator.atasan_id) {
-               const creatorDept = (creator.department || '').toLowerCase().trim();
-               const creatorSubDepts = parseSubDepts(creator.sub_department);
-
-               // Strict matching:
-               // If I have specific valid sub-departments, I should ONLY see tickets from creators 
-               // who share at least one of my sub-departments (or their exact department matches my sub-department).
-               if (mySubDepts.length > 0) {
-                 if (
-                   mySubDepts.includes(creatorDept) || 
-                   creatorSubDepts.some((s: string) => mySubDepts.includes(s))
-                 ) {
-                   isTeamTicket = true;
-                 }
-               } 
-               // If I DO NOT have specific sub-departments, I am likely a general Dept Head or in a flat department.
-               // In this case, I can see all tickets within my exact department.
-               else if (myDept && myDept !== '-' && creatorDept === myDept) {
-                 isTeamTicket = true;
-               }
-            }
-          }
-        } else {
-          // If creator not found in master user, fallback to simple ticket department match
-          if (mySubDepts.length > 0) {
-            if (mySubDepts.includes(tDept)) {
-              isTeamTicket = true;
-            }
-          } else if (myDept && myDept !== '-' && tDept === myDept) {
-            isTeamTicket = true;
-          }
-        }
-        
-        if (!isTeamTicket) return false;
+        if (!currentUser && !adminUser) return false;
+        const activeUser = currentUser || adminUser;
+        if (!isTeamTicketForUser(ticket, activeUser, masterUsers)) return false;
 
 
-      } else if (viewMode === 'my_tickets' || viewMode === 'Setujui Pengadaan') {
-        if (isSubDeptHeadOrSuperAdmin(currentUser || adminUser)) {
-          // Sub Dept Head & Super Admin View for "Setujui Pengadaan" / "Riwayat Setuju" tab
-          const isApprovalTicket = 
-            ticket.action_type === 'Harus Dibeli' || 
-            ticket.status === 'Pending' || 
-            ticket.status === 'Pending Pengadaan' || 
-            ticket.status === 'Menunggu Persetujuan Sub Dept Head' ||
-            ticket.status === 'Disetujui (Dalam Pengadaan)' ||
-            ticket.status === 'Pengadaan Ditolak' ||
-            (ticket.admin_reply || '').includes('[PERSETUJUAN SUB DEPT HEAD]') ||
-            (ticket.admin_reply || '').includes('[DITOLAK SUB DEPT HEAD]') ||
-            (ticket.admin_reply || '').includes('[PENGADAAN DITOLAK]') ||
-            (ticket.action_notes || '').includes('Sub Dept Head');
+      } else if (viewMode === 'Setujui Pengadaan') {
+        const isApprovalTicket = 
+          ticket.action_type === 'Harus Dibeli' || 
+          ticket.status === 'Pending' || 
+          ticket.status === 'Pending Pengadaan' || 
+          ticket.status === 'Menunggu Persetujuan Sub Dept Head' ||
+          ticket.status === 'Disetujui (Dalam Pengadaan)' ||
+          ticket.status === 'Pengadaan Ditolak' ||
+          (ticket.admin_reply || '').includes('[PERSETUJUAN SUB DEPT HEAD]') ||
+          (ticket.admin_reply || '').includes('[DITOLAK SUB DEPT HEAD]') ||
+          (ticket.admin_reply || '').includes('[PENGADAAN DITOLAK]') ||
+          (ticket.action_notes || '').includes('Sub Dept Head');
 
-          let isMyOwnTicket = false;
-          if (currentUser) {
-            const myName = (currentUser.full_name || currentUser.name || '').toLowerCase().trim();
-            const myIndex = (currentUser.employee_index || '').toLowerCase().trim();
-            const tName = (ticket.name || '').toLowerCase().trim();
-            const tIndex = (ticket.employee_index || '').toLowerCase().trim();
-            if ((myName && tName === myName) || (myIndex && tIndex === myIndex)) {
-              isMyOwnTicket = true;
-            }
-          } else if (adminUser) {
-            const myAdminName = (adminUser.full_name || adminUser.username || '').toLowerCase().trim();
-            const myAdminUser = (adminUser.username || '').toLowerCase().trim();
-            const tAssigned = (ticket.assigned_to || '').toLowerCase().trim();
-            const tName = (ticket.name || '').toLowerCase().trim();
-            if (tAssigned === myAdminName || tAssigned === myAdminUser || tName === myAdminName || tName === myAdminUser) {
-              isMyOwnTicket = true;
-            }
-          }
-
-          if (!isApprovalTicket && !isMyOwnTicket) {
-            return false;
-          }
+        if (!isApprovalTicket) return false;
+      } else if (viewMode === 'my_tickets') {
+        if (currentUser) {
+          const isMyTicket = isUserTicket(ticket, currentUser);
+          if (!isMyTicket) return false;
         } else if (adminUser) {
-          // Admin View Filter for "my_tickets" tab
           const myAdminName = (adminUser.full_name || adminUser.username || '').toLowerCase().trim();
           const myAdminUser = (adminUser.username || '').toLowerCase().trim();
           const tAssigned = (ticket.assigned_to || '').toLowerCase().trim();
@@ -685,78 +612,18 @@ export default function App() {
           if (tAssigned !== myAdminName && tAssigned !== myAdminUser && tName !== myAdminName && tName !== myAdminUser) {
             return false;
           }
-        } else {
-          // Public User View Filter for "Riwayat Tiket Saya" tab
-          const tName = (ticket.name || '').toLowerCase().trim();
-          const tIndex = (ticket.employee_index || '').toLowerCase().trim();
-          const tPhone = (ticket.phone || '').toLowerCase().trim();
-          const tNo = (ticket.ticket_no || '').toLowerCase().trim();
-
-          let isMyTicket = false;
-
-          if (currentUser) {
-            // Logged-in member (e.g. Andri Diham Saputra)
-            const myName = (currentUser.full_name || currentUser.name || '').toLowerCase().trim();
-            const myIndex = (currentUser.employee_index || '').toLowerCase().trim();
-            const myPhone = (currentUser.phone || '').toLowerCase().trim();
-
-            if (myName.length >= 2 && tName === myName) {
-              isMyTicket = true;
-            }
-            if (!isMyTicket && myIndex.length >= 2 && tIndex.length >= 2 && tIndex === myIndex) {
-              isMyTicket = true;
-            }
-            if (!isMyTicket && myPhone.length >= 4 && tPhone.length >= 4 && tPhone === myPhone) {
-              isMyTicket = true;
-            }
-          } else {
-            // Guest / Unauthenticated user session
-            let storedNos: string[] = [];
-            try {
-              const raw = safeGetItem('my_ticket_numbers');
-              if (raw && Array.isArray(JSON.parse(raw))) {
-                storedNos = JSON.parse(raw);
-              }
-            } catch (e) {}
-
-            const savedPhone = (safeGetItem('my_user_phone') || userIdentifier || '').toLowerCase().trim();
-            const savedIndex = (safeGetItem('my_employee_index') || '').toLowerCase().trim();
-            const savedName = (safeGetItem('my_user_name') || '').toLowerCase().trim();
-
-            if (storedNos.length > 0 && storedNos.some(no => String(no).toLowerCase().trim() === tNo)) {
-              isMyTicket = true;
-            }
-            if (!isMyTicket && savedName.length >= 3 && tName === savedName) {
-              isMyTicket = true;
-            }
-            if (!isMyTicket && savedIndex.length >= 2 && tIndex.length >= 2 && tIndex === savedIndex) {
-              isMyTicket = true;
-            }
-            if (!isMyTicket && savedPhone.length >= 5 && tPhone.length >= 5 && tPhone === savedPhone) {
-              isMyTicket = true;
-            }
-
-            const search = (searchQuery || '').toLowerCase().trim();
-            if (!isMyTicket && search.length >= 3) {
-              if (
-                tNo === search ||
-                (tPhone.length >= 4 && tPhone === search) ||
-                (tIndex.length >= 2 && tIndex === search) ||
-                (tName.length >= 3 && tName === search)
-              ) {
-                isMyTicket = true;
-              }
-            }
-          }
-
-          // Strictly exclude any ticket not belonging to this user in "Riwayat Tiket Saya"
-          if (!isMyTicket) return false;
         }
       }
 
       // 2. Secondary Dropdown Filters & Search
       const matchDept = filterDept ? ticket.department === filterDept : true;
-      const matchStatus = filterStatus ? ticket.status === filterStatus : true;
+      const matchStatus = filterStatus ? (
+        ticket.status === filterStatus ||
+        (filterStatus === 'In Progress' && (ticket.status === 'Progres' || ticket.status === 'In Progress')) ||
+        (filterStatus === 'Progres' && (ticket.status === 'Progres' || ticket.status === 'In Progress')) ||
+        (filterStatus === 'Completed' && (ticket.status === 'Selesai' || ticket.status === 'Completed')) ||
+        (filterStatus === 'Selesai' && (ticket.status === 'Selesai' || ticket.status === 'Completed'))
+      ) : true;
       const matchDate = filterDate ? parseSafeDate(ticket.created_at).toLocaleDateString('en-CA') === filterDate : true;
       const matchSearch = searchQuery ? (
         ticket.ticket_no.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -2411,6 +2278,7 @@ export default function App() {
                       handleBulkAction={handleBulkAction}
                       appSettings={appSettings}
                       onForwardWhatsApp={(t) => setWhatsappModalTicket(t)}
+                      masterUsers={masterUsers}
                     />
                   )}
                 </motion.div>

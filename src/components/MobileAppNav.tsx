@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ViewMode, IAdminUser } from '../types';
 import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { isSubDeptHeadOrSuperAdmin } from '../utils/rbacUtils';
+import { isSubDeptHeadOrSuperAdmin, canViewTeamTickets } from '../utils/rbacUtils';
 
 interface MobileAppNavProps {
   viewMode: ViewMode;
@@ -92,6 +92,18 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
                 }`}
               >
                 {isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Riwayat Setuju' : 'Tiket Saya'}
+              </button>
+            )}
+            {canViewTeamTickets(adminUser || currentUser) && (
+              <button 
+                onClick={() => setViewMode('team_tickets')}
+                className={`flex-none py-2 px-3 rounded-md text-xs font-bold transition-all whitespace-nowrap text-center ${
+                  viewMode === 'team_tickets'
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/15' 
+                    : isDark ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
+                }`}
+              >
+                Tiket Tim Saya
               </button>
             )}
           </div>

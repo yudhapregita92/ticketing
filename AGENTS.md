@@ -84,3 +84,41 @@ Aplikasi ini mendukung beberapa variasi tata letak (layout) dan tema khusus untu
 ## 9. Komitmen Konsistensi
 * Jaga kebersihan kode (clean code) dan gunakan **TypeScript** yang aman.
 * Lakukan verifikasi build (`npm run build`) dan linting (`npm run lint`) setiap setelah melakukan perubahan guna memastikan aplikasi selalu siap dirilis tanpa error.
+
+---
+
+## 10. Matriks Aturan Jabatan & Alur Persetujuan Pengadaan IT
+
+### A. Matriks Hak Akses & Jabatan
+* **Pelaksana (Karyawan Pembuat Tiket)**:
+  * Membuat tiket kendala/pengadaan IT baru.
+  * Memantau status tiket milik sendiri.
+  * **DILARANG** mengakses tombol persetujuan (*Setujui/Tolak Pengadaan*).
+  * Tombol **"Cetak Surat Rekomendasi Pembelian Urgent"** aktif *hanya setelah* disetujui Sub Dept Head / KDKHead.
+* **Staff & Section Head**:
+  * Menerima notifikasi dan memantau seluruh tiket di bagian/departemennya.
+  * Memantau progress pengerjaan tiket tim.
+  * **DILARANG** mengakses tombol persetujuan (*Setujui/Tolak Pengadaan*).
+  * Tombol **"Cetak Surat Rekomendasi Pembelian Urgent"** aktif *hanya setelah* disetujui Sub Dept Head / KDKHead.
+* **Sub Dept Head & KDKHead**:
+  * Memantau seluruh tiket di bagian/departemennya.
+  * Menerima permintaan persetujuan khusus ketika Tim IT menetapkan keputusan **"Harus Dibeli (Pengadaan Urgent)"**.
+  * **Wewenang Eksklusif**: Menampilkan tiket di tab *"Setujui Pengadaan"* serta memiliki akses tombol **"Setujui Pengadaan"** dan **"Tolak Pengadaan"**.
+  * Setelah menyetujui pengadaan, membuka akses tombol **"Cetak Surat Rekomendasi Pembelian Urgent"** untuk semua pihak.
+
+### B. Siklus Alur Kerja Persetujuan Pengadaan Urgent:
+1. **Pengajuan Tiket**: Pelaksana/Karyawan membuat tiket kendala/permintaan perangkat.
+2. **Notifikasi & Pemantauan Bagian**: Staff, Section Head, dan Sub Dept Head di departemen/bagian tersebut menerima notifikasi & dapat memantau tiket baru.
+3. **Pemeriksaan & Keputusan Tim IT**:
+   - Jika IT dapat memperbaiki/memberikan unit pengganti (**Dipinjamkan**), tiket diproses normal tanpa butuh persetujuan atasan.
+   - **KHUSUS jika IT memutuskan "Harus Dibeli (Pengadaan Urgent)"**:
+     - Status tiket otomatis berubah menjadi **`Menunggu Persetujuan Sub Dept Head`**.
+     - Jam SLA pengerjaan IT otomatis **DIBEKUKAN / PAUSED**.
+4. **Persetujuan Eksklusif Sub Dept Head / KDKHead**:
+   - Tiket muncul di tab persetujuan Sub Dept Head / KDKHead.
+   - Tombol **"Setujui Pengadaan"** dan **"Tolak Pengadaan"** **HANYA TAMPIL** untuk user berpangkat Sub Dept Head / KDKHead / Super Admin.
+5. **Aktivasi Pencetakan Surat Rekomendasi**:
+   - Sebelum disetujui, tombol cetak surat rekomendasi **BELUM AKTIF**.
+   - **Setelah Sub Dept Head / KDKHead menekan Setujui**: Status berubah menjadi **`Disetujui (Dalam Pengadaan)`**.
+   - Tombol **"Cetak Surat Rekomendasi Pembelian Urgent"** otomatis **AKTIF** dan dapat dicetak/diunduh oleh Karyawan Pemohon, Staff, Section Head, Sub Dept Head, maupun Tim IT.
+

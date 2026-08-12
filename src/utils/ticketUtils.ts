@@ -162,13 +162,19 @@ export const isUserTicket = (ticket: any, currentUser?: any): boolean => {
     const myName = (currentUser.full_name || currentUser.name || '').toLowerCase().trim();
     const myIndex = (currentUser.employee_index || '').toLowerCase().trim();
     const myPhone = (currentUser.phone || '').toLowerCase().trim();
+    const myEmail = (currentUser.email || '').toLowerCase().trim();
+    const tEmail = (ticket.email || '').toLowerCase().trim();
 
     if (myName.length >= 2 && tName === myName) return true;
     if (myIndex.length >= 2 && tIndex.length >= 2 && tIndex === myIndex) return true;
     if (myPhone.length >= 4 && tPhone.length >= 4 && tPhone === myPhone) return true;
+    if (myEmail.length >= 4 && tEmail.length >= 4 && tEmail === myEmail) return true;
+
+    // Strict isolation: logged-in user tickets MUST match currentUser credentials. Do NOT fall back to localStorage.
+    return false;
   }
 
-  // Fallback to localStorage / guest session if currentUser not set or didn't match
+  // Fallback to localStorage / guest session ONLY when currentUser is not logged in
   try {
     const raw = typeof window !== 'undefined' ? localStorage.getItem('my_ticket_numbers') : null;
     let storedNos: string[] = [];

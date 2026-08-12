@@ -40,7 +40,7 @@ import {
 import { IAdminUser, ITicket, COLORS, ViewMode } from '../types';
 import { Counter } from './Common';
 import { APP_VERSION, getEnvironment } from '../version';
-import { isSubDeptHeadOrSuperAdmin, getPendingApprovalCount } from '../utils/rbacUtils';
+import { isSubDeptHeadOrSuperAdmin, getPendingApprovalCount, canViewTeamTickets } from '../utils/rbacUtils';
 
 interface SidebarProps {
   adminUser: IAdminUser | null;
@@ -302,7 +302,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   )}
                 </div>
               </button>
-              {currentUser && ((currentUser.jabatan || '').toLowerCase().includes('head') || (currentUser.jabatan || '').toLowerCase().includes('manager')) && (
+              {(currentUser || adminUser) && canViewTeamTickets(currentUser || adminUser) && (
                 <button
                   onClick={() => setViewMode('team_tickets')}
                   title="Tiket Tim Saya"
