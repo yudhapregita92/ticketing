@@ -1,7 +1,7 @@
 import { parseSafeDate } from './dateUtils';
 
 export const getSLAColor = (createdAt: string, status: string, criticalHours?: number, delayedHours?: number, actionType?: string | null) => {
-  if (status === 'Pending' || status === 'Pending Pengadaan' || actionType === 'Harus Dibeli') {
+  if (status === 'Pending' || status === 'Pending Pengadaan' || status === 'Menunggu Persetujuan Sub Dept Head' || actionType === 'Harus Dibeli') {
     return 'bg-purple-500/10 border-purple-500/30 text-purple-400';
   }
   if (status !== 'New') return '';
@@ -38,7 +38,7 @@ export const getSLAColor = (createdAt: string, status: string, criticalHours?: n
 };
 
 export const getSLALabel = (createdAt: string, status: string, criticalHours?: number, delayedHours?: number, actionType?: string | null) => {
-  if (status === 'Pending' || status === 'Pending Pengadaan' || actionType === 'Harus Dibeli') {
+  if (status === 'Pending' || status === 'Pending Pengadaan' || status === 'Menunggu Persetujuan Sub Dept Head' || actionType === 'Harus Dibeli') {
     return '⏸️ SLA Paused (Pengadaan)';
   }
   if (status !== 'New') return null;
@@ -149,4 +149,46 @@ export const processPhotoWithWatermark = async (
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+};
+
+export const isUserTicket = (ticket: any, currentUser?: any): boolean => {
+  if (!ticket) return false;
+  const tName = (ticket.name || '').toLowerCase().trim();
+  const tIndex = (ticket.employee_index || '').toLowerCase().trim();
+  const tPhone = (ticket.phone || '').toLowerCase().trim();
+  const tNo = (ticket.ticket_no || '').toLowerCase().trim();
+
+  if (currentUser) {
+    const myName = (currentUser.full_name || currentUser.name || '').toLowerCase().trim();
+    const myIndex = (currentUser.employee_index || '').toLowerCase().trim();
+    const myPhone = (currentUser.phone || '').toLowerCase().trim();
+
+    if (myName.length >= 2 && tName === myName) return true;
+    if (myIndex.length >= 2 && tIndex.length >= 2 && tIndex === myIndex) return true;
+    if (myPhone.length >= 4 && tPhone.length >= 4 && tPhone === myPhone) return true;
+  }
+
+  // Fallback to localStorage / guest session if currentUser not set or didn't match
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem('my_ticket_numbers') : null;
+    let storedNos: string[] = [];
+    if (raw && Array.isArray(JSON.parse(raw))) {
+      storedNos = JSON.parse(raw);
+    }
+    if (storedNos.length > 0 && storedNos.some(no => String(no).toLowerCase().trim() === tNo)) {
+      return true;
+    }
+
+    const savedPhone = (typeof window !== 'undefined' && localStorage.getItem('my_user_phone') || '').toLowerCase().trim();
+    const savedIndex = (typeof window !== 'undefined' && localStorage.getItem('my_employee_index') || '').toLowerCase().trim();
+    const savedName = (typeof window !== 'undefined' && localStorage.getItem('my_user_name') || '').toLowerCase().trim();
+
+    if (savedName.length >= 2 && tName === savedName) return true;
+    if (savedIndex.length >= 2 && tIndex.length >= 2 && tIndex === savedIndex) return true;
+    if (savedPhone.length >= 4 && tPhone.length >= 4 && tPhone === savedPhone) return true;
+  } catch (e) {
+    // ignore localStorage errors
+  }
+
+  return false;
 };

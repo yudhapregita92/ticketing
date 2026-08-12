@@ -29,11 +29,17 @@ import {
   ShoppingCart,
   FileText,
   Laptop,
-  PauseCircle
+  PauseCircle,
+  ThumbsUp,
+  ThumbsDown,
+  AlertTriangle,
+  Check
 } from 'lucide-react';
 
 import { ITicket, PRIORITIES } from '../../types';
 import { api } from '../../services/api';
+import { isSubDeptHeadOrSuperAdmin, isITSupportStaff } from '../../utils/rbacUtils';
+import { addActivityLog } from '../../utils/activityLogger';
 
 interface TicketDetailModalProps {
   selectedTicket: ITicket | null;
@@ -261,6 +267,8 @@ export const TicketDetailModal = React.memo(({
 
   const [availableAssets, setAvailableAssets] = useState<any[]>([]);
   const [selectedLoanAssetId, setSelectedLoanAssetId] = useState<string>('');
+  const [showRejectModal, setShowRejectModal] = useState<boolean>(false);
+  const [rejectReason, setRejectReason] = useState<string>('');
 
   useEffect(() => {
     api.getAssets().then(res => {
@@ -715,28 +723,174 @@ export const TicketDetailModal = React.memo(({
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handlePrintRecommendation(selectedTicket)}
-                      className="w-full sm:w-auto px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[10.5px] sm:text-xs font-bold flex items-center justify-center gap-1.5 border border-emerald-400/50 shadow-md cursor-pointer active:scale-95 transition-all"
-                    >
-                      <Printer className="w-3.5 h-3.5" />
-                      <span>
-                        {(selectedTicket.action_type || actionType) === 'Dipinjamkan'
-                          ? 'Cetak Surat Pinjaman Unit'
-                          : (selectedTicket.action_type || actionType) === 'Harus Dibeli'
-                          ? 'Cetak Surat Rekomendasi Pengadaan'
-                          : 'Cetak Surat Rekomendasi'}
-                      </span>
-                    </button>
+                    {(selectedTicket.action_type || actionType) === 'Dipinjamkan' && (
+                      <button
+                        type="button"
+                        onClick={() => handlePrintRecommendation(selectedTicket)}
+                        className="w-full sm:w-auto px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[10.5px] sm:text-xs font-bold flex items-center justify-center gap-1.5 border border-emerald-400/50 shadow-md cursor-pointer active:scale-95 transition-all"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        <span>Cetak Surat Pinjaman Unit</span>
+                      </button>
+                    )}
                   </div>
 
                   {(selectedTicket.action_notes || actionNotes) && (
-                    <div className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-slate-950/70 border border-slate-700/60 space-y-0.5">
-                      <p className="text-[9px] sm:text-[10px] font-extrabold uppercase opacity-75 tracking-wider">Catatan / Spesifikasi IT:</p>
-                      <p className="text-[10.5px] sm:text-xs font-semibold whitespace-pre-wrap leading-normal text-slate-100">
-                        {selectedTicket.action_notes || actionNotes}
-                      </p>
+                    <div className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-slate-950/70 border border-slate-700/60 space-y-2">
+                      <div>
+                        <p className="text-[9px] sm:text-[10px] font-extrabold uppercase opacity-75 tracking-wider">Catatan / Spesifikasi IT:</p>
+                        <p className="text-[10.5px] sm:text-xs font-semibold whitespace-pre-wrap leading-normal text-slate-100">
+                          {selectedTicket.action_notes || actionNotes}
+                        </p>
+                      </div>
+
+                      {/* Integrated Approval / Print Section inside Red Box */}
+                      {(selectedTicket.action_type === 'Harus Dibeli' || actionType === 'Harus Dibeli') && (
+                        <div className="pt-2 border-t border-slate-800 space-y-2">
+                          {((selectedTicket.admin_reply || '').includes('[PERSETUJUAN SUB DEPT HEAD]') ||
+                            (selectedTicket.internal_notes || '').toLowerCase().includes('disetujui') ||
+                            (selectedTicket.status || modalStatus || '').toLowerCase().includes('disetujui') || 
+                            (selectedTicket.status || modalStatus || '').toLowerCase().includes('pending') ||
+                            (selectedTicket.status || modalStatus || '').toLowerCase().includes('selesai') || 
+                            (selectedTicket.status || modalStatus || '').toLowerCase().includes('completed') ||
+                            (selectedTicket.status || modalStatus || '').toLowerCase().includes('done') ||
+                            (selectedTicket.status || modalStatus || '').toLowerCase().includes('progres')) && 
+                           !(selectedTicket.admin_reply || '').includes('[DITOLAK SUB DEPT HEAD]') ? (
+                            /* State: Pengadaan Telah Disetujui (Tombol Setujui tidak bisa diklik lagi) */
+                            <div className="space-y-2.5 pt-1">
+                              <div className="p-3 rounded-xl bg-emerald-950/95 border-2 border-emerald-500/80 text-emerald-100 shadow-xl space-y-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="flex items-center gap-2 font-black text-xs text-emerald-300 uppercase tracking-wider">
+                                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                                    PENGADAAN TELAH DISETUJUAI SUB DEPT HEAD / MANAJEMEN
+                                  </span>
+                                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-[10px] font-mono text-emerald-300 font-bold">
+                                    Disetujui
+                                  </span>
+                                </div>
+                                <p className="text-[10.5px] text-emerald-200/90 font-medium leading-snug">
+                                  Pengadaan barang telah disetujui resmi. Silakan cetak dokumen Rekomendasi Pembelian Urgent melalui tombol hijau di bawah ini.
+                                </p>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handlePrintRecommendation(selectedTicket)}
+                                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-98 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2.5 border border-emerald-300/50 shadow-xl transition-all cursor-pointer"
+                              >
+                                <Printer className="w-4.5 h-4.5 text-white" />
+                                <span>Cetak Surat Rekomendasi Pembelian Urgent</span>
+                              </button>
+                            </div>
+                          ) : (
+                            /* State: Menunggu Persetujuan / Belum Disetujui */
+                            <div className="space-y-2.5 pt-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-[10px] font-extrabold text-amber-300 flex items-center gap-1.5 uppercase tracking-wider">
+                                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                  <span>Persetujuan Sub Dept Head Dibutuhkan:</span>
+                                </p>
+                                <span className="text-[9px] text-amber-300/80 font-mono italic">
+                                  Status: Menunggu Persetujuan
+                                </span>
+                              </div>
+
+                              <div className="flex flex-col sm:flex-row items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    setActionType('Harus Dibeli');
+                                    const nextStatus = 'Pending (Menunggu Pengadaan)';
+                                    setModalStatus(nextStatus);
+                                    
+                                    const approverName = currentUser?.full_name || currentUser?.name || adminUser?.full_name || adminUser?.username || 'Sub Dept Head';
+                                    const notes = actionNotes || selectedTicket.action_notes || 'Pengadaan disetujui Sub Dept Head';
+                                    const reply = `[PERSETUJUAN SUB DEPT HEAD] Pengadaan barang telah disetujui oleh ${approverName} pada ${new Date().toLocaleString('id-ID')}.`;
+                                    const internal = 'Disetujui oleh Sub Dept Head / Manajemen';
+
+                                    const updatedTicket = {
+                                      ...selectedTicket,
+                                      status: nextStatus,
+                                      action_type: 'Harus Dibeli',
+                                      action_notes: notes,
+                                      admin_reply: reply,
+                                      internal_notes: internal
+                                    };
+
+                                    // 1. Update React state immediately
+                                    if (setSelectedTicket) {
+                                      setSelectedTicket(updatedTicket);
+                                    }
+
+                                    // 2. Persist to API immediately
+                                    try {
+                                      await api.updateTicket(selectedTicket.id, {
+                                        status: nextStatus,
+                                        action_type: 'Harus Dibeli',
+                                        action_notes: notes,
+                                        admin_reply: reply,
+                                        internal_notes: internal,
+                                        performed_by: approverName
+                                      });
+                                    } catch (e) {
+                                      console.error('API update error:', e);
+                                    }
+
+                                    addActivityLog({
+                                      user_name: approverName,
+                                      user_role: currentUser?.jabatan || adminUser?.role || 'Sub Dept Head',
+                                      action_type: 'UPDATE',
+                                      module: 'Tiket IT',
+                                      description: `Sub Dept Head / Admin menyetujui pengadaan barang untuk Tiket #${selectedTicket.ticket_no || selectedTicket.id}`,
+                                      ip_address: '192.168.1.1'
+                                    });
+
+                                    const assignee = selectedTicket.assigned_to || 'IT Support';
+
+                                    handleUpdateClick(
+                                      selectedTicket.id, 
+                                      nextStatus, 
+                                      assignee, 
+                                      reply, 
+                                      internal, 
+                                      modalPriority || selectedTicket.priority || 'Medium',
+                                      selectedTicket.estimated_duration,
+                                      selectedTicket.estimated_start_at,
+                                      selectedTicket.estimated_target_at,
+                                      requireRating ? 1 : 0,
+                                      'Harus Dibeli',
+                                      notes
+                                    );
+                                    toast.success('Pengadaan berhasil DISETUJUAI! Surat Rekomendasi Pembelian Urgent siap dicetak.');
+                                  }}
+                                  className="w-full sm:flex-1 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-lg border border-emerald-400/50 transition-all cursor-pointer"
+                                >
+                                  <Check className="w-4 h-4" />
+                                  <span>Setujui Pengadaan</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setShowRejectModal(true)}
+                                  className="w-full sm:flex-1 py-2.5 px-3 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-lg border border-rose-400/50 transition-all cursor-pointer"
+                                >
+                                  <X className="w-4 h-4" />
+                                  <span>Tolak Pengadaan</span>
+                                </button>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handlePrintRecommendation(selectedTicket)}
+                                className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-98 text-slate-200 text-xs font-bold flex items-center justify-center gap-2 border border-slate-700 shadow-md transition-all cursor-pointer"
+                              >
+                                <Printer className="w-4 h-4 text-emerald-400" />
+                                <span>Cetak Surat Rekomendasi Pembelian Urgent</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1387,7 +1541,7 @@ export const TicketDetailModal = React.memo(({
                           type="button"
                           onClick={() => {
                             setActionType('Harus Dibeli');
-                            setModalStatus('Pending');
+                            setModalStatus('Menunggu Persetujuan Sub Dept Head');
                             if (!actionNotes && appSettings?.it_default_buy_notes) {
                               setActionNotes(appSettings.it_default_buy_notes);
                             }
@@ -1403,15 +1557,31 @@ export const TicketDetailModal = React.memo(({
                         </button>
                       </div>
 
-                      {(actionType === 'Harus Dibeli' || (modalStatus || selectedTicket.status) === 'Pending') && (
-                        <div className="p-2 sm:p-2.5 rounded-xl bg-purple-950/80 border border-purple-500/50 text-purple-200 text-[10px] sm:text-[10.5px] space-y-1 shadow-md">
-                          <div className="flex items-center gap-1.5 font-black text-purple-300 uppercase tracking-wider text-[10.5px] sm:text-[11px]">
-                            <PauseCircle className="w-4 h-4 text-purple-400 shrink-0" />
-                            <span>SLA Penanganan IT Dibekukan (Paused)</span>
+                      {/* SLA Paused & Approval Box */}
+                      {(actionType === 'Harus Dibeli' || selectedTicket.action_type === 'Harus Dibeli' || (modalStatus || selectedTicket.status) === 'Pending' || (modalStatus || selectedTicket.status) === 'Pending Pengadaan' || (modalStatus || selectedTicket.status) === 'Menunggu Persetujuan Sub Dept Head') && (
+                        <div className="space-y-2">
+                          <div className="p-2 sm:p-2.5 rounded-xl bg-purple-950/80 border border-purple-500/50 text-purple-200 text-[10px] sm:text-[10.5px] space-y-1 shadow-md">
+                            <div className="flex items-center gap-1.5 font-black text-purple-300 uppercase tracking-wider text-[10.5px] sm:text-[11px]">
+                              <PauseCircle className="w-4 h-4 text-purple-400 shrink-0" />
+                              <span>SLA Penanganan IT Dibekukan (Paused)</span>
+                            </div>
+                            <p className="leading-snug text-purple-200/90 font-medium">
+                              Status tiket ditandai <strong>Menunggu Persetujuan Pengadaan</strong>. Perhitungan jam SLA penanganan teknis IT secara otomatis <strong>DIBEKUKAN / PAUSED</strong> agar estimasi waktu proses persetujuan Sub Dept Head & pembelian tidak membebani performa SLA tim IT.
+                            </p>
                           </div>
-                          <p className="leading-snug text-purple-200/90 font-medium">
-                            Status tiket ditandai <strong>Menunggu Pengadaan (Pending)</strong>. Perhitungan jam SLA penanganan teknis IT secara otomatis <strong>DIBEKUKAN / PAUSED</strong> agar estimasi waktu proses pembelian oleh Purchasing/Procurement tidak membebani performa SLA tim IT.
-                          </p>
+
+                          {/* SLA Paused Notification */}
+                          {!isSubDeptHeadOrSuperAdmin(adminUser || currentUser) && (
+                            <div className="p-2.5 rounded-xl bg-amber-950/80 border border-amber-500/40 text-amber-200 text-[10.5px] space-y-1">
+                              <p className="font-bold text-amber-300 flex items-center gap-1.5">
+                                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                                <span>Permintaan Diteruskan ke Sub Dept Head</span>
+                              </p>
+                              <p className="text-amber-200/90 leading-snug">
+                                Permintaan pengadaan barang telah diteruskan ke Sub Dept Head / Manajemen untuk persetujuan anggaran.
+                              </p>
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -1527,11 +1697,13 @@ export const TicketDetailModal = React.memo(({
                   </div>
                 </div>
               ) : (
-                <div className={`p-4 rounded-xl border ${themeClasses.bgSecondary} ${themeClasses.border} text-center space-y-2`}>
-                  <ShieldCheck className="w-7 h-7 text-emerald-500 mx-auto" />
-                  <p className={`text-xs font-bold ${themeClasses.text}`}>Sistem Penanganan Tiket IT</p>
-                  <p className={`text-[10px] ${themeClasses.textMuted}`}>Hanya admin dan tim IT bertugas yang dapat mengubah status tiket.</p>
-                  
+                <div className={`p-4 rounded-xl border ${themeClasses.bgSecondary} ${themeClasses.border} space-y-3`}>
+                  <div className="text-center space-y-2">
+                    <ShieldCheck className="w-7 h-7 text-emerald-500 mx-auto" />
+                    <p className={`text-xs font-bold ${themeClasses.text}`}>Sistem Penanganan Tiket IT</p>
+                    <p className={`text-[10px] ${themeClasses.textMuted}`}>Hanya admin dan tim IT bertugas yang dapat mengubah status tiket.</p>
+                  </div>
+
                   {isMyTicket && onForwardWhatsApp && (
                     <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
                       <button
@@ -1579,6 +1751,90 @@ export const TicketDetailModal = React.memo(({
           </div>
         </div>
       </motion.div>
+
+      {/* Modal Penolakan Pengadaan */}
+      {showRejectModal && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center p-3 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 text-white p-5 rounded-2xl max-w-md w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="font-extrabold text-sm text-rose-400 flex items-center gap-2">
+                <X className="w-4 h-4" />
+                Penolakan Pengadaan Barang (Sub Dept Head)
+              </h3>
+              <button onClick={() => setShowRejectModal(false)} className="text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Silakan masukkan alasan penolakan anggaran / pengadaan barang untuk <strong>Tiket #{selectedTicket?.ticket_no || selectedTicket?.id}</strong>:
+            </p>
+            <textarea
+              value={rejectReason}
+              onChange={e => setRejectReason(e.target.value)}
+              rows={3}
+              placeholder="Contoh: Perbaikan dapat dilakukan tanpa penggantian unit / anggaran Opex tidak mencukupi..."
+              className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500 font-medium placeholder:text-slate-500"
+            />
+            <div className="flex gap-2 justify-end pt-1">
+              <button
+                onClick={() => setShowRejectModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-700 text-slate-300 hover:bg-slate-800 transition-all"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => {
+                  if (!rejectReason.trim()) {
+                    toast.error('Alasan penolakan wajib diisi!');
+                    return;
+                  }
+                  if (!selectedTicket) return;
+                  const nextStatus = 'Pengadaan Ditolak';
+                  setModalStatus(nextStatus);
+
+                  const approverName = adminUser?.full_name || adminUser?.username || currentUser?.full_name || currentUser?.name || 'Sub Dept Head';
+                  const approverRole = adminUser?.role || currentUser?.jabatan || 'Sub Dept Head';
+
+                  addActivityLog({
+                    user_name: approverName,
+                    user_role: approverRole,
+                    action_type: 'UPDATE',
+                    module: 'Tiket IT',
+                    description: `Sub Dept Head menolak pengadaan barang untuk Tiket #${selectedTicket.ticket_no || selectedTicket.id}: ${rejectReason}`,
+                    ip_address: '192.168.1.1'
+                  });
+
+                  const assignee = adminUser?.role === 'Super Admin' 
+                    ? ((document.getElementById(`modal-assignee-${selectedTicket.id}`) as HTMLSelectElement)?.value || '') 
+                    : (selectedTicket.assigned_to || 'IT Support');
+                  const reply = `[PENGADAAN DITOLAK] Pengadaan barang ditolak oleh Sub Dept Head (${approverName}). Alasan: ${rejectReason}`;
+
+                  handleUpdateClick(
+                    selectedTicket.id, 
+                    nextStatus, 
+                    assignee, 
+                    reply, 
+                    `Alasan Penolakan: ${rejectReason}`, 
+                    modalPriority || selectedTicket.priority || 'Medium',
+                    selectedTicket.estimated_duration,
+                    selectedTicket.estimated_start_at,
+                    selectedTicket.estimated_target_at,
+                    requireRating ? 1 : 0,
+                    'Harus Dibeli',
+                    `Ditolak: ${rejectReason}`
+                  );
+                  toast.error('Pengadaan barang ditolak.');
+                  setShowRejectModal(false);
+                  setSelectedTicket(null);
+                }}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
+              >
+                Konfirmasi Penolakan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });

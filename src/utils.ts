@@ -20,7 +20,7 @@ export const getDeviceInfo = (ua: string) => {
 };
 
 export const getSLAColor = (createdAt: string, status: string, criticalHours?: number, delayedHours?: number, actionType?: string | null) => {
-  if (status === 'Pending' || status === 'Pending Pengadaan' || actionType === 'Harus Dibeli') {
+  if (status === 'Pending' || status === 'Pending Pengadaan' || status === 'Menunggu Persetujuan Sub Dept Head' || actionType === 'Harus Dibeli') {
     return 'bg-purple-500/10 border-purple-500/30 text-purple-400';
   }
   if (status !== 'New') return '';
@@ -57,7 +57,7 @@ export const getSLAColor = (createdAt: string, status: string, criticalHours?: n
 };
 
 export const getSLALabel = (createdAt: string, status: string, criticalHours?: number, delayedHours?: number, actionType?: string | null) => {
-  if (status === 'Pending' || status === 'Pending Pengadaan' || actionType === 'Harus Dibeli') {
+  if (status === 'Pending' || status === 'Pending Pengadaan' || status === 'Menunggu Persetujuan Sub Dept Head' || actionType === 'Harus Dibeli') {
     return '⏸️ SLA Paused (Pengadaan)';
   }
   if (status !== 'New') return null;

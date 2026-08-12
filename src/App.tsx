@@ -18,6 +18,7 @@ const safeRemoveItem = (key: string) => {
 
 import { APP_VERSION, getEnvironment } from './version';
 import { initBugLogger } from './utils/bugLogger';
+import { isSubDeptHeadOrSuperAdmin } from './utils/rbacUtils';
 import { 
   Zap, 
   Send, 
@@ -632,7 +633,39 @@ export default function App() {
 
 
       } else if (viewMode === 'my_tickets') {
-        if (adminUser) {
+        if (isSubDeptHeadOrSuperAdmin(currentUser || adminUser)) {
+          // Sub Dept Head & Super Admin View for "Setujui Pengadaan" tab
+          const isApprovalTicket = 
+            ticket.action_type === 'Harus Dibeli' || 
+            ticket.status === 'Pending' || 
+            ticket.status === 'Pending Pengadaan' || 
+            ticket.status === 'Menunggu Persetujuan Sub Dept Head' ||
+            ticket.status === 'Disetujui (Dalam Pengadaan)' ||
+            ticket.status === 'Pengadaan Ditolak';
+
+          let isMyOwnTicket = false;
+          if (currentUser) {
+            const myName = (currentUser.full_name || currentUser.name || '').toLowerCase().trim();
+            const myIndex = (currentUser.employee_index || '').toLowerCase().trim();
+            const tName = (ticket.name || '').toLowerCase().trim();
+            const tIndex = (ticket.employee_index || '').toLowerCase().trim();
+            if ((myName && tName === myName) || (myIndex && tIndex === myIndex)) {
+              isMyOwnTicket = true;
+            }
+          } else if (adminUser) {
+            const myAdminName = (adminUser.full_name || adminUser.username || '').toLowerCase().trim();
+            const myAdminUser = (adminUser.username || '').toLowerCase().trim();
+            const tAssigned = (ticket.assigned_to || '').toLowerCase().trim();
+            const tName = (ticket.name || '').toLowerCase().trim();
+            if (tAssigned === myAdminName || tAssigned === myAdminUser || tName === myAdminName || tName === myAdminUser) {
+              isMyOwnTicket = true;
+            }
+          }
+
+          if (!isApprovalTicket && !isMyOwnTicket) {
+            return false;
+          }
+        } else if (adminUser) {
           // Admin View Filter for "my_tickets" tab
           const myAdminName = (adminUser.full_name || adminUser.username || '').toLowerCase().trim();
           const myAdminUser = (adminUser.username || '').toLowerCase().trim();

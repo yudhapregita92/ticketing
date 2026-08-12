@@ -1,5 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { isSubDeptHeadOrSuperAdmin, getPendingApprovalCount } from '../utils/rbacUtils';
+import { isUserTicket } from '../utils/ticketUtils';
 
 interface UserHeroBannerProps {
   currentUser: any;
@@ -42,13 +44,16 @@ export const UserHeroBanner: React.FC<UserHeroBannerProps> = ({
   const fullName = currentUser?.full_name || 'User';
   const firstName = fullName.trim().split(' ')[0] || fullName;
 
-  // Calculate ticket counts for User vs Admin
+  // Calculate ticket counts for User vs Admin vs Sub Dept Head
+  const isSubDeptHead = isSubDeptHeadOrSuperAdmin(currentUser);
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'it_support' || currentUser?.is_admin || currentUser?.employee_index === 'IT' || currentUser?.employee_index === 'ADMIN';
 
-  const myTickets = tickets.filter(t => 
-    (currentUser?.employee_index && t.employee_index === currentUser.employee_index) || 
-    (currentUser?.name && t.name?.toLowerCase() === currentUser.name?.toLowerCase())
+  const teamTickets = tickets.filter(t => 
+    currentUser?.department ? t.department?.toLowerCase() === currentUser.department?.toLowerCase() : true
   );
+  const pendingApprovalCount = getPendingApprovalCount(tickets);
+
+  const myTickets = tickets.filter(t => isUserTicket(t, currentUser));
   const myNewCount = myTickets.filter(t => t.status === 'New').length;
   const myProgressCount = myTickets.filter(t => t.status === 'In Progress' || t.status === 'Progres').length;
   const myPendingCount = myTickets.filter(t => t.status === 'Pending' || t.status === 'Pending Pengadaan').length;
@@ -56,9 +61,15 @@ export const UserHeroBanner: React.FC<UserHeroBannerProps> = ({
   const globalNewCount = tickets.filter(t => t.status === 'New').length;
   const globalProgressCount = tickets.filter(t => t.status === 'In Progress' || t.status === 'Progres').length;
 
-  // Construct dynamic text appropriate for User or Admin
+  // Construct dynamic text appropriate for User, Sub Dept Head, or Admin
   let bannerText = '';
-  if (isAdmin) {
+  if (isSubDeptHead) {
+    if (pendingApprovalCount > 0) {
+      bannerText = `Tiket Tim Saya (${teamTickets.length}): Ada ${pendingApprovalCount} pengadaan barang membutuhkan persetujuan Anda sebagai Sub Dept Head.`;
+    } else {
+      bannerText = `Tiket Tim Saya (${teamTickets.length}): Seluruh tiket departemen ${currentUser?.department || ''} terpantau lancar dan tidak ada antrian persetujuan.`;
+    }
+  } else if (isAdmin) {
     if (globalNewCount > 0 && globalProgressCount > 0) {
       bannerText = `Ada ${globalNewCount} tiket baru dan ${globalProgressCount} tiket progres perlu ditangani tim IT hari ini.`;
     } else if (globalNewCount > 0) {

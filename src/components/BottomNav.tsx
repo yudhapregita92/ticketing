@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { IAdminUser, ISettings, ViewMode } from '../types';
 import { Logo } from './Logo';
+import { isSubDeptHeadOrSuperAdmin } from '../utils/rbacUtils';
 
 interface BottomNavProps {
   adminUser: IAdminUser | null;
@@ -114,7 +115,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                 className={`flex flex-col items-center justify-center gap-[2px] ${viewMode === 'my_tickets' ? activeTextClass : textClass}`}
               >
                 <UserCog className={`w-5 h-5 ${viewMode === 'my_tickets' ? 'stroke-[2.5px]' : 'stroke-2'}`} style={{ color: viewMode === 'my_tickets' ? primaryColor : undefined }} />
-                <span className={`${navTextWeight}`} style={{ fontSize: `${navTextSize}px` }}>Saya</span>
+                <span className={`${navTextWeight}`} style={{ fontSize: `${navTextSize}px` }}>
+                  {isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Setujui' : 'Saya'}
+                </span>
               </motion.button>
 
               {setShowImageManager && (

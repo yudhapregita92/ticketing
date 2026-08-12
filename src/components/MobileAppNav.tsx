@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ViewMode, IAdminUser } from '../types';
 import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { isSubDeptHeadOrSuperAdmin } from '../utils/rbacUtils';
 
 interface MobileAppNavProps {
   viewMode: ViewMode;
@@ -88,7 +89,7 @@ export const MobileAppNav: React.FC<MobileAppNavProps> = ({
                     : isDark ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
                 }`}
               >
-                Tiket Saya
+                {isSubDeptHeadOrSuperAdmin(adminUser) ? 'Setujui' : 'Tiket Saya'}
               </button>
             )}
           </div>

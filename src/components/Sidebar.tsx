@@ -40,6 +40,7 @@ import {
 import { IAdminUser, ITicket, COLORS, ViewMode } from '../types';
 import { Counter } from './Common';
 import { APP_VERSION, getEnvironment } from '../version';
+import { isSubDeptHeadOrSuperAdmin, getPendingApprovalCount } from '../utils/rbacUtils';
 
 interface SidebarProps {
   adminUser: IAdminUser | null;
@@ -228,12 +229,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   
                   <button
                     onClick={() => setViewMode('my_tickets')}
-                    title="Tiket Saya"
+                    title={isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Setujui' : 'Tiket Saya'}
                     className={getMenuItemClass(viewMode === 'my_tickets')}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      {adminThemeLayout !== 'compact' && <span>Tiket Saya</span>}
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2.5">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        {adminThemeLayout !== 'compact' && (
+                          <span>{isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Setujui' : 'Tiket Saya'}</span>
+                        )}
+                      </div>
+                      {isSubDeptHeadOrSuperAdmin(adminUser || currentUser) && getPendingApprovalCount(tickets) > 0 && (
+                        <span className="px-1.5 py-0.2 text-[9px] font-black bg-rose-500 text-white rounded-full animate-pulse">
+                          {getPendingApprovalCount(tickets)}
+                        </span>
+                      )}
                     </div>
                   </button>
                 </div>
@@ -275,12 +285,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
               
               <button
                 onClick={() => setViewMode('my_tickets')}
-                title="Riwayat Tiket Saya"
+                title={isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Setujui' : 'Riwayat Tiket Saya'}
                 className={getMenuItemClass(viewMode === 'my_tickets')}
               >
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle2 className="w-4 h-4" />
-                  {adminThemeLayout !== 'compact' && <span>Riwayat Tiket Saya</span>}
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-2.5">
+                    <CheckCircle2 className="w-4 h-4" />
+                    {adminThemeLayout !== 'compact' && (
+                      <span>{isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Setujui' : 'Riwayat Tiket Saya'}</span>
+                    )}
+                  </div>
+                  {isSubDeptHeadOrSuperAdmin(adminUser || currentUser) && getPendingApprovalCount(tickets) > 0 && (
+                    <span className="px-1.5 py-0.5 text-[9px] font-black bg-rose-500 text-white rounded-full animate-pulse">
+                      {getPendingApprovalCount(tickets)}
+                    </span>
+                  )}
                 </div>
               </button>
               {currentUser && ((currentUser.jabatan || '').toLowerCase().includes('head') || (currentUser.jabatan || '').toLowerCase().includes('manager')) && (

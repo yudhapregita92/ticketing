@@ -11,12 +11,15 @@ import {
   AlertCircle,
   ArrowUpDown,
   User,
+  Users,
   Calendar
 } from 'lucide-react';
 import { ITicket, IAdminUser, ICategory } from '../types';
 import { TicketCard } from './TicketCard';
 import { SkeletonTicket, RollingNumber } from './Common';
 import { UserHeroBanner } from './UserHeroBanner';
+import { isSubDeptHeadOrSuperAdmin, getPendingApprovalCount } from '../utils/rbacUtils';
+import { isUserTicket } from '../utils/ticketUtils';
 
 interface TicketListProps {
   adminUser: IAdminUser | null;
@@ -120,57 +123,21 @@ export const TicketList: React.FC<TicketListProps> = ({
         />
       )}
 
-      {/* Primary View Tabs: Hari Ini / Semua */}
-      <div className={`relative mt-1 mb-2 sm:mb-3 border-b transition-colors flex items-center overflow-x-auto no-scrollbar ${
-        isDark ? 'border-slate-800' : 'border-slate-200/80'
-      }`}>
-        <button
-          onClick={() => setViewMode('today')}
-          className={`relative flex-1 min-w-max py-2 sm:py-3 px-2.5 sm:px-4 text-center text-xs sm:text-sm md:text-base font-bold whitespace-nowrap transition-colors ${
-            viewMode === 'today'
-              ? 'text-emerald-600 dark:text-emerald-400 font-extrabold'
-              : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-900'
-          }`}
-        >
-          Hari Ini
-          {viewMode === 'today' && (
-            <motion.div 
-              layoutId="tabUnderline"
-              className="absolute bottom-0 left-0 right-0 h-0.5 sm:h-1 bg-emerald-600 dark:bg-emerald-500 rounded-full"
-              transition={{ type: "spring", stiffness: 350, damping: 30 }}
-            />
-          )}
-        </button>
-
-        <button
-          onClick={() => setViewMode('all')}
-          className={`relative flex-1 min-w-max py-2 sm:py-3 px-2.5 sm:px-4 text-center text-xs sm:text-sm md:text-base font-bold whitespace-nowrap transition-colors ${
-            viewMode === 'all'
-              ? 'text-emerald-600 dark:text-emerald-400 font-extrabold'
-              : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-900'
-          }`}
-        >
-          Semua
-          {viewMode === 'all' && (
-            <motion.div 
-              layoutId="tabUnderline"
-              className="absolute bottom-0 left-0 right-0 h-0.5 sm:h-1 bg-emerald-600 dark:bg-emerald-500 rounded-full"
-              transition={{ type: "spring", stiffness: 350, damping: 30 }}
-            />
-          )}
-        </button>
-
-        {(adminUser || viewMode === 'my_tickets' || currentUser) && (
+      {/* Primary View Tabs: Hari Ini / Semua (Hidden for Sub Dept Head to prevent stacked tabs) */}
+      {!isSubDeptHeadOrSuperAdmin(adminUser || currentUser) && (
+        <div className={`relative mt-1 mb-2 sm:mb-3 border-b transition-colors flex items-center overflow-x-auto no-scrollbar ${
+          isDark ? 'border-slate-800' : 'border-slate-200/80'
+        }`}>
           <button
-            onClick={() => setViewMode('my_tickets')}
+            onClick={() => setViewMode('today')}
             className={`relative flex-1 min-w-max py-2 sm:py-3 px-2.5 sm:px-4 text-center text-xs sm:text-sm md:text-base font-bold whitespace-nowrap transition-colors ${
-              viewMode === 'my_tickets'
+              viewMode === 'today'
                 ? 'text-emerald-600 dark:text-emerald-400 font-extrabold'
                 : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
-            Tiket Saya
-            {viewMode === 'my_tickets' && (
+            Hari Ini
+            {viewMode === 'today' && (
               <motion.div 
                 layoutId="tabUnderline"
                 className="absolute bottom-0 left-0 right-0 h-0.5 sm:h-1 bg-emerald-600 dark:bg-emerald-500 rounded-full"
@@ -178,19 +145,17 @@ export const TicketList: React.FC<TicketListProps> = ({
               />
             )}
           </button>
-        )}
 
-        {!adminUser && currentUser && ((currentUser.jabatan || '').toLowerCase().includes('head') || (currentUser.jabatan || '').toLowerCase().includes('manager')) && (
           <button
-            onClick={() => setViewMode('team_tickets')}
+            onClick={() => setViewMode('all')}
             className={`relative flex-1 min-w-max py-2 sm:py-3 px-2.5 sm:px-4 text-center text-xs sm:text-sm md:text-base font-bold whitespace-nowrap transition-colors ${
-              viewMode === 'team_tickets'
+              viewMode === 'all'
                 ? 'text-emerald-600 dark:text-emerald-400 font-extrabold'
                 : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
-            Tiket Tim Saya
-            {viewMode === 'team_tickets' && (
+            Semua
+            {viewMode === 'all' && (
               <motion.div 
                 layoutId="tabUnderline"
                 className="absolute bottom-0 left-0 right-0 h-0.5 sm:h-1 bg-emerald-600 dark:bg-emerald-500 rounded-full"
@@ -198,8 +163,53 @@ export const TicketList: React.FC<TicketListProps> = ({
               />
             )}
           </button>
-        )}
-      </div>
+
+          {(adminUser || viewMode === 'my_tickets' || currentUser) && (
+            <button
+              onClick={() => setViewMode('my_tickets')}
+              className={`relative flex-1 min-w-max py-2 sm:py-3 px-2.5 sm:px-4 text-center text-xs sm:text-sm md:text-base font-bold whitespace-nowrap transition-colors flex items-center justify-center gap-1.5 ${
+                viewMode === 'my_tickets'
+                  ? 'text-emerald-600 dark:text-emerald-400 font-extrabold'
+                  : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <span>{isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Setujui Pengadaan' : 'Tiket Saya'}</span>
+              {isSubDeptHeadOrSuperAdmin(adminUser || currentUser) && getPendingApprovalCount(tickets) > 0 && (
+                <span className="px-1.5 py-0.5 text-[10px] font-black bg-rose-500 text-white rounded-full animate-pulse">
+                  {getPendingApprovalCount(tickets)}
+                </span>
+              )}
+              {viewMode === 'my_tickets' && (
+                <motion.div 
+                  layoutId="tabUnderline"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 sm:h-1 bg-emerald-600 dark:bg-emerald-500 rounded-full"
+                  transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                />
+              )}
+            </button>
+          )}
+
+          {!adminUser && currentUser && ((currentUser.jabatan || '').toLowerCase().includes('head') || (currentUser.jabatan || '').toLowerCase().includes('manager')) && (
+            <button
+              onClick={() => setViewMode('team_tickets')}
+              className={`relative flex-1 min-w-max py-2 sm:py-3 px-2.5 sm:px-4 text-center text-xs sm:text-sm md:text-base font-bold whitespace-nowrap transition-colors ${
+                viewMode === 'team_tickets'
+                  ? 'text-emerald-600 dark:text-emerald-400 font-extrabold'
+                  : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              Tiket Tim Saya
+              {viewMode === 'team_tickets' && (
+                <motion.div 
+                  layoutId="tabUnderline"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 sm:h-1 bg-emerald-600 dark:bg-emerald-500 rounded-full"
+                  transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                />
+              )}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Navigation Stats Quick Grid */}
       <div className="mb-2.5 sm:mb-3">
@@ -222,33 +232,44 @@ export const TicketList: React.FC<TicketListProps> = ({
             },
             { 
               key: 'my_tickets',
-              label: 'Tiket Saya', 
-              count: tickets.filter(t => (currentUser?.employee_index && t.employee_index === currentUser.employee_index) || (currentUser?.name && t.name?.toLowerCase() === currentUser.name?.toLowerCase())).length,
+              label: isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Setujui Pengadaan' : 'Tiket Saya', 
+              count: isSubDeptHeadOrSuperAdmin(adminUser || currentUser)
+                ? getPendingApprovalCount(tickets)
+                : tickets.filter(t => isUserTicket(t, currentUser)).length,
               icon: <User className="w-4 h-4 sm:w-5 sm:h-5" />,
-              numColor: 'text-emerald-600 dark:text-emerald-400',
-              iconBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-              activeClass: 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-50/70 dark:bg-emerald-950/40 shadow-sm',
+              numColor: isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'text-purple-600 dark:text-purple-400' : 'text-emerald-600 dark:text-emerald-400',
+              iconBg: isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+              activeClass: 'border-purple-500 ring-2 ring-purple-500/30 bg-purple-50/70 dark:bg-purple-950/40 shadow-sm',
               idleClass: isDark ? 'bg-slate-900/90 border-slate-800 hover:bg-slate-850' : 'bg-white border-slate-200/90 hover:bg-slate-50',
-              pulsePing: 'bg-emerald-400',
-              pulseDot: 'bg-emerald-500',
-              dotActive: 'bg-emerald-500',
+              pulsePing: 'bg-purple-400',
+              pulseDot: 'bg-purple-500',
+              dotActive: 'bg-purple-500',
               isActive: viewMode === 'my_tickets' && !filterStatus,
               onClick: () => { setViewMode('my_tickets'); setFilterStatus(''); }
             },
             { 
               key: 'in_progress',
-              label: 'Progres Tiket', 
-              count: tickets.filter(t => t.status === 'In Progress' || t.status === 'Progres').length,
-              icon: <Activity className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />,
-              numColor: 'text-amber-600 dark:text-amber-400',
-              iconBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-              activeClass: 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-50/70 dark:bg-amber-950/40 shadow-sm',
+              label: isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Tiket Tim Saya' : 'Progres Tiket', 
+              count: isSubDeptHeadOrSuperAdmin(adminUser || currentUser)
+                ? tickets.filter(t => (currentUser?.department ? t.department?.toLowerCase() === currentUser.department?.toLowerCase() : true)).length
+                : tickets.filter(t => t.status === 'In Progress' || t.status === 'Progres').length,
+              icon: isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? <Users className="w-4 h-4 sm:w-5 sm:h-5" /> : <Activity className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />,
+              numColor: isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'text-teal-600 dark:text-teal-400' : 'text-amber-600 dark:text-amber-400',
+              iconBg: isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'bg-teal-500/10 text-teal-600 dark:text-teal-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+              activeClass: isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'border-teal-500 ring-2 ring-teal-500/30 bg-teal-50/70 dark:bg-teal-950/40 shadow-sm' : 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-50/70 dark:bg-amber-950/40 shadow-sm',
               idleClass: isDark ? 'bg-slate-900/90 border-slate-800 hover:bg-slate-850' : 'bg-white border-slate-200/90 hover:bg-slate-50',
-              pulsePing: 'bg-amber-400',
-              pulseDot: 'bg-amber-500',
-              dotActive: 'bg-amber-500',
-              isActive: filterStatus === 'In Progress',
-              onClick: () => { setFilterStatus('In Progress'); }
+              pulsePing: isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'bg-teal-400' : 'bg-amber-400',
+              pulseDot: isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'bg-teal-500' : 'bg-amber-500',
+              dotActive: isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'bg-teal-500' : 'bg-amber-500',
+              isActive: isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? (viewMode === 'team_tickets' && !filterStatus) : filterStatus === 'In Progress',
+              onClick: () => { 
+                if (isSubDeptHeadOrSuperAdmin(adminUser || currentUser)) {
+                  setViewMode('team_tickets');
+                  setFilterStatus('');
+                } else {
+                  setFilterStatus('In Progress');
+                }
+              }
             },
             { 
               key: 'today_tickets',

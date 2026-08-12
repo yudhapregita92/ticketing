@@ -21,6 +21,7 @@ import { LOGO_OPTIONS } from '../constants';
 import { Logo } from './Logo';
 import { api } from '../services/api';
 import toast from 'react-hot-toast';
+import { isSubDeptHeadOrSuperAdmin, getPendingApprovalCount } from '../utils/rbacUtils';
 
 const RealTimeClock: React.FC<{ isDark: boolean }> = ({ isDark }) => {
   const [time, setTime] = useState(new Date());
@@ -226,12 +227,14 @@ export const Header: React.FC<HeaderProps> = ({
                       }
                     }}
                     className="w-7 h-7 rounded-md flex items-center justify-center transition-all text-white/80 hover:text-white hover:bg-white/10 cursor-pointer relative shrink-0"
-                    title="Pemberitahuan & Notifikasi"
+                    title="Pemberitahuan & Notifikasi Pengadaan"
                   >
                     <Bell className="w-3.5 h-3.5" />
-                    {unreadCount > 0 && (
-                      <span className="absolute top-0.5 right-0.5 px-1 min-w-[12px] h-[12px] rounded-full bg-rose-500 text-white text-[7px] font-bold flex items-center justify-center leading-none">
-                        {unreadCount > 99 ? '99+' : unreadCount}
+                    {(unreadCount > 0 || (isSubDeptHeadOrSuperAdmin(adminUser || currentUser) && getPendingApprovalCount(tickets) > 0)) && (
+                      <span className="absolute -top-1 -right-1 px-1 min-w-[14px] h-[14px] rounded-full bg-rose-500 text-white text-[8px] font-black flex items-center justify-center leading-none border border-rose-300 shadow-md animate-pulse">
+                        {isSubDeptHeadOrSuperAdmin(adminUser || currentUser)
+                          ? (getPendingApprovalCount(tickets) + unreadCount > 99 ? '99+' : getPendingApprovalCount(tickets) + unreadCount)
+                          : (unreadCount > 99 ? '99+' : unreadCount)}
                       </span>
                     )}
                   </motion.button>
