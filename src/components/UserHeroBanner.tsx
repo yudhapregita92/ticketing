@@ -99,22 +99,40 @@ export const UserHeroBanner: React.FC<UserHeroBannerProps> = ({
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      style={{
-        paddingTop: `${paddingY}px`,
-        paddingBottom: `${paddingY}px`,
-        marginBottom: `${marginBottom}px`,
-        borderRadius: `${cardRadius}px`
-      }}
-      className={`relative overflow-hidden px-4 sm:px-6 border transition-all ${
-        isDark 
-          ? 'bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-800/90 border-slate-800 text-slate-100 shadow-md' 
-          : 'bg-gradient-to-r from-slate-50/90 via-emerald-50/20 to-teal-50/40 border-slate-200/80 text-slate-900 shadow-xs'
-      }`}
-    >
+    <div className={`sm:contents ${
+      !isDark 
+        ? 'p-2 sm:p-0 rounded-3xl sm:rounded-none bg-gradient-to-b from-emerald-500/10 via-teal-500/5 to-transparent border border-emerald-200/60 dark:border-slate-800 shadow-xs sm:shadow-none mb-2 sm:mb-0'
+        : 'p-2 sm:p-0 rounded-3xl sm:rounded-none bg-gradient-to-b from-slate-800/50 via-slate-900/30 to-transparent border border-slate-800 shadow-xs sm:shadow-none mb-2 sm:mb-0'
+    }`}>
+      {/* Mobile Header Container Badge / Label (Hero Section) */}
+      <div className="flex sm:hidden items-center justify-between px-2 pt-1 pb-2">
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[11px] font-black tracking-wider uppercase text-emerald-700 dark:text-emerald-400">
+            {appSettings?.deptName || 'IT Support Workspace'}
+          </span>
+        </div>
+        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-white/90 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+          Layanan User
+        </span>
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        style={{
+          paddingTop: `${paddingY}px`,
+          paddingBottom: `${paddingY}px`,
+          marginBottom: `${marginBottom}px`,
+          borderRadius: `${cardRadius}px`
+        }}
+        className={`relative overflow-hidden px-4 sm:px-6 border transition-all ${
+          isDark 
+            ? 'bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-800/90 border-slate-800 text-slate-100 shadow-md' 
+            : 'bg-gradient-to-r from-white via-emerald-50/30 to-teal-50/50 border-slate-200/90 text-slate-900 shadow-xs'
+        }`}
+      >
       <div className="flex flex-row items-center justify-between gap-3 sm:gap-6">
         {/* Left Side: Greeting & Subtitle (Always left-aligned) */}
         <div className="flex-1 min-w-0 z-10 text-left">
@@ -241,5 +259,6 @@ export const UserHeroBanner: React.FC<UserHeroBannerProps> = ({
         </div>
       </div>
     </motion.div>
+    </div>
   );
 };
