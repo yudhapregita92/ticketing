@@ -101,18 +101,18 @@ export const UserHeroBanner: React.FC<UserHeroBannerProps> = ({
   return (
     <div className={`sm:contents ${
       !isDark 
-        ? 'p-2 sm:p-0 rounded-3xl sm:rounded-none bg-gradient-to-b from-emerald-500/10 via-teal-500/5 to-transparent border border-emerald-200/60 dark:border-slate-800 shadow-xs sm:shadow-none mb-2 sm:mb-0'
-        : 'p-2 sm:p-0 rounded-3xl sm:rounded-none bg-gradient-to-b from-slate-800/50 via-slate-900/30 to-transparent border border-slate-800 shadow-xs sm:shadow-none mb-2 sm:mb-0'
+        ? 'p-2 sm:p-0 rounded-3xl sm:rounded-none bg-gradient-to-br from-emerald-500/15 via-teal-500/10 to-emerald-500/5 border border-emerald-500/20 shadow-sm mb-2 sm:mb-0 backdrop-blur-md'
+        : 'p-2 sm:p-0 rounded-3xl sm:rounded-none bg-gradient-to-br from-slate-800/80 via-slate-900/60 to-slate-950 border border-slate-800/90 shadow-sm mb-2 sm:mb-0 backdrop-blur-md'
     }`}>
       {/* Mobile Header Container Badge / Label (Hero Section) */}
-      <div className="flex sm:hidden items-center justify-between px-2 pt-1 pb-2">
-        <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+      <div className="flex sm:hidden items-center justify-between px-2.5 pt-1.5 pb-2">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-xs shadow-emerald-500/50" />
           <span className="text-[11px] font-black tracking-wider uppercase text-emerald-700 dark:text-emerald-400">
             {appSettings?.deptName || 'IT Support Workspace'}
           </span>
         </div>
-        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-white/90 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+        <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-500/10 dark:bg-emerald-500/20 px-2.5 py-0.5 rounded-full border border-emerald-500/20 shadow-2xs">
           Layanan User
         </span>
       </div>
@@ -130,7 +130,7 @@ export const UserHeroBanner: React.FC<UserHeroBannerProps> = ({
         className={`relative overflow-hidden px-4 sm:px-6 border transition-all ${
           isDark 
             ? 'bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-800/90 border-slate-800 text-slate-100 shadow-md' 
-            : 'bg-gradient-to-r from-white via-emerald-50/30 to-teal-50/50 border-slate-200/90 text-slate-900 shadow-xs'
+            : 'bg-gradient-to-r from-white via-emerald-50/40 to-teal-50/60 border-slate-200/80 text-slate-900 shadow-xs ring-1 ring-slate-900/5'
         }`}
       >
       <div className="flex flex-row items-center justify-between gap-3 sm:gap-6">

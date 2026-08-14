@@ -329,6 +329,20 @@ export const api = {
       return res.json().then(data => ({ success: true, ...data }));
     });
   },
+  uploadBulkMembershipPhotos: (data: { items: { filename: string; kode_lokal: string; foto: string }[]; overwriteExisting?: boolean }): Promise<any> => {
+    return fetch('/api/memberships/bulk-photos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }).then(handleResponse);
+  },
+  syncServerPhotos: (folderPath?: string, overwriteExisting?: boolean): Promise<any> => {
+    return fetch('/api/memberships/sync-server-photos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folderPath, overwriteExisting })
+    }).then(handleResponse);
+  },
 
   // DB Connection test
   testDbConnection: (data: any) => fetch('/api/network/test-db-connection', {

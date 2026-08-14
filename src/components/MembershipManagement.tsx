@@ -4,7 +4,7 @@ import { api } from '../services/api';
 import { IMembership } from '../types';
 import { 
   Plus, Search, Edit2, Trash2, Printer, 
-  X, Image as ImageIcon, CreditCard, UploadCloud,
+  X, Image as ImageIcon, CreditCard, UploadCloud, FolderUp, HardDrive,
   Sparkles, ChevronDown, ChevronUp, RefreshCw, Copy, Check, Barcode as BarcodeIcon,
   ZoomIn, ZoomOut, Download, Upload, History, Camera, Video,
   BookOpen, User, AlertTriangle
@@ -12,6 +12,7 @@ import {
 import toast from 'react-hot-toast';
 import Barcode from 'react-barcode';
 import * as XLSX from 'xlsx';
+import { BulkPhotoUploadModal } from './BulkPhotoUploadModal';
 
 interface MembershipManagementProps {
   isDark: boolean;
@@ -322,6 +323,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
 
   const [printMember, setPrintMember] = useState<IMembership | null>(null);
   const [showLogsFor, setShowLogsFor] = useState<IMembership | null>(null);
+  const [showBulkPhotoModal, setShowBulkPhotoModal] = useState(false);
   const [templateBg, setTemplateBg] = useState<string>(() => {
     try {
       return localStorage.getItem('membershipTemplateBg') || "url('/template-id-card.png')";
@@ -948,6 +950,14 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
             >
               <Upload className="w-4 h-4" />
               Import Excel
+            </button>
+            <button 
+              onClick={() => setShowBulkPhotoModal(true)}
+              className="px-3 py-1.5 text-sm bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white rounded-lg font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 ring-2 ring-teal-500/30"
+              title="Sinkronisasi ribuan foto langsung dari folder server C:\upload\members berdasarkan Kode Lokal"
+            >
+              <HardDrive className="w-4 h-4" />
+              Sync Foto Server (Kode Lokal)
             </button>
             <button 
               onClick={handleExportExcel}
@@ -2450,6 +2460,17 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
           />
         )}
       </AnimatePresence>
+
+      {/* MODAL BULK PHOTO UPLOAD */}
+      {showBulkPhotoModal && (
+        <BulkPhotoUploadModal
+          isOpen={showBulkPhotoModal}
+          onClose={() => setShowBulkPhotoModal(false)}
+          onSuccess={fetchMemberships}
+          isDark={isDark}
+          themeClasses={themeClasses}
+        />
+      )}
     </div>
   );
 };

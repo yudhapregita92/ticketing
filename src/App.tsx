@@ -1478,13 +1478,15 @@ export default function App() {
   const themeClasses = useMemo(() => {
     if (!adminUser) {
       return {
-        bg: isDark ? 'bg-slate-950 text-slate-100' : 'bg-[#F8FAFC] text-slate-900',
-        header: isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200',
-        card: isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200',
+        bg: isDark 
+          ? 'bg-[#090d16] text-slate-100 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-950/25 via-slate-950 to-slate-950' 
+          : 'bg-[#f8fafc] text-slate-900 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-500/8 via-slate-50 to-slate-100/80',
+        header: isDark ? 'bg-slate-900/80 backdrop-blur-md border-slate-800' : 'bg-white/80 backdrop-blur-md border-slate-200/80',
+        card: isDark ? 'bg-slate-900/90 backdrop-blur-sm border-slate-800 shadow-sm' : 'bg-white/90 backdrop-blur-sm border-slate-200/80 shadow-xs',
         text: isDark ? 'text-slate-100' : 'text-slate-900',
         textMuted: isDark ? 'text-slate-400' : 'text-slate-500',
         border: isDark ? 'border-slate-800' : 'border-slate-200',
-        bgSecondary: isDark ? 'bg-slate-800' : 'bg-slate-100',
+        bgSecondary: isDark ? 'bg-slate-800/80' : 'bg-slate-100/80',
         input: isDark ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-750' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50',
         selection: 'selection:bg-emerald-500/30'
       };
