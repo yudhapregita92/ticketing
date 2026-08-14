@@ -296,6 +296,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
   const [memberships, setMemberships] = useState<IMembership[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [photoFilter, setPhotoFilter] = useState<'ALL' | 'WITH_PHOTO' | 'NO_PHOTO'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
@@ -849,13 +850,24 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
   };
 
   const filteredMemberships = React.useMemo(() => {
-    const filtered = memberships.filter(m => 
-      m.nama.toLowerCase().includes(search.toLowerCase()) ||
-      (m.barcode && m.barcode.toLowerCase().includes(search.toLowerCase())) ||
-      (m.bagian && m.bagian.toLowerCase().includes(search.toLowerCase())) ||
-      (m.indek_ggf && m.indek_ggf.toLowerCase().includes(search.toLowerCase())) ||
-      (m.kode_lokal && m.kode_lokal.toLowerCase().includes(search.toLowerCase()))
-    );
+    const filtered = memberships.filter(m => {
+      const matchesSearch = 
+        m.nama.toLowerCase().includes(search.toLowerCase()) ||
+        (m.barcode && m.barcode.toLowerCase().includes(search.toLowerCase())) ||
+        (m.bagian && m.bagian.toLowerCase().includes(search.toLowerCase())) ||
+        (m.indek_ggf && m.indek_ggf.toLowerCase().includes(search.toLowerCase())) ||
+        (m.kode_lokal && m.kode_lokal.toLowerCase().includes(search.toLowerCase()));
+
+      const hasPhoto = Boolean(m.foto && String(m.foto).trim() !== '' && String(m.foto).trim() !== '-' && String(m.foto).trim() !== 'null');
+      let matchesPhoto = true;
+      if (photoFilter === 'WITH_PHOTO') {
+        matchesPhoto = hasPhoto;
+      } else if (photoFilter === 'NO_PHOTO') {
+        matchesPhoto = !hasPhoto;
+      }
+
+      return matchesSearch && matchesPhoto;
+    });
     
     return filtered.sort((a, b) => {
       const aHasPhoto = !!a.foto;
@@ -871,7 +883,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
       
       return 0;
     });
-  }, [memberships, search]);
+  }, [memberships, search, photoFilter]);
 
   const paginatedMemberships = React.useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -882,7 +894,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search]);
+  }, [search, photoFilter]);
 
   return (
     <div className={`space-y-4 ${themeClasses.text}`}>
@@ -922,7 +934,7 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
         </div>
 
         {activeTab === 'members' ? (
-          <div className="flex flex-wrap sm:justify-end items-center gap-2 mt-2 sm:mt-0 w-full lg:w-auto">
+          <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0 w-full lg:w-auto sm:justify-end">
             <input 
               type="file" 
               accept="image/*" 
@@ -937,57 +949,69 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
               ref={excelImportRef}
               onChange={handleImportExcel}
             />
+            
+            {/* Tombol Aksi Utama */}
             <button 
-              onClick={handleDownloadTemplateExcel}
-              className={`px-3 py-1.5 text-sm ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} rounded-lg font-medium transition-colors flex items-center gap-1.5 border ${themeClasses.border}`}
+              onClick={() => handleOpenForm()}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-sm cursor-pointer active:scale-95"
             >
-              <Download className="w-4 h-4" />
-              Template Excel
+              <Plus className="w-4 h-4" />
+              <span>Tambah Member</span>
             </button>
-            <button 
-              onClick={() => excelImportRef.current?.click()}
-              className={`px-3 py-1.5 text-sm ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} rounded-lg font-medium transition-colors flex items-center gap-1.5 border ${themeClasses.border}`}
-            >
-              <Upload className="w-4 h-4" />
-              Import Excel
-            </button>
+
+            {/* Sync Foto Folder Server */}
             <button 
               onClick={() => setShowBulkPhotoModal(true)}
-              className="px-3 py-1.5 text-sm bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white rounded-lg font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 ring-2 ring-teal-500/30"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition-all shadow-sm cursor-pointer active:scale-95"
               title="Sinkronisasi ribuan foto langsung dari folder server C:\upload\members berdasarkan Kode Lokal"
             >
               <HardDrive className="w-4 h-4" />
-              Sync Foto Server (Kode Lokal)
-            </button>
-            <button 
-              onClick={handleExportExcel}
-              className={`px-3 py-1.5 text-sm ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} rounded-lg font-medium transition-colors flex items-center gap-1.5 border ${themeClasses.border}`}
-            >
-              <Download className="w-4 h-4" />
-              Export Excel
-            </button>
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              className={`px-3 py-1.5 text-sm ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} rounded-lg font-medium transition-colors flex items-center gap-1.5 border ${themeClasses.border}`}
-            >
-              <ImageIcon className="w-4 h-4" />
-              BG Kartu
-            </button>
-            
-            <button 
-              onClick={() => handleOpenForm()}
-              className="px-3 py-1.5 text-sm bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-medium transition-colors flex items-center gap-1.5 shadow-sm active:scale-95"
-            >
-              <Plus className="w-4 h-4" />
-              Tambah Member
+              <span>Sync Foto Server</span>
             </button>
 
+            {/* Import Excel */}
+            <button 
+              onClick={() => excelImportRef.current?.click()}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} transition-colors border ${themeClasses.border} cursor-pointer`}
+            >
+              <Upload className="w-4 h-4 text-emerald-500" />
+              <span>Import Excel</span>
+            </button>
+
+            {/* Export Excel */}
+            <button 
+              onClick={handleExportExcel}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} transition-colors border ${themeClasses.border} cursor-pointer`}
+            >
+              <Download className="w-4 h-4 text-sky-500" />
+              <span>Export Excel</span>
+            </button>
+
+            {/* Template Excel */}
+            <button 
+              onClick={handleDownloadTemplateExcel}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} transition-colors border ${themeClasses.border} cursor-pointer`}
+            >
+              <Download className="w-4 h-4 text-amber-500" />
+              <span>Template Excel</span>
+            </button>
+
+            {/* Background Kartu */}
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl ${themeClasses.bgSecondary} hover:bg-slate-200 dark:hover:bg-slate-700 ${themeClasses.text} transition-colors border ${themeClasses.border} cursor-pointer`}
+            >
+              <ImageIcon className="w-4 h-4 text-purple-500" />
+              <span>BG Kartu</span>
+            </button>
+
+            {/* Hapus Semua */}
             <button 
               onClick={() => setShowDeleteAllModal(true)}
-              className="px-3 py-1.5 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center gap-1.5 shadow-sm active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-rose-600 hover:bg-rose-700 text-white transition-colors cursor-pointer active:scale-95"
             >
               <Trash2 className="w-4 h-4" />
-              Hapus Semua
+              <span>Hapus Semua</span>
             </button>
           </div>
         ) : (
@@ -1019,243 +1043,39 @@ export const MembershipManagement: React.FC<MembershipManagementProps> = ({
 
       {activeTab === 'members' && (
         <>
-          {/* TOOL GENERATOR BARCODE EAN-8 */}
       <div className={`p-4 rounded-xl ${themeClasses.card} ${themeClasses.border} border shadow-sm`}>
-        <button
-          onClick={() => setShowGeneratorPanel(!showGeneratorPanel)}
-          className="w-full flex items-center justify-between text-left focus:outline-none"
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-500">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-sm sm:text-base flex items-center gap-2">
-                Generator Barcode EAN-8 Otomatis
-                <span className="px-2 py-0.5 text-[10px] bg-emerald-500/15 text-emerald-600 rounded-full font-black uppercase">Baru</span>
-              </h3>
-              <p className={`text-xs ${themeClasses.textMuted} mt-0.5`}>
-                Buat barcode EAN-8 (8 digit) dari Kode Lokal dengan prefix '8' dan digit acak di akhir secara instan.
-              </p>
-            </div>
-          </div>
-          <div>
-            {showGeneratorPanel ? (
-              <ChevronUp className="w-5 h-5 text-slate-400" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-slate-400" />
-            )}
-          </div>
-        </button>
-
-        <AnimatePresence>
-          {showGeneratorPanel && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden"
+        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4">
+          {/* Photo Status Filter Tabs */}
+          <div className={`flex items-center p-1 rounded-xl border text-xs font-semibold ${themeClasses.border} ${themeClasses.bgSecondary}`}>
+            <button
+              onClick={() => setPhotoFilter('ALL')}
+              className={`px-3 py-1.5 rounded-lg transition-all ${photoFilter === 'ALL' ? 'bg-emerald-600 text-white shadow-sm font-bold' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
             >
-              <div className={`pt-4 mt-4 border-t ${themeClasses.border} grid grid-cols-1 md:grid-cols-2 gap-6`}>
-                {/* Input & Step Breakdown */}
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold mb-1">Masukkan Kode Lokal (Angka saja)</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={simLocalCode}
-                        onChange={e => setSimLocalCode(e.target.value.replace(/\D/g, ''))}
-                        placeholder="Contoh: 12345"
-                        className={`flex-1 px-3 py-2 rounded-lg text-sm border ${themeClasses.input}`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          let r = '';
-                          for (let i = 0; i < simNeededRandom; i++) {
-                            r += Math.floor(Math.random() * 10).toString();
-                          }
-                          setSimRandomDigits(r);
-                          toast.success('Digit acak diperbarui!');
-                        }}
-                        disabled={!simLocalCode}
-                        className="px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors disabled:opacity-50"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        Acak Ulang
-                      </button>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-1">
-                      Maksimal 5 digit. Jika lebih, akan diambil 5 digit pertama agar tersisa minimal 1 digit acak di akhir.
-                    </p>
-                  </div>
+              Semua ({memberships.length})
+            </button>
+            <button
+              onClick={() => setPhotoFilter('WITH_PHOTO')}
+              className={`px-3 py-1.5 rounded-lg transition-all ${photoFilter === 'WITH_PHOTO' ? 'bg-emerald-600 text-white shadow-sm font-bold' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+            >
+              Sudah Ada Foto ({memberships.filter(m => Boolean(m.foto && String(m.foto).trim() !== '' && String(m.foto).trim() !== '-' && String(m.foto).trim() !== 'null')).length})
+            </button>
+            <button
+              onClick={() => setPhotoFilter('NO_PHOTO')}
+              className={`px-3 py-1.5 rounded-lg transition-all ${photoFilter === 'NO_PHOTO' ? 'bg-amber-600 text-white shadow-sm font-bold' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+            >
+              📷 Belum Ada Foto ({memberships.filter(m => !Boolean(m.foto && String(m.foto).trim() !== '' && String(m.foto).trim() !== '-' && String(m.foto).trim() !== 'null')).length})
+            </button>
+          </div>
 
-                  {simLocalCode ? (
-                    <div className="space-y-3">
-                      <span className="text-xs font-bold text-slate-400 block">Visualisasi Struktur EAN-8:</span>
-                      
-                      {/* Visual blocks */}
-                      <div className="flex items-stretch rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm text-center">
-                        {/* Prefix */}
-                        <div className="flex-1 bg-indigo-500/10 border-r border-slate-200 dark:border-slate-700 p-2 flex flex-col justify-between">
-                          <span className="text-[9px] font-black text-indigo-500 uppercase">Prefix</span>
-                          <span className="text-lg font-black text-indigo-600 dark:text-indigo-400">{simPrefix}</span>
-                          <span className="text-[8px] text-slate-400">1 digit</span>
-                        </div>
-
-                        {/* Local Code */}
-                        <div className="flex-[2] bg-emerald-500/10 border-r border-slate-200 dark:border-slate-700 p-2 flex flex-col justify-between">
-                          <span className="text-[9px] font-black text-emerald-500 uppercase">Kode Lokal</span>
-                          <span className="text-lg font-black text-emerald-600 dark:text-emerald-400 tracking-wider">{simLocalPart}</span>
-                          <span className="text-[8px] text-slate-400">{simLocalPart.length} digit</span>
-                        </div>
-
-                        {/* Random digits */}
-                        <div className="flex-[1.5] bg-amber-500/10 border-r border-slate-200 dark:border-slate-700 p-2 flex flex-col justify-between">
-                          <span className="text-[9px] font-black text-amber-500 uppercase">Acak (Random)</span>
-                          <span className="text-lg font-black text-amber-600 dark:text-amber-400 tracking-wider">{simRandomPart || '-'}</span>
-                          <span className="text-[8px] text-slate-400">{simRandomPart.length} digit</span>
-                        </div>
-
-                        {/* Checksum */}
-                        <div className="flex-1 bg-purple-500/10 p-2 flex flex-col justify-between">
-                          <span className="text-[9px] font-black text-purple-500 uppercase">Check Digit</span>
-                          <span className="text-lg font-black text-purple-600 dark:text-purple-400">{simChecksum}</span>
-                          <span className="text-[8px] text-slate-400">1 digit</span>
-                        </div>
-                      </div>
-
-                      {/* Math Breakdown */}
-                      <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800 text-xs space-y-1">
-                        <div className="font-bold text-slate-600 dark:text-slate-300">Bagaimana check digit '{simChecksum}' dihitung?</div>
-                        <div className="text-slate-400 text-[10px] leading-relaxed">
-                          EAN-8 Checksum dihitung dengan memberi bobot bergantian <span className="font-semibold text-slate-600 dark:text-slate-300">3</span> dan <span className="font-semibold text-slate-600 dark:text-slate-300">1</span> pada 7 digit pertama dari kiri ke kanan:
-                          <br />
-                          <span className="font-mono bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-150 inline-block mt-1">
-                            {(() => {
-                              const digits = (simPrefix + simLocalPart + simRandomPart).split('');
-                              return digits.map((d, i) => `(${d}×${i % 2 === 0 ? 3 : 1})`).join('+');
-                            })()} = {(() => {
-                              const digits = (simPrefix + simLocalPart + simRandomPart).split('');
-                              let sum = 0;
-                              const parts = digits.map((d, i) => {
-                                const val = parseInt(d, 10) * (i % 2 === 0 ? 3 : 1);
-                                sum += val;
-                                return val;
-                              });
-                              return sum;
-                            })()}
-                          </span>
-                          <br />
-                          Selisih jumlah total ({(() => {
-                            const digits = (simPrefix + simLocalPart + simRandomPart).split('');
-                            let sum = 0;
-                            digits.forEach((d, i) => {
-                              sum += parseInt(d, 10) * (i % 2 === 0 ? 3 : 1);
-                            });
-                            return sum;
-                          })()}) ke kelipatan 10 terdekat berikutnya ({(() => {
-                            const digits = (simPrefix + simLocalPart + simRandomPart).split('');
-                            let sum = 0;
-                            digits.forEach((d, i) => {
-                              sum += parseInt(d, 10) * (i % 2 === 0 ? 3 : 1);
-                            });
-                            return Math.ceil(sum / 10) * 10;
-                          })()}) adalah <span className="font-bold text-purple-500">{simChecksum}</span>.
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="h-28 flex flex-col items-center justify-center border border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-400 p-4">
-                      <Sparkles className="w-5 h-5 text-indigo-400 mb-1.5 animate-pulse" />
-                      Ketik Kode Lokal di atas untuk melihat visualisasi pembentukan kode EAN-8 live!
-                    </div>
-                  )}
-                </div>
-
-                {/* Barcode Preview & Action Card */}
-                <div className="flex flex-col justify-between border border-slate-200 dark:border-slate-700 rounded-2xl p-4 bg-white dark:bg-slate-900 shadow-inner min-h-[220px]">
-                  <div className="flex flex-col items-center justify-center flex-1 py-4">
-                    {isSimValid ? (
-                      <div className="flex flex-col items-center bg-white p-4 rounded-xl border border-slate-100">
-                        <Barcode 
-                          value={fullSimCode}
-                          width={1.6}
-                          height={50}
-                          fontSize={11}
-                          background="transparent"
-                          format="EAN8"
-                          lineColor="#1e3a8a"
-                        />
-                        <div className="mt-2 text-[10px] text-slate-500 font-bold bg-slate-50 px-2.5 py-0.5 rounded-full border flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                          Barcode EAN-8 Valid
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center text-slate-400 py-6">
-                        <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-2 border">
-                          <BarcodeIcon className="w-6 h-6 opacity-30 text-slate-500" />
-                        </div>
-                        <p className="text-xs">Silakan masukkan kode lokal numerik untuk merender barcode.</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {isSimValid && (
-                    <div className={`mt-4 pt-4 border-t ${themeClasses.border} flex flex-wrap gap-2 justify-center`}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(fullSimCode);
-                          setIsCopied(true);
-                          toast.success('Barcode disalin ke clipboard!');
-                          setTimeout(() => setIsCopied(false), 2000);
-                        }}
-                        className="px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5"
-                      >
-                        {isCopied ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 text-emerald-500" />
-                            Tersalin
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3.5 h-3.5" />
-                            Salin Kode
-                          </>
-                        )}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleOpenForm(undefined, { kode_lokal: simLocalCode, barcode: fullSimCode })}
-                        className="px-3.5 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold transition-all shadow flex items-center gap-1.5 active:scale-95"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        Buat Member Baru
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      <div className={`p-4 rounded-xl ${themeClasses.card} ${themeClasses.border} border shadow-sm`}>
-        <div className="flex justify-end mb-4">
-          <div className="relative w-full sm:w-64">
+          {/* Search Input */}
+          <div className="relative w-full sm:w-72">
             <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${themeClasses.textMuted}`} />
             <input 
               type="text" 
-              placeholder="Cari nama / bagian / barcode..." 
+              placeholder="Cari nama / bagian / barcode / kode..." 
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className={`w-full pl-9 pr-4 py-2 rounded-lg text-sm transition-colors border ${themeClasses.input}`}
+              className={`w-full pl-9 pr-4 py-2 rounded-xl text-xs transition-colors border ${themeClasses.input}`}
             />
           </div>
         </div>
