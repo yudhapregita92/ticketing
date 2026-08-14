@@ -596,8 +596,8 @@ export default function App() {
 
       } else if (viewMode === 'Setujui Pengadaan') {
         const activeUser = currentUser || adminUser;
-        if (!adminUser && currentUser) {
-          if (!isTeamTicketForUser(ticket, currentUser, masterUsers)) return false;
+        if (activeUser && !isTeamTicketForUser(ticket, activeUser, masterUsers)) {
+          return false;
         }
 
         const isApprovalTicket = 
@@ -1758,6 +1758,7 @@ export default function App() {
               isDark={isDark}
               adminUser={adminUser}
               currentUser={currentUser}
+              masterUsers={masterUsers}
               setShowSettings={(show) => {
                 if (window.innerWidth >= 1024) {
                   setViewMode('settings');
@@ -1828,6 +1829,7 @@ export default function App() {
                   userCanVoucher={userCanVoucher}
                   adminThemeLayout={adminThemeLayout}
                   currentUser={currentUser}
+                  masterUsers={masterUsers}
                 />
               </div>
             </div>

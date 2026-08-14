@@ -120,8 +120,16 @@ export const parseSubDepts = (str?: string): string[] => {
 export const isTeamTicketForUser = (ticket: any, user: any, masterUsers: any[] = []): boolean => {
   if (!user || !ticket) return false;
 
-  const myRole = (user.role || '').toString().toLowerCase();
-  const myJabatan = (user.jabatan || '').toString().toLowerCase();
+  const masterMe = Array.isArray(masterUsers) ? masterUsers.find((m: any) => 
+    (m.id && user.id && Number(m.id) === Number(user.id)) ||
+    (m.employee_index && user.employee_index && String(m.employee_index).toLowerCase().trim() === String(user.employee_index).toLowerCase().trim()) ||
+    (m.full_name && user.full_name && m.full_name.toLowerCase().trim() === user.full_name.toLowerCase().trim()) ||
+    (m.username && user.username && m.username.toLowerCase().trim() === user.username.toLowerCase().trim())
+  ) : null;
+  const activeUser = masterMe ? { ...user, ...masterMe } : user;
+
+  const myRole = (activeUser.role || '').toString().toLowerCase();
+  const myJabatan = (activeUser.jabatan || '').toString().toLowerCase();
   const combined = `${myRole} ${myJabatan}`;
 
   if (
@@ -135,17 +143,17 @@ export const isTeamTicketForUser = (ticket: any, user: any, masterUsers: any[] =
     return true;
   }
 
-  const myId = user.id;
-  const myDept = (user.department || '').toString().toLowerCase().trim();
+  const myId = activeUser.id;
+  const myDept = (activeUser.department || '').toString().toLowerCase().trim();
   const tDept = (ticket.department || '').toString().toLowerCase().trim();
-  const mySubDepts = parseSubDepts(user.sub_department);
+  const mySubDepts = parseSubDepts(activeUser.sub_department);
 
   // Find creator in masterUsers
-  const creator = masterUsers.find((u: any) => 
+  const creator = Array.isArray(masterUsers) ? masterUsers.find((u: any) => 
     (u.id && ticket.user_id && Number(u.id) === Number(ticket.user_id)) ||
     (u.full_name && ticket.name && u.full_name.toLowerCase().trim() === ticket.name.toLowerCase().trim()) || 
     (u.employee_index && ticket.employee_index && String(u.employee_index).toLowerCase().trim() === String(ticket.employee_index).toLowerCase().trim())
-  );
+  ) : null;
 
   // 1. Direct Atasan match (if creator's atasan_id points to user's id)
   if (creator && creator.atasan_id && (Number(creator.atasan_id) === Number(myId) || String(creator.atasan_id) === String(myId))) {
@@ -154,6 +162,8 @@ export const isTeamTicketForUser = (ticket: any, user: any, masterUsers: any[] =
 
   const creatorDept = creator ? (creator.department || '').toString().toLowerCase().trim() : tDept;
   const creatorSubDepts = creator ? parseSubDepts(creator.sub_department) : parseSubDepts(ticket.sub_department);
+  const ticketSubDepts = parseSubDepts(ticket.sub_department);
+  const allTicketSubDepts = Array.from(new Set([...creatorSubDepts, ...ticketSubDepts]));
 
   // Check department match first
   const deptMatch = (myDept && myDept !== '-' && (myDept === creatorDept || myDept === tDept));
@@ -181,11 +191,15 @@ export const isTeamTicketForUser = (ticket: any, user: any, masterUsers: any[] =
 
   // If user has specific sub-departments assigned (e.g. ["tax"]):
   if (mySubDepts.length > 0) {
-    // If ticket or creator also has specific sub-departments assigned (e.g. ["audit"]):
-    if (creatorSubDepts.length > 0) {
+    if (allTicketSubDepts.length > 0) {
       // Must have at least 1 overlapping sub-department
-      const hasOverlap = creatorSubDepts.some((s: string) => mySubDepts.includes(s));
+      const hasOverlap = allTicketSubDepts.some((s: string) => mySubDepts.includes(s));
       return hasOverlap;
+    } else {
+      // If user is a Sub Dept Head or Section Head, do not allow leakage across sub-departments
+      if (combined.includes('sub') || combined.includes('section')) {
+        return false;
+      }
     }
   }
 

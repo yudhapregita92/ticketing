@@ -86,6 +86,7 @@ interface HeaderProps {
   onOpenProfile?: () => void;
   onOpenChangePassword?: () => void;
   onOpenMyAssets?: () => void;
+  masterUsers?: any[];
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -109,7 +110,8 @@ export const Header: React.FC<HeaderProps> = ({
   onDutyChange,
   onOpenProfile,
   onOpenChangePassword,
-  onOpenMyAssets
+  onOpenMyAssets,
+  masterUsers = []
 }) => {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [dutyStatus, setDutyStatus] = useState<number>(() => {
@@ -240,10 +242,10 @@ export const Header: React.FC<HeaderProps> = ({
                     title="Pemberitahuan & Notifikasi Pengadaan"
                   >
                     <Bell className="w-3.5 h-3.5" />
-                    {(unreadCount > 0 || (isSubDeptHeadOrSuperAdmin(adminUser || currentUser) && getPendingApprovalCount(tickets) > 0)) && (
+                    {(unreadCount > 0 || (isSubDeptHeadOrSuperAdmin(adminUser || currentUser) && getPendingApprovalCount(tickets, adminUser || currentUser, masterUsers) > 0)) && (
                       <span className="absolute -top-1 -right-1 px-1 min-w-[14px] h-[14px] rounded-full bg-rose-500 text-white text-[8px] font-black flex items-center justify-center leading-none border border-rose-300 shadow-md animate-pulse">
                         {isSubDeptHeadOrSuperAdmin(adminUser || currentUser)
-                          ? (getPendingApprovalCount(tickets) + unreadCount > 99 ? '99+' : getPendingApprovalCount(tickets) + unreadCount)
+                          ? (getPendingApprovalCount(tickets, adminUser || currentUser, masterUsers) + unreadCount > 99 ? '99+' : getPendingApprovalCount(tickets, adminUser || currentUser, masterUsers) + unreadCount)
                           : (unreadCount > 99 ? '99+' : unreadCount)}
                       </span>
                     )}

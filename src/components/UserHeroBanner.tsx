@@ -9,6 +9,7 @@ interface UserHeroBannerProps {
   isDark: boolean;
   primaryColor?: string;
   appSettings?: any;
+  masterUsers?: any[];
 }
 
 export const UserHeroBanner: React.FC<UserHeroBannerProps> = ({
@@ -16,7 +17,8 @@ export const UserHeroBanner: React.FC<UserHeroBannerProps> = ({
   tickets,
   isDark,
   primaryColor = '#059669',
-  appSettings
+  appSettings,
+  masterUsers = []
 }) => {
   if (appSettings?.banner_enabled === false) {
     return null;
@@ -51,7 +53,7 @@ export const UserHeroBanner: React.FC<UserHeroBannerProps> = ({
   const teamTickets = tickets.filter(t => 
     currentUser?.department ? t.department?.toLowerCase() === currentUser.department?.toLowerCase() : true
   );
-  const pendingApprovalCount = getPendingApprovalCount(tickets);
+  const pendingApprovalCount = getPendingApprovalCount(tickets, currentUser, masterUsers);
 
   const myTickets = tickets.filter(t => isUserTicket(t, currentUser));
   const myNewCount = myTickets.filter(t => t.status === 'New').length;

@@ -63,6 +63,7 @@ interface SidebarProps {
   userCanVoucher?: boolean;
   adminThemeLayout?: string;
   currentUser?: any;
+  masterUsers?: any[];
 }
 
 // Helper to safely parse date strings for Safari compatibility
@@ -94,7 +95,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   handleLogout,
   userCanVoucher,
   adminThemeLayout,
-  currentUser
+  currentUser,
+  masterUsers = []
 }) => {
   const [ticketMenuOpen, setTicketMenuOpen] = React.useState(viewMode === 'today' || viewMode === 'all' || viewMode === 'my_tickets' || viewMode === 'team_tickets');
   const [masterDataOpen, setMasterDataOpen] = React.useState(viewMode === 'master_user' || viewMode === 'master_perangkat' || viewMode === 'master_team');
@@ -239,9 +241,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           <span>{isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Riwayat Setuju' : 'Tiket Saya'}</span>
                         )}
                       </div>
-                      {isSubDeptHeadOrSuperAdmin(adminUser || currentUser) && getPendingApprovalCount(tickets) > 0 && (
+                      {isSubDeptHeadOrSuperAdmin(adminUser || currentUser) && getPendingApprovalCount(tickets, adminUser || currentUser, masterUsers) > 0 && (
                         <span className="px-1.5 py-0.2 text-[9px] font-black bg-rose-500 text-white rounded-full animate-pulse">
-                          {getPendingApprovalCount(tickets)}
+                          {getPendingApprovalCount(tickets, adminUser || currentUser, masterUsers)}
                         </span>
                       )}
                     </div>
@@ -295,9 +297,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <span>{isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? 'Riwayat Setuju' : 'Riwayat Tiket Saya'}</span>
                     )}
                   </div>
-                  {isSubDeptHeadOrSuperAdmin(adminUser || currentUser) && getPendingApprovalCount(tickets) > 0 && (
+                  {isSubDeptHeadOrSuperAdmin(adminUser || currentUser) && getPendingApprovalCount(tickets, adminUser || currentUser, masterUsers) > 0 && (
                     <span className="px-1.5 py-0.5 text-[9px] font-black bg-rose-500 text-white rounded-full animate-pulse">
-                      {getPendingApprovalCount(tickets)}
+                      {getPendingApprovalCount(tickets, adminUser || currentUser, masterUsers)}
                     </span>
                   )}
                 </div>

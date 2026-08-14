@@ -122,6 +122,7 @@ export const TicketList: React.FC<TicketListProps> = ({
           isDark={isDark}
           primaryColor={primaryColor}
           appSettings={appSettings}
+          masterUsers={masterUsers}
         />
       )}
 
@@ -164,7 +165,7 @@ export const TicketList: React.FC<TicketListProps> = ({
             ...(isSubDeptHeadOrSuperAdmin(adminUser || currentUser) ? [{
               key: 'approval_pending',
               label: 'SETUJUI PENGADAAN',
-              count: getPendingApprovalCount(tickets),
+              count: getPendingApprovalCount(tickets, currentUser || adminUser, masterUsers || []),
               icon: <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />,
               numColor: 'text-amber-600 dark:text-amber-400',
               iconBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
