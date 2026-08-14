@@ -1,6 +1,8 @@
 import express from "express";
 import multer from "multer";
 import xlsx from "xlsx";
+import fs from "fs";
+import path from "path";
 import db from "../db.ts";
 import { saveMediaFile } from "../utils/fileStorage.ts";
 
@@ -366,6 +368,197 @@ router.delete("/journals/:id", (req: any, res: any) => {
     res.json({ success: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Sync photos directly from Windows Server folder (e.g. C:\upload\members)
+router.post("/sync-server-photos", (req: any, res: any) => {
+  const { folderPath = "C:\\upload\\members", overwriteExisting = false } = req.body;
+  
+  try {
+    const targetPath = folderPath.trim();
+    if (!fs.existsSync(targetPath)) {
+      return res.status(400).json({
+        error: `Folder tidak ditemukan di server: ${targetPath}. Pastikan folder tersebut sudah dibuat dan berisi file foto anggota.`
+      });
+    }
+
+    const files = fs.readdirSync(targetPath);
+    const validImageExtensions = new Set([".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif"]);
+    
+    // Filter only image files
+    const imageFiles = files.filter(file => {
+      const ext = path.extname(file).toLowerCase();
+      return validImageExtensions.has(ext);
+    });
+
+    if (imageFiles.length === 0) {
+      return res.json({
+        success: true,
+        totalFiles: 0,
+        updated: 0,
+        skipped: 0,
+        notFound: 0,
+        notFoundList: []
+      });
+    }
+
+    // Get all memberships to do in-memory fast matching
+    const members = db.prepare("SELECT id, nama, kode_lokal, foto FROM memberships").all() as any[];
+    
+    // Build map by kode_lokal (string trimmed and lower)
+    const memberMap = new Map<string, any>();
+    for (const m of members) {
+      if (m.kode_lokal) {
+        memberMap.set(String(m.kode_lokal).trim().toLowerCase(), m);
+      }
+    }
+
+    let updatedCount = 0;
+    let skippedCount = 0;
+    let notFoundCount = 0;
+    const notFoundList: string[] = [];
+
+    const updateStmt = db.prepare("UPDATE memberships SET foto = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+
+    const syncTransaction = db.transaction(() => {
+      for (const file of imageFiles) {
+        const baseName = path.parse(file).name.trim(); // e.g. "40660" from "40660.jpg"
+        
+        // Extract raw kode lokal
+        let kodeLokal = baseName;
+        // If file has prefix like foto_AGUNG_234961_xxx extract numbers
+        if (baseName.startsWith("foto_")) {
+          const parts = baseName.split("_");
+          for (let p = parts.length - 1; p >= 0; p--) {
+            if (/^\d+$/.test(parts[p])) {
+              kodeLokal = parts[p];
+              break;
+            }
+          }
+        }
+
+        const matchedMember = memberMap.get(kodeLokal.toLowerCase());
+
+        if (!matchedMember) {
+          notFoundCount++;
+          if (notFoundList.length < 500) {
+            notFoundList.push(file);
+          }
+          continue;
+        }
+
+        // Check if member already has photo and protection is active
+        const hasExistingPhoto = Boolean(matchedMember.foto && String(matchedMember.foto).trim() !== "");
+        if (hasExistingPhoto && !overwriteExisting) {
+          skippedCount++;
+          continue;
+        }
+
+        // Read image file and convert to base64
+        const filePath = path.join(targetPath, file);
+        const fileBuffer = fs.readFileSync(filePath);
+        const ext = path.extname(file).toLowerCase().replace(".", "") || "jpeg";
+        const mimeType = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
+        const base64Data = `data:${mimeType};base64,${fileBuffer.toString("base64")}`;
+
+        const savedPhotoPath = saveMediaFile(base64Data, {
+          entityType: "member_photo",
+          identifier: matchedMember.kode_lokal || String(matchedMember.id),
+          name: matchedMember.nama
+        });
+
+        updateStmt.run(savedPhotoPath, matchedMember.id);
+        matchedMember.foto = savedPhotoPath; // update in memory cache
+        updatedCount++;
+      }
+    });
+
+    syncTransaction();
+
+    res.json({
+      success: true,
+      totalFiles: imageFiles.length,
+      updated: updatedCount,
+      skipped: skippedCount,
+      notFound: notFoundCount,
+      notFoundList
+    });
+  } catch (err: any) {
+    console.error("Error in sync-server-photos:", err);
+    res.status(500).json({ error: err.message || "Gagal melakukan sinkronisasi foto dari server." });
+  }
+});
+
+// Bulk upload photos sent from client batches
+router.post("/bulk-photos", (req: any, res: any) => {
+  const { items = [], overwriteExisting = false } = req.body;
+
+  try {
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.json({ success: true, updated: 0, skipped: 0, notFound: 0, notFoundList: [] });
+    }
+
+    const members = db.prepare("SELECT id, nama, kode_lokal, foto FROM memberships").all() as any[];
+    const memberMap = new Map<string, any>();
+    for (const m of members) {
+      if (m.kode_lokal) {
+        memberMap.set(String(m.kode_lokal).trim().toLowerCase(), m);
+      }
+    }
+
+    let updatedCount = 0;
+    let skippedCount = 0;
+    let notFoundCount = 0;
+    const notFoundList: string[] = [];
+
+    const updateStmt = db.prepare("UPDATE memberships SET foto = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+
+    const batchTransaction = db.transaction(() => {
+      for (const item of items) {
+        const { filename, kode_lokal, foto } = item;
+        const lookupCode = (kode_lokal || "").trim().toLowerCase();
+
+        const matchedMember = memberMap.get(lookupCode);
+
+        if (!matchedMember) {
+          notFoundCount++;
+          if (notFoundList.length < 500) {
+            notFoundList.push(filename || kode_lokal);
+          }
+          continue;
+        }
+
+        const hasExistingPhoto = Boolean(matchedMember.foto && String(matchedMember.foto).trim() !== "");
+        if (hasExistingPhoto && !overwriteExisting) {
+          skippedCount++;
+          continue;
+        }
+
+        const savedPhotoPath = saveMediaFile(foto, {
+          entityType: "member_photo",
+          identifier: matchedMember.kode_lokal || String(matchedMember.id),
+          name: matchedMember.nama
+        });
+
+        updateStmt.run(savedPhotoPath, matchedMember.id);
+        matchedMember.foto = savedPhotoPath;
+        updatedCount++;
+      }
+    });
+
+    batchTransaction();
+
+    res.json({
+      success: true,
+      updated: updatedCount,
+      skipped: skippedCount,
+      notFound: notFoundCount,
+      notFoundList
+    });
+  } catch (err: any) {
+    console.error("Error in bulk-photos:", err);
+    res.status(500).json({ error: err.message || "Gagal memproses batch foto." });
   }
 });
 
